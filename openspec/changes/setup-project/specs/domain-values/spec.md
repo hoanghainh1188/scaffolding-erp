@@ -36,39 +36,70 @@ Hệ thống SHALL hiển thị tiền với dấu chấm ngăn cách hàng ngh�
 - **WHEN** người dùng gõ "12a00"
 - **THEN** hệ thống báo lỗi "Số tiền không hợp lệ"
 
-### Requirement: Số lượng tối đa 3 chữ số thập phân, cộng trừ không sai số
-Số lượng SHALL có tối đa 3 chữ số thập phân (để chứa kg) và giá trị tuyệt đối không vượt 99.999.999.999,999. Phép cộng, trừ số lượng SHALL cho kết quả chính xác, không có sai số dấu phẩy động.
+### Requirement: Số lượng gắn với đơn vị
+Mỗi số lượng SHALL gắn với một đơn vị: `PIECE` ("cái") hoặc `KG` ("kg"). Số lượng đơn vị cái SHALL là số nguyên. Số lượng đơn vị kg SHALL có tối đa 3 chữ số thập phân. Giá trị tuyệt đối không vượt 99.999.999.999,999. Phép cộng, trừ chỉ làm giữa hai số lượng cùng đơn vị.
+
+#### Scenario: Từ chối số lẻ với đơn vị cái
+- **WHEN** nhập số lượng "12,5" với đơn vị cái
+- **THEN** hệ thống báo lỗi "Số lượng cái phải là số nguyên"
+
+#### Scenario: Nhận số lẻ với đơn vị kg
+- **WHEN** nhập số lượng "250,5" với đơn vị kg
+- **THEN** hệ thống chấp nhận 250,5 kg
+
+#### Scenario: Từ chối quá 3 chữ số thập phân với kg
+- **WHEN** nhập số lượng "1,2345" với đơn vị kg
+- **THEN** hệ thống báo lỗi "Số lượng kg tối đa 3 chữ số thập phân"
+
+#### Scenario: Số lượng 0
+- **WHEN** nhập số lượng "0" với đơn vị cái
+- **THEN** hệ thống chấp nhận số lượng 0 cái
 
 #### Scenario: Cộng số lẻ chính xác
 - **WHEN** cộng 0,1 kg với 0,2 kg
-- **THEN** kết quả đúng bằng 0,3 kg
+- **THEN** kết quả đúng bằng 0,3 kg, không có sai số dấu phẩy động
 
-#### Scenario: Từ chối quá 3 chữ số thập phân
-- **WHEN** nhập số lượng "1,2345"
-- **THEN** hệ thống báo lỗi "Số lượng tối đa 3 chữ số thập phân"
-
-#### Scenario: Số lượng 0
-- **WHEN** nhập số lượng "0"
-- **THEN** hệ thống chấp nhận số lượng 0
+#### Scenario: Không cộng khác đơn vị
+- **WHEN** cộng 10 cái với 2,5 kg
+- **THEN** hệ thống báo lỗi khác đơn vị và không trả kết quả
 
 ### Requirement: Hiển thị và đọc số lượng theo kiểu Việt Nam
-Hệ thống SHALL hiển thị số lượng với dấu chấm ngăn cách hàng nghìn, dấu phẩy thập phân và bỏ số 0 thừa ở cuối. Ô nhập số lượng SHALL không dùng dấu ngăn cách hàng nghìn; dấu phẩy hoặc dấu chấm đều được hiểu là dấu thập phân.
+Hệ thống SHALL hiển thị số lượng với dấu chấm ngăn cách hàng nghìn, dấu phẩy thập phân và bỏ số 0 thừa ở cuối. Khi đọc chuỗi người dùng gõ, hệ thống SHALL không nhận dấu ngăn cách hàng nghìn; dấu phẩy hoặc dấu chấm đều được hiểu là dấu thập phân.
 
 #### Scenario: Hiển thị số lượng lẻ
-- **WHEN** hiển thị số lượng 1234,500
+- **WHEN** hiển thị số lượng 1234,500 kg
 - **THEN** chuỗi hiển thị là "1.234,5"
 
 #### Scenario: Hiển thị số lượng chẵn
-- **WHEN** hiển thị số lượng 80
+- **WHEN** hiển thị số lượng 80 cái
 - **THEN** chuỗi hiển thị là "80"
 
-#### Scenario: Đọc số lượng gõ bằng dấu chấm
-- **WHEN** thủ kho gõ "250.5" trên bàn phím số của điện thoại
-- **THEN** hệ thống đọc ra 250,5
+#### Scenario: Đọc số lượng kg gõ bằng dấu chấm
+- **WHEN** thủ kho gõ "250.5" với đơn vị kg trên bàn phím số của điện thoại
+- **THEN** hệ thống đọc ra 250,5 kg
 
-#### Scenario: Dấu chấm trong ô số lượng là dấu thập phân
-- **WHEN** thủ kho gõ "1.234"
-- **THEN** hệ thống đọc ra 1,234 (không phải 1234)
+#### Scenario: Dấu chấm với đơn vị kg là dấu thập phân
+- **WHEN** thủ kho gõ "1.234" với đơn vị kg
+- **THEN** hệ thống đọc ra 1,234 kg (không phải 1234)
+
+#### Scenario: Dấu chấm với đơn vị cái không bị hiểu thành hàng nghìn
+- **WHEN** thủ kho gõ "1.234" với đơn vị cái
+- **THEN** hệ thống báo lỗi "Số lượng cái phải là số nguyên", không tự hiểu thành 1234
+
+### Requirement: Dạng sửa của tiền và số lượng
+Hệ thống SHALL có dạng sửa cho tiền và số lượng — chuỗi đưa vào ô nhập khi người dùng đang sửa: không có dấu ngăn cách hàng nghìn, không có ký hiệu "₫", số lượng dùng dấu phẩy thập phân. Đọc lại dạng sửa SHALL cho đúng giá trị ban đầu.
+
+#### Scenario: Dạng sửa của tiền
+- **WHEN** lấy dạng sửa của số tiền 1250000
+- **THEN** chuỗi là "1250000"
+
+#### Scenario: Dạng sửa của số lượng kg
+- **WHEN** lấy dạng sửa của số lượng 1234,5 kg
+- **THEN** chuỗi là "1234,5" và đọc lại chuỗi đó được 1234,5 kg
+
+#### Scenario: Dạng sửa của số lượng 0
+- **WHEN** lấy dạng sửa của số lượng 0 cái
+- **THEN** chuỗi là "0"
 
 ### Requirement: Ngày nghiệp vụ theo giờ Việt Nam
 Thời điểm SHALL được lưu theo UTC. "Ngày" nghiệp vụ của một thời điểm SHALL là ngày lịch tại múi giờ Asia/Ho_Chi_Minh (UTC+7). Ngày hiển thị dạng "dd/MM/yyyy", thời điểm hiển thị dạng "dd/MM/yyyy HH:mm" theo giờ Việt Nam.
@@ -99,3 +130,14 @@ Hệ thống SHALL có đúng 5 vai trò `DIRECTOR`, `ACCOUNTANT`, `SALES`, `WAR
 #### Scenario: Giao diện mặc định theo vai trò
 - **WHEN** hỏi giao diện mặc định của vai trò `WAREHOUSE`
 - **THEN** kết quả là Mobile
+
+### Requirement: Trạng thái chứng từ lưu và trạng thái hiển thị
+Trạng thái chứng từ lưu trong DB SHALL chỉ gồm `DRAFT`, `PENDING_APPROVAL`, `IN_PROGRESS`, `DONE`. `OVERDUE` ("Quá hạn") SHALL chỉ là trạng thái hiển thị, tính ra từ ngày đến hạn, không bao giờ được lưu. Quy tắc tính Quá hạn thuộc change `receivables`.
+
+#### Scenario: Danh sách trạng thái được lưu
+- **WHEN** hỏi các trạng thái chứng từ được phép lưu
+- **THEN** kết quả là `DRAFT`, `PENDING_APPROVAL`, `IN_PROGRESS`, `DONE`, không có `OVERDUE`
+
+#### Scenario: Từ chối lưu Quá hạn
+- **WHEN** một phép ghi cố lưu trạng thái chứng từ `OVERDUE`
+- **THEN** hệ thống báo lỗi "Quá hạn là trạng thái tính ra, không được lưu"
