@@ -36,7 +36,7 @@
 - [x] 5.3 `src/lib/navigation.ts`: cấu hình 9 mục menu theo bảng D3 + `navItemsForRole`; unit test DIRECTOR 9 mục, SALES 6 mục, ACCOUNTANT có Công nợ không có Báo cáo/Cài đặt, WAREHOUSE rỗng — kiểm tra: unit test xanh
 - [x] 5.4 `src/lib/api-response.ts` (`ok`, `fail`) + `GET /api/health` (giới hạn 3 giây, log lỗi phía server); integration test DB ổn → 200 và DB sai địa chỉ → 503 không lộ `DATABASE_URL`/lỗi driver; test chậm quá 3 giây dùng hàm truy vấn giả — kiểm tra: `npm run test:int` xanh, `curl localhost:3000/api/health` trả 200
 
-- [ ] 5.5 `src/lib/print.ts` `printDocument({ title? })` theo design D18 + quy tắc ESLint chặn `window.print`/`globalThis.print` (`no-restricted-properties`) và `print()` trần (`no-restricted-globals`) ngoài file này; unit test (jsdom) gọi `window.print` đúng một lần, đổi và trả lại `document.title` sau `afterprint` — kiểm tra: unit test xanh, `npm run lint` báo lỗi khi thử gọi `window.print()` hoặc `print()` trong một component
+- [x] 5.5 `src/lib/print.ts` `printDocument({ title? })` theo design D18 + quy tắc ESLint chặn `window.print`/`globalThis.print` (`no-restricted-properties`) và `print()` trần (`no-restricted-globals`) ngoài file này; unit test (jsdom) gọi `window.print` đúng một lần, đổi và trả lại `document.title` sau `afterprint` — kiểm tra: unit test xanh, `npm run lint` báo lỗi khi thử gọi `window.print()` hoặc `print()` trong một component
 
 ## 6. Giao diện nền và component
 
