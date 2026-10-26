@@ -15,10 +15,10 @@
 
 ## 3. Cơ sở dữ liệu
 
-- [ ] 3.1 Thêm `docker-compose.yml` (`postgres:17-alpine`, volume có tên, cổng đổi được), `docker/postgres/init.sql` tạo DB `scaffolding_erp_test`, `.env.example` theo design D8; script `db:up`, `db:down` — kiểm tra: `npm run db:up` rồi `docker compose exec postgres psql -U erp -l` thấy 2 DB
-- [ ] 3.2 Cài `drizzle-orm`, `postgres`, `drizzle-kit`; tạo `drizzle.config.ts`, `src/db/client.ts` (đặt `timezone=UTC`), `src/db/schema/index.ts` rỗng, `src/db/migrate.ts`; script `db:generate`, `db:migrate`, `db:studio` — kiểm tra: `npm run db:migrate` chạy thành công trên DB rỗng và tạo bảng theo dõi migration
-- [ ] 3.3 Viết integration test `src/db/client.int.test.ts`: kết nối DB test, `select 1` trả 1 và `show timezone` trả `UTC` — kiểm tra: `npm run test:int` xanh
-- [ ] 3.4 Ghi hướng dẫn chạy DB local (db:up, db:migrate, test DB) vào `README.md` — kiểm tra: làm theo README trên máy sạch chạy được
+- [x] 3.1 Thêm `docker-compose.yml` (`postgres:17-alpine`, volume có tên, cổng đổi được), `docker/postgres/init.sql` tạo DB `scaffolding_erp_test`, `.env.example` theo design D8; script `db:up`, `db:down` — kiểm tra: `npm run db:up` rồi `docker compose exec postgres psql -U erp -l` thấy 2 DB
+- [x] 3.2 Cài `drizzle-orm`, `postgres`, `drizzle-kit`; tạo `drizzle.config.ts`, `src/db/client.ts` (đặt `timezone=UTC`), `src/db/schema/index.ts` rỗng, `src/db/migrate.ts`; script `db:generate`, `db:migrate`, `db:studio` — kiểm tra: `npm run db:migrate` chạy thành công trên DB rỗng và tạo bảng theo dõi migration
+- [x] 3.3 Viết integration test `src/db/client.int.test.ts`: kết nối DB test, `select 1` trả 1 và `show timezone` trả `UTC` — kiểm tra: `npm run test:int` xanh
+- [x] 3.4 Ghi hướng dẫn chạy DB local (db:up, db:migrate, test DB) vào `README.md` — kiểm tra: làm theo README trên máy sạch chạy được
 
 ## 4. Giá trị nghiệp vụ (hàm thuần + unit test viết trước)
 
