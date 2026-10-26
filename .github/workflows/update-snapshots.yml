@@ -46,13 +46,15 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Baselines unchanged." >> "$GITHUB_STEP_SUMMARY"
           else
-            git commit -m "test: update Playwright visual baselines"
+            # [skip ci]: a GITHUB_TOKEN push still opens a pull_request run that
+            # waits for approval and hides the dispatched run below on the PR.
+            git commit -m "test: update Playwright visual baselines [skip ci]"
             git push
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Committed new baselines to ${GITHUB_REF_NAME}." >> "$GITHUB_STEP_SUMMARY"
           fi
-      # A push made with GITHUB_TOKEN does not start workflows, but
-      # workflow_dispatch does. The run checks the new commit and shows on the PR.
+      # workflow_dispatch is not affected by [skip ci]. The run checks the new
+      # commit and shows on the PR.
       - name: Re-run CI on the branch
         if: steps.commit.outputs.changed == 'true'
         env:
