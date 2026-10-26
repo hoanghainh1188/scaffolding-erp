@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Quét mã</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F7F9FF}
+a{color:#1D5BFF}a:hover{color:#0F1A33}
+button,a,input{font-family:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #1D5BFF;outline-offset:2px}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #F7F9FF; color: #0F1A33; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 16px; line-height: 24px; overflow: hidden;">
+
+  <header style="box-sizing: border-box; height: 64px; padding: 0 8px 0 16px; background: #FFFFFF; border-bottom: 1px solid #E1E7F5; display: flex; align-items: center; justify-content: space-between;">
+    <h1 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 20px; line-height: 24px; font-weight: 700;">Quét mã</h1>
+    <button type="button" aria-label="Bật đèn flash" aria-pressed="false" style="width: 48px; height: 48px; border: 0; border-radius: 12px; background: transparent; color: #0F1A33; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></button>
+  </header>
+
+  <main style="box-sizing: border-box; padding: 16px 16px 104px; display: flex; flex-direction: column; gap: 16px;">
+    <div role="img" aria-label="Khung camera đang quét" style="position: relative; height: 280px; border-radius: 20px; background: #0F1A33; display: flex; align-items: center; justify-content: center;">
+      <svg width="200" height="200" viewBox="0 0 200 200" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" aria-hidden="true"><path d="M8 48V8h40M152 8h40v40M192 152v40h-40M48 192H8v-40"/></svg>
+      <span style="position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; color: #FFFFFF; font-size: 14px; line-height: 20px;">Đưa mã QR vào giữa khung</span>
+    </div>
+
+    <section aria-labelledby="scanned" style="background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#12805C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #12805C;">Đã nhận mã lúc 09:41</span>
+      </div>
+      <div>
+        <h2 id="scanned" style="margin: 0; font-size: 17px; line-height: 24px; font-weight: 700;">Khung giàn giáo 1,7m</h2>
+        <p style="margin: 0; font-size: 13px; line-height: 18px; color: #55607A;">GG-K17 · cái · 13,5 kg/cái</p>
+      </div>
+      <dl style="margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-variant-numeric: tabular-nums;">
+        <div style="padding: 10px; border-radius: 12px; background: #F7F9FF;"><dt style="font-size: 12px; line-height: 16px; font-weight: 600; color: #12805C;">Tốt</dt><dd style="margin: 0; font-size: 18px; font-weight: 700;">1.240</dd></div>
+        <div style="padding: 10px; border-radius: 12px; background: #F7F9FF;"><dt style="font-size: 12px; line-height: 16px; font-weight: 600; color: #A65B00;">Chờ sửa</dt><dd style="margin: 0; font-size: 18px; font-weight: 700;">186</dd></div>
+        <div style="padding: 10px; border-radius: 12px; background: #F7F9FF;"><dt style="font-size: 12px; line-height: 16px; font-weight: 600; color: #55607A;">Ở công trình</dt><dd style="margin: 0; font-size: 18px; font-weight: 700;">3.860</dd></div>
+      </dl>
+      <div style="display: flex; gap: 8px;">
+        <a href="#" style="flex: 1 1 0; height: 48px; border-radius: 12px; background: #EEF3FF; color: #0F1A33; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; text-decoration: none;">Xem thẻ kho</a>
+        <a href="M3-GoodsReceipt.dc.html" style="flex: 1 1 0; height: 48px; border-radius: 12px; background: #1D5BFF; color: #FFFFFF; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; text-decoration: none;">Thêm vào phiếu</a>
+      </div>
+    </section>
+
+    <form style="display: flex; flex-direction: column; gap: 6px;">
+      <label for="manual-code" style="font-size: 14px; line-height: 20px; font-weight: 600;">Không quét được? Nhập mã</label>
+      <div style="display: flex; gap: 8px;">
+        <input id="manual-code" type="text" placeholder="VD: GG-K17" autocapitalize="characters" style="flex: 1 1 auto; min-width: 0; box-sizing: border-box; height: 48px; padding: 0 12px; border: 1px solid #E1E7F5; border-radius: 12px; color: #0F1A33; font-size: 16px;">
+        <button type="submit" style="flex: none; height: 48px; padding: 0 18px; border: 0; border-radius: 12px; background: #EEF3FF; color: #0F1A33; font-size: 14px; font-weight: 600; cursor: pointer;">Tìm</button>
+      </div>
+    </form>
+  </main>
+
+  <nav aria-label="Điều hướng" style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 8px 8px 24px; background: #FFFFFF; border-top: 1px solid #E1E7F5; display: flex;">
+    <a href="M1-Today.dc.html" style="flex: 1 1 0; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #55607A; text-decoration: none; font-size: 12px; line-height: 16px; font-weight: 500;"><span style="padding: 4px 18px; display: inline-flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 11 3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></span>Việc hôm nay</a>
+    <a href="#" aria-current="page" style="flex: 1 1 0; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #0F1A33; text-decoration: none; font-size: 12px; line-height: 16px; font-weight: 600;"><span style="padding: 4px 18px; border-radius: 9999px; background: #E3ECFF; display: inline-flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h7v-4"/></svg></span>Quét mã</a>
+    <a href="M7-History.dc.html" style="flex: 1 1 0; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #55607A; text-decoration: none; font-size: 12px; line-height: 16px; font-weight: 500;"><span style="padding: 4px 18px; display: inline-flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>Lịch sử</a>
+    <a href="#" style="flex: 1 1 0; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #55607A; text-decoration: none; font-size: 12px; line-height: 16px; font-weight: 500;"><span style="padding: 4px 18px; display: inline-flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>Cá nhân</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
