@@ -7,6 +7,20 @@
 /* The MVP has a light theme only; `dark:` utilities never apply. */
 @custom-variant dark (&:is(.dark *));
 
+/* Icon-only desktop sidebar: chosen by the user (data-collapsible="icon"),
+   or by default between lg and xl when nothing is saved
+   (data-collapsible="auto"). CSS decides, so the first paint is right. */
+@custom-variant sidebar-collapsed {
+  &:where([data-collapsible="icon"] *) {
+    @slot;
+  }
+  @media (width >= 64rem) and (width < 80rem) {
+    &:where([data-collapsible="auto"] *) {
+      @slot;
+    }
+  }
+}
+
 /* shadcn sidebar colours, mapped onto design tokens: a light sidebar whose
    active item uses `accent` (docs/design-system/README.md). */
 :root {
