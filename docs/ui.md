@@ -167,6 +167,11 @@ Canvas: **Scaffolding ERP – Thiết kế màn hình** — https://claude.ai/ar
 | D16 Đối tác & công trình | `D16-Partners.dc.html` | `master-data` | Đã duyệt |
 | D10 Tồn kho tổng hợp | `D10-Stock.dc.html` | `inventory-ledger` | Đã duyệt |
 | D11 Thẻ kho | `D11-StockCard.dc.html` | `inventory-ledger` | Đã duyệt |
+| D2 Danh sách đơn thu mua | `D2-PurchaseOrders.dc.html` | `purchase-orders` | Chờ duyệt |
+| M1 Việc hôm nay | `M1-Today.dc.html` | `goods-receipt` | Chờ duyệt |
+| M2 Quét mã | `M2-Scan.dc.html` | `goods-receipt` | Chờ duyệt |
+| M3 Nhập thực tế từ đơn mua | `M3-GoodsReceipt.dc.html` | `goods-receipt` | Chờ duyệt |
+| M7 Lịch sử | `M7-History.dc.html` | `goods-receipt` | Chờ duyệt |
 
 Cách dùng khi propose: mở canvas → **Export → Hand off to Claude Code** → dán đoạn handoff vào `/opsx:propose <change>`. Thiết kế là tham chiếu bố cục; quy tắc trong `openspec/specs/` và tài liệu này vẫn thắng nếu khác nhau.
 
