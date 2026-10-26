@@ -2,11 +2,11 @@
 
 ## 1. Khởi tạo dự án
 
-- [ ] 1.1 Tạo dự án Next.js (App Router, TypeScript, `src/`, npm) ngay tại thư mục repo, không ghi đè `docs/`, `openspec/`, `CLAUDE.md`, `README.md`; ghim phiên bản chính xác, thêm `.nvmrc` = `24` — kiểm tra: `npm run dev` mở được `http://localhost:3000`
-- [ ] 1.2 Bật `strict` + `noUncheckedIndexedAccess` trong `tsconfig.json`, thêm script `typecheck` — kiểm tra: `npm run typecheck` không lỗi
-- [ ] 1.3 Cấu hình ESLint (flat config của Next.js) + Prettier (`prettier-plugin-tailwindcss`), script `lint`, `format` — kiểm tra: `npm run lint` không lỗi
-- [ ] 1.4 Thêm header bảo mật trong `next.config.ts` theo design D16 — kiểm tra: `curl -I localhost:3000` thấy đủ 4 header
-- [ ] 1.5 Cập nhật mục **Stack** trong `CLAUDE.md` (Drizzle, Better Auth cho change 2, Vitest + Playwright, Docker Compose) và bỏ dòng "Chưa chốt" — kiểm tra: đọc lại `CLAUDE.md` khớp design
+- [x] 1.1 Tạo dự án Next.js (App Router, TypeScript, `src/`, npm) ngay tại thư mục repo, không ghi đè `docs/`, `openspec/`, `CLAUDE.md`, `README.md`; ghim phiên bản chính xác, thêm `.nvmrc` = `24` — kiểm tra: `npm run dev` mở được `http://localhost:3000`
+- [x] 1.2 Bật `strict` + `noUncheckedIndexedAccess` trong `tsconfig.json`, thêm script `typecheck` — kiểm tra: `npm run typecheck` không lỗi
+- [x] 1.3 Cấu hình ESLint (flat config của Next.js) + Prettier (`prettier-plugin-tailwindcss`), script `lint`, `format` — kiểm tra: `npm run lint` không lỗi
+- [x] 1.4 Thêm header bảo mật trong `next.config.ts` theo design D16 — kiểm tra: `curl -I localhost:3000` thấy đủ 4 header
+- [x] 1.5 Cập nhật mục **Stack** trong `CLAUDE.md` (Drizzle, Better Auth cho change 2, Vitest + Playwright, Docker Compose) và bỏ dòng "Chưa chốt" — kiểm tra: đọc lại `CLAUDE.md` khớp design
 
 ## 2. Bộ test
 

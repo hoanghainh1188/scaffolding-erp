@@ -26,12 +26,14 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 
 ## Stack
 
-- **Next.js** (App Router) + **TypeScript** (strict) — làm cả giao diện và API.
-- **PostgreSQL**.
-- **Tailwind CSS** + **shadcn/ui**. Design system: **Bright Blue Base**.
-- Hai giao diện: `(desktop)` cho văn phòng, `(mobile)` PWA cho thủ kho/xưởng.
-
-> Chưa chốt: ORM, thư viện auth, test runner. Change `setup-project` sẽ quyết định và cập nhật mục này.
+- **Next.js 16** (App Router, Cache Components bật sẵn) + **TypeScript** (strict, `noUncheckedIndexedAccess`) — làm cả giao diện và API. Node 24, quản lý gói bằng `npm`.
+- **PostgreSQL 17** chạy local bằng **Docker Compose**.
+- ORM: **Drizzle** (`drizzle-orm` + driver `postgres`). Migration là file SQL trong `drizzle/`, chạy bằng `npm run db:migrate`; không dùng `drizzle-kit push`.
+- Đăng nhập: **Better Auth** — cài ở change `auth-and-roles`. Trước đó dùng người dùng giả lập (chỉ ở dev).
+- Test: **Vitest** (unit, component, integration) + **Playwright** (E2E trên Edge; ảnh mốc chỉ chạy trên CI).
+- **Tailwind CSS 4** + **shadcn/ui**. Design system: **Bright Blue Base** (token sinh từ `docs/design-system/tokens.json`).
+- Hai giao diện: `(desktop)` cho văn phòng, `(mobile)` PWA ở `/m` cho thủ kho/xưởng.
+- Next.js 16 khác nhiều so với bản cũ: tra `node_modules/next/dist/docs/` trước khi dùng API lạ (xem `AGENTS.md`).
 
 ## Lệnh thường dùng
 
