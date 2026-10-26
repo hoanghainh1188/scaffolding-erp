@@ -67,6 +67,28 @@ test.describe("desktop shell", () => {
   });
 });
 
+test.describe("desktop shell when printing", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      !runOnlyIn(testInfo, "desktop-1366"),
+      "one print check is enough",
+    );
+  });
+
+  test("prints only the content, without sidebar and header", async ({
+    page,
+  }) => {
+    await page.goto("/inventory");
+    await waitForHydration(page, DESKTOP_READY);
+    await page.emulateMedia({ media: "print" });
+    await expect(page.locator("[data-slot=sidebar]")).toBeHidden();
+    await expect(page.locator("header")).toBeHidden();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Kho" }),
+    ).toBeVisible();
+  });
+});
+
 test.describe("desktop shell at other widths", () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(!runOnlyIn(testInfo, "desktop-1366"), "sets its own viewport");

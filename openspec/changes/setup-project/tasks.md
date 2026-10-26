@@ -79,7 +79,7 @@
 ## 11. Kiểm tra thủ công
 
 - [ ] 11.1 Từ máy sạch: `npm ci` → `npm run db:up` → `npm run db:migrate` → `npm run dev`; đi qua Desktop với 3 vai trò `DIRECTOR`, `ACCOUNTANT`, `SALES` và Mobile với `WAREHOUSE` (Desktop tự chuyển sang `/m`) và `DIRECTOR` (mở `/m` bình thường); tắt mạng trên Mobile thấy thanh báo; trên máy **Windows 10/11 + Edge** mở Desktop ở 1280 và 1366px xem chữ tiếng Việt hai font hiển thị đúng, không cuộn ngang, và bản xem trước khi in (Ctrl+P) không có sidebar/header; trên **Chrome macOS** đi qua Desktop; trên **Safari iPhone** (có thanh vuốt) mở `/m`: tab không bị thanh vuốt đè, chạm ô số lượng ở `/dev/components` thì bàn phím không che ô; trên **Chrome Android** 360px không cuộn ngang — kiểm tra: ghi kết quả vào mô tả PR
-- [ ] 11.2 Chạy `openspec validate setup-project --strict` — kiểm tra: không lỗi
+- [x] 11.2 Chạy `openspec validate setup-project --strict` — kiểm tra: không lỗi
 
 ## Workflow follow-up
 
