@@ -111,7 +111,7 @@ docker/postgres/init.sql          # tạo DB test
 - `addQuantity`/`subtractQuantity` ném lỗi khi khác đơn vị. Quy đổi cái ↔ kg (theo trọng lượng chuẩn) và đơn vị khác (tấn, bộ) **không** làm ở đây — thuộc `master-data`/`purchase-orders`.
 - Dạng sửa: `formatQuantityForInput` → `"1234,5"` (không ngăn cách hàng nghìn); `formatMoneyForInput` → `"1250000"`. Ô nhập hiện dạng sửa khi focus, dạng hiển thị khi blur.
 - Đọc chuỗi: không nhận dấu ngăn cách hàng nghìn; `.` và `,` đều là dấu thập phân. Nhờ quy tắc "cái là số nguyên", gõ "1.234" cái bị báo lỗi thay vì âm thầm thành 1,234 cái.
-- Chuỗi **chưa rõ** với kg: khớp `^-?\d+\.\d{3}$` (dấu chấm, đúng 3 chữ số sau, không dấu phẩy) như "1.234", "12.500" — người Việt có thể muốn 1234 hoặc 1,234. `parseQuantity` ném `DomainValueError("Chưa rõ số này. Gõ 1234 hoặc 1,234")`. Kiểm tra này chạy **trước** khi đổi `.` thành dấu thập phân. "250.5", "0.75", "1,234" không khớp nên đọc bình thường. Dạng sửa (`formatQuantityForInput`) luôn dùng dấu phẩy nên đọc lại không bao giờ rơi vào trường hợp chưa rõ.
+- Chuỗi **chưa rõ** với kg: khớp `^-?[1-9]\d*\.\d{3}$` (dấu chấm, đúng 3 chữ số sau, không dấu phẩy) như "1.234", "12.500" (chuỗi bắt đầu bằng "0." như "0.500" không khớp vì không thể là số hàng nghìn, đọc ra 0,5) — người Việt có thể muốn 1234 hoặc 1,234. `parseQuantity` ném `DomainValueError("Chưa rõ số này. Gõ 1234 hoặc 1,234")`. Kiểm tra này chạy **trước** khi đổi `.` thành dấu thập phân. Chuỗi có từ hai dấu chấm trở lên (VD "1.234.567") bị từ chối với "Số lượng không hợp lệ. Không dùng dấu chấm ngăn cách hàng nghìn". "250.5", "0.75", "1,234" không khớp nên đọc bình thường. Dạng sửa (`formatQuantityForInput`) luôn dùng dấu phẩy nên đọc lại không bao giờ rơi vào trường hợp chưa rõ.
 - DB: `numeric(14,3)`; driver trả chuỗi → `quantityFromDb("250.500")` đổi bằng xử lý chuỗi, **không** qua `parseFloat`.
 - Giới hạn `numeric(14,3)` = 99.999.999.999,999 → × 1000 ≈ 10¹⁴ < 2⁵³, an toàn.
 - Phép nhân số lượng × đơn giá và quy tắc làm tròn **không** làm ở đây; change `inventory-ledger` sẽ định nghĩa.
@@ -276,7 +276,7 @@ docker/postgres/init.sql          # tạo DB test
 ### D18. In chứng từ qua một hàm chung
 
 - `src/lib/print.ts` export `printDocument(options?: { title?: string })`. Bản đầu: nếu có `title` thì đặt tạm `document.title` (Edge dùng làm tên file khi "Lưu dạng PDF"), gọi `window.print()`, trả lại tiêu đề cũ ở sự kiện `afterprint`.
-- Đây là **chỗ duy nhất** được gọi `window.print()`. ESLint (`no-restricted-properties`) chặn `window.print` ở mọi file khác. Sau này đổi sang PDF do server tạo hoặc in qua dịch vụ khác thì chỉ sửa file này.
+- Đây là **chỗ duy nhất** được gọi `window.print()`. ESLint chặn ở mọi file khác cả `window.print()` / `globalThis.print()` (`no-restricted-properties`) lẫn `print()` trần (`no-restricted-globals`). Sau này đổi sang PDF do server tạo hoặc in qua dịch vụ khác thì chỉ sửa file này.
 - Khung giao diện (sidebar, header, BottomNav, AppBar, OfflineBanner) có lớp `print:hidden` để bản in chỉ còn nội dung.
 - Unit test (jsdom): giả `window.print`, kiểm tra được gọi đúng một lần, tiêu đề đổi khi in và được trả lại sau `afterprint`.
 - *Đã cân nhắc:* tạo PDF phía server ngay từ đầu → thêm thư viện, chưa có mẫu in nào để cần; hộp thoại in của Edge đã có "Lưu dạng PDF".
