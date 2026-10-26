@@ -152,7 +152,7 @@ docker/postgres/init.sql          # tạo DB test
 ### D11. API response và `GET /api/health`
 
 - Envelope chung cho mọi API: `{ success: boolean, data: T | null, error: string | null }` qua `ok(data)` / `fail(message, status)` trong `src/lib/api-response.ts`.
-- `GET /api/health`: `dynamic = 'force-dynamic'`; chạy `select 1` với giới hạn 3 giây (`Promise.race` + `connect_timeout`).
+- `GET /api/health`: gọi `await connection()` đầu hàm (Next 16 bật Cache Components nên `dynamic = 'force-dynamic'` không còn dùng được; `connection()` giữ route chạy lúc có request, không prerender); chạy `select 1` với giới hạn 3 giây (`Promise.race` + `connect_timeout`).
 
 | Kết quả | HTTP | Body |
 |---|---|---|
