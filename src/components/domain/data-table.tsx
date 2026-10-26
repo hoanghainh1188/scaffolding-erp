@@ -212,22 +212,9 @@ function DataTableContent<TData>({
               </tr>
             ))}
           </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="px-4 py-16">
-                  <div className="flex flex-col items-center gap-4 text-center">
-                    <p className="text-body-lg text-muted-foreground">
-                      {emptyState.message}
-                    </p>
-                    {emptyState.action && (
-                      <EmptyAction action={emptyState.action} />
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              rows.map((row) => (
+          {rows.length > 0 && (
+            <tbody>
+              {rows.map((row) => (
                 <tr key={row.id} className="group/row">
                   {row.getVisibleCells().map((cell, index) => (
                     <td
@@ -245,11 +232,19 @@ function DataTableContent<TData>({
                     </td>
                   ))}
                 </tr>
-              ))
-            )}
-          </tbody>
+              ))}
+            </tbody>
+          )}
         </table>
       </div>
+      {rows.length === 0 && (
+        <div className="flex flex-col items-center gap-4 px-4 py-16 text-center">
+          <p className="text-body-lg text-muted-foreground">
+            {emptyState.message}
+          </p>
+          {emptyState.action && <EmptyAction action={emptyState.action} />}
+        </div>
+      )}
       {total > 0 && (
         <div className="flex items-center justify-end gap-2 px-4 py-2">
           <span className="text-caption text-muted-foreground tabular-nums">

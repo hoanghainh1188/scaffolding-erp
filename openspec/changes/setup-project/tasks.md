@@ -63,11 +63,11 @@
 
 ## 9. Kiểm tra E2E, giao diện và a11y
 
-- [ ] 9.1 E2E `tests/e2e/desktop-shell.spec.ts`: `/` → `/dashboard`, mục đang chọn khi ở `/inventory`, thu gọn sidebar rồi tải lại vẫn thu gọn, ngăn trượt ở 768px, trang giữ chỗ "Báo cáo", header 375px có nút "Tìm kiếm" thay ô nhập — kiểm tra: `npm run test:e2e` xanh
-- [ ] 9.2 E2E `tests/e2e/mobile-shell.spec.ts`: 4 tab, vai trò `DIRECTOR` mở `/m/history` vẫn ở khu Mobile, nút quay lại của app bar, thanh "Mất kết nối" khi `context.setOffline(true)` và biến mất khi `false`, manifest — kiểm tra: `npm run test:e2e` xanh
-- [ ] 9.3 Quét axe `/dashboard`, `/m`, `/dev/components` không có lỗi `serious`/`critical` (gồm tương phản badge 4.5:1) — kiểm tra: `npm run test:e2e` xanh ở local
-- [ ] 9.4 `tests/e2e/visual.spec.ts` gắn thẻ `@visual`: ảnh `/dashboard`, `/m`, `/dev/components` ở 360, 375, 768, 1024, 1280, 1366px; `snapshotPathTemplate` không chứa tên hệ điều hành; `test:e2e` local dùng `--grep-invert @visual` — kiểm tra: `npm run test:e2e` ở local không chạy và không tạo ảnh nào
-- [ ] 9.5 `tests/e2e/responsive.spec.ts`: `/dashboard`, `/inventory`, `/m`, `/m/history`, `/dev/components` ở 360, 375, 768, 1024, 1280, 1366px có `document.documentElement.scrollWidth <= window.innerWidth`; sidebar khi chưa bấm là ngăn trượt / chỉ biểu tượng / mở rộng ở 900 / 1100 / 1366px; bấm mở rộng ở 1100px rồi tải lại vẫn mở rộng; `/m` ở 1366px rộng 640px căn giữa; bảng 10 cột ở `/dev/components` cuộn trong khung với cột đầu đứng yên — kiểm tra: `npm run test:e2e` xanh
+- [x] 9.1 E2E `tests/e2e/desktop-shell.spec.ts`: `/` → `/dashboard`, mục đang chọn khi ở `/inventory`, thu gọn sidebar rồi tải lại vẫn thu gọn, ngăn trượt ở 768px, trang giữ chỗ "Báo cáo", header 375px có nút "Tìm kiếm" thay ô nhập — kiểm tra: `npm run test:e2e` xanh
+- [x] 9.2 E2E `tests/e2e/mobile-shell.spec.ts`: 4 tab, vai trò `DIRECTOR` mở `/m/history` vẫn ở khu Mobile, nút quay lại của app bar, thanh "Mất kết nối" khi `context.setOffline(true)` và biến mất khi `false`, manifest — kiểm tra: `npm run test:e2e` xanh
+- [x] 9.3 Quét axe `/dashboard`, `/m`, `/dev/components` không có lỗi `serious`/`critical` (gồm tương phản badge 4.5:1) — kiểm tra: `npm run test:e2e` xanh ở local
+- [x] 9.4 `tests/e2e/visual.spec.ts` gắn thẻ `@visual`: ảnh `/dashboard`, `/m`, `/dev/components` ở 360, 375, 768, 1024, 1280, 1366px; `snapshotPathTemplate` không chứa tên hệ điều hành; `test:e2e` local dùng `--grep-invert @visual` — kiểm tra: `npm run test:e2e` ở local không chạy và không tạo ảnh nào
+- [x] 9.5 `tests/e2e/responsive.spec.ts`: `/dashboard`, `/inventory`, `/m`, `/m/history`, `/dev/components` ở 360, 375, 768, 1024, 1280, 1366px có `document.documentElement.scrollWidth <= window.innerWidth`; sidebar khi chưa bấm là ngăn trượt / chỉ biểu tượng / mở rộng ở 900 / 1100 / 1366px; bấm mở rộng ở 1100px rồi tải lại vẫn mở rộng; `/m` ở 1366px rộng 640px căn giữa; bảng 10 cột ở `/dev/components` cuộn trong khung với cột đầu đứng yên — kiểm tra: `npm run test:e2e` xanh
 - [ ] 9.6 `tests/e2e/basic-browsers.spec.ts` thẻ `@basic` chạy trên Firefox và WebKit: mở `/dashboard` và `/m` không lỗi console, không cuộn ngang, bấm được một mục menu và một tab — kiểm tra: `npm run test:e2e` xanh trên project `firefox` và `webkit`
 
 ## 10. CI và tài liệu lệnh

@@ -26,6 +26,10 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  // "/" has no page of its own; the office dashboard is home (design D3).
+  async redirects() {
+    return [{ source: "/", destination: "/dashboard", permanent: false }];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
