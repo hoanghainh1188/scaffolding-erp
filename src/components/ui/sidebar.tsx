@@ -241,7 +241,7 @@ function Sidebar({
 
   return (
     <div
-      className="group peer hidden text-sidebar-foreground lg:block"
+      className="group peer hidden text-sidebar-foreground lg:block print:hidden"
       data-state={state}
       data-collapsible={
         state === "collapsed" ? collapsible : state === "auto" ? "auto" : ""
