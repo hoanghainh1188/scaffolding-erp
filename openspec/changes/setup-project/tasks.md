@@ -11,7 +11,7 @@
 ## 2. Bộ test
 
 - [x] 2.1 Cài Vitest với 3 project `unit` (node), `component` (jsdom + Testing Library), `integration` (node, cần `TEST_DATABASE_URL`, tự bỏ qua có thông báo khi thiếu ở local); script `test`, `test:unit`, `test:int`, `test:coverage` với ngưỡng 80% cho `src/domain/**`, `src/lib/**` — kiểm tra: một test mẫu mỗi project chạy xanh bằng `npm test`
-- [ ] 2.2 Cài Playwright + `@axe-core/playwright`; `playwright.config.ts` dùng kênh `msedge` (đổi được bằng `PW_CHANNEL`, máy không có Edge thì dùng Chromium), 2 project Desktop 1280×720 và 1366×768 + 1 project Mobile 375×812 (Edge), project `firefox` và `webkit` chỉ chạy thẻ `@basic`, `next dev` ở local và `next build && next start` khi `CI=true`, script `test:e2e` — kiểm tra: test mẫu mở `/` chạy xanh trên cả 5 project
+- [ ] 2.2 Cài Playwright + `@axe-core/playwright`; `playwright.config.ts` dùng kênh `msedge` (đổi được bằng `PW_CHANNEL`, máy không có Edge thì dùng Chromium), 2 project Desktop 1280×720 và 1366×768 + 1 project Mobile 375×812 (Edge), project `firefox` và `webkit` chỉ chạy thẻ `@basic`, `next dev` ở cả local lẫn CI với `E2E=1` (`next.config.ts` tắt `devIndicators` khi có biến này), script `test:e2e` — kiểm tra: test mẫu mở `/` chạy xanh trên cả 5 project
 
 ## 3. Cơ sở dữ liệu
 
@@ -56,10 +56,10 @@
 
 ## 8. Layout Mobile và PWA
 
-- [ ] 8.1 `(mobile)/m/layout.tsx` (không kiểm tra vai trò — mọi vai trò vào được) + `BottomNav` (4 tab, vùng bấm ≥ 48px, tab đang chọn nền `accent` bo `radius-pill`) + `AppBar` (`title` họ chữ `display`, `backHref?`) + 4 trang giữ chỗ; khung và BottomNav `max-w-[640px]` căn giữa; `viewport-fit=cover`, `safe-area-inset-*` cho AppBar/BottomNav, `min-h-dvh` — kiểm tra: ở 375px chuyển qua lại 4 tab đúng đường dẫn; ở 1366px khung rộng 640px căn giữa; DevTools giả lập iPhone thấy tab nằm trên vùng an toàn; `DEV_ROLE=DIRECTOR` mở `/m/history` không bị chuyển đi
-- [ ] 8.2 `useOnlineStatus` + `OfflineBanner` ("Mất kết nối", `role="status"`); component test giả lập sự kiện `offline`/`online` — kiểm tra: `npm test` xanh
-- [ ] 8.3 `src/app/manifest.ts` + biểu tượng tạm 192/512 trong `public/icons/`, `theme_color`/`background_color` đọc từ `tokens.json` — kiểm tra: `curl localhost:3000/manifest.webmanifest` có `start_url: "/m"`, `display: "standalone"`, `theme_color: "#1D5BFF"`, 2 biểu tượng; Chrome DevTools → Application báo cài được
-- [ ] 8.4 Hook `useKeepFocusedInputVisible()` gắn ở `MobileShell` theo design D14 (`focusin` + `visualViewport.resize` → `scrollIntoView({ block: 'center' })`, tôn trọng `prefers-reduced-motion`); component test giả `visualViewport` co lại khi một ô đang focus nằm dưới mép → `scrollIntoView` được gọi, ô nằm trong vùng nhìn thấy → không gọi — kiểm tra: `npm test` xanh
+- [x] 8.1 `(mobile)/m/layout.tsx` (không kiểm tra vai trò — mọi vai trò vào được) + `BottomNav` (4 tab, vùng bấm ≥ 48px, tab đang chọn nền `accent` bo `radius-pill`) + `AppBar` (`title` họ chữ `display`, `backHref?`) + 4 trang giữ chỗ; khung và BottomNav `max-w-[640px]` căn giữa; `viewport-fit=cover`, `safe-area-inset-*` cho AppBar/BottomNav, `min-h-dvh` — kiểm tra: ở 375px chuyển qua lại 4 tab đúng đường dẫn; ở 1366px khung rộng 640px căn giữa; DevTools giả lập iPhone thấy tab nằm trên vùng an toàn; `DEV_ROLE=DIRECTOR` mở `/m/history` không bị chuyển đi
+- [x] 8.2 `useOnlineStatus` + `OfflineBanner` ("Mất kết nối", `role="status"`); component test giả lập sự kiện `offline`/`online` — kiểm tra: `npm test` xanh
+- [x] 8.3 `src/app/manifest.ts` + biểu tượng tạm 192/512 trong `public/icons/`, `theme_color`/`background_color` đọc từ `tokens.json` — kiểm tra: `curl localhost:3000/manifest.webmanifest` có `start_url: "/m"`, `display: "standalone"`, `theme_color: "#1D5BFF"`, 2 biểu tượng; Chrome DevTools → Application báo cài được
+- [x] 8.4 Hook `useKeepFocusedInputVisible()` gắn ở `MobileShell` theo design D14 (`focusin` + `visualViewport.resize` → `scrollIntoView({ block: 'center' })`, tôn trọng `prefers-reduced-motion`); component test giả `visualViewport` co lại khi một ô đang focus nằm dưới mép → `scrollIntoView` được gọi, ô nằm trong vùng nhìn thấy → không gọi — kiểm tra: `npm test` xanh
 
 ## 9. Kiểm tra E2E, giao diện và a11y
 
@@ -72,7 +72,7 @@
 
 ## 10. CI và tài liệu lệnh
 
-- [ ] 10.1 `.github/workflows/ci.yml` theo design D16 (trigger `push`, `pull_request`, `workflow_dispatch`; service Postgres; cài trình duyệt bằng `npx playwright install --with-deps msedge firefox webkit`; lint, typecheck, migrate, test gồm chống lệch token, build, Playwright gồm `@visual`, tải ảnh khác biệt lên artifact khi lỗi) — kiểm tra: chạy thử trên nhánh, mọi bước xanh trừ `@visual` khi chưa có ảnh mốc
+- [ ] 10.1 `.github/workflows/ci.yml` theo design D16 (trigger `push`, `pull_request`, `workflow_dispatch`; service Postgres; cài trình duyệt bằng `npx playwright install --with-deps msedge firefox webkit`; lint, typecheck, migrate, test gồm chống lệch token, `npm run build` để chắc bản production build được, Playwright chạy trên `next dev` gồm `@visual`, tải ảnh khác biệt lên artifact khi lỗi) — kiểm tra: chạy thử trên nhánh, mọi bước xanh trừ `@visual` khi chưa có ảnh mốc
 - [ ] 10.2 `.github/workflows/update-snapshots.yml` (`workflow_dispatch`, quyền `contents: write` + `actions: write`): chạy `@visual` với `--update-snapshots`, commit ảnh vào nhánh được chọn, rồi `gh workflow run ci.yml --ref <nhánh>`; chạy một lần để tạo ảnh mốc đầu tiên — kiểm tra: commit ảnh xuất hiện trên nhánh **và** tab Actions có một lần chạy `ci.yml` mới (sự kiện `workflow_dispatch`) trên đúng commit ảnh đó, tự bắt đầu không cần push thêm, xanh hoàn toàn và hiện trong mục check của PR
 - [ ] 10.3 Cập nhật mục **Lệnh thường dùng** trong `CLAUDE.md` và phần chạy local trong `README.md` theo bảng D17 (gồm `npm run tokens` và cách cập nhật ảnh mốc bằng workflow chạy tay) — kiểm tra: mọi lệnh ghi trong tài liệu chạy được đúng như mô tả
 
