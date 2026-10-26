@@ -70,7 +70,7 @@ src/
 │   ├── schema/index.ts          # rỗng ở change này
 │   └── migrate.ts               # script chạy migration
 └── instrumentation.ts           # gọi kiểm tra env khi server khởi động
-scripts/build-tokens.ts           # tokens.json → src/styles/tokens.css
+scripts/build-tokens.mts           # tokens.json → src/styles/tokens.css
 drizzle/                          # file migration SQL (sinh + viết tay)
 tests/e2e/                        # Playwright
 docker/postgres/init.sql          # tạo DB test
@@ -163,13 +163,13 @@ docker/postgres/init.sql          # tạo DB test
 
 ### D12. Giao diện: Tailwind v4 + shadcn/ui + token Bright Blue Base từ `tokens.json`
 
-- Tailwind v4 (cấu hình trong CSS bằng `@theme`). shadcn/ui khởi tạo với kiểu `new-york`, biểu tượng `lucide-react`.
-- **Nguồn token:** `docs/design-system/tokens.json`. Script `scripts/build-tokens.ts` (`npm run tokens`) sinh `src/styles/tokens.css`:
+- Tailwind v4 (cấu hình trong CSS bằng `@theme`). shadcn/ui 4 (không còn kiểu `new-york`): khởi tạo với `--base radix`, preset Nova, biểu tượng `lucide-react`; hàm `cn` từ gói `cn` của shadcn, cấu hình trong `src/lib/utils.ts` để hiểu cỡ chữ token. Thang bo góc của preset được map sang token (nút/ô nhập `radius-md`, thẻ `radius-lg`, badge `radius-pill`); nút và ô nhập cao 44px (vùng bấm tối thiểu theo README).
+- **Nguồn token:** `docs/design-system/tokens.json`. Script `scripts/build-tokens.mts` (`npm run tokens`) sinh `src/styles/tokens.css`:
   - Màu chế độ Sáng → CSS variables trùng tên shadcn (`--background`, `--primary`, `--accent`, `--muted`, `--destructive`, `--ring`…) và các màu thêm `--highlight`, `--pop`, `--success`, `--warning` kèm `*-foreground`. Giá trị tham chiếu như `{primary}` được thay bằng giá trị thật.
   - Bo góc `--radius-sm/md/lg/xl/pill`, `--radius` = `radius-md` (biến của shadcn); khoảng cách `--space-1…16`; bóng `--shadow-popover`; kiểu chữ `display-xl`, `display`, `h1`, `h2`, `body-lg`, `body`, `label`, `caption`.
   - Khối `@theme inline` ánh xạ các biến sang tiện ích Tailwind (`bg-primary`, `text-success`, `rounded-lg`, `font-display`…).
   - Giá trị chế độ Tối **không** sinh ở change này (ngoài phạm vi).
-- **Chống lệch:** unit test chạy hàm sinh trên `tokens.json` và so với `src/styles/tokens.css` đã commit; lệch là test đỏ. ESLint chặn tên màu Tailwind cứng (`blue-600`, `slate-50`…) và mã hex trong `src/` (trừ file sinh).
+- **Chống lệch:** unit test chạy hàm sinh trên `tokens.json` và so với `src/styles/tokens.css` đã commit; lệch là test đỏ. `npm run lint` chạy thêm `scripts/check-colors.mts`: chặn tên màu Tailwind cứng (`blue-600`, `slate-50`, `text-white`…) và mã hex trong `src/` (trừ file sinh). Dùng script riêng thay cho plugin ESLint vì plugin Tailwind chưa hỗ trợ tốt Tailwind 4, và để không phải sửa `eslint.config.mjs` (hook `config-protection`).
 - **Font** qua `next/font/google`, `display: swap`, subset `vietnamese` + `latin`:
   - `display` = **Bricolage Grotesque** (700) cho tiêu đề trang, tiêu đề khối, con số lớn.
   - `body` = **Be Vietnam Pro** (400/500/600) cho nội dung, nhãn, nút. Ô nhập luôn 16px.

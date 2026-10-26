@@ -22,7 +22,8 @@
       "@/*": ["./src/*"]
     },
     "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+    "allowImportingTsExtensions": true
   },
   "include": [
     "next-env.d.ts",

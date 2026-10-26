@@ -14,3 +14,6 @@ openspec/
 .claude/
 CLAUDE.md
 AGENTS.md
+
+# Generated from tokens.json; the drift test compares it byte for byte
+src/styles/tokens.css
