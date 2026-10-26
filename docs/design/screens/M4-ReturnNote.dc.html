@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Phiếu thu hồi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F7F9FF}
+a{color:#1D5BFF}a:hover{color:#0F1A33}
+button,a,input,select{font-family:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #1D5BFF;outline-offset:2px}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1720px; box-sizing: border-box; background: #F7F9FF; color: #0F1A33; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 16px; line-height: 24px; overflow: hidden;">
+
+  <header style="box-sizing: border-box; height: 64px; padding: 0 8px; background: #FFFFFF; border-bottom: 1px solid #E1E7F5; display: flex; align-items: center; gap: 4px;">
+    <a href="#" aria-label="Quay lại" style="width: 48px; height: 48px; border-radius: 12px; color: #0F1A33; display: inline-flex; align-items: center; justify-content: center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></a>
+    <div style="display: flex; flex-direction: column; min-width: 0;">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 20px; line-height: 24px; font-weight: 700;">Phiếu thu hồi</h1>
+      <span style="font-size: 12px; line-height: 16px; font-weight: 500; color: #55607A;">Nháp · đã lưu trên máy lúc 08:15</span>
+    </div>
+  </header>
+
+  <main style="box-sizing: border-box; padding: 16px 16px 112px; display: flex; flex-direction: column; gap: 24px;">
+
+    <section aria-labelledby="s-general" style="background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+      <h2 id="s-general" style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 18px; line-height: 24px; font-weight: 700;">Công trình trả hàng</h2>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label for="site" style="font-size: 14px; line-height: 20px; font-weight: 600;">Công trình</label>
+        <select id="site" style="box-sizing: border-box; height: 48px; padding: 0 12px; border: 1px solid #E1E7F5; border-radius: 12px; background: #FFFFFF; color: #0F1A33; font-size: 16px;"><option>Chung cư An Phú – Block B</option></select>
+        <span style="font-size: 13px; line-height: 18px; color: #55607A;">Cty TNHH Xây dựng Minh Phát · HĐ-2026-031</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label for="plate" style="font-size: 14px; line-height: 20px; font-weight: 600;">Biển số xe</label>
+        <input id="plate" type="text" value="29C-456.78" style="box-sizing: border-box; height: 48px; padding: 0 12px; border: 1px solid #E1E7F5; border-radius: 12px; color: #0F1A33; font-size: 16px;">
+      </div>
+    </section>
+
+    <section aria-labelledby="s-items" style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px;">
+        <h2 id="s-items" style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 18px; line-height: 24px; font-weight: 700;">Vật tư trả về</h2>
+        <span style="font-size: 13px; line-height: 18px; color: #55607A;">2/3 mã đã đếm</span>
+      </div>
+
+      <article aria-label="Khung giàn giáo 1,7m" style="background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <h3 style="margin: 0; font-size: 17px; line-height: 24px; font-weight: 700;">Khung giàn giáo 1,7m</h3>
+          <p style="margin: 0; font-size: 13px; line-height: 18px; color: #55607A;">Đang ở công trình: 120 cái</p>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <span id="t1" style="font-size: 14px; font-weight: 600;">Tổng trả về</span>
+          <div role="group" aria-labelledby="t1" style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" aria-label="Giảm 1" style="width: 48px; height: 48px; border: 0; border-radius: 12px; background: #EEF3FF; color: #0F1A33; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+            <input type="text" inputmode="numeric" value="100" aria-label="Tổng trả về khung 1,7m" style="box-sizing: border-box; width: 76px; height: 48px; border: 1px solid #E1E7F5; border-radius: 12px; text-align: center; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 22px; font-weight: 700; color: #0F1A33; font-variant-numeric: tabular-nums;">
+            <button type="button" aria-label="Tăng 1" style="width: 48px; height: 48px; border: 0; border-radius: 12px; background: #1D5BFF; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+          <label style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid #E1E7F5; border-radius: 12px;"><span style="align-self: flex-start; border-radius: 9999px; border: 1px solid #12805C; color: #12805C; font-size: 12px; line-height: 16px; font-weight: 600; padding: 2px 10px;">Tốt</span><input type="text" inputmode="numeric" value="80" style="box-sizing: border-box; height: 44px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 18px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid #E1E7F5; border-radius: 12px;"><span style="align-self: flex-start; border-radius: 9999px; border: 1px solid #A65B00; color: #A65B00; font-size: 12px; line-height: 16px; font-weight: 600; padding: 2px 10px;">Chờ sửa</span><input type="text" inputmode="numeric" value="15" style="box-sizing: border-box; height: 44px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 18px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid #E1E7F5; border-radius: 12px;"><span style="align-self: flex-start; border-radius: 9999px; background: #EEF3FF; color: #55607A; font-size: 12px; line-height: 16px; font-weight: 600; padding: 3px 10px;">Phế liệu</span><input type="text" inputmode="numeric" value="3" style="box-sizing: border-box; height: 44px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 18px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid #E1E7F5; border-radius: 12px;"><span style="align-self: flex-start; border-radius: 9999px; background: #C8262D; color: #FFFFFF; font-size: 12px; line-height: 16px; font-weight: 600; padding: 3px 10px;">Mất</span><input type="text" inputmode="numeric" value="2" style="box-sizing: border-box; height: 44px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 18px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+        </div>
+        <p role="status" style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; font-weight: 600; color: #12805C;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Đã chia đủ 100 cái</p>
+      </article>
+
+      <article aria-label="Chéo giàn giáo" style="background: #FFFFFF; border: 1px solid #A65B00; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <h3 style="margin: 0; font-size: 17px; line-height: 24px; font-weight: 700;">Chéo giàn giáo</h3>
+          <p style="margin: 0; font-size: 13px; line-height: 18px; color: #55607A;">Đang ở công trình: 260 cái</p>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <span id="t2" style="font-size: 14px; font-weight: 600;">Tổng trả về</span>
+          <div role="group" aria-labelledby="t2" style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" aria-label="Giảm 1" style="width: 48px; height: 48px; border: 0; border-radius: 12px; background: #EEF3FF; color: #0F1A33; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+            <input type="text" inputmode="numeric" value="240" aria-label="Tổng trả về chéo" style="box-sizing: border-box; width: 76px; height: 48px; border: 1px solid #E1E7F5; border-radius: 12px; text-align: center; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 22px; font-weight: 700; color: #0F1A33; font-variant-numeric: tabular-nums;">
+            <button type="button" aria-label="Tăng 1" style="width: 48px; height: 48px; border: 0; border-radius: 12px; background: #1D5BFF; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+          <label style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid #E1E7F5; border-radius: 12px;"><span style="align-self: flex-start; border-radius: 9999px; border: 1px solid #12805C; color: #12805C; font-size: 12px; line-height: 16px; font-weight: 600; padding: 2px 10px;">Tốt</span><input type="text" inputmode="numeric" value="230" style="box-sizing: border-box; height: 44px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 18px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid #E1E7F5; border-radius: 12px;"><span style="align-self: flex-start; border-radius: 9999px; border: 1px solid #A65B00; color: #A65B00; font-size: 12px; line-height: 16px; font-weight: 600; padding: 2px 10px;">Chờ sửa</span><input type="text" inputmode="numeric" value="5" style="box-sizing: border-box; height: 44px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 18px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid #E1E7F5; border-radius: 12px;"><span style="align-self: flex-start; border-radius: 9999px; background: #EEF3FF; color: #55607A; font-size: 12px; line-height: 16px; font-weight: 600; padding: 3px 10px;">Phế liệu</span><input type="text" inputmode="numeric" value="0" style="box-sizing: border-box; height: 44px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 18px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid #E1E7F5; border-radius: 12px;"><span style="align-self: flex-start; border-radius: 9999px; background: #C8262D; color: #FFFFFF; font-size: 12px; line-height: 16px; font-weight: 600; padding: 3px 10px;">Mất</span><input type="text" inputmode="numeric" value="0" style="box-sizing: border-box; height: 44px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 18px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+        </div>
+        <p role="status" style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; font-weight: 600; color: #A65B00;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Còn 5 cái chưa phân loại</p>
+      </article>
+
+      <article aria-label="Mâm giàn giáo 1,6m" style="background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+        <div style="flex: 1 1 auto; min-width: 0;">
+          <h3 style="margin: 0; font-size: 17px; line-height: 24px; font-weight: 700;">Mâm giàn giáo 1,6m</h3>
+          <p style="margin: 0; font-size: 13px; line-height: 18px; color: #55607A;">Đang ở công trình: 60 cái · chưa đếm</p>
+        </div>
+        <button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #EEF3FF; color: #0F1A33; font-size: 14px; font-weight: 600; cursor: pointer;">Đếm</button>
+      </article>
+
+      <button type="button" style="height: 48px; border: 1px dashed #A6B0CC; border-radius: 12px; background: #FFFFFF; color: #0F1A33; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Thêm mã hàng</button>
+    </section>
+
+    <section aria-labelledby="s-photos" style="background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <h2 id="s-photos" style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 18px; line-height: 24px; font-weight: 700;">Ảnh hiện trạng</h2>
+        <p style="margin: 0; font-size: 13px; line-height: 18px; color: #55607A;">Chụp hàng móp, gãy để làm bằng chứng tính đền bù.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+        <div role="img" aria-label="Ảnh 1: khung 1,7m bị móp" style="aspect-ratio: 1 / 1; border-radius: 12px; background: #E3ECFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #55607A; font-size: 12px; line-height: 16px; font-weight: 500; text-align: center; padding: 6px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>[Ảnh khung móp]</div>
+        <div role="img" aria-label="Ảnh 2: chéo bị cong" style="aspect-ratio: 1 / 1; border-radius: 12px; background: #E3ECFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #55607A; font-size: 12px; line-height: 16px; font-weight: 500; text-align: center; padding: 6px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>[Ảnh chéo cong]</div>
+        <button type="button" style="aspect-ratio: 1 / 1; border: 1px dashed #A6B0CC; border-radius: 12px; background: #FFFFFF; color: #1D5BFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-3z"/><circle cx="12" cy="13" r="3.5"/></svg>Chụp ảnh</button>
+      </div>
+    </section>
+  </main>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 12px 16px 28px; background: #FFFFFF; border-top: 1px solid #E1E7F5; display: flex; gap: 10px;">
+    <button type="button" style="flex: 1 1 0; height: 52px; border: 0; border-radius: 12px; background: #EEF3FF; color: #0F1A33; font-size: 15px; font-weight: 600; cursor: pointer;">Lưu nháp</button>
+    <button type="button" style="flex: 2 1 0; height: 52px; border: 0; border-radius: 12px; background: #1D5BFF; color: #FFFFFF; font-size: 15px; font-weight: 600; cursor: pointer;">Lưu phiếu thu hồi</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
