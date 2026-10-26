@@ -34,6 +34,10 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 15 | Duyệt hợp đồng khi nhà thầu nợ quá hạn | **Chỉ cảnh báo**, không chặn. Giám đốc vẫn duyệt được nhưng **bắt buộc ghi lý do**. Lý do lưu cùng lần duyệt (chốt 26/10/2026) |
 | 16 | Sửa hợp đồng đã duyệt | Không sửa thẳng. Đổi hàng, giá, đền bù hay thời hạn thì tạo **phụ lục**, Giám đốc **duyệt lại**. Giá mới chỉ tính **từ ngày hiệu lực** của phụ lục, không tính lại kỳ cũ (chốt 26/10/2026) |
 | 17 | Kho không đủ hàng khi xuất | **Cho xuất thiếu.** Thủ kho xác nhận số thực nhặt; phần còn thiếu tự chuyển sang **đợt sau** của hợp đồng (chốt 26/10/2026) |
+| 18 | Hạn thanh toán | **Ghi trong hợp đồng** (số ngày được nợ, mặc định lấy từ nhà thầu). Hạn = ngày chốt kỳ thuê / ngày duyệt đền bù / ngày giao hàng bán + số ngày đó. Quá hạn là trạng thái tính ra, không lưu (chốt 27/10/2026) |
+| 19 | Trừ tiền khi nhà thầu trả | **Tự trừ khoản đến hạn sớm nhất trước.** Kế toán đổi được nếu khách chỉ định trả khoản khác (chốt 27/10/2026) |
+| 20 | Đền bù theo tình trạng | Chờ sửa = giá "hỏng, sửa được". **Phế liệu = giá mất.** Mất = giá mất. Giám đốc được giảm trừ khi duyệt, **bắt buộc ghi lý do** (chốt 27/10/2026) |
+| 21 | Tiền thuê hàng mất | Hàng mất coi như **trả vào ngày lập phiếu thu hồi**: thôi tính thuê từ ngày đó, chỉ tính đền bù (chốt 27/10/2026) |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 
