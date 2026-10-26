@@ -38,6 +38,8 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 19 | Trừ tiền khi nhà thầu trả | **Tự trừ khoản đến hạn sớm nhất trước.** Kế toán đổi được nếu khách chỉ định trả khoản khác (chốt 27/10/2026) |
 | 20 | Đền bù theo tình trạng | Chờ sửa = giá "hỏng, sửa được". **Phế liệu = giá mất.** Mất = giá mất. Giám đốc được giảm trừ khi duyệt, **bắt buộc ghi lý do** (chốt 27/10/2026) |
 | 21 | Tiền thuê hàng mất | Hàng mất coi như **trả vào ngày lập phiếu thu hồi**: thôi tính thuê từ ngày đó, chỉ tính đền bù (chốt 27/10/2026) |
+| 22 | Kỳ tính tiền thuê đã chốt | **Khóa sau khi chốt.** Sai sót phát hiện sau đó ghi bằng **dòng điều chỉnh ở kỳ sau**, không sửa kỳ cũ (chốt 27/10/2026) |
+| 23 | Chi phí sửa chữa | Nhập **riêng cho từng mã hàng** trên phiếu sửa. Chi phí chỉ chia cho **hàng sửa xong** (về Tốt). Hàng hỏng hẳn sang Phế liệu giữ **giá vốn Chờ sửa**, không gánh chi phí sửa (chốt 27/10/2026) |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 
