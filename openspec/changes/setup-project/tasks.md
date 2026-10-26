@@ -10,7 +10,7 @@
 
 ## 2. Bộ test
 
-- [ ] 2.1 Cài Vitest với 3 project `unit` (node), `component` (jsdom + Testing Library), `integration` (node, cần `TEST_DATABASE_URL`, tự bỏ qua có thông báo khi thiếu ở local); script `test`, `test:unit`, `test:int`, `test:coverage` với ngưỡng 80% cho `src/domain/**`, `src/lib/**` — kiểm tra: một test mẫu mỗi project chạy xanh bằng `npm test`
+- [x] 2.1 Cài Vitest với 3 project `unit` (node), `component` (jsdom + Testing Library), `integration` (node, cần `TEST_DATABASE_URL`, tự bỏ qua có thông báo khi thiếu ở local); script `test`, `test:unit`, `test:int`, `test:coverage` với ngưỡng 80% cho `src/domain/**`, `src/lib/**` — kiểm tra: một test mẫu mỗi project chạy xanh bằng `npm test`
 - [ ] 2.2 Cài Playwright + `@axe-core/playwright`; `playwright.config.ts` dùng kênh `msedge` (đổi được bằng `PW_CHANNEL`, máy không có Edge thì dùng Chromium), 2 project Desktop 1280×720 và 1366×768 + 1 project Mobile 375×812 (Edge), project `firefox` và `webkit` chỉ chạy thẻ `@basic`, `next dev` ở local và `next build && next start` khi `CI=true`, script `test:e2e` — kiểm tra: test mẫu mở `/` chạy xanh trên cả 5 project
 
 ## 3. Cơ sở dữ liệu
