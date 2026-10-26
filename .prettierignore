@@ -1,0 +1,19 @@
+# Generated / vendored
+.next/
+out/
+build/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+drizzle/meta/
+
+# Hand-written Vietnamese docs and planning artifacts keep their own formatting
+docs/
+openspec/
+.claude/
+CLAUDE.md
+AGENTS.md
+
+# Generated from tokens.json; the drift test compares it byte for byte
+src/styles/tokens.css

@@ -1,0 +1,80 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* Bright Blue Base: colours, type, radius, spacing, shadow (generated). */
+@import "../styles/tokens.css";
+
+/* The MVP has a light theme only; `dark:` utilities never apply. */
+@custom-variant dark (&:is(.dark *));
+
+/* Icon-only desktop sidebar: chosen by the user (data-collapsible="icon"),
+   or by default between lg and xl when nothing is saved
+   (data-collapsible="auto"). CSS decides, so the first paint is right. */
+@custom-variant sidebar-collapsed {
+  &:where([data-collapsible="icon"] *) {
+    @slot;
+  }
+  @media (width >= 64rem) and (width < 80rem) {
+    &:where([data-collapsible="auto"] *) {
+      @slot;
+    }
+  }
+}
+
+/* shadcn sidebar colours, mapped onto design tokens: a light sidebar whose
+   active item uses `accent` (docs/design-system/README.md). */
+:root {
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-heading: var(--font-display);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-body text-foreground antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+  /* Keyboard focus: solid 2px ring, 2px away, on everything clickable. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
