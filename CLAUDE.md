@@ -120,6 +120,8 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 
 - Theo `docs/ui.md`. Dùng component shadcn/ui + token Bright Blue Base.
 - **Nguồn token duy nhất:** `docs/design-system/tokens.json`; quy tắc dùng màu, chữ, giọng văn ở `docs/design-system/README.md`. Không tự đoán mã màu, không dùng màu Tailwind cứng (`blue-600`, `slate-50`...).
+- **Thiết kế màn hình** đã vẽ: xem `docs/ui.md` mục 3.4 (link canvas Claude Design + artboard của từng màn).
+- **Viết tiền:** `1.250.000 ₫` theo spec `domain-values`, kể cả khi README Bright Blue Base ghi kiểu `đ`.
 - Không tự thêm thư viện UI khác khi chưa hỏi.
 - Desktop: bảng dữ liệu. Mobile: thẻ (card), nút to, stepper +/-.
 - Chữ trên giao diện: tiếng Việt.
