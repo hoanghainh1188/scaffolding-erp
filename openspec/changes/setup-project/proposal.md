@@ -14,12 +14,12 @@ Giai đoạn: **[MVP]** — change số 1 trong `docs/roadmap.md`.
   - Đăng nhập: **Better Auth** — chỉ chốt lựa chọn, **chưa cài** (làm ở change `auth-and-roles`).
   - Test: **Vitest** (unit + integration) và **Playwright** (E2E, chụp màn hình).
   - PostgreSQL local: **Docker Compose** (1 DB dev + 1 DB test).
-- Cài **Tailwind CSS + shadcn/ui**, khai báo token màu/chữ của **Bright Blue Base** dưới dạng CSS variables.
-- **Layout Desktop** (sidebar thu gọn được, menu lọc theo vai trò, header) — dùng cho D1..D17.
+- Cài **Tailwind CSS + shadcn/ui**. Token **Bright Blue Base** lấy từ `docs/design-system/tokens.json` (nguồn duy nhất), sinh ra CSS variables; hai font **Bricolage Grotesque** (tiêu đề, số lớn) và **Be Vietnam Pro** (nội dung).
+- **Layout Desktop** (sidebar nền sáng thu gọn được, mục đang chọn nền `accent`, menu lọc theo vai trò, header) — dùng cho D1..D17.
 - **Layout Mobile PWA** (thanh điều hướng 4 tab dưới đáy, app bar, thanh báo mất kết nối, manifest để cài lên màn hình chính) — dùng cho M1..M8.
 - Trang giữ chỗ ("Đang xây dựng") cho mỗi mục menu, để điều hướng không bị lỗi 404.
 - **Component nền**: `ConditionBadge`, `DocumentStatusBadge`, `LocationBadge`, `Stepper`, `DataTable`, `ConditionSplit`.
-- **Module giá trị nghiệp vụ** dùng chung: tiền VND (số nguyên), số lượng (3 chữ số thập phân), "ngày" theo giờ Việt Nam, danh sách tình trạng hàng và vai trò.
+- **Module giá trị nghiệp vụ** dùng chung: tiền VND (số nguyên), số lượng theo đơn vị (cái: số nguyên; kg: tối đa 3 chữ số thập phân), "ngày" theo giờ Việt Nam, danh sách tình trạng hàng, vai trò, trạng thái chứng từ (Quá hạn là trạng thái tính ra, không lưu DB).
 - API kiểm tra hệ thống `GET /api/health` (ứng dụng + kết nối DB) và kiểm tra biến môi trường khi khởi động.
 - Lệnh chuẩn (`dev`, `build`, `lint`, `typecheck`, `test`, `test:e2e`, `db:*`), GitHub Actions chạy lint + typecheck + test.
 - Cập nhật mục **Stack** và **Lệnh thường dùng** trong `CLAUDE.md`.
@@ -55,12 +55,14 @@ Không có. Change này **chưa tạo bảng nghiệp vụ nào** (không có s�
 - Nút nổi (FAB) trên mobile, quét QR, chụp ảnh, Unit Switch (cái ↔ kg): làm cùng màn hình cần dùng.
 - Lưu nháp trên máy khi mất sóng: làm cùng các form mobile (M3, M4, M5). Change này chỉ hiện thanh báo mất kết nối.
 - Service worker, chạy offline.
-- Giao diện tối (dark mode).
+- Giao diện tối (dark mode). `tokens.json` đã có giá trị chế độ Tối nhưng change này chưa bật.
+- Tạo và so sánh ảnh mốc giao diện (visual regression) trên máy dev — chỉ chạy trên CI.
 - Triển khai lên server thật (production deploy).
 
 ## Impact
 
 - **Code mới:** toàn bộ khung `src/` (app, components, lib, db), cấu hình Next.js, Tailwind, shadcn/ui, Drizzle, Vitest, Playwright, ESLint/Prettier.
 - **Thư viện mới:** `next`, `react`, `drizzle-orm`, `drizzle-kit`, `postgres`, `zod`, `tailwindcss`, các package của shadcn/ui (Radix, `lucide-react`, `class-variance-authority`, `tailwind-merge`), `@tanstack/react-table` (lõi bảng mà shadcn/ui dùng cho DataTable), `vitest`, `@testing-library/react`, `@playwright/test`.
-- **Hạ tầng:** `docker-compose.yml` (PostgreSQL), `.env.example`, `.github/workflows/ci.yml`.
+- **Hạ tầng:** `docker-compose.yml` (PostgreSQL), `.env.example`, `.github/workflows/ci.yml` (kiểm tra) và job chạy tay để tạo ảnh mốc Playwright.
+- **Design system:** đọc `docs/design-system/tokens.json` (không sửa file này).
 - **Tài liệu:** `CLAUDE.md` (Stack, Lệnh thường dùng), `README.md` (cách chạy local).

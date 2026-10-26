@@ -5,6 +5,7 @@
 - Repo chưa có code; chỉ có `docs/`, `CLAUDE.md`, `openspec/`. Lý do làm: xem `proposal.md` → Why.
 - Máy dev: Node 24, npm 11, Docker 29. Chưa cài `psql` → mọi thao tác DB đi qua Docker hoặc script Node.
 - Lựa chọn đã được người dùng chốt (26/10/2026): **Drizzle**, **Better Auth** (cài ở change 2), **Vitest + Playwright**, **Docker Compose** cho PostgreSQL.
+- Token Bright Blue Base có sẵn ở `docs/design-system/tokens.json` (màu Sáng/Tối, chữ, khoảng cách, bo góc, bóng); quy tắc dùng ở `docs/design-system/README.md`. Đây là nguồn duy nhất; code không ghi mã màu tay.
 - Yêu cầu hành vi: xem `specs/app-shell`, `specs/ui-components`, `specs/domain-values`, `specs/system-health`.
 
 ## Goals / Non-Goals
@@ -32,7 +33,8 @@
 ```text
 src/
 ├── app/
-│   ├── layout.tsx               # font, globals.css, metadata
+│   ├── layout.tsx               # 2 font, globals.css, metadata
+│   ├── globals.css              # Tailwind + @import "../styles/tokens.css"
 │   ├── page.tsx                 # redirect('/dashboard')
 │   ├── manifest.ts              # PWA manifest
 │   ├── (desktop)/
@@ -56,6 +58,7 @@ src/
 │   ├── money.ts  quantity.ts  business-date.ts
 │   ├── condition.ts  role.ts  document-status.ts  location-type.ts
 │   └── condition-split.ts
+├── styles/tokens.css            # SINH TỰ ĐỘNG từ tokens.json — không sửa tay
 ├── lib/
 │   ├── env.ts                   # đọc + kiểm tra biến môi trường (zod)
 │   ├── current-user.ts          # người dùng giả lập (thay ở change 2)
@@ -67,6 +70,7 @@ src/
 │   ├── schema/index.ts          # rỗng ở change này
 │   └── migrate.ts               # script chạy migration
 └── instrumentation.ts           # gọi kiểm tra env khi server khởi động
+scripts/build-tokens.ts           # tokens.json → src/styles/tokens.css
 drizzle/                          # file migration SQL (sinh + viết tay)
 tests/e2e/                        # Playwright
 docker/postgres/init.sql          # tạo DB test
@@ -100,9 +104,13 @@ docker/postgres/init.sql          # tạo DB test
 - Hiển thị: `Intl.NumberFormat('vi-VN')` + `" ₫"`. Đọc: bỏ dấu chấm, khoảng trắng, `₫`; phần còn lại phải khớp `^-?\d+$`.
 - *Đã cân nhắc:* `bigint` của JS → an toàn tuyệt đối nhưng phiền khi chia (giá bình quân), khi đưa vào JSON và thư viện bảng. Giới hạn số nguyên an toàn ≈ 9 triệu tỷ đồng, vượt xa quy mô công ty → chọn `number` có kiểm tra.
 
-### D5. Số lượng: số nguyên "phần nghìn"
+### D5. Số lượng: số nguyên "phần nghìn" kèm đơn vị
 
-- Kiểu `Quantity` (branded `number`) lưu giá trị × 1000. VD 250,5 kg → `250500`. Cộng trừ trên số nguyên nên không có sai số dấu phẩy động (0,1 + 0,2 = 0,3 đúng).
+- Kiểu `Quantity = { unit: QuantityUnit; milli: number }`, `QuantityUnit = 'PIECE' | 'KG'` (nhãn "cái", "kg"). `milli` là giá trị × 1000. VD 250,5 kg → `{ unit: 'KG', milli: 250500 }`. Cộng trừ trên số nguyên nên không có sai số dấu phẩy động (0,1 + 0,2 = 0,3 đúng).
+- `PIECE`: `milli` phải chia hết cho 1000 (số nguyên cái). `KG`: tối đa 3 chữ số thập phân. Kiểm tra trong `toQuantity`/`parseQuantity(input, unit)`, sai thì ném `DomainValueError` với câu báo của spec.
+- `addQuantity`/`subtractQuantity` ném lỗi khi khác đơn vị. Quy đổi cái ↔ kg (theo trọng lượng chuẩn) và đơn vị khác (tấn, bộ) **không** làm ở đây — thuộc `master-data`/`purchase-orders`.
+- Dạng sửa: `formatQuantityForInput` → `"1234,5"` (không ngăn cách hàng nghìn); `formatMoneyForInput` → `"1250000"`. Ô nhập hiện dạng sửa khi focus, dạng hiển thị khi blur.
+- Đọc chuỗi: không nhận dấu ngăn cách hàng nghìn; `.` và `,` đều là dấu thập phân. Nhờ quy tắc "cái là số nguyên", gõ "1.234" cái bị báo lỗi thay vì âm thầm thành 1,234 cái.
 - DB: `numeric(14,3)`; driver trả chuỗi → `quantityFromDb("250.500")` đổi bằng xử lý chuỗi, **không** qua `parseFloat`.
 - Giới hạn `numeric(14,3)` = 99.999.999.999,999 → × 1000 ≈ 10¹⁴ < 2⁵³, an toàn.
 - Phép nhân số lượng × đơn giá và quy tắc làm tròn **không** làm ở đây; change `inventory-ledger` sẽ định nghĩa.
@@ -152,39 +160,54 @@ docker/postgres/init.sql          # tạo DB test
 
 - Lỗi gốc chỉ ghi log phía server (`console.error` có ngữ cảnh), không trả về client.
 
-### D12. Giao diện: Tailwind v4 + shadcn/ui + token Bright Blue Base
+### D12. Giao diện: Tailwind v4 + shadcn/ui + token Bright Blue Base từ `tokens.json`
 
-- Tailwind v4 (cấu hình trong CSS bằng `@theme`). shadcn/ui khởi tạo với kiểu `new-york`, màu nền `slate`, biểu tượng `lucide-react`.
-- Token khai báo trong `src/app/globals.css` dưới dạng CSS variables, ghi đè biến của shadcn:
+- Tailwind v4 (cấu hình trong CSS bằng `@theme`). shadcn/ui khởi tạo với kiểu `new-york`, biểu tượng `lucide-react`.
+- **Nguồn token:** `docs/design-system/tokens.json`. Script `scripts/build-tokens.ts` (`npm run tokens`) sinh `src/styles/tokens.css`:
+  - Màu chế độ Sáng → CSS variables trùng tên shadcn (`--background`, `--primary`, `--accent`, `--muted`, `--destructive`, `--ring`…) và các màu thêm `--highlight`, `--pop`, `--success`, `--warning` kèm `*-foreground`. Giá trị tham chiếu như `{primary}` được thay bằng giá trị thật.
+  - Bo góc `--radius-sm/md/lg/xl/pill`, `--radius` = `radius-md` (biến của shadcn); khoảng cách `--space-1…16`; bóng `--shadow-popover`; kiểu chữ `display-xl`, `display`, `h1`, `h2`, `body-lg`, `body`, `label`, `caption`.
+  - Khối `@theme inline` ánh xạ các biến sang tiện ích Tailwind (`bg-primary`, `text-success`, `rounded-lg`, `font-display`…).
+  - Giá trị chế độ Tối **không** sinh ở change này (ngoài phạm vi).
+- **Chống lệch:** unit test chạy hàm sinh trên `tokens.json` và so với `src/styles/tokens.css` đã commit; lệch là test đỏ. ESLint chặn tên màu Tailwind cứng (`blue-600`, `slate-50`…) và mã hex trong `src/` (trừ file sinh).
+- **Font** qua `next/font/google`, `display: swap`, subset `vietnamese` + `latin`:
+  - `display` = **Bricolage Grotesque** (700) cho tiêu đề trang, tiêu đề khối, con số lớn.
+  - `body` = **Be Vietnam Pro** (400/500/600) cho nội dung, nhãn, nút. Ô nhập luôn 16px.
+  - Hai họ chữ là giới hạn tối đa của dự án. Cột số dùng `tabular-nums`.
+- **Sidebar Desktop:** nền `card`, viền phải `border`; mục đang chọn nền `accent` + chữ `accent-foreground`; rê chuột cũng `accent`. Không dùng sidebar nền tối.
+- **Badge** (bo `radius-pill`, chữ kiểu `caption`):
 
-| Token | Giá trị | Dùng cho |
+| Token | Kiểu | Dùng cho |
 |---|---|---|
-| `--primary` | blue-600 `#2563EB` | nút chính, mục menu đang chọn, focus ring |
-| `--background` | slate-50 | nền trang |
-| `--card` | white | thẻ nội dung |
-| `--sidebar` | slate-900 | nền sidebar (tách lớp rõ với nội dung) |
-| `--destructive` | red-600 | nút nguy hiểm |
-| `--condition-{new,good,needs-repair,scrap}` | indigo / green / amber / slate (nền nhạt + chữ đậm) | `ConditionBadge` |
-| `--status-{draft,pending,progress,done,overdue}` | slate / amber / blue / green / red | `DocumentStatusBadge` |
+| `highlight` | nền `highlight`, chữ `highlight-foreground` | Mới |
+| `muted` | nền `muted`, chữ `muted-foreground` | Phế liệu, Nháp |
+| `primary` | nền `primary`, chữ `primary-foreground` | Đang xử lý |
+| `destructive` | nền `destructive`, chữ `destructive-foreground` | Quá hạn |
+| `success` | viền + chữ `success`, nền `card` | Tốt, Hoàn thành |
+| `warning` | viền + chữ `warning`, nền `card` | Chờ sửa, Chờ duyệt |
 
-- Font: **Be Vietnam Pro** qua `next/font/google` (subset `vietnamese`, `latin`; 400/500/600/700; `display: swap`) — thiết kế cho dấu tiếng Việt. Cột số dùng `tabular-nums`. Một họ font duy nhất.
+  `success`/`warning` không có `*-foreground` trong token nên dùng kiểu viền; README xác nhận hai màu này đọc được (≥ 4.5:1) khi làm chữ trên `card`. Mọi cặp còn lại là cặp chữ/nền đã ghi trong token.
+- **Trạng thái tương tác:** focus `ring` 2px liền, cách 2px; nút nhấn thu nhỏ 0.97 trong 120ms; tắt chuyển động khi `prefers-reduced-motion`.
 - Chỉ giao diện sáng ở MVP.
 - shadcn/ui component cần thêm: `button`, `badge`, `card`, `input`, `label`, `table`, `dropdown-menu`, `sheet`, `sidebar`, `tooltip`, `separator`, `avatar`, `skeleton`.
-- *Đã cân nhắc:* tự viết sidebar → bỏ; block `sidebar` của shadcn đã có chế độ chỉ biểu tượng, ngăn trượt trên màn hẹp và nhớ trạng thái bằng cookie (render đúng ngay từ server, không nháy). Chỉ đổi breakpoint màn hẹp từ 768 lên **1024px** theo spec.
+- *Đã cân nhắc:* chép tay giá trị từ `tokens.json` vào `globals.css` → dễ lệch khi token đổi; sinh tự động + test chống lệch rẻ hơn về lâu dài. Tự viết sidebar → bỏ; block `sidebar` của shadcn đã có chế độ chỉ biểu tượng, ngăn trượt trên màn hẹp và nhớ trạng thái bằng cookie (render đúng ngay từ server, không nháy). Chỉ đổi breakpoint màn hẹp từ 768 lên **1024px** theo spec.
 
 ### D13. Component nền
 
 - **DataTable:** `@tanstack/react-table` v8 (đây là lõi mà công thức DataTable của shadcn/ui dùng, không phải thư viện giao diện mới). Change này phân trang/sắp xếp phía client; các change sau bật `manualPagination` cho dữ liệu lớn mà không đổi giao diện. Cột số khai báo `meta.align = 'right'`. Tiêu đề dính bằng `position: sticky`.
-- **Stepper:** component có kiểm soát (`value`, `onChange`, `min=0`, `max?`, `step=1`). Nút 48×48px. Gõ trực tiếp, kiểm tra khi rời ô (blur).
-- **ConditionSplit:** giao diện gọi hàm thuần `computeConditionSplit(total, parts)` ở `src/domain/condition-split.ts` → `{ allocated, remaining, status: 'balanced' | 'under' | 'over' }`. Tính trên `Quantity` (phần nghìn). Tùy chọn `withLost` để thêm phần Mất.
-- Badge: map từ hằng số ở `src/domain/*` sang nhãn tiếng Việt + token màu; không lặp chuỗi nhãn trong component.
+  - Prop **bắt buộc** `emptyState: { message: string; action?: { label: string; onClick?: () => void; href?: string } }`. Thiếu prop là lỗi TypeScript, nên không thể có bảng rỗng ghi "Không có dữ liệu". Trạng thái rỗng căn giữa (ngoại lệ căn giữa theo README), ẩn phân trang.
+- **Stepper:** component có kiểm soát (`value: Quantity`, `onChange`, `min=0`, `max?`, `step=1`); đơn vị lấy từ `value.unit`. Nút 48×48px. Gõ trực tiếp, kiểm tra bằng `parseQuantity(input, unit)` khi rời ô (blur); sai thì trả về giá trị cũ và hiện lời nhắc.
+- **Ô nhập số** (dùng trong Stepper, ConditionSplit, sau này ô tiền): hiện `formatQuantity`/`formatMoney` khi không focus, `formatQuantityForInput`/`formatMoneyForInput` khi focus; `inputMode="decimal"` cho kg, `"numeric"` cho cái và tiền.
+- **ConditionSplit:** giao diện gọi hàm thuần `computeConditionSplit(total, parts)` ở `src/domain/condition-split.ts` → `{ allocated, remaining, status: 'balanced' | 'under' | 'over' }`. Tính trên `Quantity` (phần nghìn); mọi phần cùng đơn vị với tổng, phần gõ sai quy tắc đơn vị không được tính. Tùy chọn `withLost` để thêm phần Mất.
+- Badge: map từ hằng số ở `src/domain/*` sang nhãn tiếng Việt + token (bảng ở D12); không lặp chuỗi nhãn trong component.
+- **Trạng thái chứng từ:** `src/domain/document-status.ts` tách `STORED_DOCUMENT_STATUSES` (`DRAFT`, `PENDING_APPROVAL`, `IN_PROGRESS`, `DONE` — dùng cho enum DB ở các change sau) và `DisplayDocumentStatus` = các giá trị đó + `OVERDUE`. `assertStorableStatus()` ném lỗi với `OVERDUE`. `DocumentStatusBadge` nhận `DisplayDocumentStatus`. Hàm tính Quá hạn từ ngày đến hạn làm ở `receivables`.
 - Trang `/dev/components` trưng bày mọi trạng thái component — dùng cho chụp màn hình và kiểm tra a11y.
 
 ### D14. Mobile shell và PWA
 
-- `BottomNav` 4 tab, `AppBar` nhận `title` và `backHref?`.
+- `BottomNav` 4 tab, tab đang chọn nền `accent` bo `radius-pill`; `AppBar` nhận `title` và `backHref?`, tiêu đề dùng họ chữ `display`.
+- Layout `(mobile)/m` **không** kiểm tra vai trò: mọi vai trò mở được (Giám đốc xem trên điện thoại). Chỉ layout `(desktop)` chuyển vai trò Mobile sang `/m`.
 - `useOnlineStatus()` dùng `useSyncExternalStore` với sự kiện `online`/`offline`; `OfflineBanner` có `role="status"`.
-- `src/app/manifest.ts` sinh `/manifest.webmanifest`. Biểu tượng PNG 192/512 trong `public/icons/` (logo tạm, thay khi có thiết kế).
+- `src/app/manifest.ts` sinh `/manifest.webmanifest`. `theme_color` và `background_color` đọc từ `tokens.json` (`primary`, `background` chế độ Sáng) lúc build, không ghi tay. Biểu tượng PNG 192/512 trong `public/icons/` (logo tạm, thay khi có thiết kế).
 - **Không** có service worker ở change này (không offline; Chrome không còn bắt buộc service worker để cài PWA).
 
 ### D15. Test
@@ -194,18 +217,25 @@ docker/postgres/init.sql          # tạo DB test
 | Unit | Vitest | `src/**/*.test.ts` | node |
 | Component | Vitest + Testing Library | `src/**/*.test.tsx` | jsdom |
 | Integration | Vitest | `src/**/*.int.test.ts` | node + `TEST_DATABASE_URL` |
-| E2E | Playwright | `tests/e2e/*.spec.ts` | Chromium; ảnh ở 375, 768, 1024, 1440px |
+| E2E | Playwright | `tests/e2e/*.spec.ts` | Chromium |
+| Ảnh mốc | Playwright, thẻ `@visual` | `tests/e2e/visual.spec.ts` | **Chỉ CI** (Linux); 375, 768, 1024, 1440px |
 
 - Vitest dùng `projects` để chạy 3 nhóm riêng; `npm test` chạy cả 3. Integration bỏ qua có thông báo rõ nếu thiếu `TEST_DATABASE_URL` khi chạy local, nhưng **bắt buộc** trên CI.
 - Coverage (v8) ngưỡng 80% cho `src/domain/**` và `src/lib/**`.
 - A11y: `@axe-core/playwright` quét `/dashboard`, `/m`, `/dev/components`, không cho phép lỗi mức `serious`/`critical`.
 - Playwright local dùng `next dev`; CI dùng `next build && next start`.
+- **Ảnh mốc chỉ tạo và so sánh trên CI** (font và cách vẽ chữ khác nhau giữa macOS và Linux làm ảnh lệch giả):
+  - Test ảnh gắn thẻ `@visual`. `npm run test:e2e` ở local chạy với `--grep-invert @visual`; khi `CI=true` chạy cả nhóm `@visual`.
+  - `snapshotPathTemplate` không chứa tên hệ điều hành; ảnh mốc commit trong `tests/e2e/__screenshots__/`.
+  - Tạo/cập nhật ảnh mốc: workflow `.github/workflows/update-snapshots.yml` chạy tay (`workflow_dispatch`, chọn nhánh) → `playwright test --grep @visual --update-snapshots` → commit ảnh vào chính nhánh đó (quyền `contents: write`). Không ai tạo ảnh mốc trên máy dev.
+  - Khi chưa có ảnh mốc, job CI so sánh ảnh báo đỏ kèm hướng dẫn chạy workflow trên.
 
 ### D16. Chất lượng code và CI
 
 - ESLint (cấu hình của Next.js, flat config) + Prettier (`prettier-plugin-tailwindcss`). `npm run typecheck` = `tsc --noEmit`.
 - Header bảo mật trong `next.config.ts`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(self), microphone=(), geolocation=()` (camera cần cho quét QR/chụp ảnh sau này).
-- `.github/workflows/ci.yml`: service `postgres:17-alpine` → `npm ci` → lint → typecheck → `db:migrate` trên DB test → `npm test` → build → Playwright.
+- `.github/workflows/ci.yml`: service `postgres:17-alpine` → `npm ci` → lint → typecheck → `db:migrate` trên DB test → `npm test` (gồm test chống lệch token) → build → Playwright (gồm `@visual`). Ảnh khác biệt được tải lên làm artifact khi lỗi.
+- `.github/workflows/update-snapshots.yml`: chạy tay, xem D15.
 
 ### D17. Lệnh chuẩn (`package.json`)
 
@@ -214,13 +244,16 @@ docker/postgres/init.sql          # tạo DB test
 | `dev` / `build` / `start` | Next.js |
 | `lint` / `format` / `typecheck` | ESLint / Prettier / tsc |
 | `test` / `test:unit` / `test:int` / `test:coverage` | Vitest |
-| `test:e2e` | Playwright |
+| `test:e2e` | Playwright (local bỏ `@visual`) |
+| `tokens` | Sinh `src/styles/tokens.css` từ `docs/design-system/tokens.json` |
 | `db:up` / `db:down` | `docker compose up -d` / `down` |
 | `db:generate` / `db:migrate` / `db:studio` | drizzle-kit generate / script migrate / drizzle-kit studio |
 
 ## Risks / Trade-offs
 
-- [Token "Bright Blue Base" chưa có file gốc trong repo; giá trị ở D12 suy ra từ `docs/ui.md`] → Tập trung mọi màu vào CSS variables ở `globals.css`; khi có file token chính thức chỉ cần thay giá trị, không sửa component.
+- [`tokens.json` đổi mà quên sinh lại CSS] → Test chống lệch đỏ trên CI.
+- [Bricolage Grotesque thiếu dấu tiếng Việt ở một số ký tự] → Kiểm tra subset `vietnamese` khi cài; trang `/dev/components` có tiêu đề mẫu đủ dấu ("Phiếu nhập thu hồi – Ước tính đền bù") để nhìn bằng mắt và có trong ảnh mốc.
+- [Ảnh mốc chỉ ở CI nên dev không xem trước được ở local] → Khi CI lỗi, ảnh khác biệt có trong artifact; cập nhật bằng workflow chạy tay.
 - [`number` cho tiền: lỡ có phép tính ra số lẻ (chia giá bình quân)] → Mọi giá trị tiền đi qua `toMoney()` và bị chặn nếu không nguyên; quy tắc làm tròn bắt buộc định nghĩa ở change `inventory-ledger`.
 - [Bảng menu theo vai trò ở D3 là giả định] → Chỉ ảnh hưởng hiển thị; `auth-and-roles` rà lại khi làm phân quyền server.
 - [Người dùng giả lập lọt lên production] → Hàm ném lỗi khi `NODE_ENV=production`; có unit test cho trường hợp này.
@@ -235,5 +268,4 @@ docker/postgres/init.sql          # tạo DB test
 
 ## Open Questions
 
-- File token chính thức của Bright Blue Base (nếu có từ Claude Design) — khi có chỉ thay giá trị CSS variables, không đổi cấu trúc hay task.
 - Logo và biểu tượng PWA chính thức — dùng logo tạm cho tới khi có.
