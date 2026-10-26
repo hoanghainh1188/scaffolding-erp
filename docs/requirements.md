@@ -28,6 +28,9 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 9 | Kỹ thuật | **Next.js** (giao diện + API) + **PostgreSQL** |
 | 10 | Làm tròn giá vốn | Giá vốn bình quân **làm tròn đến 1 ₫** sau mỗi lần nhập làm đổi giá bình quân (chốt 26/10/2026) |
 | 11 | Giá ghi sổ khi xuất/thu hồi | Hàng **xuất** và hàng **thu hồi** từ công trình ghi theo **giá vốn bình quân hiện tại** của (mã hàng + tình trạng), nên không làm đổi giá bình quân. Chỉ nhập mua và nhập sau sửa chữa mới làm đổi giá bình quân (chốt 26/10/2026) |
+| 12 | Nhận thiếu so với đơn mua | **Mặc định đóng đơn** theo số thực nhận. Thủ kho tích **"Chờ giao bù phần thiếu"** nếu người bán sẽ giao tiếp (chốt 26/10/2026) |
+| 13 | Tiền trả người bán | Tính theo **số thực nhận** và **số kg cân thực tế**, không theo số trên đơn. Chi phí mua hàng (landed cost) chia theo hàng thực nhận. Đơn mua chỉ là dự kiến (chốt 26/10/2026) |
+| 14 | Nhập nhiều chuyến | **1 đơn mua – nhiều phiếu nhập**, mỗi chuyến xe một phiếu. Trong một phiếu, mã nào chuyến đó không có thì đánh dấu **"Chuyến này không có"** (ghi 0). Chỉ xác nhận được khi mọi dòng đã đếm hoặc đã đánh dấu. Đơn ở trạng thái **Đang nhận** cho tới khi đủ hoặc bị đóng (chốt 26/10/2026) |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 
