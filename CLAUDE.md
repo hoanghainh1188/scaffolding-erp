@@ -19,29 +19,44 @@ Tài liệu gốc (đọc trước khi làm bất kỳ tính năng nào):
 | `docs/requirements.md` | Nghiệp vụ, **quyết định đã chốt (Mục 0)**, phạm vi MVP / Bản 2 |
 | `docs/ui.md` | Layout, component, danh sách màn hình (D1–D17, M1–M8) |
 | `docs/roadmap.md` | Thứ tự các change OpenSpec |
+| `docs/design-system/` | Bright Blue Base: `tokens.json` (màu, chữ, khoảng cách, bo góc) + `README.md` (cách dùng, giọng văn) |
 | `openspec/specs/` | Spec "sống" — nguồn sự thật sau khi change được archive |
 
 Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 
 ## Stack
 
-- **Next.js** (App Router) + **TypeScript** (strict) — làm cả giao diện và API.
-- **PostgreSQL**.
-- **Tailwind CSS** + **shadcn/ui**. Design system: **Bright Blue Base**.
-- Hai giao diện: `(desktop)` cho văn phòng, `(mobile)` PWA cho thủ kho/xưởng.
-
-> Chưa chốt: ORM, thư viện auth, test runner. Change `setup-project` sẽ quyết định và cập nhật mục này.
+- **Next.js 16** (App Router, Cache Components bật sẵn) + **TypeScript** (strict, `noUncheckedIndexedAccess`) — làm cả giao diện và API. Node 24, quản lý gói bằng `npm`.
+- **PostgreSQL 17** chạy local bằng **Docker Compose**.
+- ORM: **Drizzle** (`drizzle-orm` + driver `postgres`). Migration là file SQL trong `drizzle/`, chạy bằng `npm run db:migrate`; không dùng `drizzle-kit push`.
+- Đăng nhập: **Better Auth** — cài ở change `auth-and-roles`. Trước đó dùng người dùng giả lập (chỉ ở dev).
+- Test: **Vitest** (unit, component, integration) + **Playwright** (E2E trên Edge; ảnh mốc chỉ chạy trên CI).
+- **Tailwind CSS 4** + **shadcn/ui**. Design system: **Bright Blue Base** (token sinh từ `docs/design-system/tokens.json`).
+- Hai giao diện: `(desktop)` cho văn phòng, `(mobile)` PWA ở `/m` cho thủ kho/xưởng.
+- Next.js 16 khác nhiều so với bản cũ: tra `node_modules/next/dist/docs/` trước khi dùng API lạ (xem `AGENTS.md`).
 
 ## Lệnh thường dùng
 
-> Sẽ cập nhật sau change `setup-project`.
+| Lệnh | Việc |
+|---|---|
+| `npm run dev` | Chạy local ở http://localhost:3000 |
+| `npm run build` / `npm start` | Build và chạy bản production (hiện từ chối người dùng giả lập) |
+| `npm run lint` | ESLint + `scripts/check-colors.mts` (chặn màu Tailwind cứng, mã hex) |
+| `npm run typecheck` | `next typegen` + `tsc --noEmit` |
+| `npm run format` / `format:check` | Prettier |
+| `npm test` | Vitest: unit, component, integration (integration cần `TEST_DATABASE_URL`) |
+| `npm run test:unit` / `test:int` / `test:coverage` | Từng nhóm test; coverage ≥ 80% cho `src/domain`, `src/lib` |
+| `npm run test:e2e` | Playwright trên Edge (`next dev`); ở local bỏ qua `@visual` |
+| `npm run tokens` | Sinh `src/styles/tokens.css` từ `docs/design-system/tokens.json` |
+| `npm run db:up` / `db:down` | Bật / tắt PostgreSQL trong Docker |
+| `npm run db:generate` / `db:migrate` / `db:studio` | Sinh migration SQL / chạy migration / xem dữ liệu |
 
-```bash
-# npm run dev      # chạy local
-# npm run test     # unit test
-# npm run lint     # kiểm tra code
-# npm run db:migrate
-```
+Lưu ý:
+
+- Sửa `tokens.json` thì chạy `npm run tokens`; test chống lệch sẽ đỏ nếu quên.
+- Không chạy hai `next dev` cùng lúc trên repo (trang sẽ tự tải lại liên tục). Muốn Playwright dùng lại dev server đang chạy: `PW_PORT=<cổng> npm run test:e2e`.
+- Ảnh mốc Playwright chỉ tạo trên CI: tab Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow.
+- Trong E2E, Next 16 giữ trang cũ ẩn trong DOM sau khi điều hướng: tìm theo chữ thì thêm `.filter({ visible: true })`.
 
 ## Quy trình làm việc: OpenSpec
 
@@ -104,6 +119,7 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 ## Giao diện
 
 - Theo `docs/ui.md`. Dùng component shadcn/ui + token Bright Blue Base.
+- **Nguồn token duy nhất:** `docs/design-system/tokens.json`; quy tắc dùng màu, chữ, giọng văn ở `docs/design-system/README.md`. Không tự đoán mã màu, không dùng màu Tailwind cứng (`blue-600`, `slate-50`...).
 - Không tự thêm thư viện UI khác khi chưa hỏi.
 - Desktop: bảng dữ liệu. Mobile: thẻ (card), nút to, stepper +/-.
 - Chữ trên giao diện: tiếng Việt.

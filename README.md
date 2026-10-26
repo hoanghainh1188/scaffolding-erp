@@ -9,6 +9,43 @@ Phần mềm quản lý cho công ty thu mua, sửa chữa, bán và cho thuê g
 - [Lộ trình change](docs/roadmap.md)
 - [Hướng dẫn cho Claude Code](CLAUDE.md)
 
+## Chạy local
+
+Cần: Node 24 (xem `.nvmrc`), Docker Desktop.
+
+```bash
+npm ci
+cp .env.example .env     # chỉnh nếu cần
+npm run db:up            # bật PostgreSQL 17 trong Docker, chờ tới khi sẵn sàng
+npm run db:migrate       # chạy migration trong drizzle/ vào DATABASE_URL
+npm run dev              # http://localhost:3000
+```
+
+### Cơ sở dữ liệu
+
+- `npm run db:up` tạo 2 DB trong cùng container:
+  - `scaffolding_erp` — dùng khi chạy app (`DATABASE_URL`).
+  - `scaffolding_erp_test` — chỉ cho integration test (`TEST_DATABASE_URL`).
+- Cổng mặc định `5432`. Máy đã có Postgres chiếm cổng này thì đặt `POSTGRES_PORT=5433` trong `.env` và sửa cổng trong 2 URL.
+- `npm run db:down` tắt container, **giữ** dữ liệu. Muốn xoá sạch: `docker compose down -v`.
+- Thêm bảng: sửa `src/db/schema/`, chạy `npm run db:generate`, xem lại file SQL mới trong `drizzle/`, rồi `npm run db:migrate`. Không dùng `drizzle-kit push`.
+- `npm run db:studio` mở Drizzle Studio để xem dữ liệu.
+
+### Test
+
+- `npm test` — unit, component và integration. Integration cần `TEST_DATABASE_URL`; thiếu thì được bỏ qua kèm thông báo (trên CI thì bắt buộc).
+- `npm run test:int` — chỉ integration test. Chạy migration vào DB test trước nếu test cần bảng: `DATABASE_URL=$TEST_DATABASE_URL npm run db:migrate`.
+- `npm run test:e2e` — Playwright trên Microsoft Edge, tự bật `next dev`. Máy không có Edge: `PW_CHANNEL=chromium npm run test:e2e`. Đang chạy `npm run dev` ở cổng khác thì đặt `PW_PORT` trùng cổng đó để dùng lại, đừng chạy hai `next dev` cùng lúc.
+- Test ảnh mốc (`@visual`) chỉ chạy trên CI. Muốn tạo hoặc cập nhật ảnh mốc: GitHub → Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow. Workflow commit ảnh vào nhánh rồi tự chạy lại CI.
+
+### Design token
+
+Màu, chữ, bo góc lấy từ `docs/design-system/tokens.json`. Sửa file đó xong chạy `npm run tokens` để sinh lại `src/styles/tokens.css` (không sửa tay file CSS này). `npm run lint` báo lỗi nếu code dùng màu Tailwind cứng (`bg-blue-600`) hoặc mã hex.
+
+### CI
+
+`.github/workflows/ci.yml` chạy cho mỗi pull request và mỗi lần push lên `main`: format, lint, typecheck, migration + toàn bộ Vitest trên PostgreSQL, `npm run build`, rồi Playwright (Edge, Firefox, WebKit) và so sánh ảnh mốc.
+
 ## Quy trình phát triển
 
 Dùng [OpenSpec](https://github.com/Fission-AI/OpenSpec) với Claude Code:

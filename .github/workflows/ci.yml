@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Lets update-snapshots.yml re-run CI after committing new baselines:
+  # commits made with GITHUB_TOKEN do not trigger workflows on their own.
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI: "true"
+  DATABASE_URL: postgres://erp:erp@localhost:5432/scaffolding_erp_test
+  TEST_DATABASE_URL: postgres://erp:erp@localhost:5432/scaffolding_erp_test
+  DEV_ROLE: DIRECTOR
+
+jobs:
+  checks:
+    name: Lint, types, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp
+          POSTGRES_DB: scaffolding_erp_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U erp -d scaffolding_erp_test"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Migrate the test database
+        run: npm run db:migrate
+      # Unit, component and integration (integration is mandatory on CI),
+      # including the tokens.css drift test.
+      - run: npm test
+      # Proves the production build works; E2E runs on `next dev` (design D15).
+      - run: npm run build
+
+  e2e:
+    name: E2E (Edge, Firefox, WebKit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install browsers
+        run: npx playwright install --with-deps msedge firefox webkit
+      - name: E2E
+        run: npx playwright test --grep-invert @visual
+      - name: Visual baselines
+        id: visual
+        run: npx playwright test --grep @visual --project desktop-1280
+      - name: Explain missing baselines
+        if: failure() && steps.visual.outcome == 'failure'
+        run: |
+          {
+            echo "### Visual baselines differ or are missing"
+            echo "Open the playwright-report artifact to compare images."
+            echo "If the change is intended, run the **Update Playwright snapshots** workflow on this branch (Actions tab → Run workflow)."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14

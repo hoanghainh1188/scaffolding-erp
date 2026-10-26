@@ -1,6 +1,6 @@
 Tài liệu này dùng để cung cấp Context cho các công cụ AI (Cursor, v0, Claude) khi bắt đầu khởi tạo dự án Frontend.
 Tech stack: **Next.js (giao diện + API) + Tailwind CSS + Shadcn UI / Radix UI + PostgreSQL**.
-Design system: **Bright Blue Base**.
+Design system: **Bright Blue Base** — token và hướng dẫn gốc ở `docs/design-system/` (`tokens.json`, `README.md`). **Mọi màu, chữ, bo góc lấy từ đó; tài liệu này chỉ gọi tên token, không ghi mã màu.**
 Tài liệu nghiệp vụ đi kèm: `docs/requirements.md` (các quyết định nghiệp vụ ở Mục 0).
 
 > Cập nhật 26/10/2026:
@@ -27,11 +27,11 @@ Hệ thống có 2 Layout riêng biệt phục vụ 2 nhóm người dùng:
 
 ### A. Desktop Layout (Văn phòng: Giám đốc, Kế toán, Kinh doanh)
 
-- **Sidebar (Cố định bên trái):** Logo và Menu điều hướng chính. Có thể thu gọn (Collapse).
+- **Sidebar (Cố định bên trái):** Logo và Menu điều hướng chính. Có thể thu gọn (Collapse). Nền sáng (`card`), viền `border`; mục đang chọn nền `accent`.
     - Menu: Tổng quan, Thu mua, Kho, Sửa chữa, Bán & Thuê, Công nợ, Báo cáo, Danh mục, Cài đặt.
     - Menu hiển thị theo vai trò (VD: Kinh doanh không thấy Công nợ phải trả).
 - **Top Header:** Tìm kiếm toàn cục, Nút tạo mới nhanh (+ Tạo Hợp đồng, + Tạo Phiếu Thu mua), Notification (có mục "Chờ duyệt" cho Giám đốc), Profile User.
-- **Main Content Area:** Bảng dữ liệu (Table), biểu đồ (Chart), hoặc Form chi tiết. Nền xám nhạt (`bg-slate-50`), nội dung nằm trong Card trắng (`bg-white`).
+- **Main Content Area:** Bảng dữ liệu (Table), biểu đồ (Chart), hoặc Form chi tiết. Nền trang `background`, nội dung nằm trong thẻ `card` (viền `border`, bo `radius-lg`).
 
 ### B. Mobile PWA Layout (Thủ kho, Xưởng)
 
@@ -48,13 +48,15 @@ Hệ thống có 2 Layout riêng biệt phục vụ 2 nhóm người dùng:
 Các "viên gạch" cần thiết lập trước để tái sử dụng toàn dự án:
 
 - **Buttons (Nút bấm):**
-    - `Primary`: Xanh dương công nghiệp (Blue-600) – Hành động chính (Lưu, Xác nhận).
-    - `Secondary`: Nền trắng viền xám – Hành động phụ (Hủy, Quay lại).
-    - `Danger`: Đỏ – Hành động rủi ro (Xóa, Từ chối).
+    - `Primary`: token `primary` – Hành động chính (Lưu, Xác nhận).
+    - `Secondary`: token `secondary` – Hành động phụ (Hủy, Quay lại).
+    - `Danger`: token `destructive` – Hành động rủi ro (Xóa, Từ chối).
     - `Stepper (+/-)`: Dành cho Mobile để thủ kho bấm tăng giảm số lượng nhanh.
 - **Badges (Thẻ trạng thái):**
-    - _Tình trạng hàng:_ Mới (Tím/Indigo), Tốt (Xanh lá), Chờ sửa (Vàng/Cam), Phế liệu (Xám/Đen).
-    - _Trạng thái chứng từ:_ Nháp (Xám), Chờ duyệt (Vàng), Đang xử lý (Xanh dương), Hoàn thành (Xanh lá), Quá hạn (Đỏ).
+    - _Tình trạng hàng:_ Mới (`highlight`), Tốt (`success`), Chờ sửa (`warning`), Phế liệu (`muted`).
+    - _Trạng thái chứng từ:_ Nháp (`muted`), Chờ duyệt (`warning`), Đang xử lý (`primary`), Hoàn thành (`success`), Quá hạn (`destructive`).
+    - _Ghi chú:_ "Quá hạn" được **tính ra** từ ngày đến hạn, không phải trạng thái lưu trong DB.
+    - Badge luôn có chữ, không dùng màu là cách duy nhất để báo trạng thái.
     - _Vị trí:_ Tại bãi, Tại xưởng, Tại công trình.
 - **Data Entry (Nhập liệu):**
     - Input text chuẩn, Search box có icon kính lúp.
@@ -64,7 +66,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
     - **Unit Switch:** chuyển đơn vị trên cùng dòng (cái ↔ kg). Hiện số quy đổi theo trọng lượng chuẩn bên cạnh.
     - **Condition Split:** nhập tổng số lượng, chia ra *Tốt / Chờ sửa / Phế liệu* (thu hồi có thêm ô *Mất*). Tự kiểm tra tổng khớp. Dùng chung cho M3, M4.
 - **Data Display (Hiển thị):**
-    - Data Table (Desktop): sort, pagination, sticky header.
+    - Data Table (Desktop): sort, pagination, sticky header. Trạng thái rỗng là lời mời + một nút (VD: "Chưa có đơn thu mua nào" + "Tạo đơn"), không ghi "Không có dữ liệu".
     - Data Card (Mobile): thẻ dọc (Tên vật tư in đậm, số lượng chữ to, badge tình trạng góc phải).
     - **KPI Card:** số liệu lớn kèm so sánh kỳ trước.
     - **Cost Breakdown:** bảng cấu thành giá vốn (giá mua + landed cost + sửa chữa).
@@ -174,8 +176,8 @@ Vẽ trước 3 màn để chốt phong cách, các màn còn lại dựa theo:
 
 > "Now, build the reusable UI components based on the design system:
 >
-> 1. A ConditionBadge component that takes 'condition' as a prop: New (Indigo), Good (Green), Need Repair (Amber), Scrap (Gray).
-> 2. A DocumentStatusBadge component: Draft (Gray), Pending Approval (Amber), In Progress (Blue), Done (Green), Overdue (Red).
+> 1. A ConditionBadge component that takes 'condition' as a prop, using design tokens from docs/design-system/tokens.json: New (highlight), Good (success), Need Repair (warning), Scrap (muted).
+> 2. A DocumentStatusBadge component: Draft (muted), Pending Approval (warning), In Progress (primary), Done (success), Overdue (destructive).
 > 3. A MobileStepperInput component with large '+' and '-' buttons for easy tapping on mobile.
 > 4. A DesktopDataTable component with sticky headers and a dummy pagination footer.
 > 5. A ConditionSplit component: one total quantity split into 'Good', 'Need Repair', 'Scrap' (and optionally 'Lost'), showing a warning when the parts do not add up to the total."
