@@ -19,6 +19,7 @@ Tài liệu gốc (đọc trước khi làm bất kỳ tính năng nào):
 | `docs/requirements.md` | Nghiệp vụ, **quyết định đã chốt (Mục 0)**, phạm vi MVP / Bản 2 |
 | `docs/ui.md` | Layout, component, danh sách màn hình (D1–D17, M1–M8) |
 | `docs/roadmap.md` | Thứ tự các change OpenSpec |
+| `docs/design-system/` | Bright Blue Base: `tokens.json` (màu, chữ, khoảng cách, bo góc) + `README.md` (cách dùng, giọng văn) |
 | `openspec/specs/` | Spec "sống" — nguồn sự thật sau khi change được archive |
 
 Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
@@ -104,6 +105,7 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 ## Giao diện
 
 - Theo `docs/ui.md`. Dùng component shadcn/ui + token Bright Blue Base.
+- **Nguồn token duy nhất:** `docs/design-system/tokens.json`; quy tắc dùng màu, chữ, giọng văn ở `docs/design-system/README.md`. Không tự đoán mã màu, không dùng màu Tailwind cứng (`blue-600`, `slate-50`...).
 - Không tự thêm thư viện UI khác khi chưa hỏi.
 - Desktop: bảng dữ liệu. Mobile: thẻ (card), nút to, stepper +/-.
 - Chữ trên giao diện: tiếng Việt.
