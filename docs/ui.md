@@ -176,6 +176,10 @@ Canvas: **Scaffolding ERP – Thiết kế màn hình** — https://claude.ai/ar
 | D5 Chi tiết hợp đồng | `D5-Contract.dc.html` | `contracts` | Đã duyệt |
 | D6 Tiến độ cấp hàng | `D6-SiteDeliveries.dc.html` | `deliveries` | Đã duyệt |
 | M5 Nhặt hàng xuất kho | `M5-Picking.dc.html` | `deliveries` | Đã duyệt |
+| D8 Phiếu đền bù | `D8-Compensation.dc.html` | `returns-and-compensation` | Chờ duyệt |
+| D12 Sửa chữa đơn giản | `D12-Repair.dc.html` | `simple-repair` | Chờ duyệt |
+| D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Chờ duyệt |
+| D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Chờ duyệt |
 
 Cách dùng khi propose: mở canvas → **Export → Hand off to Claude Code** → dán đoạn handoff vào `/opsx:propose <change>`. Thiết kế là tham chiếu bố cục; quy tắc trong `openspec/specs/` và tài liệu này vẫn thắng nếu khác nhau.
 
