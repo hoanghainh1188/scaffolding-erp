@@ -50,9 +50,9 @@
 
 ## 7. Layout Desktop
 
-- [ ] 7.1 `(desktop)/layout.tsx` + `AppSidebar` (block sidebar của shadcn, nền `card` viền `border`, mục đang chọn nền `accent` + `aria-current="page"`, theo cỡ màn hình: `< lg` ngăn trượt, `lg`–`< xl` chỉ biểu tượng có tooltip, `≥ xl` mở rộng; cookie chỉ ghi khi người dùng bấm và thắng mặc định từ `lg`; mặc định render bằng CSS để không nháy) dùng `navItemsForRole(getCurrentUser().role)`; vai trò Mobile → `redirect('/m')` — kiểm tra: đổi `DEV_ROLE` thấy menu đổi đúng bảng D3; kéo cửa sổ qua 900/1100/1366px thấy sidebar đổi đúng 3 dạng khi chưa bấm
-- [ ] 7.2 `TopHeader`: ô tìm kiếm, nút tạo nhanh, thông báo (chỉ hiển thị), khu người dùng hiện tên + vai trò tiếng Việt; nút mở sidebar ở màn hẹp; dưới `md` ô tìm kiếm thành nút biểu tượng `aria-label="Tìm kiếm"` và nút tạo nhanh thu thành "+"; `min-w-0` + `truncate` chống tràn — kiểm tra: ở 768px bấm nút menu thấy sidebar trượt ra, Esc đóng; ở 375px header không tràn
-- [ ] 7.3 `src/app/page.tsx` chuyển tới `/dashboard`; 9 trang giữ chỗ (tiêu đề đúng tên mục bằng họ chữ `display` + "Đang xây dựng") dùng chung một component — kiểm tra: bấm từng mục menu không có trang 404
+- [x] 7.1 `(desktop)/layout.tsx` + `AppSidebar` (block sidebar của shadcn, nền `card` viền `border`, mục đang chọn nền `accent` + `aria-current="page"`, theo cỡ màn hình: `< lg` ngăn trượt, `lg`–`< xl` chỉ biểu tượng có tooltip, `≥ xl` mở rộng; cookie chỉ ghi khi người dùng bấm và thắng mặc định từ `lg`; mặc định render bằng CSS để không nháy) dùng `navItemsForRole(getCurrentUser().role)`; vai trò Mobile → `redirect('/m')` — kiểm tra: đổi `DEV_ROLE` thấy menu đổi đúng bảng D3; kéo cửa sổ qua 900/1100/1366px thấy sidebar đổi đúng 3 dạng khi chưa bấm
+- [x] 7.2 `TopHeader`: ô tìm kiếm, nút tạo nhanh, thông báo (chỉ hiển thị), khu người dùng hiện tên + vai trò tiếng Việt; nút mở sidebar ở màn hẹp; dưới `md` ô tìm kiếm thành nút biểu tượng `aria-label="Tìm kiếm"` và nút tạo nhanh thu thành "+"; `min-w-0` + `truncate` chống tràn — kiểm tra: ở 768px bấm nút menu thấy sidebar trượt ra, Esc đóng; ở 375px header không tràn
+- [x] 7.3 `src/app/page.tsx` chuyển tới `/dashboard`; 9 trang giữ chỗ (tiêu đề đúng tên mục bằng họ chữ `display` + "Đang xây dựng") dùng chung một component — kiểm tra: bấm từng mục menu không có trang 404
 
 ## 8. Layout Mobile và PWA
 
