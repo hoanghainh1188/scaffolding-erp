@@ -1,0 +1,64 @@
+schema: spec-driven
+
+# Bối cảnh dự án: ràng buộc mà agent không tự suy ra được từ code.
+# Tài liệu đầy đủ: docs/requirements.md (nghiệp vụ), docs/ui.md (giao diện), docs/roadmap.md (thứ tự change).
+context: |
+  Hệ thống quản lý cho một công ty vừa và nhỏ tại Việt Nam: thu mua, sửa chữa/tân trang,
+  bán và cho thuê giàn giáo, vật tư xây dựng đã qua sử dụng (có cả hàng mới).
+  Quy mô: 1 bãi + 1 xưởng, khoảng 5 vai trò người dùng. Ưu tiên đơn giản, dễ dùng hơn là đầy đủ tính năng.
+
+  Stack: Next.js (App Router, làm cả giao diện và API) + TypeScript + PostgreSQL
+  + Tailwind CSS + shadcn/ui. Design system: Bright Blue Base.
+  Hai giao diện: Desktop cho văn phòng; Mobile PWA cho thủ kho và xưởng.
+
+  Quyết định nghiệp vụ đã chốt (không tự ý thay đổi; nếu change cần thay đổi thì phải nêu rõ trong proposal):
+  - Giá vốn: bình quân gia quyền theo (mã hàng + tình trạng). Không quản lý theo lô, không serial.
+  - 4 tình trạng hàng: NEW (Mới), GOOD (Tốt), NEEDS_REPAIR (Chờ sửa), SCRAP (Phế liệu).
+    Chỉ NEW và GOOD được xuất bán/cho thuê. SCRAP quản lý theo kg.
+  - Mỗi mã hàng có trọng lượng chuẩn (kg/cái) để quy đổi kg <-> cái.
+  - "Bộ" (BOM) là tùy chọn, chỉ dùng để báo giá; tồn kho và giá thuê luôn tính theo linh kiện.
+  - Mọi biến động kho đều ghi vào Sổ kho (inventory ledger), chỉ ghi thêm, không sửa/xóa dòng cũ.
+    Sổ kho là nguồn duy nhất để tính tồn, giá vốn, tiền thuê và báo cáo.
+  - Tiền thuê tính theo ngày: tính ngày xuất, không tính ngày trả. Giá tháng = giá ngày × 30.
+  - 1 hợp đồng = 1 nhà thầu + 1 công trình.
+  - Giám đốc duyệt hợp đồng và phiếu đền bù trước khi có hiệu lực.
+  - Kế toán: chỉ quản lý công nợ nội bộ, có xuất Excel. Không làm hóa đơn VAT.
+  - PWA không chạy offline ở MVP; chỉ lưu nháp trên máy khi mất sóng.
+
+  Quy ước dữ liệu:
+  - Tiền: VND, số nguyên (không có phần lẻ). Lưu kiểu bigint/numeric, không dùng float.
+  - Số lượng: tối đa 3 chữ số thập phân (để chứa kg).
+  - Ngày giờ: lưu UTC; hiển thị và tính "ngày" theo múi giờ Asia/Ho_Chi_Minh.
+
+  Ngôn ngữ: giao diện tiếng Việt. Code, tên bảng, tên biến bằng tiếng Anh.
+  Giai đoạn: mỗi chức năng trong docs/requirements.md có nhãn [MVP] hoặc [Bản 2]. Mặc định chỉ làm [MVP].
+
+rules:
+  proposal:
+    - Viết bằng tiếng Việt, câu ngắn, dễ hiểu.
+    - Ghi rõ mã màn hình liên quan (D1..D17, M1..M8 trong docs/ui.md) và giai đoạn [MVP] hoặc [Bản 2].
+    - Luôn có mục "Ngoài phạm vi".
+    - Nếu change đụng tới Sổ kho hoặc giá vốn, nêu rõ ảnh hưởng tới số liệu đã có.
+  specs:
+    - Giữ nguyên các tiêu đề bắt buộc của OpenSpec bằng tiếng Anh (### Requirement:, #### Scenario:) và từ khóa SHALL/MUST; nội dung viết bằng tiếng Việt.
+    - Mỗi requirement có ít nhất một scenario dạng WHEN/THEN với số liệu cụ thể (số lượng, đơn giá, ngày).
+    - Quy tắc tính tiền (giá vốn, tiền thuê, đền bù) phải có scenario cho trường hợp biên: trả giữa kỳ, số lượng 0, đổi giá.
+    - Có scenario cho phân quyền khi chức năng giới hạn theo vai trò.
+  design:
+    - Viết bằng tiếng Việt.
+    - Mô tả thay đổi bảng dữ liệu (tên bảng, cột chính, ràng buộc) và API (route, input, output).
+    - Ghi lựa chọn đã cân nhắc và lý do chọn.
+  tasks:
+    - Mỗi task làm xong trong khoảng 1–2 giờ.
+    - Thứ tự: migration DB → logic nghiệp vụ + unit test → API → giao diện → kiểm tra thủ công.
+    - Logic tính tiền và giá vốn phải có unit test trước khi làm giao diện.
+
+operations:
+  apply:
+    guidance:
+      - Làm lần lượt từng task, chạy test sau mỗi task, tick task ngay khi xong.
+      - Dùng component có sẵn của shadcn/ui và token của Bright Blue Base; không tự thêm thư viện UI khác.
+      - Gặp điểm mâu thuẫn với spec thì dừng lại và hỏi, không tự đoán.
+  archive:
+    guidance:
+      - Tóm tắt ngắn bằng tiếng Việt những gì đã gộp vào openspec/specs/.
