@@ -37,14 +37,26 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 
 ## Lệnh thường dùng
 
-> Sẽ cập nhật sau change `setup-project`.
+| Lệnh | Việc |
+|---|---|
+| `npm run dev` | Chạy local ở http://localhost:3000 |
+| `npm run build` / `npm start` | Build và chạy bản production (hiện từ chối người dùng giả lập) |
+| `npm run lint` | ESLint + `scripts/check-colors.mts` (chặn màu Tailwind cứng, mã hex) |
+| `npm run typecheck` | `next typegen` + `tsc --noEmit` |
+| `npm run format` / `format:check` | Prettier |
+| `npm test` | Vitest: unit, component, integration (integration cần `TEST_DATABASE_URL`) |
+| `npm run test:unit` / `test:int` / `test:coverage` | Từng nhóm test; coverage ≥ 80% cho `src/domain`, `src/lib` |
+| `npm run test:e2e` | Playwright trên Edge (`next dev`); ở local bỏ qua `@visual` |
+| `npm run tokens` | Sinh `src/styles/tokens.css` từ `docs/design-system/tokens.json` |
+| `npm run db:up` / `db:down` | Bật / tắt PostgreSQL trong Docker |
+| `npm run db:generate` / `db:migrate` / `db:studio` | Sinh migration SQL / chạy migration / xem dữ liệu |
 
-```bash
-# npm run dev      # chạy local
-# npm run test     # unit test
-# npm run lint     # kiểm tra code
-# npm run db:migrate
-```
+Lưu ý:
+
+- Sửa `tokens.json` thì chạy `npm run tokens`; test chống lệch sẽ đỏ nếu quên.
+- Không chạy hai `next dev` cùng lúc trên repo (trang sẽ tự tải lại liên tục). Muốn Playwright dùng lại dev server đang chạy: `PW_PORT=<cổng> npm run test:e2e`.
+- Ảnh mốc Playwright chỉ tạo trên CI: tab Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow.
+- Trong E2E, Next 16 giữ trang cũ ẩn trong DOM sau khi điều hướng: tìm theo chữ thì thêm `.filter({ visible: true })`.
 
 ## Quy trình làm việc: OpenSpec
 

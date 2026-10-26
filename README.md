@@ -35,7 +35,16 @@ npm run dev              # http://localhost:3000
 
 - `npm test` — unit, component và integration. Integration cần `TEST_DATABASE_URL`; thiếu thì được bỏ qua kèm thông báo (trên CI thì bắt buộc).
 - `npm run test:int` — chỉ integration test. Chạy migration vào DB test trước nếu test cần bảng: `DATABASE_URL=$TEST_DATABASE_URL npm run db:migrate`.
-- `npm run test:e2e` — Playwright trên Microsoft Edge. Máy không có Edge: `PW_CHANNEL=chromium npm run test:e2e`.
+- `npm run test:e2e` — Playwright trên Microsoft Edge, tự bật `next dev`. Máy không có Edge: `PW_CHANNEL=chromium npm run test:e2e`. Đang chạy `npm run dev` ở cổng khác thì đặt `PW_PORT` trùng cổng đó để dùng lại, đừng chạy hai `next dev` cùng lúc.
+- Test ảnh mốc (`@visual`) chỉ chạy trên CI. Muốn tạo hoặc cập nhật ảnh mốc: GitHub → Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow. Workflow commit ảnh vào nhánh rồi tự chạy lại CI.
+
+### Design token
+
+Màu, chữ, bo góc lấy từ `docs/design-system/tokens.json`. Sửa file đó xong chạy `npm run tokens` để sinh lại `src/styles/tokens.css` (không sửa tay file CSS này). `npm run lint` báo lỗi nếu code dùng màu Tailwind cứng (`bg-blue-600`) hoặc mã hex.
+
+### CI
+
+`.github/workflows/ci.yml` chạy cho mỗi pull request và mỗi lần push lên `main`: format, lint, typecheck, migration + toàn bộ Vitest trên PostgreSQL, `npm run build`, rồi Playwright (Edge, Firefox, WebKit) và so sánh ảnh mốc.
 
 ## Quy trình phát triển
 

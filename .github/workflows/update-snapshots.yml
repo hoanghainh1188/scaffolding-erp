@@ -1,0 +1,60 @@
+name: Update Playwright snapshots
+
+# Run from the Actions tab on the branch whose baselines should change.
+# Baselines are only ever made here (Linux + Edge), never on a dev machine.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: update-snapshots-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # commit the new images
+  actions: write # re-run ci.yml on the branch
+
+env:
+  CI: "true"
+  DATABASE_URL: postgres://erp:erp@localhost:5432/scaffolding_erp_test
+  DEV_ROLE: DIRECTOR
+
+jobs:
+  update:
+    name: Update visual baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install Edge
+        run: npx playwright install --with-deps msedge
+      - name: Write baselines
+        run: npx playwright test --grep @visual --project desktop-1280 --update-snapshots=all
+      - name: Commit baselines
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/__screenshots__
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Baselines unchanged." >> "$GITHUB_STEP_SUMMARY"
+          else
+            git commit -m "test: update Playwright visual baselines"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Committed new baselines to ${GITHUB_REF_NAME}." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      # A push made with GITHUB_TOKEN does not start workflows, but
+      # workflow_dispatch does. The run checks the new commit and shows on the PR.
+      - name: Re-run CI on the branch
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ci.yml --ref "$GITHUB_REF_NAME"

@@ -74,7 +74,7 @@
 
 - [ ] 10.1 `.github/workflows/ci.yml` theo design D16 (trigger `push`, `pull_request`, `workflow_dispatch`; service Postgres; cài trình duyệt bằng `npx playwright install --with-deps msedge firefox webkit`; lint, typecheck, migrate, test gồm chống lệch token, `npm run build` để chắc bản production build được, Playwright chạy trên `next dev` gồm `@visual`, tải ảnh khác biệt lên artifact khi lỗi) — kiểm tra: chạy thử trên nhánh, mọi bước xanh trừ `@visual` khi chưa có ảnh mốc
 - [ ] 10.2 `.github/workflows/update-snapshots.yml` (`workflow_dispatch`, quyền `contents: write` + `actions: write`): chạy `@visual` với `--update-snapshots`, commit ảnh vào nhánh được chọn, rồi `gh workflow run ci.yml --ref <nhánh>`; chạy một lần để tạo ảnh mốc đầu tiên — kiểm tra: commit ảnh xuất hiện trên nhánh **và** tab Actions có một lần chạy `ci.yml` mới (sự kiện `workflow_dispatch`) trên đúng commit ảnh đó, tự bắt đầu không cần push thêm, xanh hoàn toàn và hiện trong mục check của PR
-- [ ] 10.3 Cập nhật mục **Lệnh thường dùng** trong `CLAUDE.md` và phần chạy local trong `README.md` theo bảng D17 (gồm `npm run tokens` và cách cập nhật ảnh mốc bằng workflow chạy tay) — kiểm tra: mọi lệnh ghi trong tài liệu chạy được đúng như mô tả
+- [x] 10.3 Cập nhật mục **Lệnh thường dùng** trong `CLAUDE.md` và phần chạy local trong `README.md` theo bảng D17 (gồm `npm run tokens` và cách cập nhật ảnh mốc bằng workflow chạy tay) — kiểm tra: mọi lệnh ghi trong tài liệu chạy được đúng như mô tả
 
 ## 11. Kiểm tra thủ công
 
