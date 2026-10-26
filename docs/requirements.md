@@ -50,6 +50,20 @@ Mỗi tình trạng có **giá vốn bình quân riêng**.
 | Thủ kho | Mobile | Nhập, xuất, thu hồi, kiểm kê |
 | Xưởng | Mobile | Ghi nhận sửa chữa **[Bản 2]** |
 
+### 0.5. Đăng nhập & tài khoản (chốt 26/10/2026)
+
+| # | Chủ đề | Quyết định |
+|---|---|---|
+| 1 | Cách đăng nhập | **Tên đăng nhập + mật khẩu.** Không dùng email hay số điện thoại (thủ kho, thợ xưởng thường không có email công ty) |
+| 2 | Ai tạo tài khoản | **Chỉ Giám đốc**, ở màn D17 |
+| 3 | Mật khẩu ban đầu | Hệ thống tạo **mật khẩu tạm**; người dùng **bắt buộc đổi** ở lần đăng nhập đầu |
+| 4 | Quên mật khẩu | **Giám đốc đặt lại** (cấp mật khẩu tạm mới). Không có tự khôi phục qua email/SMS |
+| 5 | Giữ đăng nhập | Có ô "Giữ đăng nhập trên máy này" (dành cho điện thoại thủ kho ngoài bãi) |
+| 6 | Vai trò | **Mỗi người một vai trò** |
+| 7 | Khóa tài khoản | Giám đốc khóa được tài khoản (nghỉ việc). Tài khoản khóa vẫn giữ lịch sử, không xóa |
+
+Thời gian giữ đăng nhập cụ thể (khi có và không tick ô) do change `auth-and-roles` đề xuất.
+
 ---
 
 ## 1. Phân hệ Thu mua & Nhập kho (Inbound Procurement)
