@@ -235,7 +235,10 @@ docker/postgres/init.sql          # tạo DB test
 - Vitest dùng `projects` để chạy 3 nhóm riêng; `npm test` chạy cả 3. Integration bỏ qua có thông báo rõ nếu thiếu `TEST_DATABASE_URL` khi chạy local, nhưng **bắt buộc** trên CI.
 - Coverage (v8) ngưỡng 80% cho `src/domain/**` và `src/lib/**`.
 - A11y: `@axe-core/playwright` quét `/dashboard`, `/m`, `/dev/components`, không cho phép lỗi mức `serious`/`critical`.
-- Playwright local dùng `next dev`; CI dùng `next build && next start`.
+- **E2E chạy trên `next dev` ở cả local lẫn CI.** Bản production (`next build && next start`) từ chối người dùng giả lập cho tới khi có đăng nhập (spec `app-shell`), nên chưa chạy E2E trên bản đó được. Quy tắc này giữ nguyên; change `auth-and-roles` sẽ chuyển E2E sang bản production với tài khoản test.
+  - `playwright.config.ts` khởi động `next dev` với biến `E2E=1`; `next.config.ts` tắt `devIndicators` khi có biến này, để nút chỉ báo dev của Next không che nút trên trang và không lọt vào ảnh mốc.
+  - Lần mở trang đầu trên `next dev` phải biên dịch nên chậm: `webServer.timeout` 180 giây, `expect` timeout 10 giây, CI chạy `retries: 2`.
+  - Kiểm tra bản production build được vẫn nằm ở bước `npm run build` của CI (D16).
 - **Trình duyệt:** nền tảng chính là Windows 10/11 + Edge. Playwright dùng `channel: 'msedge'`. CI chạy trên runner Linux và cài Edge bằng `npx playwright install msedge`. Không dùng runner Windows vì runner đó không chạy được service container (Postgres). Ở máy dev, nếu không có Edge thì dùng Chromium (`PW_CHANNEL` để đổi); Edge và Chromium cùng lõi nên khác biệt nhỏ.
 - **Cỡ màn hình chuẩn:** 360, 375 (điện thoại), 768 (máy tính bảng), 1024, 1280, 1366 (màn hình văn phòng phổ biến); bỏ 1440px.
 - **Không cuộn ngang:** `responsive.spec.ts` mở `/dashboard`, `/inventory`, `/m`, `/m/history`, `/dev/components` ở 6 cỡ và kiểm tra `document.documentElement.scrollWidth <= window.innerWidth`. Cùng file kiểm tra sidebar ở 900/1100/1366px (ngăn trượt / chỉ biểu tượng / mở rộng) và khung `/m` rộng 640px ở 1366px.
@@ -258,7 +261,7 @@ docker/postgres/init.sql          # tạo DB test
 
 - ESLint (cấu hình của Next.js, flat config) + Prettier (`prettier-plugin-tailwindcss`). `npm run typecheck` = `tsc --noEmit`.
 - Header bảo mật trong `next.config.ts`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(self), microphone=(), geolocation=()` (camera cần cho quét QR/chụp ảnh sau này).
-- `.github/workflows/ci.yml` (trigger `push`, `pull_request`, `workflow_dispatch`): service `postgres:17-alpine` → `npm ci` → lint → typecheck → `db:migrate` trên DB test → `npm test` (gồm test chống lệch token) → build → Playwright (gồm `@visual`). Ảnh khác biệt được tải lên làm artifact khi lỗi.
+- `.github/workflows/ci.yml` (trigger `push`, `pull_request`, `workflow_dispatch`): service `postgres:17-alpine` → `npm ci` → lint → typecheck → `db:migrate` trên DB test → `npm test` (gồm test chống lệch token) → `npm run build` (chỉ để chắc bản production build được) → Playwright trên `next dev` (gồm `@visual`). Ảnh khác biệt được tải lên làm artifact khi lỗi.
 - `.github/workflows/update-snapshots.yml`: chạy tay, xem D15.
 
 ### D17. Lệnh chuẩn (`package.json`)

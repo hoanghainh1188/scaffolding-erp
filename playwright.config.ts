@@ -23,6 +23,8 @@ export default defineConfig({
   snapshotPathTemplate:
     "{testDir}/__screenshots__/{testFilePath}/{arg}-{projectName}{ext}",
   grepInvert,
+  // The first visit to a page compiles it on `next dev`.
+  expect: { timeout: 10_000 },
   use: {
     baseURL,
     locale: "vi-VN",
@@ -60,10 +62,12 @@ export default defineConfig({
     { name: "firefox", use: { ...devices["Desktop Firefox"] }, grep: /@basic/ },
     { name: "webkit", use: { ...devices["Desktop Safari"] }, grep: /@basic/ },
   ],
+  // Always `next dev`: production refuses the fake user until auth-and-roles
+  // (design D15). E2E=1 hides Next's dev indicator so it never covers the
+  // page or appears in screenshots.
   webServer: {
-    command: isCI
-      ? `npm run build && npm run start -- -p ${port}`
-      : `npm run dev -- -p ${port}`,
+    command: `npm run dev -- -p ${port}`,
+    env: { E2E: "1" },
     url: baseURL,
     reuseExistingServer: !isCI,
     timeout: 180_000,
