@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Đăng nhập</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F7F9FF}
+a{color:#1D5BFF}a:hover{color:#0F1A33}
+button,a,input{font-family:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #1D5BFF;outline-offset:2px}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 860px; background: #F7F9FF; color: #0F1A33; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 16px; line-height: 24px;">
+
+  <section aria-label="Giới thiệu" style="flex: 1 1 480px; box-sizing: border-box; position: relative; overflow: hidden; background: #1D5BFF; color: #FFFFFF; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; gap: 48px; min-height: 360px;">
+    <div aria-hidden="true" style="position: absolute; right: -90px; bottom: -90px; width: 300px; height: 300px; border-radius: 9999px; background: #D4F53C;"></div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: #FFFFFF; color: #1D5BFF; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 22px;">S</div>
+      <span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 20px;">Scaffolding ERP</span>
+    </div>
+    <div style="position: relative; max-width: 520px; display: flex; flex-direction: column; gap: 16px;">
+      <p style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 48px; line-height: 52px; font-weight: 700; letter-spacing: -0.02em;">Giàn giáo đang ở đâu, ai đang nợ bao nhiêu.</p>
+      <p style="margin: 0; font-size: 18px; line-height: 28px; max-width: 440px;">Thu mua, cho thuê, thu hồi và công nợ của công ty trong cùng một chỗ.</p>
+    </div>
+    <p style="position: relative; margin: 0; font-size: 12px; line-height: 16px; font-weight: 500;">[TÊN CÔNG TY] · Hotline hỗ trợ [SỐ ĐIỆN THOẠI]</p>
+  </section>
+
+  <main style="flex: 1 1 420px; box-sizing: border-box; padding: 48px 24px; display: flex; align-items: center; justify-content: center;">
+    <form style="width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <h1 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Đăng nhập</h1>
+        <p style="margin: 0; font-size: 15px; line-height: 22px; color: #55607A;">Dùng tên đăng nhập Giám đốc đã cấp cho bạn.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label for="username" style="font-size: 14px; line-height: 20px; font-weight: 600;">Tên đăng nhập</label>
+        <input id="username" type="text" autocomplete="username" placeholder="VD: minhanh" style="box-sizing: border-box; height: 48px; padding: 0 14px; border: 1px solid #E1E7F5; border-radius: 12px; background: #FFFFFF; color: #0F1A33; font-size: 16px;">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label for="password" style="font-size: 14px; line-height: 20px; font-weight: 600;">Mật khẩu</label>
+        <div style="position: relative;">
+          <input id="password" type="password" autocomplete="current-password" value="matkhau123" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 56px 0 14px; border: 1px solid #E1E7F5; border-radius: 12px; background: #FFFFFF; color: #0F1A33; font-size: 16px;">
+          <button type="button" aria-label="Hiện mật khẩu" style="position: absolute; right: 2px; top: 2px; width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: #55607A; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+      <label style="display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15px; cursor: pointer;">
+        <input type="checkbox" checked style="width: 20px; height: 20px; margin: 0; accent-color: #1D5BFF;">
+        Giữ đăng nhập trên máy này
+      </label>
+      <button type="submit" style="height: 52px; border: 0; border-radius: 12px; background: #1D5BFF; color: #FFFFFF; font-size: 16px; font-weight: 600; cursor: pointer;">Đăng nhập</button>
+      <p style="margin: 0; padding: 14px 16px; border-radius: 12px; background: #EEF3FF; font-size: 14px; line-height: 20px; color: #0F1A33;">Quên mật khẩu? Nhờ Giám đốc đặt lại trong mục <strong style="font-weight: 600;">Cài đặt › Người dùng</strong>.</p>
+    </form>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

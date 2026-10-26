@@ -156,6 +156,8 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 Canvas: **Scaffolding ERP – Thiết kế màn hình** — https://claude.ai/artifact/1maxh81Uzyzb7iLM8xf6z9 (riêng tư, chỉ chủ tài khoản mở được).
 
+Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột Artboard). Cách đọc và những gì không được copy nguyên: `docs/design/screens/README.md`.
+
 | Màn | Artboard | Dùng cho change | Trạng thái |
 |---|---|---|---|
 | D1 Tổng quan | `Main.dc.html` | `dashboard-basic` | Đã chốt phong cách |
@@ -181,7 +183,7 @@ Canvas: **Scaffolding ERP – Thiết kế màn hình** — https://claude.ai/ar
 | D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Đã duyệt |
 | D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt |
 
-Cách dùng khi propose: mở canvas → **Export → Hand off to Claude Code** → dán đoạn handoff vào `/opsx:propose <change>`. Thiết kế là tham chiếu bố cục; quy tắc trong `openspec/specs/` và tài liệu này vẫn thắng nếu khác nhau.
+Cách dùng khi propose: chỉ ra file trong `docs/design/screens/` của các màn thuộc change (bảng trên). Có thể handoff thêm từ canvas: **Export → Hand off to Claude Code**. Thiết kế là tham chiếu bố cục; quy tắc trong `openspec/specs/` và tài liệu này vẫn thắng nếu khác nhau.
 
 **Quy tắc đã chốt từ thiết kế:**
 - **Viết tiền theo spec `domain-values`:** `1.250.000 ₫` (dấu chấm hàng nghìn, cách một khoảng, ký hiệu `₫`). Không dùng kiểu `1.250.000đ` trong README của Bright Blue Base — dự án này ghi đè điểm đó.
