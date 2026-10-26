@@ -57,17 +57,59 @@ Sidebar SHALL chỉ hiện các mục mà vai trò của người dùng hiện t
 - **WHEN** người dùng có vai trò `WAREHOUSE` hoặc `WORKSHOP` mở một trang Desktop
 - **THEN** hệ thống chuyển người dùng tới `/m`
 
-### Requirement: Sidebar thu gọn được
-Người dùng SHALL thu gọn sidebar thành dải chỉ có biểu tượng và mở lại được. Lựa chọn thu gọn SHALL được nhớ trên trình duyệt đó. Ở màn hình rộng dưới 1024px, sidebar SHALL ẩn và mở ra dạng ngăn trượt khi bấm nút menu.
+### Requirement: Sidebar theo cỡ màn hình
+Sidebar SHALL đổi theo bề rộng cửa sổ khi người dùng chưa tự chọn: dưới 1024px ẩn thành ngăn trượt mở bằng nút menu; 1024–1279px thu gọn chỉ còn biểu tượng; từ 1280px mở rộng. Người dùng SHALL tự thu gọn/mở rộng được; lựa chọn đó được nhớ trên trình duyệt và thắng mặc định ở mọi bề rộng từ 1024px. Dưới 1024px luôn là ngăn trượt.
 
-#### Scenario: Thu gọn và tải lại trang
-- **WHEN** người dùng bấm nút thu gọn sidebar rồi tải lại trang
-- **THEN** sidebar vẫn ở trạng thái thu gọn, chỉ hiện biểu tượng, rê chuột vào biểu tượng thấy tên mục
+#### Scenario: Mặc định ở 1366px
+- **WHEN** người dùng chưa từng tự chọn và mở `/dashboard` ở cửa sổ 1366px
+- **THEN** sidebar mở rộng, hiện đủ tên mục
 
-#### Scenario: Màn hình hẹp
+#### Scenario: Mặc định ở 1100px
+- **WHEN** người dùng chưa từng tự chọn và mở `/dashboard` ở cửa sổ 1100px
+- **THEN** sidebar chỉ hiện biểu tượng, rê chuột vào biểu tượng thấy tên mục
+
+#### Scenario: Ngăn trượt ở 768px
 - **WHEN** cửa sổ trình duyệt rộng 768px
 - **THEN** sidebar không chiếm chỗ trên trang
-- **AND** bấm nút menu ở header thì sidebar trượt ra phía trên nội dung
+- **AND** bấm nút menu ở header thì sidebar trượt ra phía trên nội dung, bấm ra ngoài hoặc phím Esc thì đóng
+
+#### Scenario: Lựa chọn của người dùng được nhớ
+- **WHEN** ở cửa sổ 1366px người dùng bấm thu gọn sidebar rồi tải lại trang
+- **THEN** sidebar vẫn chỉ hiện biểu tượng
+
+#### Scenario: Lựa chọn thắng mặc định ở dải giữa
+- **WHEN** ở cửa sổ 1100px người dùng bấm mở rộng sidebar, rồi tải lại trang ở cùng bề rộng
+- **THEN** sidebar vẫn mở rộng
+
+#### Scenario: Dưới 1024px bỏ qua lựa chọn
+- **WHEN** người dùng đã chọn mở rộng, rồi thu cửa sổ còn 900px
+- **THEN** sidebar là ngăn trượt đang đóng
+
+### Requirement: Nền tảng và trình duyệt hỗ trợ
+Nền tảng chính là Windows 10/11 + Microsoft Edge. Hệ thống SHALL hỗ trợ đầy đủ Chrome và Edge bản mới trên Windows, macOS, Ubuntu (và Chrome trên Android). Safari và Firefox bản mới (gồm Safari trên iPhone) được hỗ trợ cơ bản: mọi trang SHALL mở được, dùng được và không cuộn ngang; khác biệt nhỏ về hiển thị được chấp nhận.
+
+#### Scenario: Edge trên Windows
+- **WHEN** Giám đốc mở `/dashboard` trên Edge, Windows 11, cửa sổ 1366×768
+- **THEN** mọi phần của layout Desktop hiển thị và hoạt động đúng
+
+#### Scenario: Firefox hỗ trợ cơ bản
+- **WHEN** Kế toán mở `/dashboard` trên Firefox bản mới
+- **THEN** trang hiện đủ sidebar, header, nội dung, không có lỗi chặn thao tác và không cuộn ngang
+
+#### Scenario: Safari trên iPhone hỗ trợ cơ bản
+- **WHEN** thủ kho mở `/m` trên Safari của iPhone
+- **THEN** 4 tab dưới đáy bấm được và trang không cuộn ngang
+
+### Requirement: Trang không cuộn ngang ở các cỡ màn hình chuẩn
+Ở các bề rộng 360, 375, 768, 1024, 1280, 1366px, mọi trang của khu Desktop và khu Mobile SHALL không có thanh cuộn ngang ở mức trang: bề rộng nội dung trang không vượt bề rộng cửa sổ. Nội dung rộng (như bảng) cuộn trong khung riêng của nó.
+
+#### Scenario: Desktop ở 1280px
+- **WHEN** Kế toán mở `/inventory` ở cửa sổ 1280×720
+- **THEN** bề rộng cuộn của trang (`scrollWidth`) không lớn hơn bề rộng cửa sổ (`innerWidth`)
+
+#### Scenario: Mobile ở 360px
+- **WHEN** thủ kho mở `/m` trên điện thoại rộng 360px
+- **THEN** bề rộng cuộn của trang không lớn hơn 360px
 
 ### Requirement: Header Desktop
 Layout Desktop SHALL có header gồm ô tìm kiếm, nút tạo nhanh, nút thông báo và khu thông tin người dùng (tên, vai trò bằng tiếng Việt). Ô tìm kiếm, nút tạo nhanh và thông báo ở change này chỉ là chỗ hiển thị, chưa có chức năng.
@@ -76,6 +118,18 @@ Layout Desktop SHALL có header gồm ô tìm kiếm, nút tạo nhanh, nút th�
 - **WHEN** người dùng có vai trò `ACCOUNTANT` mở layout Desktop
 - **THEN** khu thông tin người dùng hiện chữ "Kế toán"
 
+### Requirement: Header gọn trên màn hẹp
+Dưới 768px, ô tìm kiếm trên header SHALL thu thành một nút biểu tượng kính lúp có nhãn cho trình đọc màn hình. Ở mọi bề rộng, các phần của header SHALL không tràn ra ngoài cửa sổ.
+
+#### Scenario: Header ở 375px
+- **WHEN** người dùng mở `/dashboard` ở cửa sổ 375px
+- **THEN** header hiện nút menu, nút tìm kiếm dạng biểu tượng có nhãn "Tìm kiếm" thay cho ô nhập, và khu người dùng
+- **AND** không phần nào của header nằm ngoài bề rộng 375px
+
+#### Scenario: Header ở 1024px
+- **WHEN** người dùng mở `/dashboard` ở cửa sổ 1024px
+- **THEN** header hiện ô tìm kiếm đầy đủ
+
 ### Requirement: Thanh điều hướng Mobile 4 tab
 Layout Mobile SHALL có thanh điều hướng cố định ở đáy với 4 tab: Việc hôm nay (`/m`), Quét mã (`/m/scan`), Lịch sử (`/m/history`), Cá nhân (`/m/profile`). Mỗi tab SHALL có vùng bấm cao tối thiểu 48px. Tab đang chọn SHALL có nền token `accent` bo tròn dạng viên thuốc.
 
@@ -83,8 +137,37 @@ Layout Mobile SHALL có thanh điều hướng cố định ở đáy với 4 ta
 - **WHEN** thủ kho bấm tab "Lịch sử"
 - **THEN** hệ thống mở `/m/history` và tab "Lịch sử" ở trạng thái đang chọn với nền `accent`
 
+### Requirement: Khu Mobile trên màn rộng
+Trên cửa sổ rộng hơn 640px, nội dung khu Mobile và thanh điều hướng dưới đáy SHALL rộng tối đa 640px và căn giữa.
+
+#### Scenario: Mở /m trên màn hình 1366px
+- **WHEN** Giám đốc mở `/m` ở cửa sổ 1366px
+- **THEN** nội dung và thanh 4 tab rộng 640px, nằm giữa màn hình
+
+#### Scenario: Mở /m trên điện thoại 375px
+- **WHEN** thủ kho mở `/m` trên điện thoại rộng 375px
+- **THEN** nội dung và thanh 4 tab chiếm hết bề rộng 375px
+
+### Requirement: Chừa vùng an toàn và chiều cao động trên điện thoại
+Thanh điều hướng dưới đáy và app bar SHALL chừa vùng an toàn của thiết bị (tai thỏ, thanh vuốt về màn hình chính). Chiều cao khu Mobile SHALL theo chiều cao nhìn thấy thực tế của trình duyệt, để thanh dưới đáy không bị thanh địa chỉ đẩy khuất.
+
+#### Scenario: iPhone có thanh vuốt
+- **WHEN** thủ kho mở `/m` trên iPhone có thanh vuốt ở cạnh dưới (vùng an toàn dưới 34px)
+- **THEN** các tab nằm trên vùng an toàn, thanh vuốt không đè lên tab nào
+
+#### Scenario: Thanh địa chỉ thu lại
+- **WHEN** thủ kho cuộn trang `/m` làm thanh địa chỉ của trình duyệt thu lại hoặc hiện ra
+- **THEN** thanh 4 tab luôn nằm sát mép dưới vùng nhìn thấy
+
+### Requirement: Ô đang nhập không bị bàn phím ảo che
+Trong khu Mobile, khi một ô nhập được chọn và bàn phím ảo mở ra, ô đó SHALL được tự cuộn vào vùng nhìn thấy, không nằm dưới bàn phím.
+
+#### Scenario: Ô ở cuối trang
+- **WHEN** thủ kho chạm vào ô nhập số lượng ở cuối danh sách và bàn phím ảo mở ra
+- **THEN** trang cuộn để ô đó nằm trong vùng nhìn thấy phía trên bàn phím
+
 ### Requirement: App bar Mobile
-Layout Mobile SHALL có app bar ở đầu trang hiện tên trang. Trang chi tiết SHALL có nút quay lại trong app bar.
+Layout Mobile SHALL có app bar ở đầu trang hiện tên trang, chừa vùng an toàn phía trên. Trang chi tiết SHALL có nút quay lại trong app bar.
 
 #### Scenario: Trang chi tiết có nút quay lại
 - **WHEN** một trang Mobile khai báo là trang chi tiết với tiêu đề "Phiếu nhập"

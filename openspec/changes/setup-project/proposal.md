@@ -9,6 +9,9 @@ Giai đoạn: **[MVP]** — change số 1 trong `docs/roadmap.md`.
 ## What Changes
 
 - Khởi tạo dự án **Next.js (App Router) + TypeScript strict**, quản lý bằng `npm`.
+- Nền tảng chính: **Windows 10/11 + Microsoft Edge**. Hỗ trợ đầy đủ Chrome/Edge bản mới trên Windows, macOS, Ubuntu; hỗ trợ cơ bản Safari/Firefox.
+- **Responsive:** cỡ màn hình chuẩn 360, 375, 768, 1024, 1280, 1366px, không trang nào cuộn ngang. Sidebar đổi theo cỡ (ngăn trượt / chỉ icon / mở rộng), header gọn trên màn hẹp, bảng cuộn ngang trong khung, khu `/m` rộng tối đa 640px, chừa vùng an toàn và tránh bàn phím ảo trên điện thoại.
+- Hàm in dùng chung `printDocument()` ở `src/lib/print.ts` (bản đầu mở hộp thoại in của trình duyệt); giao diện không gọi `window.print()` trực tiếp.
 - Chốt các lựa chọn kỹ thuật còn bỏ ngỏ trong `CLAUDE.md`:
   - ORM: **Drizzle** (migration dạng file SQL).
   - Đăng nhập: **Better Auth** — chỉ chốt lựa chọn, **chưa cài** (làm ở change `auth-and-roles`).
@@ -50,6 +53,7 @@ Không có. Change này **chưa tạo bảng nghiệp vụ nào** (không có s�
 
 - Đăng nhập, quản lý người dùng, kiểm tra quyền phía server → change `auth-and-roles`. Ở change này vai trò hiện tại lấy từ **người dùng giả lập** (chỉ chạy ở môi trường dev).
 - Bất kỳ bảng nghiệp vụ nào (vật tư, sổ kho, hợp đồng...).
+- Mẫu in của từng chứng từ (phiếu nhập, hợp đồng...): làm cùng màn hình cần in. Change này chỉ có hàm in chung.
 - Nội dung thật của các màn hình D1..D17, M1..M8.
 - Tìm kiếm toàn cục, thông báo, nút tạo nhanh trên header: chỉ có chỗ hiển thị, chưa hoạt động.
 - Nút nổi (FAB) trên mobile, quét QR, chụp ảnh, Unit Switch (cái ↔ kg): làm cùng màn hình cần dùng.

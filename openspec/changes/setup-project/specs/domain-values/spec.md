@@ -64,7 +64,7 @@ Mỗi số lượng SHALL gắn với một đơn vị: `PIECE` ("cái") hoặc 
 - **THEN** hệ thống báo lỗi khác đơn vị và không trả kết quả
 
 ### Requirement: Hiển thị và đọc số lượng theo kiểu Việt Nam
-Hệ thống SHALL hiển thị số lượng với dấu chấm ngăn cách hàng nghìn, dấu phẩy thập phân và bỏ số 0 thừa ở cuối. Khi đọc chuỗi người dùng gõ, hệ thống SHALL không nhận dấu ngăn cách hàng nghìn; dấu phẩy hoặc dấu chấm đều được hiểu là dấu thập phân.
+Hệ thống SHALL hiển thị số lượng với dấu chấm ngăn cách hàng nghìn, dấu phẩy thập phân và bỏ số 0 thừa ở cuối. Khi đọc chuỗi người dùng gõ, hệ thống SHALL không nhận dấu ngăn cách hàng nghìn; dấu phẩy hoặc dấu chấm đều được hiểu là dấu thập phân. Riêng chuỗi có dấu chấm, đúng 3 chữ số sau dấu chấm và không có dấu phẩy (VD "1.234") là chưa rõ và SHALL bị báo lỗi thay vì đoán.
 
 #### Scenario: Hiển thị số lượng lẻ
 - **WHEN** hiển thị số lượng 1234,500 kg
@@ -78,9 +78,21 @@ Hệ thống SHALL hiển thị số lượng với dấu chấm ngăn cách hà
 - **WHEN** thủ kho gõ "250.5" với đơn vị kg trên bàn phím số của điện thoại
 - **THEN** hệ thống đọc ra 250,5 kg
 
-#### Scenario: Dấu chấm với đơn vị kg là dấu thập phân
+#### Scenario: Chuỗi kg chưa rõ "1.234"
 - **WHEN** thủ kho gõ "1.234" với đơn vị kg
-- **THEN** hệ thống đọc ra 1,234 kg (không phải 1234)
+- **THEN** hệ thống báo lỗi "Chưa rõ số này. Gõ 1234 hoặc 1,234" và không đọc ra giá trị nào
+
+#### Scenario: Chuỗi kg chưa rõ "12.500"
+- **WHEN** thủ kho gõ "12.500" với đơn vị kg
+- **THEN** hệ thống báo lỗi "Chưa rõ số này. Gõ 1234 hoặc 1,234"
+
+#### Scenario: Dấu chấm với ít hơn 3 chữ số sau là dấu thập phân
+- **WHEN** thủ kho gõ "0.75" với đơn vị kg
+- **THEN** hệ thống đọc ra 0,75 kg
+
+#### Scenario: Dấu phẩy với 3 chữ số sau là dấu thập phân
+- **WHEN** thủ kho gõ "1,234" với đơn vị kg
+- **THEN** hệ thống đọc ra 1,234 kg
 
 #### Scenario: Dấu chấm với đơn vị cái không bị hiểu thành hàng nghìn
 - **WHEN** thủ kho gõ "1.234" với đơn vị cái

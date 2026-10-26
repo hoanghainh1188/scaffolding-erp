@@ -86,6 +86,22 @@ Bảng dữ liệu SHALL có tiêu đề cột dính ở đầu khi cuộn, sắ
 - **THEN** các dòng được sắp xếp theo số lượng tăng dần
 - **AND** bấm lần hai thì giảm dần, bấm lần ba thì trở về thứ tự ban đầu
 
+### Requirement: Bảng cuộn ngang trong khung của nó
+Khi các cột không đủ chỗ, bảng dữ liệu SHALL cuộn ngang bên trong khung bảng, trang không cuộn ngang. Cột đầu tiên SHALL dính bên trái khi cuộn ngang; ô tiêu đề của cột đầu dính cả khi cuộn dọc lẫn cuộn ngang.
+
+#### Scenario: Bảng 10 cột ở 1024px
+- **WHEN** bảng có 10 cột, tổng bề rộng 1400px, hiển thị ở cửa sổ 1024px
+- **THEN** khung bảng có thanh cuộn ngang, trang không có thanh cuộn ngang
+- **AND** khi cuộn ngang trong bảng, cột đầu tiên vẫn nằm yên bên trái
+
+### Requirement: Cột ẩn theo cỡ màn hình
+Màn hình dùng bảng SHALL khai báo được một cột chỉ hiện từ một mốc bề rộng trở lên: 768px, 1024px hoặc 1280px. Dưới mốc đó cột bị ẩn. Cột đầu tiên luôn hiện.
+
+#### Scenario: Ẩn cột Ghi chú dưới 1280px
+- **WHEN** cột "Ghi chú" được khai báo chỉ hiện từ 1280px và bảng hiển thị ở cửa sổ 1024px
+- **THEN** bảng không hiện cột "Ghi chú"
+- **AND** ở cửa sổ 1366px thì cột "Ghi chú" hiện
+
 ### Requirement: Trạng thái rỗng của bảng do màn hình cung cấp
 Màn hình dùng bảng dữ liệu SHALL truyền nội dung trạng thái rỗng gồm một câu mời và tối đa một nút hành động. Khi bảng không có dòng nào, bảng SHALL hiện nội dung đó ở giữa vùng bảng và không hiện thanh phân trang. Bảng SHALL không có chữ mặc định kiểu "Không có dữ liệu".
 

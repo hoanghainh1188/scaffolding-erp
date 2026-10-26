@@ -111,6 +111,7 @@ docker/postgres/init.sql          # tạo DB test
 - `addQuantity`/`subtractQuantity` ném lỗi khi khác đơn vị. Quy đổi cái ↔ kg (theo trọng lượng chuẩn) và đơn vị khác (tấn, bộ) **không** làm ở đây — thuộc `master-data`/`purchase-orders`.
 - Dạng sửa: `formatQuantityForInput` → `"1234,5"` (không ngăn cách hàng nghìn); `formatMoneyForInput` → `"1250000"`. Ô nhập hiện dạng sửa khi focus, dạng hiển thị khi blur.
 - Đọc chuỗi: không nhận dấu ngăn cách hàng nghìn; `.` và `,` đều là dấu thập phân. Nhờ quy tắc "cái là số nguyên", gõ "1.234" cái bị báo lỗi thay vì âm thầm thành 1,234 cái.
+- Chuỗi **chưa rõ** với kg: khớp `^-?\d+\.\d{3}$` (dấu chấm, đúng 3 chữ số sau, không dấu phẩy) như "1.234", "12.500" — người Việt có thể muốn 1234 hoặc 1,234. `parseQuantity` ném `DomainValueError("Chưa rõ số này. Gõ 1234 hoặc 1,234")`. Kiểm tra này chạy **trước** khi đổi `.` thành dấu thập phân. "250.5", "0.75", "1,234" không khớp nên đọc bình thường. Dạng sửa (`formatQuantityForInput`) luôn dùng dấu phẩy nên đọc lại không bao giờ rơi vào trường hợp chưa rõ.
 - DB: `numeric(14,3)`; driver trả chuỗi → `quantityFromDb("250.500")` đổi bằng xử lý chuỗi, **không** qua `parseFloat`.
 - Giới hạn `numeric(14,3)` = 99.999.999.999,999 → × 1000 ≈ 10¹⁴ < 2⁵³, an toàn.
 - Phép nhân số lượng × đơn giá và quy tắc làm tròn **không** làm ở đây; change `inventory-ledger` sẽ định nghĩa.
@@ -190,10 +191,15 @@ docker/postgres/init.sql          # tạo DB test
 - Chỉ giao diện sáng ở MVP.
 - shadcn/ui component cần thêm: `button`, `badge`, `card`, `input`, `label`, `table`, `dropdown-menu`, `sheet`, `sidebar`, `tooltip`, `separator`, `avatar`, `skeleton`.
 - *Đã cân nhắc:* chép tay giá trị từ `tokens.json` vào `globals.css` → dễ lệch khi token đổi; sinh tự động + test chống lệch rẻ hơn về lâu dài. Tự viết sidebar → bỏ; block `sidebar` của shadcn đã có chế độ chỉ biểu tượng, ngăn trượt trên màn hẹp và nhớ trạng thái bằng cookie (render đúng ngay từ server, không nháy). Chỉ đổi breakpoint màn hẹp từ 768 lên **1024px** theo spec.
+- **Mốc màn hình:** dùng mốc mặc định của Tailwind, không tự đặt: `md` = 768px, `lg` = 1024px, `xl` = 1280px. Kiểu `hideBelow` của DataTable và hook `useBreakpoint()` dùng đúng ba tên này.
+- **Sidebar theo cỡ:** cookie `sidebar_state` chỉ được ghi khi người dùng bấm (giá trị `expanded` | `collapsed`). Không có cookie → mặc định theo bề rộng: `< lg` ngăn trượt (`Sheet`), `lg`–`< xl` chỉ biểu tượng, `≥ xl` mở rộng. Có cookie → áp dụng ở mọi bề rộng `≥ lg`. Server không biết bề rộng nên lần render đầu khi chưa có cookie dùng CSS (`lg:`/`xl:`) để đúng ngay, không nháy; trạng thái JS nhận lại sau khi hydrate.
+- **Header < `md`:** ô tìm kiếm thành nút biểu tượng `aria-label="Tìm kiếm"`; nút tạo nhanh thu thành một nút "+" có menu. Các phần header dùng `min-w-0` + `truncate` để không tràn.
 
 ### D13. Component nền
 
 - **DataTable:** `@tanstack/react-table` v8 (đây là lõi mà công thức DataTable của shadcn/ui dùng, không phải thư viện giao diện mới). Change này phân trang/sắp xếp phía client; các change sau bật `manualPagination` cho dữ liệu lớn mà không đổi giao diện. Cột số khai báo `meta.align = 'right'`. Tiêu đề dính bằng `position: sticky`.
+  - Khung bảng `overflow-x: auto` có `max-width: 100%`; trang không cuộn ngang. Cột đầu `position: sticky; left: 0` nền `card`; ô góc (tiêu đề cột đầu) dính cả `top` và `left`, `z-index` cao hơn tiêu đề và cột thường.
+  - Cột khai báo `meta.hideBelow?: 'md' | 'lg' | 'xl'`; ẩn bằng lớp CSS (`hidden md:table-cell`…) nên không nháy khi tải. Cột đầu không được khai báo `hideBelow` (kiểm tra lúc dev).
   - Prop **bắt buộc** `emptyState: { message: string; action?: { label: string; onClick?: () => void; href?: string } }`. Thiếu prop là lỗi TypeScript, nên không thể có bảng rỗng ghi "Không có dữ liệu". Trạng thái rỗng căn giữa (ngoại lệ căn giữa theo README), ẩn phân trang.
 - **Stepper:** component có kiểm soát (`value: Quantity`, `onChange`, `min=0`, `max?`, `step=1`); đơn vị lấy từ `value.unit`. Nút 48×48px. Gõ trực tiếp, kiểm tra bằng `parseQuantity(input, unit)` khi rời ô (blur); sai thì trả về giá trị cũ và hiện lời nhắc.
 - **Ô nhập số** (dùng trong Stepper, ConditionSplit, sau này ô tiền): hiện `formatQuantity`/`formatMoney` khi không focus, `formatQuantityForInput`/`formatMoneyForInput` khi focus; `inputMode="decimal"` cho kg, `"numeric"` cho cái và tiền.
@@ -205,6 +211,10 @@ docker/postgres/init.sql          # tạo DB test
 ### D14. Mobile shell và PWA
 
 - `BottomNav` 4 tab, tab đang chọn nền `accent` bo `radius-pill`; `AppBar` nhận `title` và `backHref?`, tiêu đề dùng họ chữ `display`.
+- **Màn rộng:** khung nội dung và `BottomNav` (fixed) dùng `max-w-[640px] mx-auto w-full`; ngoài khung là nền `background`.
+- **Vùng an toàn:** `viewport` có `viewport-fit=cover` (khai báo `export const viewport` ở layout gốc). `AppBar` thêm `padding-top: env(safe-area-inset-top)`, `BottomNav` thêm `padding-bottom: env(safe-area-inset-bottom)`; nội dung chừa đáy bằng chiều cao BottomNav + vùng an toàn. Trái/phải dùng `safe-area-inset-left/right` khi xoay ngang.
+- **Chiều cao:** khung Mobile `min-h-dvh` (không dùng `100vh`, vì trên điện thoại `vh` tính cả phần thanh địa chỉ che).
+- **Bàn phím ảo:** hook `useKeepFocusedInputVisible()` gắn một lần ở `MobileShell`: nghe `focusin` trên `input`/`textarea`/`select` và `resize` của `window.visualViewport`; khi vùng nhìn thấy co lại mà ô đang focus nằm dưới mép dưới, gọi `scrollIntoView({ block: 'center' })` (tắt hiệu ứng mượt khi `prefers-reduced-motion`). Không cần sửa từng form.
 - Layout `(mobile)/m` **không** kiểm tra vai trò: mọi vai trò mở được (Giám đốc xem trên điện thoại). Chỉ layout `(desktop)` chuyển vai trò Mobile sang `/m`.
 - `useOnlineStatus()` dùng `useSyncExternalStore` với sự kiện `online`/`offline`; `OfflineBanner` có `role="status"`.
 - `src/app/manifest.ts` sinh `/manifest.webmanifest`. `theme_color` và `background_color` đọc từ `tokens.json` (`primary`, `background` chế độ Sáng) lúc build, không ghi tay. Biểu tượng PNG 192/512 trong `public/icons/` (logo tạm, thay khi có thiết kế).
@@ -217,24 +227,38 @@ docker/postgres/init.sql          # tạo DB test
 | Unit | Vitest | `src/**/*.test.ts` | node |
 | Component | Vitest + Testing Library | `src/**/*.test.tsx` | jsdom |
 | Integration | Vitest | `src/**/*.int.test.ts` | node + `TEST_DATABASE_URL` |
-| E2E | Playwright | `tests/e2e/*.spec.ts` | Chromium |
-| Ảnh mốc | Playwright, thẻ `@visual` | `tests/e2e/visual.spec.ts` | **Chỉ CI** (Linux); 375, 768, 1024, 1440px |
+| E2E | Playwright | `tests/e2e/*.spec.ts` | Microsoft Edge (kênh `msedge`); Desktop 1280×720, 1366×768; Mobile 375×812 |
+| Không cuộn ngang | Playwright | `tests/e2e/responsive.spec.ts` | Edge; 360, 375, 768, 1024, 1280, 1366px |
+| Hỗ trợ cơ bản | Playwright, thẻ `@basic` | `tests/e2e/basic-browsers.spec.ts` | Firefox + WebKit (lõi của Safari) |
+| Ảnh mốc | Playwright, thẻ `@visual` | `tests/e2e/visual.spec.ts` | **Chỉ CI** (Linux + Edge); 360, 375, 768, 1024, 1280, 1366px |
 
 - Vitest dùng `projects` để chạy 3 nhóm riêng; `npm test` chạy cả 3. Integration bỏ qua có thông báo rõ nếu thiếu `TEST_DATABASE_URL` khi chạy local, nhưng **bắt buộc** trên CI.
 - Coverage (v8) ngưỡng 80% cho `src/domain/**` và `src/lib/**`.
 - A11y: `@axe-core/playwright` quét `/dashboard`, `/m`, `/dev/components`, không cho phép lỗi mức `serious`/`critical`.
 - Playwright local dùng `next dev`; CI dùng `next build && next start`.
+- **Trình duyệt:** nền tảng chính là Windows 10/11 + Edge. Playwright dùng `channel: 'msedge'`. CI chạy trên runner Linux và cài Edge bằng `npx playwright install msedge`. Không dùng runner Windows vì runner đó không chạy được service container (Postgres). Ở máy dev, nếu không có Edge thì dùng Chromium (`PW_CHANNEL` để đổi); Edge và Chromium cùng lõi nên khác biệt nhỏ.
+- **Cỡ màn hình chuẩn:** 360, 375 (điện thoại), 768 (máy tính bảng), 1024, 1280, 1366 (màn hình văn phòng phổ biến); bỏ 1440px.
+- **Không cuộn ngang:** `responsive.spec.ts` mở `/dashboard`, `/inventory`, `/m`, `/m/history`, `/dev/components` ở 6 cỡ và kiểm tra `document.documentElement.scrollWidth <= window.innerWidth`. Cùng file kiểm tra sidebar ở 900/1100/1366px (ngăn trượt / chỉ biểu tượng / mở rộng) và khung `/m` rộng 640px ở 1366px.
+- **Ma trận trình duyệt:**
+
+| Mức | Trình duyệt | Cách kiểm tra |
+|---|---|---|
+| Chính | Edge trên Windows 10/11 | Toàn bộ E2E + ảnh mốc (Edge trên Linux CI) + kiểm tra tay trên Windows (task 11.1) |
+| Đầy đủ | Chrome/Edge bản mới trên Windows, macOS, Ubuntu; Chrome Android | Như trên (cùng lõi Chromium); kiểm tra tay Chrome macOS, Chrome Android |
+| Cơ bản | Firefox, Safari bản mới (gồm Safari iPhone) | `@basic` trên Firefox + WebKit: trang mở được, không lỗi console, không cuộn ngang, bấm được menu/tab; kiểm tra tay Safari iPhone. Không có ảnh mốc |
+
+  "Bản mới" = hai bản phát hành gần nhất; không thêm polyfill cho bản cũ hơn.
 - **Ảnh mốc chỉ tạo và so sánh trên CI** (font và cách vẽ chữ khác nhau giữa macOS và Linux làm ảnh lệch giả):
   - Test ảnh gắn thẻ `@visual`. `npm run test:e2e` ở local chạy với `--grep-invert @visual`; khi `CI=true` chạy cả nhóm `@visual`.
   - `snapshotPathTemplate` không chứa tên hệ điều hành; ảnh mốc commit trong `tests/e2e/__screenshots__/`.
-  - Tạo/cập nhật ảnh mốc: workflow `.github/workflows/update-snapshots.yml` chạy tay (`workflow_dispatch`, chọn nhánh) → `playwright test --grep @visual --update-snapshots` → commit ảnh vào chính nhánh đó (quyền `contents: write`). Không ai tạo ảnh mốc trên máy dev.
+  - Tạo/cập nhật ảnh mốc: workflow `.github/workflows/update-snapshots.yml` chạy tay (`workflow_dispatch`, chọn nhánh) → `playwright test --grep @visual --update-snapshots` → commit ảnh vào chính nhánh đó (quyền `contents: write`) → `gh workflow run ci.yml --ref <nhánh>` (quyền `actions: write`). Bước cuối cần vì commit bằng `GITHUB_TOKEN` không tự kích hoạt workflow; riêng sự kiện `workflow_dispatch` thì được phép. Lần chạy CI đó gắn với commit ảnh nên hiện trên PR. Không ai tạo ảnh mốc trên máy dev.
   - Khi chưa có ảnh mốc, job CI so sánh ảnh báo đỏ kèm hướng dẫn chạy workflow trên.
 
 ### D16. Chất lượng code và CI
 
 - ESLint (cấu hình của Next.js, flat config) + Prettier (`prettier-plugin-tailwindcss`). `npm run typecheck` = `tsc --noEmit`.
 - Header bảo mật trong `next.config.ts`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(self), microphone=(), geolocation=()` (camera cần cho quét QR/chụp ảnh sau này).
-- `.github/workflows/ci.yml`: service `postgres:17-alpine` → `npm ci` → lint → typecheck → `db:migrate` trên DB test → `npm test` (gồm test chống lệch token) → build → Playwright (gồm `@visual`). Ảnh khác biệt được tải lên làm artifact khi lỗi.
+- `.github/workflows/ci.yml` (trigger `push`, `pull_request`, `workflow_dispatch`): service `postgres:17-alpine` → `npm ci` → lint → typecheck → `db:migrate` trên DB test → `npm test` (gồm test chống lệch token) → build → Playwright (gồm `@visual`). Ảnh khác biệt được tải lên làm artifact khi lỗi.
 - `.github/workflows/update-snapshots.yml`: chạy tay, xem D15.
 
 ### D17. Lệnh chuẩn (`package.json`)
@@ -249,6 +273,14 @@ docker/postgres/init.sql          # tạo DB test
 | `db:up` / `db:down` | `docker compose up -d` / `down` |
 | `db:generate` / `db:migrate` / `db:studio` | drizzle-kit generate / script migrate / drizzle-kit studio |
 
+### D18. In chứng từ qua một hàm chung
+
+- `src/lib/print.ts` export `printDocument(options?: { title?: string })`. Bản đầu: nếu có `title` thì đặt tạm `document.title` (Edge dùng làm tên file khi "Lưu dạng PDF"), gọi `window.print()`, trả lại tiêu đề cũ ở sự kiện `afterprint`.
+- Đây là **chỗ duy nhất** được gọi `window.print()`. ESLint (`no-restricted-properties`) chặn `window.print` ở mọi file khác. Sau này đổi sang PDF do server tạo hoặc in qua dịch vụ khác thì chỉ sửa file này.
+- Khung giao diện (sidebar, header, BottomNav, AppBar, OfflineBanner) có lớp `print:hidden` để bản in chỉ còn nội dung.
+- Unit test (jsdom): giả `window.print`, kiểm tra được gọi đúng một lần, tiêu đề đổi khi in và được trả lại sau `afterprint`.
+- *Đã cân nhắc:* tạo PDF phía server ngay từ đầu → thêm thư viện, chưa có mẫu in nào để cần; hộp thoại in của Edge đã có "Lưu dạng PDF".
+
 ## Risks / Trade-offs
 
 - [`tokens.json` đổi mà quên sinh lại CSS] → Test chống lệch đỏ trên CI.
@@ -259,6 +291,10 @@ docker/postgres/init.sql          # tạo DB test
 - [Người dùng giả lập lọt lên production] → Hàm ném lỗi khi `NODE_ENV=production`; có unit test cho trường hợp này.
 - [Chưa có CSP] → Ghi rõ là việc của `auth-and-roles` (cần middleware sinh nonce). Hiện chưa có dữ liệu thật, chưa triển khai production.
 - [Phiên bản thư viện mới (Next 16, Tailwind 4) thay đổi API so với tài liệu cũ] → Tra tài liệu hiện hành (Context7) khi cài; ghim phiên bản chính xác.
+- [CI chạy Edge trên Linux, người dùng thật dùng Edge trên Windows: font vẽ khác, ảnh mốc không phản ánh đúng từng điểm ảnh] → Ảnh mốc chỉ để bắt thay đổi bố cục; task 11.1 kiểm tra bằng mắt trên Windows + Edge ở 1280 và 1366px.
+- [Chạy lại CI bằng `workflow_dispatch` không theo cùng luồng `pull_request`] → Job trong `ci.yml` giữ tên giống nhau cho mọi trigger để check bắt buộc của nhánh vẫn khớp.
+- [Bàn phím ảo trên iOS Safari không làm đổi `window.innerHeight` và Playwright không giả lập được bàn phím] → Dùng `visualViewport` thay vì `resize` của `window`; component test kiểm tra hook gọi `scrollIntoView` khi giả `visualViewport` co lại; kiểm tra tay trên iPhone ở task 11.1.
+- [Cookie sidebar chỉ có sau khi người dùng bấm, server không biết bề rộng cửa sổ] → Mặc định theo bề rộng làm bằng CSS nên đúng ngay lần render đầu; chỉ khi có cookie mới render theo cookie.
 - [Integration test phụ thuộc Docker] → `npm run test:unit` chạy được không cần DB; CI có service Postgres riêng.
 
 ## Migration Plan
