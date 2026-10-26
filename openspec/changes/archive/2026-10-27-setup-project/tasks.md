@@ -78,7 +78,9 @@
     - Lần 1, run [40367435272](https://github.com/hoanghainh1188/scaffolding-erp/actions/runs/40367435272): xanh; ảnh mốc đã khớp nên báo "Baselines unchanged", không commit, bỏ qua bước gọi `ci.yml` đúng thiết kế.
     - Lần 2: xoá tạm `dashboard-1280-desktop-1280.png` (commit `478bec0`, `[skip ci]`), chạy lại run [40368040968](https://github.com/hoanghainh1188/scaffolding-erp/actions/runs/40368040968): xanh, bot commit lại ảnh ở `123e03e` (ảnh giống hệt bản cũ) rồi tự gọi `ci.yml`.
     - `ci.yml` run [40368294456](https://github.com/hoanghainh1188/scaffolding-erp/actions/runs/40368294456): sự kiện `workflow_dispatch`, đúng commit `123e03e`, tự bắt đầu không cần push, cả 2 job xanh; check run gắn vào commit đó.
-    - Chưa đạt: hai check này không hiện trong mục check của PR. Push của bot còn sinh một run `pull_request` ở trạng thái `action_required` (chờ người duyệt), làm PR ở trạng thái `UNSTABLE`. Cần xử lý ở change sau.
+    - Lỗi: hai check này không hiện trong mục check của PR. Push của bot bằng `GITHUB_TOKEN` còn sinh một run `pull_request` ở trạng thái `action_required` (chờ người duyệt), làm PR ở trạng thái `UNSTABLE`.
+    - Lần 3, sau khi commit ảnh của bot có thêm `[skip ci]` (commit `c9487ac`): xoá tạm lại ảnh đó, run [40369538594](https://github.com/hoanghainh1188/scaffolding-erp/actions/runs/40369538594) commit lại ảnh ở `d6b9508`; `ci.yml` run [40369746114](https://github.com/hoanghainh1188/scaffolding-erp/actions/runs/40369746114) (`workflow_dispatch`) xanh. Không còn run chờ duyệt, PR về `CLEAN`, commit có dấu tích xanh.
+    - Còn thiếu: tab Checks của PR vẫn ghi 0. GitHub không liệt kê run `workflow_dispatch` trong check của PR, dù check suite có gắn PR. Cần push bằng token khác (GitHub App/PAT) hoặc cho `ci.yml` ghi commit status; làm ở change sau.
 - [x] 10.3 Cập nhật mục **Lệnh thường dùng** trong `CLAUDE.md` và phần chạy local trong `README.md` theo bảng D17 (gồm `npm run tokens` và cách cập nhật ảnh mốc bằng workflow chạy tay) — kiểm tra: mọi lệnh ghi trong tài liệu chạy được đúng như mô tả
 
 ## 11. Kiểm tra thủ công
