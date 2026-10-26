@@ -11,7 +11,7 @@
 ## 2. Bộ test
 
 - [x] 2.1 Cài Vitest với 3 project `unit` (node), `component` (jsdom + Testing Library), `integration` (node, cần `TEST_DATABASE_URL`, tự bỏ qua có thông báo khi thiếu ở local); script `test`, `test:unit`, `test:int`, `test:coverage` với ngưỡng 80% cho `src/domain/**`, `src/lib/**` — kiểm tra: một test mẫu mỗi project chạy xanh bằng `npm test`
-- [ ] 2.2 Cài Playwright + `@axe-core/playwright`; `playwright.config.ts` dùng kênh `msedge` (đổi được bằng `PW_CHANNEL`, máy không có Edge thì dùng Chromium), 2 project Desktop 1280×720 và 1366×768 + 1 project Mobile 375×812 (Edge), project `firefox` và `webkit` chỉ chạy thẻ `@basic`, `next dev` ở cả local lẫn CI với `E2E=1` (`next.config.ts` tắt `devIndicators` khi có biến này), script `test:e2e` — kiểm tra: test mẫu mở `/` chạy xanh trên cả 5 project
+- [x] 2.2 Cài Playwright + `@axe-core/playwright`; `playwright.config.ts` dùng kênh `msedge` (đổi được bằng `PW_CHANNEL`, máy không có Edge thì dùng Chromium), 2 project Desktop 1280×720 và 1366×768 + 1 project Mobile 375×812 (Edge), project `firefox` và `webkit` chỉ chạy thẻ `@basic`, `next dev` ở cả local lẫn CI với `E2E=1` (`next.config.ts` tắt `devIndicators` khi có biến này), script `test:e2e` — kiểm tra: test mẫu mở `/` chạy xanh trên cả 5 project
 
 ## 3. Cơ sở dữ liệu
 
@@ -68,11 +68,11 @@
 - [x] 9.3 Quét axe `/dashboard`, `/m`, `/dev/components` không có lỗi `serious`/`critical` (gồm tương phản badge 4.5:1) — kiểm tra: `npm run test:e2e` xanh ở local
 - [x] 9.4 `tests/e2e/visual.spec.ts` gắn thẻ `@visual`: ảnh `/dashboard`, `/m`, `/dev/components` ở 360, 375, 768, 1024, 1280, 1366px; `snapshotPathTemplate` không chứa tên hệ điều hành; `test:e2e` local dùng `--grep-invert @visual` — kiểm tra: `npm run test:e2e` ở local không chạy và không tạo ảnh nào
 - [x] 9.5 `tests/e2e/responsive.spec.ts`: `/dashboard`, `/inventory`, `/m`, `/m/history`, `/dev/components` ở 360, 375, 768, 1024, 1280, 1366px có `document.documentElement.scrollWidth <= window.innerWidth`; sidebar khi chưa bấm là ngăn trượt / chỉ biểu tượng / mở rộng ở 900 / 1100 / 1366px; bấm mở rộng ở 1100px rồi tải lại vẫn mở rộng; `/m` ở 1366px rộng 640px căn giữa; bảng 10 cột ở `/dev/components` cuộn trong khung với cột đầu đứng yên — kiểm tra: `npm run test:e2e` xanh
-- [ ] 9.6 `tests/e2e/basic-browsers.spec.ts` thẻ `@basic` chạy trên Firefox và WebKit: mở `/dashboard` và `/m` không lỗi console, không cuộn ngang, bấm được một mục menu và một tab — kiểm tra: `npm run test:e2e` xanh trên project `firefox` và `webkit`
+- [x] 9.6 `tests/e2e/basic-browsers.spec.ts` thẻ `@basic` chạy trên Firefox và WebKit: mở `/dashboard` và `/m` không lỗi console, không cuộn ngang, bấm được một mục menu và một tab — kiểm tra: `npm run test:e2e` xanh trên project `firefox` và `webkit`
 
 ## 10. CI và tài liệu lệnh
 
-- [ ] 10.1 `.github/workflows/ci.yml` theo design D16 (trigger `push`, `pull_request`, `workflow_dispatch`; service Postgres; cài trình duyệt bằng `npx playwright install --with-deps msedge firefox webkit`; lint, typecheck, migrate, test gồm chống lệch token, `npm run build` để chắc bản production build được, Playwright chạy trên `next dev` gồm `@visual`, tải ảnh khác biệt lên artifact khi lỗi) — kiểm tra: chạy thử trên nhánh, mọi bước xanh trừ `@visual` khi chưa có ảnh mốc
+- [x] 10.1 `.github/workflows/ci.yml` theo design D16 (trigger `push`, `pull_request`, `workflow_dispatch`; service Postgres; cài trình duyệt bằng `npx playwright install --with-deps msedge firefox webkit`; lint, typecheck, migrate, test gồm chống lệch token, `npm run build` để chắc bản production build được, Playwright chạy trên `next dev` gồm `@visual`, tải ảnh khác biệt lên artifact khi lỗi) — kiểm tra: chạy thử trên nhánh, mọi bước xanh trừ `@visual` khi chưa có ảnh mốc
 - [ ] 10.2 `.github/workflows/update-snapshots.yml` (`workflow_dispatch`, quyền `contents: write` + `actions: write`): chạy `@visual` với `--update-snapshots`, commit ảnh vào nhánh được chọn, rồi `gh workflow run ci.yml --ref <nhánh>`; chạy một lần để tạo ảnh mốc đầu tiên — kiểm tra: commit ảnh xuất hiện trên nhánh **và** tab Actions có một lần chạy `ci.yml` mới (sự kiện `workflow_dispatch`) trên đúng commit ảnh đó, tự bắt đầu không cần push thêm, xanh hoàn toàn và hiện trong mục check của PR
 - [x] 10.3 Cập nhật mục **Lệnh thường dùng** trong `CLAUDE.md` và phần chạy local trong `README.md` theo bảng D17 (gồm `npm run tokens` và cách cập nhật ảnh mốc bằng workflow chạy tay) — kiểm tra: mọi lệnh ghi trong tài liệu chạy được đúng như mô tả
 
