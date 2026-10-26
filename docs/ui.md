@@ -82,6 +82,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 #### Tổng quan
 
 - **D1. Dashboard** **[MVP: bản rút gọn]**:
+    - Tiêu đề trang là **câu chào** theo người dùng và số việc chờ, VD: "Chào Minh Anh, hôm nay có 4 việc chờ bạn duyệt" (đã chốt 26/10/2026). Mục menu vẫn tên "Tổng quan".
     - MVP: Danh sách việc chờ duyệt, Tồn kho theo tình trạng, Công nợ quá hạn.
     - Bản 2: thêm biểu đồ doanh thu/lợi nhuận.
 
@@ -151,13 +152,26 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 | **MVP** | D1 (rút gọn), D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12 (đơn giản), D14 (phải thu), D16, D17 | M1, M2, M3, M4, M5, M7 |
 | **Bản 2** | D1 (đầy đủ), D12 (đầy đủ), D13, D14 (phải trả), D15 | M6, M8 |
 
-### 3.4. Ưu tiên thiết kế
+### 3.4. Thiết kế đã vẽ (Claude Design)
 
-Vẽ trước 3 màn để chốt phong cách, các màn còn lại dựa theo:
+Canvas: **Scaffolding ERP – Thiết kế màn hình** — https://claude.ai/artifact/1maxh81Uzyzb7iLM8xf6z9 (riêng tư, chỉ chủ tài khoản mở được).
 
-1. **M4 – Nhập thu hồi:** chốt phong cách mobile (thẻ, stepper, Condition Split, chụp ảnh).
-2. **D3 – Tạo PO + Landed Cost:** chốt phong cách form nhập liệu desktop.
-3. **D1 – Dashboard (rút gọn):** chốt phong cách KPI Card và danh sách chờ duyệt.
+| Màn | Artboard | Dùng cho change | Trạng thái |
+|---|---|---|---|
+| D1 Tổng quan | `Main.dc.html` | `dashboard-basic` | Đã chốt phong cách |
+| D3 Tạo đơn thu mua | `D3-PurchaseOrder.dc.html` | `purchase-orders` | Đã chốt phong cách |
+| M4 Nhập thu hồi | `M4-ReturnNote.dc.html` | `returns-and-compensation` | Đã chốt phong cách |
+| Đăng nhập | `Login.dc.html` | `auth-and-roles` | Chờ duyệt |
+| D17 Người dùng | `D17-Users.dc.html` | `auth-and-roles` | Chờ duyệt |
+| D9 Danh mục vật tư | `D9-Items.dc.html` | `master-data` | Chờ duyệt |
+| D16 Đối tác & công trình | `D16-Partners.dc.html` | `master-data` | Chờ duyệt |
+
+Cách dùng khi propose: mở canvas → **Export → Hand off to Claude Code** → dán đoạn handoff vào `/opsx:propose <change>`. Thiết kế là tham chiếu bố cục; quy tắc trong `openspec/specs/` và tài liệu này vẫn thắng nếu khác nhau.
+
+**Quy tắc đã chốt từ thiết kế:**
+- **Viết tiền theo spec `domain-values`:** `1.250.000 ₫` (dấu chấm hàng nghìn, cách một khoảng, ký hiệu `₫`). Không dùng kiểu `1.250.000đ` trong README của Bright Blue Base — dự án này ghi đè điểm đó.
+- Mỗi màn chỉ **một khối màu `primary` đặc** cho con số quan trọng nhất (D1: công nợ quá hạn, D3: tổng cộng).
+- Thẻ vật tư trên mobile chưa chia đủ có **viền `warning`** để thủ kho nhìn thấy ngay.
 
 ---
 
