@@ -42,7 +42,7 @@ rules:
   specs:
     - Giữ nguyên các tiêu đề bắt buộc của OpenSpec bằng tiếng Anh (### Requirement:, #### Scenario:) và từ khóa SHALL/MUST; nội dung viết bằng tiếng Việt.
     - Mỗi requirement có ít nhất một scenario dạng WHEN/THEN với số liệu cụ thể (số lượng, đơn giá, ngày).
-    - Quy tắc tính tiền (giá vốn, tiền thuê, đền bù) phải có scenario cho trường hợp biên: trả giữa kỳ, số lượng 0, đổi giá.
+    - "Quy tắc tính tiền (giá vốn, tiền thuê, đền bù) phải có scenario cho trường hợp biên: trả giữa kỳ, số lượng 0, đổi giá."
     - Có scenario cho phân quyền khi chức năng giới hạn theo vai trò.
   design:
     - Viết bằng tiếng Việt.
@@ -50,7 +50,7 @@ rules:
     - Ghi lựa chọn đã cân nhắc và lý do chọn.
   tasks:
     - Mỗi task làm xong trong khoảng 1–2 giờ.
-    - Thứ tự: migration DB → logic nghiệp vụ + unit test → API → giao diện → kiểm tra thủ công.
+    - "Thứ tự: migration DB → logic nghiệp vụ + unit test → API → giao diện → kiểm tra thủ công."
     - Logic tính tiền và giá vốn phải có unit test trước khi làm giao diện.
 
 operations:
