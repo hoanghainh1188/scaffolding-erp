@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thẻ kho</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F7F9FF}
+a{color:#1D5BFF}a:hover{color:#0F1A33}
+button,a,input,select{font-family:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #1D5BFF;outline-offset:2px}
+.nav-link:hover{background:#E3ECFF}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1140px; background: #F7F9FF; color: #0F1A33; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 16px; line-height: 24px;">
+
+  <nav aria-label="Menu chính" style="flex: 1 1 248px; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E1E7F5; padding: 20px 16px; display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 4px 8px;">
+      <div aria-hidden="true" style="width: 36px; height: 36px; border-radius: 12px; background: #1D5BFF; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 20px;">S</div>
+      <span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.01em;">Scaffolding ERP</span>
+    </div>
+    <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px;">
+      <li><a href="Main.dc.html" class="nav-link" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; color: #0F1A33; font-weight: 500; font-size: 15px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Tổng quan</a></li>
+      <li><a href="D3-PurchaseOrder.dc.html" class="nav-link" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; color: #0F1A33; font-weight: 500; font-size: 15px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11L21 7H6"/></svg>Thu mua</a></li>
+      <li><a href="D10-Stock.dc.html" aria-current="page" class="nav-link" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; background: #E3ECFF; color: #0F1A33; font-weight: 600; font-size: 15px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13"/><path d="M7 21v-8h10v8M7 17h10"/></svg>Kho</a></li>
+      <li><a href="D12-Repair.dc.html" class="nav-link" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; color: #0F1A33; font-weight: 500; font-size: 15px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>Sửa chữa</a></li>
+      <li><a href="#" class="nav-link" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; color: #0F1A33; font-weight: 500; font-size: 15px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Bán &amp; Thuê</a></li>
+      <li><a href="D14-Receivables.dc.html" class="nav-link" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; color: #0F1A33; font-weight: 500; font-size: 15px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2z"/><circle cx="16" cy="14.5" r="1.2"/></svg>Công nợ</a></li>
+      <li><a href="#" class="nav-link" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; color: #0F1A33; font-weight: 500; font-size: 15px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Báo cáo</a></li>
+      <li><a href="D9-Items.dc.html" class="nav-link" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; color: #0F1A33; font-weight: 500; font-size: 15px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Danh mục</a></li>
+      <li><a href="D17-Users.dc.html" class="nav-link" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; color: #0F1A33; font-weight: 500; font-size: 15px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Cài đặt</a></li>
+    </ul>
+  </nav>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column;">
+    <header style="box-sizing: border-box; min-height: 72px; padding: 12px 32px; background: #FFFFFF; border-bottom: 1px solid #E1E7F5; display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+      <div style="flex: 1 1 260px; max-width: 420px; position: relative; min-width: 0;">
+        <label for="global-search" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Tìm kiếm</label>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#55607A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; left: 14px; top: 13px;"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="global-search" type="search" placeholder="Tìm hợp đồng, nhà thầu, mã hàng" style="box-sizing: border-box; width: 100%; height: 44px; padding: 0 14px 0 42px; border: 1px solid #E1E7F5; border-radius: 12px; background: #FFFFFF; color: #0F1A33; font-size: 16px;">
+      </div>
+      <div style="flex: 1 1 0; min-width: 0;"></div>
+      <button type="button" aria-label="Thông báo" style="width: 44px; height: 44px; border: 1px solid #E1E7F5; border-radius: 12px; background: #FFFFFF; color: #0F1A33; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></button>
+      <div style="display: flex; align-items: center; gap: 10px; padding-left: 4px;">
+        <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 9999px; background: #E3ECFF; color: #0F1A33; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;">TH</div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 14px; line-height: 20px; font-weight: 600;">Thu Hà</span>
+          <span style="font-size: 12px; line-height: 16px; font-weight: 500; color: #55607A;">Kế toán</span>
+        </div>
+      </div>
+    </header>
+
+    <main style="box-sizing: border-box; width: 100%; max-width: 1280px; padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 24px;">
+      <nav aria-label="Đường dẫn" style="font-size: 14px; line-height: 20px; color: #55607A;"><a href="D10-Stock.dc.html" style="color: #55607A;">Tồn kho</a> <span aria-hidden="true">/</span> <span style="color: #0F1A33;">Thẻ kho</span></nav>
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <h1 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Thẻ kho · Khung giàn giáo 1,7m</h1>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #55607A;">GG-K17 · đơn vị cái</p>
+        </div>
+        <button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #EEF3FF; color: #0F1A33; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Xuất Excel</button>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+        <div role="tablist" aria-label="Tình trạng" style="display: inline-flex; flex-wrap: wrap; padding: 4px; gap: 4px; background: #EEF3FF; border-radius: 12px;">
+          <button type="button" role="tab" aria-selected="false" style="height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: #55607A; font-size: 14px; font-weight: 600; cursor: pointer;">Tất cả</button>
+          <button type="button" role="tab" aria-selected="false" style="height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: #55607A; font-size: 14px; font-weight: 600; cursor: pointer;">Mới</button>
+          <button type="button" role="tab" aria-selected="true" style="height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: #FFFFFF; color: #0F1A33; font-size: 14px; font-weight: 600; box-shadow: 0 1px 2px rgba(15,26,51,0.08); cursor: pointer;">Tốt</button>
+          <button type="button" role="tab" aria-selected="false" style="height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: #55607A; font-size: 14px; font-weight: 600; cursor: pointer;">Chờ sửa</button>
+          <button type="button" role="tab" aria-selected="false" style="height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: #55607A; font-size: 14px; font-weight: 600; cursor: pointer;">Phế liệu</button>
+        </div>
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600;">Vị trí
+          <select style="height: 44px; padding: 0 12px; border: 1px solid #E1E7F5; border-radius: 12px; background: #FFFFFF; color: #0F1A33; font-size: 16px;"><option>Tại bãi</option><option>Tại xưởng</option><option>Tại công trình</option></select>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600;">Kỳ
+          <input type="text" value="01/10/2026 – 26/10/2026" style="box-sizing: border-box; width: 230px; height: 44px; padding: 0 12px; border: 1px solid #E1E7F5; border-radius: 12px; color: #0F1A33; font-size: 16px;">
+        </label>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+        <section aria-label="Tổng hợp kỳ" style="flex: 3 1 520px; background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 20px 24px;">
+          <dl style="margin: 0; display: flex; flex-wrap: wrap; gap: 16px 40px; font-variant-numeric: tabular-nums;">
+            <div><dt style="font-size: 12px; line-height: 16px; font-weight: 600; color: #55607A;">Tồn đầu kỳ</dt><dd style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 28px; line-height: 34px; font-weight: 700;">1.220</dd></div>
+            <div><dt style="font-size: 12px; line-height: 16px; font-weight: 600; color: #55607A;">Nhập trong kỳ</dt><dd style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 28px; line-height: 34px; font-weight: 700; color: #12805C;">+450</dd></div>
+            <div><dt style="font-size: 12px; line-height: 16px; font-weight: 600; color: #55607A;">Xuất trong kỳ</dt><dd style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 28px; line-height: 34px; font-weight: 700;">−430</dd></div>
+            <div><dt style="font-size: 12px; line-height: 16px; font-weight: 600; color: #55607A;">Tồn cuối kỳ</dt><dd style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 28px; line-height: 34px; font-weight: 700;">1.240</dd></div>
+          </dl>
+        </section>
+        <section aria-labelledby="avg-cost" style="flex: 1 1 260px; position: relative; overflow: hidden; background: #1D5BFF; color: #FFFFFF; border-radius: 28px; padding: 20px 24px; display: flex; flex-direction: column; gap: 4px;">
+          <div aria-hidden="true" style="position: absolute; right: -36px; bottom: -44px; width: 110px; height: 110px; border-radius: 9999px; background: #D4F53C;"></div>
+          <h2 id="avg-cost" style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600;">Giá vốn bình quân hiện tại</h2>
+          <p style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 36px; line-height: 40px; font-weight: 700; letter-spacing: -0.015em; font-variant-numeric: tabular-nums;">195.861 ₫</p>
+          <p style="margin: 0; font-size: 13px; line-height: 18px;">mỗi cái, tình trạng Tốt</p>
+        </section>
+      </div>
+
+      <section aria-labelledby="ledger" style="background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+        <h2 id="ledger" style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 22px; line-height: 28px; font-weight: 700;">Sổ kho trong kỳ</h2>
+        <div style="overflow-x: auto; max-width: 100%; border: 1px solid #E1E7F5; border-radius: 12px;">
+          <table style="width: 100%; min-width: 1000px; border-collapse: collapse; font-size: 14px; line-height: 20px; font-variant-numeric: tabular-nums;">
+            <thead>
+              <tr style="background: #F7F9FF;">
+                <th scope="col" style="position: sticky; left: 0; background: #F7F9FF; text-align: left; padding: 10px 14px; font-weight: 600; border-bottom: 1px solid #E1E7F5;">Ngày</th>
+                <th scope="col" style="text-align: left; padding: 10px 14px; font-weight: 600; border-bottom: 1px solid #E1E7F5;">Chứng từ</th>
+                <th scope="col" style="text-align: left; padding: 10px 14px; font-weight: 600; border-bottom: 1px solid #E1E7F5;">Diễn giải</th>
+                <th scope="col" style="text-align: right; padding: 10px 14px; font-weight: 600; border-bottom: 1px solid #E1E7F5;">Nhập</th>
+                <th scope="col" style="text-align: right; padding: 10px 14px; font-weight: 600; border-bottom: 1px solid #E1E7F5;">Xuất</th>
+                <th scope="col" style="text-align: right; padding: 10px 14px; font-weight: 600; border-bottom: 1px solid #E1E7F5;">Tồn</th>
+                <th scope="col" style="text-align: right; padding: 10px 14px; font-weight: 600; border-bottom: 1px solid #E1E7F5;">Đơn giá ghi sổ</th>
+                <th scope="col" style="text-align: right; padding: 10px 14px; font-weight: 600; border-bottom: 1px solid #E1E7F5;">Giá vốn BQ sau</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background: #F7F9FF;"><th scope="row" style="position: sticky; left: 0; background: #F7F9FF; text-align: left; padding: 10px 14px; font-weight: 500; border-bottom: 1px solid #E1E7F5;">01/10</th><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5; color: #55607A;">–</td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5; font-weight: 600;">Tồn đầu kỳ</td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"></td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"></td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5; font-weight: 600;">1.220</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5; color: #55607A;">–</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.000 ₫</td></tr>
+              <tr><th scope="row" style="position: sticky; left: 0; background: #FFFFFF; text-align: left; padding: 10px 14px; font-weight: 500; border-bottom: 1px solid #E1E7F5;">03/10</th><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"><a href="#">PX-2026-118</a></td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">Xuất cho Cầu vượt Mai Dịch</td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"></td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">300</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">920</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.000 ₫</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.000 ₫</td></tr>
+              <tr><th scope="row" style="position: sticky; left: 0; background: #FFFFFF; text-align: left; padding: 10px 14px; font-weight: 500; border-bottom: 1px solid #E1E7F5;">08/10</th><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"><a href="#">PN-2026-087</a></td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">Nhập từ PO-2026-052 · anh Trần Văn Hùng</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5; color: #12805C; font-weight: 600;">160</td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"></td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">1.080</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">196.155 ₫</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5; font-weight: 600;">195.171 ₫</td></tr>
+              <tr><th scope="row" style="position: sticky; left: 0; background: #FFFFFF; text-align: left; padding: 10px 14px; font-weight: 500; border-bottom: 1px solid #E1E7F5;">12/10</th><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"><a href="#">PSC-2026-021</a></td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">Sửa xong, chuyển từ Chờ sửa (giá vốn 160.000 ₫ + sửa 54.500 ₫)</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5; color: #12805C; font-weight: 600;">40</td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"></td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">1.120</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">214.500 ₫</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5; font-weight: 600;">195.861 ₫</td></tr>
+              <tr><th scope="row" style="position: sticky; left: 0; background: #FFFFFF; text-align: left; padding: 10px 14px; font-weight: 500; border-bottom: 1px solid #E1E7F5;">15/10</th><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"><a href="#">PTH-2026-064</a></td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">Thu hồi từ Nhà phố Lê Văn Lương</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5; color: #12805C; font-weight: 600;">210</td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"></td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">1.330</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.861 ₫</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.861 ₫</td></tr>
+              <tr><th scope="row" style="position: sticky; left: 0; background: #FFFFFF; text-align: left; padding: 10px 14px; font-weight: 500; border-bottom: 1px solid #E1E7F5;">16/10</th><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"><span style="display: inline-flex; align-items: center; gap: 8px;"><a href="#">ĐC-2026-004</a><span style="border-radius: 9999px; border: 1px solid #A65B00; color: #A65B00; font-size: 12px; line-height: 16px; font-weight: 600; padding: 1px 8px;">Điều chỉnh</span></span></td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">Sửa PTH-2026-064: 10 cái thực tế là Chờ sửa</td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"></td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">10</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">1.320</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.861 ₫</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.861 ₫</td></tr>
+              <tr><th scope="row" style="position: sticky; left: 0; background: #FFFFFF; text-align: left; padding: 10px 14px; font-weight: 500; border-bottom: 1px solid #E1E7F5;">20/10</th><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"><a href="#">PX-2026-131</a></td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">Xuất cho Nhà xưởng KCN Quang Minh</td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"></td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">120</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">1.200</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.861 ₫</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.861 ₫</td></tr>
+              <tr><th scope="row" style="position: sticky; left: 0; background: #FFFFFF; text-align: left; padding: 10px 14px; font-weight: 500; border-bottom: 1px solid #E1E7F5;">22/10</th><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"><a href="#">PTH-2026-069</a></td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">Thu hồi từ Nhà xưởng KCN Quang Minh</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5; color: #12805C; font-weight: 600;">40</td><td style="padding: 10px 14px; border-bottom: 1px solid #E1E7F5;"></td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">1.240</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.861 ₫</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #E1E7F5;">195.861 ₫</td></tr>
+            </tbody>
+            <tfoot>
+              <tr style="background: #F7F9FF;"><th scope="row" colspan="3" style="text-align: left; padding: 12px 14px; font-weight: 700;">Cộng phát sinh trong kỳ</th><td style="text-align: right; padding: 12px 14px; font-weight: 700;">450</td><td style="text-align: right; padding: 12px 14px; font-weight: 700;">430</td><td style="text-align: right; padding: 12px 14px; font-weight: 700;">1.240</td><td style="padding: 12px 14px;"></td><td style="text-align: right; padding: 12px 14px; font-weight: 700;">195.861 ₫</td></tr>
+            </tfoot>
+          </table>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; background: #EEF3FF;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1D5BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px;"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          <p style="margin: 0; font-size: 14px; line-height: 20px;">Sổ kho chỉ ghi thêm, không sửa dòng cũ. Phiếu ghi sai thì làm phiếu điều chỉnh như <strong style="font-weight: 600;">ĐC-2026-004</strong>. Hàng xuất và hàng thu hồi ghi theo giá vốn bình quân lúc đó, nên không làm đổi giá bình quân.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1140}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Nhặt hàng xuất kho</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F7F9FF}
+a{color:#1D5BFF}a:hover{color:#0F1A33}
+button,a,input{font-family:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #1D5BFF;outline-offset:2px}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1180px; box-sizing: border-box; background: #F7F9FF; color: #0F1A33; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 16px; line-height: 24px; overflow: hidden;">
+
+  <header style="box-sizing: border-box; height: 64px; padding: 0 8px; background: #FFFFFF; border-bottom: 1px solid #E1E7F5; display: flex; align-items: center; gap: 4px;">
+    <a href="M1-Today.dc.html" aria-label="Quay lại" style="width: 48px; height: 48px; border-radius: 12px; color: #0F1A33; display: inline-flex; align-items: center; justify-content: center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></a>
+    <div style="display: flex; flex-direction: column; min-width: 0;">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 20px; line-height: 24px; font-weight: 700;">Xuất PX-2026-140</h1>
+      <span style="font-size: 12px; line-height: 16px; font-weight: 500; color: #55607A;">An Phú – Block B · xe 10:00</span>
+    </div>
+  </header>
+
+  <main style="box-sizing: border-box; padding: 16px 16px 120px; display: flex; flex-direction: column; gap: 20px;">
+
+    <section aria-labelledby="progress" style="background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <h2 id="progress" style="margin: 0; font-size: 15px; line-height: 22px; font-weight: 600;">Đã nhặt</h2>
+        <span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">200 / 300 cái</span>
+      </div>
+      <div role="progressbar" aria-valuemin="0" aria-valuemax="300" aria-valuenow="200" aria-label="Tiến độ nhặt hàng" style="height: 10px; border-radius: 9999px; background: #EEF3FF; overflow: hidden;"><div style="width: 66.7%; height: 100%; border-radius: 9999px; background: #1D5BFF;"></div></div>
+      <p style="margin: 0; font-size: 13px; line-height: 18px; color: #55607A;">60 bộ giàn giáo 1,7m đã tự tách thành linh kiện. Chỉ lấy hàng Mới hoặc Tốt.</p>
+    </section>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label for="plate" style="font-size: 14px; line-height: 20px; font-weight: 600;">Biển số xe chở hàng</label>
+      <input id="plate" type="text" value="29C-456.78" style="box-sizing: border-box; height: 48px; padding: 0 12px; border: 1px solid #E1E7F5; border-radius: 12px; background: #FFFFFF; color: #0F1A33; font-size: 16px;">
+    </div>
+
+    <section aria-labelledby="pick-list" style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 id="pick-list" style="margin: 0 4px; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 18px; line-height: 24px; font-weight: 700;">Danh sách nhặt hàng</h2>
+
+      <article aria-label="Khung giàn giáo 1,7m, đã nhặt đủ" style="background: #FFFFFF; border: 1px solid #12805C; border-radius: 20px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+        <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <h3 style="margin: 0; font-size: 17px; line-height: 24px; font-weight: 700;">Khung giàn giáo 1,7m</h3>
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; color: #55607A;"><span style="border-radius: 9999px; border: 1px solid #12805C; color: #12805C; font-size: 12px; line-height: 16px; font-weight: 600; padding: 1px 8px;">Tốt</span>tồn 1.240</span>
+          <span style="font-size: 14px; line-height: 20px; font-weight: 600; color: #12805C;">Đã nhặt đủ 120 cái</span>
+        </div>
+        <button type="button" aria-pressed="true" aria-label="Bỏ đánh dấu đã nhặt" style="flex: none; width: 56px; height: 56px; border: 0; border-radius: 16px; background: #12805C; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
+      </article>
+
+      <article aria-label="Chéo giàn giáo, còn thiếu 40" style="background: #FFFFFF; border: 1px solid #A65B00; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <h3 style="margin: 0; font-size: 17px; line-height: 24px; font-weight: 700;">Chéo giàn giáo</h3>
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; color: #55607A;"><span style="border-radius: 9999px; border: 1px solid #12805C; color: #12805C; font-size: 12px; line-height: 16px; font-weight: 600; padding: 1px 8px;">Tốt</span>tồn 2.480 · cần 120 cái</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <span style="font-size: 14px; line-height: 20px; font-weight: 600; color: #A65B00;">Còn 40 cái</span>
+          <div role="group" aria-label="Số chéo đã nhặt" style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" aria-label="Giảm 1" style="width: 48px; height: 48px; border: 0; border-radius: 12px; background: #EEF3FF; color: #0F1A33; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+            <input type="text" inputmode="numeric" value="80" aria-label="Đã nhặt chéo" style="box-sizing: border-box; width: 76px; height: 48px; border: 1px solid #E1E7F5; border-radius: 12px; text-align: center; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 22px; font-weight: 700; color: #0F1A33; font-variant-numeric: tabular-nums;">
+            <button type="button" aria-label="Tăng 1" style="width: 48px; height: 48px; border: 0; border-radius: 12px; background: #1D5BFF; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+        </div>
+      </article>
+
+      <article aria-label="Mâm giàn giáo 1,6m, chưa nhặt" style="background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <h3 style="margin: 0; font-size: 17px; line-height: 24px; font-weight: 700;">Mâm giàn giáo 1,6m</h3>
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; color: #55607A;"><span style="border-radius: 9999px; border: 1px solid #12805C; color: #12805C; font-size: 12px; line-height: 16px; font-weight: 600; padding: 1px 8px;">Tốt</span>tồn 640 · cần 60 cái</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" style="flex: 2 1 0; height: 48px; border: 0; border-radius: 12px; background: #1D5BFF; color: #FFFFFF; font-size: 14px; font-weight: 600; cursor: pointer;">Nhặt đủ 60 cái</button>
+          <button type="button" style="flex: 1 1 0; height: 48px; border: 0; border-radius: 12px; background: #EEF3FF; color: #0F1A33; font-size: 14px; font-weight: 600; cursor: pointer;">Nhập số</button>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <p id="leave-hint" style="position: absolute; left: 16px; right: 16px; bottom: 96px; margin: 0; padding: 8px 12px; border-radius: 10px; background: #0F1A33; color: #FFFFFF; font-size: 13px; line-height: 18px; text-align: center;">Còn 100 cái chưa nhặt. Xác nhận luôn thì phần thiếu chuyển sang đợt sau.</p>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 12px 16px 28px; background: #FFFFFF; border-top: 1px solid #E1E7F5; display: flex; gap: 10px;">
+    <button type="button" style="flex: 1 1 0; height: 52px; border: 0; border-radius: 12px; background: #EEF3FF; color: #0F1A33; font-size: 15px; font-weight: 600; cursor: pointer;">Lưu nháp</button>
+    <button type="button" aria-describedby="leave-hint" style="flex: 2 1 0; height: 52px; border: 0; border-radius: 12px; background: #1D5BFF; color: #FFFFFF; font-size: 15px; font-weight: 600; cursor: pointer;">Xác nhận xe rời bãi</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

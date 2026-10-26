@@ -26,6 +26,20 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 7 | Offline | Không hỗ trợ offline ở MVP. PWA **lưu nháp trên máy** khi mất sóng |
 | 8 | Phạm vi kế toán | Chỉ **quản lý công nợ** nội bộ. Không xuất hóa đơn VAT. Có **xuất Excel** cho kế toán |
 | 9 | Kỹ thuật | **Next.js** (giao diện + API) + **PostgreSQL** |
+| 10 | Làm tròn giá vốn | Giá vốn bình quân **làm tròn đến 1 ₫** sau mỗi lần nhập làm đổi giá bình quân (chốt 26/10/2026) |
+| 11 | Giá ghi sổ khi xuất/thu hồi | Hàng **xuất** và hàng **thu hồi** từ công trình ghi theo **giá vốn bình quân hiện tại** của (mã hàng + tình trạng), nên không làm đổi giá bình quân. Chỉ nhập mua và nhập sau sửa chữa mới làm đổi giá bình quân (chốt 26/10/2026) |
+| 12 | Nhận thiếu so với đơn mua | **Mặc định đóng đơn** theo số thực nhận. Thủ kho tích **"Chờ giao bù phần thiếu"** nếu người bán sẽ giao tiếp (chốt 26/10/2026) |
+| 13 | Tiền trả người bán | Tính theo **số thực nhận** và **số kg cân thực tế**, không theo số trên đơn. Chi phí mua hàng (landed cost) chia theo hàng thực nhận. Đơn mua chỉ là dự kiến (chốt 26/10/2026) |
+| 14 | Nhập nhiều chuyến | **1 đơn mua – nhiều phiếu nhập**, mỗi chuyến xe một phiếu. Trong một phiếu, mã nào chuyến đó không có thì đánh dấu **"Chuyến này không có"** (ghi 0). Chỉ xác nhận được khi mọi dòng đã đếm hoặc đã đánh dấu. Đơn ở trạng thái **Đang nhận** cho tới khi đủ hoặc bị đóng (chốt 26/10/2026) |
+| 15 | Duyệt hợp đồng khi nhà thầu nợ quá hạn | **Chỉ cảnh báo**, không chặn. Giám đốc vẫn duyệt được nhưng **bắt buộc ghi lý do**. Lý do lưu cùng lần duyệt (chốt 26/10/2026) |
+| 16 | Sửa hợp đồng đã duyệt | Không sửa thẳng. Đổi hàng, giá, đền bù hay thời hạn thì tạo **phụ lục**, Giám đốc **duyệt lại**. Giá mới chỉ tính **từ ngày hiệu lực** của phụ lục, không tính lại kỳ cũ (chốt 26/10/2026) |
+| 17 | Kho không đủ hàng khi xuất | **Cho xuất thiếu.** Thủ kho xác nhận số thực nhặt; phần còn thiếu tự chuyển sang **đợt sau** của hợp đồng (chốt 26/10/2026) |
+| 18 | Hạn thanh toán | **Ghi trong hợp đồng** (số ngày được nợ, mặc định lấy từ nhà thầu). Hạn = ngày chốt kỳ thuê / ngày duyệt đền bù / ngày giao hàng bán + số ngày đó. Quá hạn là trạng thái tính ra, không lưu (chốt 27/10/2026) |
+| 19 | Trừ tiền khi nhà thầu trả | **Tự trừ khoản đến hạn sớm nhất trước.** Kế toán đổi được nếu khách chỉ định trả khoản khác (chốt 27/10/2026) |
+| 20 | Đền bù theo tình trạng | Chờ sửa = giá "hỏng, sửa được". **Phế liệu = giá mất.** Mất = giá mất. Giám đốc được giảm trừ khi duyệt, **bắt buộc ghi lý do** (chốt 27/10/2026) |
+| 21 | Tiền thuê hàng mất | Hàng mất coi như **trả vào ngày lập phiếu thu hồi**: thôi tính thuê từ ngày đó, chỉ tính đền bù (chốt 27/10/2026) |
+| 22 | Kỳ tính tiền thuê đã chốt | **Khóa sau khi chốt.** Sai sót phát hiện sau đó ghi bằng **dòng điều chỉnh ở kỳ sau**, không sửa kỳ cũ (chốt 27/10/2026) |
+| 23 | Chi phí sửa chữa | Nhập **riêng cho từng mã hàng** trên phiếu sửa. Chi phí chỉ chia cho **hàng sửa xong** (về Tốt). Hàng hỏng hẳn sang Phế liệu giữ **giá vốn Chờ sửa**, không gánh chi phí sửa (chốt 27/10/2026) |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 
@@ -49,6 +63,20 @@ Mỗi tình trạng có **giá vốn bình quân riêng**.
 | Kinh doanh | Desktop | Thu mua, báo giá, hợp đồng, lịch xuất hàng |
 | Thủ kho | Mobile | Nhập, xuất, thu hồi, kiểm kê |
 | Xưởng | Mobile | Ghi nhận sửa chữa **[Bản 2]** |
+
+### 0.5. Đăng nhập & tài khoản (chốt 26/10/2026)
+
+| # | Chủ đề | Quyết định |
+|---|---|---|
+| 1 | Cách đăng nhập | **Tên đăng nhập + mật khẩu.** Không dùng email hay số điện thoại (thủ kho, thợ xưởng thường không có email công ty) |
+| 2 | Ai tạo tài khoản | **Chỉ Giám đốc**, ở màn D17 |
+| 3 | Mật khẩu ban đầu | Hệ thống tạo **mật khẩu tạm**; người dùng **bắt buộc đổi** ở lần đăng nhập đầu |
+| 4 | Quên mật khẩu | **Giám đốc đặt lại** (cấp mật khẩu tạm mới). Không có tự khôi phục qua email/SMS |
+| 5 | Giữ đăng nhập | Có ô "Giữ đăng nhập trên máy này" (dành cho điện thoại thủ kho ngoài bãi) |
+| 6 | Vai trò | **Mỗi người một vai trò** |
+| 7 | Khóa tài khoản | Giám đốc khóa được tài khoản (nghỉ việc). Tài khoản khóa vẫn giữ lịch sử, không xóa |
+
+Thời gian giữ đăng nhập cụ thể (khi có và không tick ô) do change `auth-and-roles` đề xuất.
 
 ---
 
