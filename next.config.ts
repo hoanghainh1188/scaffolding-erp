@@ -14,6 +14,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Playwright runs on `next dev` (design D15); hide the dev indicator there.
+  devIndicators: process.env.E2E === "1" ? false : undefined,
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
