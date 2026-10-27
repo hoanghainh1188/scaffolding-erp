@@ -70,6 +70,29 @@ Nhà cung cấp SHALL có: loại (công ty / cá nhân), tên (bắt buộc), �
 - **WHEN** nhập CCCD `0012030123`
 - **THEN** hệ thống từ chối với "Số CCCD gồm 12 chữ số"
 
+### Requirement: Che số CCCD
+Số CCCD là dữ liệu cá nhân. Danh sách và màn chi tiết D16 SHALL chỉ hiện 4 số cuối dạng `•••• •••• 0123`. API đọc dùng chung (mọi vai trò) SHALL không trả số đầy đủ. Số đầy đủ SHALL chỉ có trong dữ liệu form sửa, cho người có quyền sửa đối tác (`DIRECTOR`, `SALES`, `ACCOUNTANT`).
+
+#### Scenario: Xem chi tiết người bán
+- **WHEN** Kinh doanh xem nhà cung cấp cá nhân có CCCD `001203012345` ở D16
+- **THEN** màn chi tiết và dòng danh sách hiện `•••• •••• 2345`, không hiện số đầy đủ
+
+#### Scenario: API đọc chung không lộ số
+- **WHEN** `vantung` (Thủ kho) gọi `GET /api/catalog/suppliers`
+- **THEN** phần tử của người bán đó có số đã che `•••• •••• 2345` **AND** chuỗi `001203012345` không xuất hiện ở đâu trong phản hồi
+
+#### Scenario: Form sửa có số đầy đủ
+- **WHEN** Kế toán mở "Sửa thông tin" của người bán đó
+- **THEN** ô CCCD điền sẵn `001203012345`
+
+#### Scenario: Thủ kho không lấy được số đầy đủ
+- **WHEN** `vantung` (Thủ kho) gọi `GET /api/catalog/suppliers/{id}/edit`
+- **THEN** API trả 403
+
+#### Scenario: Không có CCCD
+- **WHEN** nhà cung cấp không có CCCD
+- **THEN** danh sách và chi tiết không hiện dòng CCCD
+
 ### Requirement: Danh sách đối tác D16
 D16 SHALL có tab Nhà thầu và Nhà cung cấp, mỗi tab kèm số lượng đang dùng; danh sách bên trái tìm được theo tên, mã, điện thoại hoặc MST (không phân biệt dấu); chọn một đối tác thì bên phải hiện chi tiết. Tab đang chọn, từ khóa và đối tác đang chọn SHALL nằm trên URL. Nhà thầu SHALL hiện số công trình đang dùng.
 

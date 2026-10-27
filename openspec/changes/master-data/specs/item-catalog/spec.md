@@ -41,7 +41,7 @@ Mỗi vật tư SHALL có đơn vị `cái` hoặc `kg`. Vật tư tính theo c�
 - **THEN** vật tư được lưu không có trọng lượng chuẩn và cột trọng lượng ở D9 hiện "–"
 
 ### Requirement: Quy đổi kg và cái
-Hệ thống SHALL quy đổi số cái sang kg bằng số cái × trọng lượng chuẩn (chính xác tới 0,001 kg), và kg sang số cái ước tính bằng kg ÷ trọng lượng chuẩn làm tròn tới số nguyên gần nhất (0,5 làm tròn lên). Vật tư tính theo kg SHALL không quy đổi.
+Hệ thống SHALL quy đổi số cái sang kg bằng số cái × trọng lượng chuẩn (chính xác tới 0,001 kg), và kg sang số cái ước tính bằng kg ÷ trọng lượng chuẩn làm tròn tới số nguyên gần nhất (0,5 làm tròn lên). Vật tư tính theo kg SHALL không quy đổi. Phế liệu của mã tính theo cái SHALL vẫn đếm theo cái, kg chỉ để hiển thị.
 
 #### Scenario: Cái sang kg
 - **WHEN** quy đổi 100 cái `GG-K17` (13,5 kg/cái)
@@ -58,6 +58,10 @@ Hệ thống SHALL quy đổi số cái sang kg bằng số cái × trọng lư�
 #### Scenario: Số lượng 0
 - **WHEN** quy đổi 0 kg hoặc 0 cái
 - **THEN** kết quả là 0
+
+#### Scenario: Hiện kg của phế liệu đếm theo cái
+- **WHEN** có 12 cái `GG-K17` (13,5 kg/cái) ở tình trạng Phế liệu
+- **THEN** số lượng vẫn ghi 12 cái trong mã `GG-K17` **AND** màn hình hiện kèm "162 kg" tính bằng 12 × 13,5
 
 #### Scenario: Hàng tính theo kg
 - **WHEN** quy đổi cho vật tư `PL-SAT` (đơn vị kg)

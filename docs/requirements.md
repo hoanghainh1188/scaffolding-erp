@@ -18,7 +18,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 |---|---|---|
 | 1 | Giá vốn | **Bình quân gia quyền** theo *mã hàng + tình trạng*. Không quản lý theo lô |
 | 2 | Đơn vị quản lý | **Theo số lượng**, không quản lý từng chiếc (không serial). Mã QR dán theo mã hàng |
-| 3 | Quy đổi kg ↔ cái | Mỗi mã hàng khai báo **trọng lượng chuẩn** (kg/cái). Phế liệu được giữ theo kg |
+| 3 | Quy đổi kg ↔ cái | Mỗi mã hàng khai báo **trọng lượng chuẩn** (kg/cái). Phế liệu của mã tính theo cái **vẫn đếm theo cái** (hiện kèm kg quy đổi); mã tính theo kg dùng cho sắt vụn mua về (chốt 27/10/2026) |
 | 4 | Tính tiền thuê | **Tính theo ngày**: tính ngày xuất, không tính ngày trả. Giá tháng quy ra giá ngày (giá tháng ÷ 30) |
 | 4b | Thuê theo bộ | Giá thuê đặt theo **linh kiện**. "Bộ" chỉ dùng để báo giá cho nhanh |
 | 5 | Hợp đồng – công trình | **1 hợp đồng = 1 công trình**. Chuyển công trình = trả về bãi rồi xuất theo hợp đồng mới |
@@ -50,7 +50,7 @@ Mỗi mã hàng có tồn kho tách theo **4 tình trạng**:
 | **Mới** | Hàng mới mua từ nhà cung cấp | Có |
 | **Tốt** | Hàng đã qua sử dụng, dùng được ngay | Có |
 | **Chờ sửa** | Hỏng nhẹ, cần đưa vào xưởng | Không |
-| **Phế liệu** | Biến dạng hoàn toàn, quản lý theo kg | Bán theo kg |
+| **Phế liệu** | Biến dạng hoàn toàn. Đếm theo cái trong mã của nó, hiện kèm kg quy đổi (0.2 #3) | Bán theo kg (chốt ở `inventory-ledger`) |
 
 Mỗi tình trạng có **giá vốn bình quân riêng**.
 
