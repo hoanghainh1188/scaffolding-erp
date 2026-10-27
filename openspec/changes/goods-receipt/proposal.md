@@ -45,7 +45,7 @@
   - `receiving.manage` (Giám đốc, Thủ kho): xem đơn cần nhận trên điện thoại, lập phiếu nhập;
   - `stock.lookup` (mọi vai trò): tra tồn một mã trên M2, không có giá vốn;
   - `scrap-price.manage` (Giám đốc).
-- **Thư viện quét QR**: đề xuất `barcode-detector` (design D2). **Chỉ thêm khi người dùng duyệt** ở PR này.
+- **Thư viện quét QR**: `barcode-detector` (design D2), người dùng đã duyệt 27/10/2026.
 
 ## Capabilities
 
@@ -85,7 +85,7 @@
   - trang `src/app/(mobile)/m/*`, `src/app/(desktop)/settings/scrap-price`, phần nhận hàng của D3b;
   - `npm run db:seed:dev`: giá sắt vụn 7.500 ₫/kg, hai phiếu nhập để có đơn "Đang nhận" như D3b.
 - **E2E**: `tests/e2e/global-setup.ts` không xóa được đơn đã có phiếu nhập nữa (sổ kho không xóa được): chỉ xóa đơn `E2E thử` **chưa có phiếu nhập**; E2E nhập hàng dùng mã `E2E-KHO-01/02` và kiểm theo chênh lệch.
-- **Thư viện**: `barcode-detector` (chờ duyệt). Không thêm thư viện IndexedDB.
+- **Thư viện**: `barcode-detector` (đã duyệt). Không thêm thư viện IndexedDB.
 - **Test**: unit (luật dòng, tính giá chuyến, trạng thái đơn, đọc mã QR, hàng đợi nháp), integration (ghi phiếu trong transaction, gửi trùng, đồng thời, quyền), component (M1, M2, M3, M7, D3b, giá sắt vụn), E2E (nhập 2 chuyến, mất mạng rồi gửi lại), ảnh mốc mới.
 
 ## Ngoài phạm vi

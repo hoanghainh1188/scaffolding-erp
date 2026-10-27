@@ -73,7 +73,7 @@ Lựa chọn đã cân nhắc:
 - **Chỉ gửi khi người dùng bấm lại.** Không chọn: Thủ kho dễ quên phiếu đã đếm, hàng nằm bãi mà sổ chưa có. Vẫn có nút "Gửi lại" trên M7 cho ai muốn gửi ngay.
 - **Service worker + Background Sync.** Không chọn: #7 không làm offline ở MVP; Background Sync chưa có trên Safari.
 
-### D2. Quét QR: nội dung là mã hàng; thư viện `barcode-detector` (điểm cần chốt 2, **chờ duyệt thư viện**)
+### D2. Quét QR: nội dung là mã hàng; thư viện `barcode-detector` (điểm cần chốt 2; người dùng đã duyệt thư viện 27/10/2026)
 
 **Nội dung mã QR** = mã hàng viết hoa, không thêm gì: `GG-K17`.
 - Mã hàng không đổi được (`item-code.ts`), nên nhãn in một lần dùng mãi.
@@ -81,7 +81,7 @@ Lựa chọn đã cân nhắc:
 - Đọc mã (`src/domain/qr-payload.ts`, hàm thuần): bỏ khoảng trắng hai đầu, viết hoa, kiểm theo luật mã hàng; mã sai luật → "Mã QR này không phải mã hàng". Chấp nhận thêm dạng `…/m/scan?code=GG-K17` để sau này #40 có đổi sang in đường dẫn thì nhãn cũ lẫn mới đều đọc được.
 - Camera điện thoại bình thường mở mã chỉ thấy chữ `GG-K17`: chấp nhận, quét trong app.
 
-**Thư viện.** Đề xuất `barcode-detector` (v3.x, MIT, cập nhật 10/2026):
+**Thư viện.** `barcode-detector` (đã duyệt) (v3.x, MIT, cập nhật 10/2026):
 - Cùng API với `BarcodeDetector` có sẵn trong Chrome Android. Có sẵn thì dùng bản của trình duyệt; không có (Safari iPhone, Firefox) thì dùng bản WebAssembly (`zxing-wasm`) của gói.
 - File `.wasm` (~1 MB) **tự phục vụ** từ `public/` (chép bằng script khi cài), không tải từ CDN mặc định của gói. Chỉ tải khi mở màn quét (`import()` động), không vào bundle chung.
 - Chỉ đọc QR (`formats: ["qr_code"]`), quét 5 lần/giây trên `<video>` của camera sau.
@@ -346,7 +346,6 @@ Thêm vào `src/domain/permissions.ts`:
 - **[Đơn đổi trong lúc đếm]** Văn phòng sửa dòng đơn trước chuyến đầu, hoặc đóng đơn. → Server từ chối (409), nháp giữ nguyên số đã đếm; mở lại đơn thì giữ số của các mã vẫn còn trong đơn.
 - **[Giá sắt vụn cũ]** → M3 hiện ngày cập nhật giá; tổng giá trị lô vẫn đúng bằng tiền thật bỏ ra (#27).
 - **[Mặc định "Chờ chuyến sau" cho dòng không có]** khác cách đọc #12 nếu người dùng muốn mặc định đóng cho mọi dòng thiếu. → Nêu rõ trong PR để chốt (D6); đổi chỉ là đổi mặc định.
-- **[Thư viện quét QR chưa duyệt]** → Task cài thư viện đứng riêng, làm sau khi duyệt. Không duyệt thì dùng `BarcodeDetector` có sẵn + ô nhập mã (iPhone chỉ gõ mã).
 - **[File wasm ~1 MB]** → Chỉ tải ở màn quét, chỉ trên trình duyệt không có `BarcodeDetector`, trình duyệt cache lại.
 
 ## Migration Plan
@@ -356,5 +355,5 @@ Thêm vào `src/domain/permissions.ts`:
 
 ## Cần chốt khi duyệt PR
 
-1. Thư viện quét QR: `barcode-detector` (đề xuất) hay chỉ `BarcodeDetector` có sẵn (D2).
+1. ~~Thư viện quét QR~~: **đã chốt 27/10/2026**, dùng `barcode-detector` (D2).
 2. Dòng "Chuyến này không có" mặc định **chờ chuyến sau** (D6). Nếu đồng ý, ghi thành quyết định 0.2 mới khi archive.
