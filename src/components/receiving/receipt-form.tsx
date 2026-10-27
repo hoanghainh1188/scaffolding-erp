@@ -215,7 +215,10 @@ export function ReceiptFormView({
               }}
               className="h-10"
             />
-            <span data-mask className="shrink-0 text-muted-foreground">
+            <span
+              data-mask
+              className="w-24 shrink-0 text-muted-foreground tabular-nums"
+            >
               về lúc {timeOf(form.arrivedAt)}
             </span>
           </dd>
