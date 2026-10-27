@@ -37,9 +37,9 @@
 
 ## 6. Nháp trên máy (chạy ở trình duyệt)
 
-- [ ] 6.1 `src/lib/drafts/store.ts` (IndexedDB, `put/get/list/remove`, lọc theo `userId`) và bản trong bộ nhớ cùng interface cho test, `storage.persist()` lần đầu, design D1 — kiểm tra: unit test với bản trong bộ nhớ: lưu, đọc lại, lọc theo người dùng, nhãn "Nháp cũ" sau 3 ngày
-- [ ] 6.2 `src/lib/drafts/outbox.ts`: gửi nháp `QUEUED` khi mở app, sự kiện `online`, mỗi 30 giây lùi dần tới 5 phút; một lúc một nháp (`navigator.locks` hoặc khóa trong bộ nhớ); xử lý 2xx / lỗi mạng / 5xx / 401 / 409 / 422 như design D1. Unit test với `fetch` giả: lỗi mạng giữ `QUEUED` và gửi lại cùng `draftId`; 200 `replayed` xóa nháp; 409 chuyển `REJECTED` kèm thông báo; 401 giữ `QUEUED`; bấm xác nhận hai lần chỉ gửi một yêu cầu; hai lượt gửi chồng nhau chỉ một yêu cầu bay đi — kiểm tra: `npm run test:unit` xanh
-- [ ] 6.3 Hook `useDraft(kind, documentRef)` (tự lưu sau 500 ms, khôi phục khi mở lại, khóa sửa khi `SENDING`/`QUEUED`) và thanh "Mất kết nối – đã lưu nháp" trong layout Mobile (sửa `app-shell`). Component test: gõ số → lưu sau 500 ms; mở lại → số cũ; mất mạng khi có nháp → đúng chữ thanh báo — kiểm tra: `npm run test:unit` xanh
+- [x] 6.1 `src/lib/drafts/store.ts` (IndexedDB, `put/get/list/remove`, lọc theo `userId`) và bản trong bộ nhớ cùng interface cho test, `storage.persist()` lần đầu, design D1 — kiểm tra: unit test với bản trong bộ nhớ: lưu, đọc lại, lọc theo người dùng, nhãn "Nháp cũ" sau 3 ngày
+- [x] 6.2 `src/lib/drafts/outbox.ts`: gửi nháp `QUEUED` khi mở app, sự kiện `online`, mỗi 30 giây lùi dần tới 5 phút; một lúc một nháp (`navigator.locks` hoặc khóa trong bộ nhớ); xử lý 2xx / lỗi mạng / 5xx / 401 / 409 / 422 như design D1. Unit test với `fetch` giả: lỗi mạng giữ `QUEUED` và gửi lại cùng `draftId`; 200 `replayed` xóa nháp; 409 chuyển `REJECTED` kèm thông báo; 401 giữ `QUEUED`; bấm xác nhận hai lần chỉ gửi một yêu cầu; hai lượt gửi chồng nhau chỉ một yêu cầu bay đi — kiểm tra: `npm run test:unit` xanh
+- [x] 6.3 Hook `useDraft(kind, documentRef)` (tự lưu sau 500 ms, khôi phục khi mở lại, khóa sửa khi `SENDING`/`QUEUED`) và thanh "Mất kết nối – đã lưu nháp" trong layout Mobile (sửa `app-shell`). Component test: gõ số → lưu sau 500 ms; mở lại → số cũ; mất mạng khi có nháp → đúng chữ thanh báo — kiểm tra: `npm run test:unit` xanh
 
 ## 7. Quét mã QR
 

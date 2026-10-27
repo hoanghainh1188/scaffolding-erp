@@ -11,11 +11,19 @@ import { OfflineBanner } from "./offline-banner";
  * Phone layout for M1..M8: offline banner, page (with its AppBar), bottom
  * tabs. Capped at 640px and centred on wide screens; open to every role.
  */
-export function MobileShell({ children }: { children: ReactNode }) {
+export function MobileShell({
+  children,
+  outbox,
+}: {
+  children: ReactNode;
+  /** Sends queued drafts and says when one went through (design D1). */
+  outbox?: ReactNode;
+}) {
   useKeepFocusedInputVisible();
   return (
     <div className="flex min-h-dvh flex-col bg-background">
       <OfflineBanner />
+      {outbox}
       <div className="mx-auto flex w-full max-w-[640px] flex-1 flex-col bg-background pb-[calc(4rem+env(safe-area-inset-bottom))] sm:border-x">
         {children}
       </div>
