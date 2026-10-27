@@ -82,14 +82,17 @@ export function StockCardFilters(props: StockCardFiltersProps) {
           );
         })}
       </nav>
-      <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1">
+      <form
+        onSubmit={submit}
+        className="flex max-w-full min-w-0 flex-wrap items-end gap-3"
+      >
+        <div className="flex max-w-full min-w-0 flex-col gap-1">
           <Label htmlFor="card-place">Vị trí</Label>
           <select
             id="card-place"
             value={place}
             onChange={(event) => setPlace(event.target.value)}
-            className="h-11 rounded-md border border-input bg-card px-3 text-base"
+            className="h-11 max-w-full rounded-md border border-input bg-card px-3 text-base"
           >
             <option value="yard">Tại bãi</option>
             <option value="workshop">Tại xưởng</option>

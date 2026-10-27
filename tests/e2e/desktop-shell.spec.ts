@@ -28,10 +28,9 @@ test.describe("desktop shell", () => {
     const current = page.locator("[data-slot=sidebar] [aria-current=page]");
     await expect(current).toHaveCount(1);
     await expect(current).toHaveText("Kho");
-    await expect(page.getByRole("link", { name: "Kho" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    await expect(
+      page.getByRole("link", { name: "Kho", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
   });
 
   test("shows all nine items to the director", async ({ page }) => {

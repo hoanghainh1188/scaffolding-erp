@@ -112,7 +112,7 @@ export default async function Page({ params }: { params: Params }) {
       ) : null}
       <section
         aria-label="Thông tin phiếu"
-        className="rounded-lg border bg-card p-5"
+        className="min-w-0 rounded-lg border bg-card p-5"
       >
         <dl className="grid gap-4 sm:grid-cols-3">
           <div className="sm:col-span-2">
@@ -137,12 +137,12 @@ export default async function Page({ params }: { params: Params }) {
       </section>
       <section
         aria-labelledby="lines"
-        className="flex flex-col gap-4 rounded-lg border bg-card p-5"
+        className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-5"
       >
         <h2 id="lines" className="font-display text-h2">
           Các dòng
         </h2>
-        <div className="overflow-x-auto rounded-md border">
+        <div className="relative overflow-x-auto rounded-md border">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-muted">
               <tr>
@@ -213,12 +213,12 @@ export default async function Page({ params }: { params: Params }) {
       {adjustment.posted.length > 0 ? (
         <section
           aria-labelledby="posted"
-          className="flex flex-col gap-4 rounded-lg border bg-card p-5"
+          className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-5"
         >
           <h2 id="posted" className="font-display text-h2">
             Dòng đã ghi sổ kho
           </h2>
-          <div className="overflow-x-auto rounded-md border">
+          <div className="relative overflow-x-auto rounded-md border">
             <table className="w-full border-collapse text-sm tabular-nums">
               <thead className="bg-muted">
                 <tr>

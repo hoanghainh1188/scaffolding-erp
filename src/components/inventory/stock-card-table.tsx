@@ -23,7 +23,7 @@ const shortDate = (value: string) => formatBusinessDate(value).slice(0, 5);
 export function StockCardTable({ card, from, priced }: StockCardTableProps) {
   const unit = card.item.unit;
   return (
-    <div className="overflow-x-auto rounded-md border">
+    <div className="relative overflow-x-auto rounded-md border">
       <table className="w-full border-collapse text-sm tabular-nums">
         <thead className="bg-muted">
           <tr>

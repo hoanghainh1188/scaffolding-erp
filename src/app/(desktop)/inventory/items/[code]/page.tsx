@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 
 import { StockCardFilters } from "@/components/inventory/stock-card-filters";
 import { StockCardSummary } from "@/components/inventory/stock-card-summary";
@@ -27,7 +28,10 @@ export default async function Page({
 }) {
   await requirePermission("inventory.view");
   const { code } = await params;
-  const filter = cardFilterFrom(await searchParams);
+  const search = await searchParams;
+  // The default period is this month: read the clock at request time.
+  await connection();
+  const filter = cardFilterFrom(search);
   const db = getDatabase();
   const [card, sites] = await Promise.all([
     getStockCard(db, decodeURIComponent(code).toUpperCase(), filter),

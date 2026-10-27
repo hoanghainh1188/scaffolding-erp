@@ -49,13 +49,17 @@ function read(params: Params, name: string): string | undefined {
  */
 export function cardFilterFrom(
   params: Params,
-  today: BusinessDate = toBusinessDate(new Date()),
+  today?: BusinessDate,
 ): CardFilter {
   const condition = read(params, "condition");
   const place = read(params, "place");
-  const month = monthRange(today);
   const from = read(params, "from");
   const to = read(params, "to");
+  const given = from && to && isBusinessDate(from) && isBusinessDate(to);
+  // Only read the clock when the URL has no period.
+  const month = given
+    ? { from, to }
+    : monthRange(today ?? toBusinessDate(new Date()));
   const chosen: Condition | null =
     condition === "all"
       ? null

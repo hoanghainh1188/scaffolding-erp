@@ -50,7 +50,7 @@ function Amount({
 /** D10 table: yard by condition, workshop, sites, total, value. */
 export function StockTable({ rows, sites, showValue }: StockTableProps) {
   return (
-    <div className="overflow-x-auto rounded-md border">
+    <div className="relative overflow-x-auto rounded-md border">
       <table className="w-full border-collapse text-sm tabular-nums">
         <thead className="bg-muted">
           <tr>
