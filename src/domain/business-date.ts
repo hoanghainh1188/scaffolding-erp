@@ -80,3 +80,26 @@ export function monthRange(date: BusinessDate): {
     to: `${year}-${pad(month)}-${pad(last)}` as BusinessDate,
   };
 }
+
+const DAY_MS = 86_400_000;
+
+function utcOf(date: BusinessDate): number {
+  const [year, month, day] = date.split("-").map(Number) as [
+    number,
+    number,
+    number,
+  ];
+  return Date.UTC(year, month - 1, day);
+}
+
+/** The business date n days later (n may be negative). */
+export function addDays(date: BusinessDate, days: number): BusinessDate {
+  return new Date(utcOf(date) + days * DAY_MS)
+    .toISOString()
+    .slice(0, 10) as BusinessDate;
+}
+
+/** Whole days from `from` to `to`: 2026-10-24 → 2026-10-26 is 2. */
+export function daysBetween(from: BusinessDate, to: BusinessDate): number {
+  return Math.round((utcOf(to) - utcOf(from)) / DAY_MS);
+}
