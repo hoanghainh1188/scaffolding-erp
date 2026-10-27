@@ -162,11 +162,13 @@ export interface WithTempPassword {
 
 export async function createUser(
   { db, auth }: UserServiceDeps,
+  actor: Actor,
   input: CreateUserInput,
 ): Promise<ServiceResult<WithTempPassword>> {
   const tempPassword = generateTempPassword();
   try {
     const row = await db.transaction(async (tx) => {
+      if (!(await isActiveDirector(tx, actor))) return "forbidden" as const;
       const [taken] = await tx
         .select({ id: user.id })
         .from(user)
@@ -179,6 +181,7 @@ export async function createUser(
       });
       return loadRow(tx, id);
     });
+    if (row === "forbidden") return forbidden();
     if (!row) return conflict(USER_MESSAGES.usernameTaken);
     return { ok: true, data: { user: row, tempPassword } };
   } catch (error: unknown) {
@@ -197,6 +200,7 @@ export async function resetPassword(
   const tempPassword = generateTempPassword();
   const hash = await hashPassword(auth, tempPassword);
   return db.transaction(async (tx) => {
+    if (!(await isActiveDirector(tx, actor))) return forbidden();
     const target = await lockRow(tx, targetId);
     if (!target) return notFound();
     if (target.status !== "ACTIVE") return conflict(USER_MESSAGES.resetLocked);
@@ -302,6 +306,15 @@ async function lockActiveDirectors(tx: Executor): Promise<string[]> {
     .orderBy(asc(user.id))
     .for("update");
   return rows.map((row) => row.id);
+}
+
+/**
+ * Is the actor still an active director, now, under the same row locks as
+ * every other user change? withAuth checked at the start of the request;
+ * another tab may have locked or demoted them since (design D6).
+ */
+async function isActiveDirector(tx: Executor, actor: Actor): Promise<boolean> {
+  return (await lockActiveDirectors(tx)).includes(actor.id);
 }
 
 /** Would locking or demoting `target` leave no active director? */

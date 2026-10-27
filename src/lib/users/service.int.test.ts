@@ -70,6 +70,15 @@ async function statusOf(id: string) {
 const parse = (input: unknown) => createUserSchema.safeParse(input);
 
 describe("createUser", () => {
+  let minhanh: TestUser;
+
+  beforeEach(async () => {
+    minhanh = await createTestUser(ctx, {
+      role: "DIRECTOR",
+      username: "minhanh",
+    });
+  });
+
   it("creates a warehouse account that must change its password", async () => {
     const input = parse({
       name: "Đức Lực",
@@ -77,7 +86,7 @@ describe("createUser", () => {
       role: "WAREHOUSE",
     });
     expect(input.success).toBe(true);
-    const result = await createUser(ctx, input.data!);
+    const result = await createUser(ctx, minhanh, input.data!);
     expect(result).toMatchObject({
       ok: true,
       data: {
@@ -111,7 +120,7 @@ describe("createUser", () => {
       username: "ngoclam",
       status: "LOCKED",
     });
-    const result = await createUser(ctx, {
+    const result = await createUser(ctx, minhanh, {
       name: "Ngọc Lâm",
       username: "ngoclam",
       role: "WAREHOUSE",
@@ -130,8 +139,8 @@ describe("createUser", () => {
       role: "WAREHOUSE" as const,
     };
     const results = await Promise.all([
-      createUser(ctx, input),
-      createUser(otherDeps, input),
+      createUser(ctx, minhanh, input),
+      createUser(otherDeps, minhanh, input),
     ]);
     expect(results.filter((result) => result.ok)).toHaveLength(1);
     expect(results.find((result) => !result.ok)).toMatchObject({ status: 409 });
@@ -300,6 +309,78 @@ describe("lockUser / unlockUser", () => {
       status: 409,
       error: USER_MESSAGES.alreadyActive,
     });
+  });
+});
+
+describe("the acting director is re-checked inside the transaction", () => {
+  let minhanh: TestUser;
+  let vantung: TestUser;
+
+  beforeEach(async () => {
+    minhanh = await createTestUser(ctx, {
+      role: "DIRECTOR",
+      username: "minhanh",
+    });
+    // A second director keeps one active after minhanh is locked.
+    await createTestUser(ctx, { role: "DIRECTOR", username: "giamdoc2" });
+    vantung = await createTestUser(ctx, {
+      role: "WAREHOUSE",
+      username: "vantung",
+    });
+  });
+
+  // The request passed withAuth, then minhanh was locked (or demoted) from
+  // another tab before the service ran.
+  const lockMinhanh = () =>
+    ctx.db
+      .update(user)
+      .set({ status: "LOCKED" })
+      .where(eq(user.id, minhanh.id));
+  const demoteMinhanh = () =>
+    ctx.db.update(user).set({ role: "SALES" }).where(eq(user.id, minhanh.id));
+
+  const forbidden = {
+    ok: false,
+    status: 403,
+    error: "Bạn không có quyền thực hiện thao tác này",
+  };
+
+  it("refuses to create an account for a director locked meanwhile", async () => {
+    await lockMinhanh();
+    expect(
+      await createUser(ctx, minhanh, {
+        name: "Đức Lực",
+        username: "ducluc",
+        role: "WAREHOUSE",
+      }),
+    ).toEqual(forbidden);
+    const [created] = await ctx.db
+      .select()
+      .from(user)
+      .where(eq(user.username, "ducluc"));
+    expect(created).toBeUndefined();
+  });
+
+  it("refuses to reset a password for a director locked meanwhile", async () => {
+    const phone = await signInAs(ctx, vantung);
+    await lockMinhanh();
+    expect(await resetPassword(ctx, minhanh, vantung.id)).toEqual(forbidden);
+    // Nothing changed: old password works, session alive, no pending change.
+    expect(await isSignedIn(phone)).toBe(true);
+    expect(await canSignIn("vantung", vantung.password)).toBe(true);
+    expect((await statusOf(vantung.id))?.mustChange).toBe(false);
+  });
+
+  it("refuses both for a director demoted meanwhile", async () => {
+    await demoteMinhanh();
+    expect(await resetPassword(ctx, minhanh, vantung.id)).toEqual(forbidden);
+    expect(
+      await createUser(ctx, minhanh, {
+        name: "Đức Lực",
+        username: "ducluc",
+        role: "WAREHOUSE",
+      }),
+    ).toEqual(forbidden);
   });
 });
 
