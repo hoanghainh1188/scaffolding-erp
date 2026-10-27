@@ -30,8 +30,11 @@ export const conflict = (error: string) =>
 
 /** Thrown inside a transaction to roll it back with a ready answer. */
 export class ServiceFailure extends Error {
-  constructor(readonly result: Extract<ServiceResult<never>, { ok: false }>) {
+  readonly result: Extract<ServiceResult<never>, { ok: false }>;
+
+  constructor(result: Extract<ServiceResult<never>, { ok: false }>) {
     super(result.error);
+    this.result = result;
   }
 }
 
