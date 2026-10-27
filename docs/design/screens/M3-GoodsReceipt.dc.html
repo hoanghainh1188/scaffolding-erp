@@ -16,7 +16,7 @@ button,a,input{font-family:inherit}
 button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #1D5BFF;outline-offset:2px}
 </style>
 </helmet>
-<div style="position: relative; width: 390px; height: 1600px; box-sizing: border-box; background: #F7F9FF; color: #0F1A33; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 16px; line-height: 24px; overflow: hidden;">
+<div style="position: relative; width: 390px; height: 1990px; box-sizing: border-box; background: #F7F9FF; color: #0F1A33; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 16px; line-height: 24px; overflow: hidden;">
 
   <header style="box-sizing: border-box; height: 64px; padding: 0 8px; background: #FFFFFF; border-bottom: 1px solid #E1E7F5; display: flex; align-items: center; gap: 4px;">
     <a href="M1-Today.dc.html" aria-label="Quay lại" style="width: 48px; height: 48px; border-radius: 12px; color: #0F1A33; display: inline-flex; align-items: center; justify-content: center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></a>
@@ -118,6 +118,19 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #1D5B
       </article>
     </section>
 
+    <section aria-labelledby="s-costs" style="background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <h2 id="s-costs" style="margin: 0; font-size: 16px; line-height: 22px; font-weight: 700;">Chi phí chuyến này</h2>
+        <p style="margin: 0; font-size: 13px; line-height: 18px; color: #55607A;">Đã điền sẵn chi phí dự kiến của đơn. Sửa theo số thật trả nhà xe, bốc xếp.</p>
+      </div>
+      <label style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"><span style="font-size: 15px;">Cước xe tải</span><input type="text" inputmode="numeric" value="3.500.000" aria-label="Cước xe tải" style="box-sizing: border-box; width: 150px; height: 48px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 17px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+      <label style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"><span style="font-size: 15px;">Bốc xếp</span><input type="text" inputmode="numeric" value="1.200.000" aria-label="Bốc xếp" style="box-sizing: border-box; width: 150px; height: 48px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 17px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+      <label style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"><span style="font-size: 15px;">Cầu đường</span><input type="text" inputmode="numeric" value="180.000" aria-label="Cầu đường" style="box-sizing: border-box; width: 150px; height: 48px; border: 1px solid #E1E7F5; border-radius: 12px; padding: 0 12px; text-align: right; font-size: 17px; font-weight: 600; color: #0F1A33; font-variant-numeric: tabular-nums;"></label>
+      <button type="button" style="align-self: flex-start; height: 44px; padding: 0 14px; border: 1px dashed #A6B0CC; border-radius: 12px; background: #FFFFFF; color: #0F1A33; font-size: 14px; font-weight: 600; cursor: pointer;">+ Thêm khoản</button>
+      <div style="display: flex; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px solid #E1E7F5; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums;"><span>Tổng chi phí chuyến</span><span>4.880.000 ₫</span></div>
+      <p style="margin: 0; font-size: 13px; line-height: 18px; color: #55607A;">Chia vào giá nhập hàng của chuyến này, theo giá trị (cách chia trên đơn). Không cộng vào tiền trả người bán.</p>
+    </section>
+
     <section aria-labelledby="s-photo" style="background: #FFFFFF; border: 1px solid #E1E7F5; border-radius: 20px; padding: 16px; display: flex; align-items: center; gap: 12px;">
       <div style="flex: 1 1 auto;">
         <h2 id="s-photo" style="margin: 0; font-size: 16px; line-height: 22px; font-weight: 700;">Ảnh hàng lúc nhận</h2>
@@ -134,7 +147,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #1D5B
   <p id="confirm-hint" style="position: absolute; left: 16px; right: 16px; bottom: 96px; margin: 0; padding: 8px 12px; border-radius: 10px; background: #0F1A33; color: #FFFFFF; font-size: 13px; line-height: 18px; text-align: center;">Đếm Mâm 1,6m hoặc chọn "Chuyến này không có" để xác nhận</p>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1600}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1990}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};
