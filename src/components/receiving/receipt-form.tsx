@@ -203,7 +203,7 @@ export function ReceiptFormView({
           <dt className="text-muted-foreground">Người bán</dt>
           <dd>{order.supplierName}</dd>
           <dt className="text-muted-foreground">Xe</dt>
-          <dd className="flex items-center gap-2">
+          <dd>
             <Input
               aria-label="Xe"
               value={form.vehicle}
@@ -215,12 +215,10 @@ export function ReceiptFormView({
               }}
               className="h-10"
             />
-            <span
-              data-mask
-              className="w-24 shrink-0 text-muted-foreground tabular-nums"
-            >
-              về lúc {timeOf(form.arrivedAt)}
-            </span>
+          </dd>
+          <dt className="text-muted-foreground">Về lúc</dt>
+          <dd data-mask className="whitespace-nowrap tabular-nums">
+            {timeOf(form.arrivedAt)}
           </dd>
           <dt className="text-muted-foreground">Loại hàng</dt>
           <dd>{PURCHASE_KIND_LABELS[order.kind]}</dd>
