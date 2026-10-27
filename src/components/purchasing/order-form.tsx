@@ -289,7 +289,7 @@ export function OrderForm({ suppliers, items, order }: OrderFormProps) {
       ref={formRef}
       onSubmit={submit}
       noValidate
-      className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]"
+      className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]"
     >
       <div className="flex min-w-0 flex-col gap-6">
         <section

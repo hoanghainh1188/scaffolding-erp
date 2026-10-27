@@ -23,7 +23,7 @@ interface OrderLinesProps {
   onRemove: (key: number) => void;
 }
 
-const cell = "border-b px-2 py-2 align-top";
+const cell = "border-b px-1.5 py-2 align-top";
 const amountText = (value: number | null) =>
   value === null ? "–" : formatMoney(value as Money).replace(" ₫", "");
 
@@ -54,31 +54,43 @@ export function OrderLines({
       </div>
       <FieldMessage message={errors.lines} />
       <div className="relative overflow-x-auto rounded-md border">
-        <table className="w-full min-w-[900px] border-collapse text-sm">
+        <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead className="bg-muted text-left">
             <tr>
-              <th scope="col" className="px-2 py-2.5 font-semibold">
+              <th scope="col" className="px-1.5 py-2.5 font-semibold">
                 Mã hàng
               </th>
-              <th scope="col" className="px-2 py-2.5 font-semibold">
-                Đơn vị
-              </th>
-              <th scope="col" className="px-2 py-2.5 text-right font-semibold">
+              <th
+                scope="col"
+                className="px-1.5 py-2.5 text-right font-semibold"
+              >
                 Số lượng
               </th>
-              <th scope="col" className="px-2 py-2.5 text-right font-semibold">
+              <th
+                scope="col"
+                className="px-1.5 py-2.5 text-right font-semibold"
+              >
                 Đơn giá
               </th>
-              <th scope="col" className="px-2 py-2.5 text-right font-semibold">
+              <th
+                scope="col"
+                className="px-1.5 py-2.5 text-right font-semibold"
+              >
                 Thành tiền
               </th>
-              <th scope="col" className="px-2 py-2.5 text-right font-semibold">
+              <th
+                scope="col"
+                className="px-1.5 py-2.5 text-right font-semibold"
+              >
                 Chi phí phân bổ
               </th>
-              <th scope="col" className="px-2 py-2.5 text-right font-semibold">
+              <th
+                scope="col"
+                className="px-1.5 py-2.5 text-right font-semibold"
+              >
                 Giá nhập / đơn vị
               </th>
-              <th scope="col" className="px-2 py-2.5">
+              <th scope="col" className="w-10 px-1 py-2.5">
                 <span className="sr-only">Xóa</span>
               </th>
             </tr>
@@ -91,7 +103,7 @@ export function OrderLines({
               const field = (key: string) => errors[`lines.${index}.${key}`];
               return (
                 <tr key={line.key} className="bg-card">
-                  <td className={cn(cell, "min-w-44")}>
+                  <td className={cell}>
                     <select
                       aria-label={`Mã hàng dòng ${index + 1}`}
                       value={line.itemId}
@@ -103,7 +115,7 @@ export function OrderLines({
                           ...(picked?.unit === "KG" ? { unit: "KG" } : {}),
                         });
                       }}
-                      className="h-10 w-52 rounded-md border border-input bg-card px-2 text-sm"
+                      className="h-10 w-36 rounded-md border border-input bg-card px-2 text-sm"
                     >
                       <option value="">Chọn mã hàng</option>
                       {items.map((item) => (
@@ -112,19 +124,14 @@ export function OrderLines({
                         </option>
                       ))}
                     </select>
+                    {choice ? (
+                      <p className="mt-1 w-36 text-caption text-muted-foreground">
+                        {choice.name}
+                      </p>
+                    ) : null}
                     <FieldMessage message={field("itemId")} />
                   </td>
                   <td className={cell}>
-                    <UnitSwitch
-                      name={name}
-                      value={line.unit}
-                      kgOnly={choice?.unit === "KG"}
-                      disabled={locked}
-                      onChange={(unit) => onChange(line.key, { unit })}
-                    />
-                    <FieldMessage message={field("unit")} />
-                  </td>
-                  <td className={cn(cell, "w-28")}>
                     <Input
                       aria-label={`Số lượng ${name}${line.unit === "KG" ? " (kg)" : ""}`}
                       inputMode="decimal"
@@ -133,8 +140,18 @@ export function OrderLines({
                       onChange={(event) =>
                         onChange(line.key, { quantity: event.target.value })
                       }
-                      className="h-10 w-24 text-right tabular-nums"
+                      className="h-10 w-20 text-right tabular-nums"
                     />
+                    <div className="mt-1 flex justify-end">
+                      <UnitSwitch
+                        name={name}
+                        value={line.unit}
+                        kgOnly={choice?.unit === "KG"}
+                        disabled={locked}
+                        onChange={(unit) => onChange(line.key, { unit })}
+                      />
+                    </div>
+                    <FieldMessage message={field("unit")} />
                     {preview?.pieces != null ? (
                       <p className="mt-1 text-right text-caption text-muted-foreground">
                         ≈ {preview.pieces.toLocaleString("vi-VN")} cái
@@ -142,7 +159,7 @@ export function OrderLines({
                     ) : null}
                     <FieldMessage message={field("quantity")} />
                   </td>
-                  <td className={cn(cell, "w-32")}>
+                  <td className={cell}>
                     <Input
                       aria-label={`Đơn giá ${name}${line.unit === "KG" ? " mỗi kg" : ""}`}
                       inputMode="numeric"
@@ -151,7 +168,7 @@ export function OrderLines({
                       onChange={(event) =>
                         onChange(line.key, { unitPrice: event.target.value })
                       }
-                      className="h-10 w-28 text-right tabular-nums"
+                      className="h-10 w-24 text-right tabular-nums"
                     />
                     <FieldMessage message={field("unitPrice")} />
                   </td>
@@ -178,12 +195,12 @@ export function OrderLines({
                       ? `${formatMoney(preview.unitCost)}${line.unit === "KG" ? "/kg" : ""}`
                       : "–"}
                   </td>
-                  <td className={cn(cell, "w-12")}>
+                  <td className={cn(cell, "px-0")}>
                     {locked ? null : (
                       <Button
                         type="button"
                         variant="ghost"
-                        size="icon"
+                        size="icon-sm"
                         aria-label={`Xóa ${name}`}
                         onClick={() => onRemove(line.key)}
                       >
@@ -242,7 +259,7 @@ function UnitSwitch({
           disabled={disabled}
           onClick={() => onChange(unit)}
           className={cn(
-            "h-8 min-w-11 rounded-pill px-2.5 text-caption font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed",
+            "h-7 min-w-9 rounded-pill px-2 text-caption font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed",
             value === unit
               ? "bg-card text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground",
