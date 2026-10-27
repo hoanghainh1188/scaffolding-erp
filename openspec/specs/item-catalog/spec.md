@@ -145,7 +145,7 @@ Khi chọn một vật tư ở D9, hệ thống SHALL hiện các bộ có chứ
 - **THEN** khung "Thuộc bộ" hiện "Bộ giàn giáo 1,7m" với ×2 Khung giàn giáo 1,7m, ×2 Chéo giàn giáo, ×1 Mâm giàn giáo 1,6m, 43,6 kg, 3.900 ₫/ngày
 
 ### Requirement: Ngừng dùng và xóa vật tư, bộ
-Vật tư, bộ và nhóm SHALL ngừng dùng được và dùng lại được. Bản ghi đang được tham chiếu (vật tư trong bộ, nhóm có vật tư, và sau này là chứng từ) SHALL không xóa được, chỉ ngừng dùng. Vật tư đang nằm trong một bộ đang dùng SHALL không ngừng dùng được. Bản ghi ngừng dùng SHALL không chọn được cho bộ hay chứng từ mới.
+Vật tư, bộ và nhóm SHALL ngừng dùng được và dùng lại được. Bản ghi đang được tham chiếu (vật tư trong bộ, nhóm có vật tư, vật tư đã có dòng sổ kho, và sau này là chứng từ) SHALL không xóa được, chỉ ngừng dùng. Vật tư đang nằm trong một bộ đang dùng SHALL không ngừng dùng được. Vật tư **còn tồn** (tổng số lượng khác 0 ở bất kỳ tình trạng và vị trí nào, kể cả hàng đang ở công trình) SHALL không ngừng dùng được. Bản ghi ngừng dùng SHALL không chọn được cho bộ hay chứng từ mới.
 
 #### Scenario: Xóa vật tư chưa dùng
 - **WHEN** Kinh doanh xóa vật tư `TEST-01` vừa tạo nhầm, chưa ở bộ nào
@@ -158,6 +158,14 @@ Vật tư, bộ và nhóm SHALL ngừng dùng được và dùng lại được.
 #### Scenario: Ngừng dùng vật tư đang trong bộ đang dùng
 - **WHEN** người dùng ngừng dùng `GG-CH` trong khi bộ `BO-17` đang dùng
 - **THEN** hệ thống từ chối với "Bỏ vật tư này khỏi bộ BO-17 hoặc ngừng dùng bộ trước"
+
+#### Scenario: Ngừng dùng vật tư còn tồn
+- **WHEN** người dùng ngừng dùng `OT-06` khi còn 12 cái Tốt tại bãi và 30 cái tại công trình `CT-0003`
+- **THEN** hệ thống từ chối với "OT-06 còn tồn 42 cái, chỉ ngừng dùng được khi tồn về 0" **AND** `OT-06` vẫn đang dùng
+
+#### Scenario: Ngừng dùng vật tư đã hết tồn
+- **WHEN** `OT-06` đã có dòng sổ kho nhưng tổng tồn ở mọi tình trạng và vị trí là 0
+- **THEN** ngừng dùng thành công **AND** thẻ kho của `OT-06` vẫn xem được
 
 #### Scenario: Vật tư ngừng dùng không vào bộ mới
 - **WHEN** `KK-01` đã ngừng dùng và người dùng tạo bộ có dòng `KK-01`
