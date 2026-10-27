@@ -144,40 +144,49 @@ export function OrderForm({ suppliers, items, order }: OrderFormProps) {
       all.map((cost) => (cost.key === costKey ? { ...cost, ...change } : cost)),
     );
 
-  /** The request body, or field errors found before sending. */
-  function body(): { ok: true; value: unknown } | { ok: false } {
+  /**
+   * The request body, or field errors found before sending. Blank rows are
+   * not sent, so `rows` maps a sent index back to its row on screen: every
+   * error (ours or the server's "lines.N.x") is shown on the right row.
+   */
+  function body():
+    | { ok: true; value: unknown; rows: Record<"lines" | "costs", number[]> }
+    | { ok: false } {
     const found: Record<string, string> = {};
-    const sentLines = lines
-      .filter((line) => line.itemId || line.quantity || line.unitPrice)
-      .map((line, index) => {
-        let quantity = "";
-        try {
-          quantity = quantityToDb(parseQuantity(line.quantity || "0", "KG"));
-        } catch (problem) {
-          if (!(problem instanceof DomainValueError)) throw problem;
-          found[`lines.${index}.quantity`] = problem.message;
-        }
-        const price = readMoney(line.unitPrice);
-        if (price === null) {
-          found[`lines.${index}.unitPrice`] = PURCHASE_MESSAGES.price;
-        }
-        return {
+    const rows = { lines: [] as number[], costs: [] as number[] };
+    const sentLines = lines.flatMap((line, row) => {
+      if (!line.itemId && !line.quantity && !line.unitPrice) return [];
+      rows.lines.push(row);
+      let quantity = "";
+      try {
+        quantity = quantityToDb(parseQuantity(line.quantity || "0", "KG"));
+      } catch (problem) {
+        if (!(problem instanceof DomainValueError)) throw problem;
+        found[`lines.${row}.quantity`] = problem.message;
+      }
+      const price = readMoney(line.unitPrice);
+      if (price === null) {
+        found[`lines.${row}.unitPrice`] = PURCHASE_MESSAGES.price;
+      }
+      return [
+        {
           itemId: line.itemId,
           unit: line.unit,
           quantity,
           unitPrice: price ?? -1,
-        };
-      });
-    const sentCosts = costs
-      // A suggested row left without an amount is not a cost.
-      .filter((cost) => cost.amount.trim() !== "")
-      .map((cost, index) => {
-        const amount = readMoney(cost.amount);
-        if (amount === null || amount <= 0) {
-          found[`costs.${index}.amount`] = PURCHASE_MESSAGES.costAmount;
-        }
-        return { label: cost.label, amount: amount ?? 0 };
-      });
+        },
+      ];
+    });
+    // A suggested row left without an amount is not a cost.
+    const sentCosts = costs.flatMap((cost, row) => {
+      if (cost.amount.trim() === "") return [];
+      rows.costs.push(row);
+      const amount = readMoney(cost.amount);
+      if (amount === null || amount <= 0) {
+        found[`costs.${row}.amount`] = PURCHASE_MESSAGES.costAmount;
+      }
+      return [{ label: cost.label, amount: amount ?? 0 }];
+    });
     if (Object.keys(found).length > 0) {
       setErrors(found);
       return { ok: false };
@@ -196,7 +205,24 @@ export function OrderForm({ suppliers, items, order }: OrderFormProps) {
         costs: sentCosts,
         ...(order ? { updatedAt: order.updatedAt } : {}),
       },
+      rows,
     };
+  }
+
+  /** "lines.0.quantity" of the sent body → the same field on screen. */
+  function onScreen(
+    field: string,
+    rows: Record<"lines" | "costs", number[]>,
+  ): string {
+    const match = /^(lines|costs)\.(\d+)(\..*)?$/.exec(field);
+    if (!match) return field;
+    const [, list, index, rest = ""] = match as unknown as [
+      string,
+      "lines" | "costs",
+      string,
+      string?,
+    ];
+    return `${list}.${rows[list][Number(index)] ?? index}${rest}`;
   }
 
   async function save(mode: Save) {
@@ -225,8 +251,11 @@ export function OrderForm({ suppliers, items, order }: OrderFormProps) {
       );
       if (!place.ok) {
         setPending(null);
-        if (place.field) setErrors({ [place.field]: place.error });
-        setError(place.error);
+        if (place.field) {
+          setErrors({ [onScreen(place.field, built.rows)]: place.error });
+        }
+        // The edit itself went through; only placing failed.
+        setError(`Đã lưu nháp, nhưng chưa đặt được: ${place.error}`);
         router.refresh();
         return;
       }
@@ -234,7 +263,9 @@ export function OrderForm({ suppliers, items, order }: OrderFormProps) {
     }
     setPending(null);
     if (!result.ok) {
-      if (result.field) setErrors({ [result.field]: result.error });
+      if (result.field) {
+        setErrors({ [onScreen(result.field, built.rows)]: result.error });
+      }
       if (result.error === PURCHASE_MESSAGES.stale) setStale(true);
       setError(result.error);
       formRef.current
