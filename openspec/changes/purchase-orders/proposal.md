@@ -9,7 +9,7 @@ Kinh doanh đang ghi đơn mua hàng ra giấy hoặc nhắn tin. Thủ kho vì 
   - **D2** Danh sách đơn thu mua (`D2-PurchaseOrders.dc.html`)
   - **D3** Tạo/sửa đơn (`D3-PurchaseOrder.dc.html`)
   - **D3b** Chi tiết đơn (`D3b-PurchaseOrderDetail.dc.html`), riêng phần đơn
-- Quyết định đã chốt dùng: `docs/requirements.md` mục 0.2 số 1, 3, 10, 12, 13, 14, 25, 26.
+- Quyết định đã chốt dùng: `docs/requirements.md` mục 0.2 số 1, 3, 10, 12, 13, 14, 25, 26, và **#27 mới** (chốt khi review PR #36).
 
 ## What Changes
 
@@ -36,7 +36,11 @@ Kinh doanh đang ghi đơn mua hàng ra giấy hoặc nhắn tin. Thủ kho vì 
 - **Hàm thuần chia chi phí** trong `src/domain/`:
   - Chia theo giá trị, theo trọng lượng (cái × trọng lượng chuẩn, hoặc số kg) và theo số lượng.
   - Sau làm tròn, **tổng các phần luôn bằng đúng tổng chi phí** đến từng đồng (cách chia phần dư lớn nhất).
-  - D3 dùng hàm này để xem trước giá nhập trên số dự kiến. `goods-receipt` dùng lại cho từng chuyến (#25), và dùng để chia giá của một dòng hàng cũ ra các tình trạng Tốt / Chờ sửa / Phế liệu.
+  - D3 dùng hàm này để xem trước giá nhập trên số dự kiến. `goods-receipt` dùng lại cho từng chuyến (#25).
+- **Chia giá lô hàng cũ ra tình trạng** (0.2 #27, design D5), hàm thuần dùng ở `goods-receipt`:
+  - Phế liệu lấy giá = kg quy đổi × giá sắt vụn tham khảo;
+  - phần còn lại chia cho Tốt và Chờ sửa theo số cái;
+  - giá trị phế liệu vượt tiền dòng, hoặc cả lô là phế liệu, thì phế liệu nhận đúng tiền dòng.
 - **Nhiều đơn vị** (design D4):
   - Mã tính theo cái đặt được theo cái hoặc theo kg. Đặt theo kg thì màn hình hiện số cái quy đổi theo trọng lượng chuẩn.
   - Mã tính theo kg (`PL-SAT`) chỉ đặt theo kg.
@@ -47,6 +51,7 @@ Kinh doanh đang ghi đơn mua hàng ra giấy hoặc nhắn tin. Thủ kho vì 
 - **D3b** (`/purchasing/orders/[code]`):
   - phần làm ở change này: thông tin chung, bảng hàng đặt, chi phí dự kiến, lịch sử, các nút đặt, sửa, hủy, đóng đơn;
   - phần để trống tới `goods-receipt`: cột "Đã nhận", "Các chuyến nhập", "Phải trả người bán", "So với đơn". Các khối này hiện "Chưa có chuyến nhập".
+- **Chống ghi đè khi hai người cùng sửa**: lệnh sửa gửi kèm thời điểm sửa gần nhất đã đọc; lệch thì báo "Đơn vừa được người khác sửa, tải lại trang".
 - **Lịch sử đơn**: ai tạo, đặt, sửa, hủy, đóng, lúc nào. `goods-receipt` ghi thêm các chuyến nhập vào đây.
 - **Quyền mới** `purchasing.manage` (Giám đốc, Kinh doanh) trong `src/domain/permissions.ts`. Xem đơn dùng `purchasing.view` đã có (Giám đốc, Kế toán, Kinh doanh).
 - **Chặn ngừng dùng**: không ngừng dùng được nhà cung cấp còn đơn đang xử lý, hay vật tư nằm trong một đơn đang xử lý.
@@ -56,7 +61,7 @@ Kinh doanh đang ghi đơn mua hàng ra giấy hoặc nhắn tin. Thủ kho vì 
 ### New Capabilities
 
 - `purchase-orders`: đơn thu mua, gồm dòng hàng, chi phí dự kiến, trạng thái và luật chuyển, sửa/hủy/đóng, lịch sử, quyền, các màn D2, D3, D3b (phần đơn).
-- `landed-cost`: luật chia chi phí mua hàng và chia giá một dòng ra nhiều tình trạng: theo giá trị, theo trọng lượng, theo số lượng; làm tròn khớp tổng; giá nhập một đơn vị.
+- `landed-cost`: luật chia chi phí mua hàng (theo giá trị, theo trọng lượng; làm tròn khớp tổng; giá nhập một đơn vị) và chia giá một dòng hàng cũ ra tình trạng (phế liệu theo giá sắt vụn).
 
 ### Modified Capabilities
 
@@ -87,10 +92,12 @@ Kinh doanh đang ghi đơn mua hàng ra giấy hoặc nhắn tin. Thủ kho vì 
   - E2E luồng chính;
   - ảnh mốc mới cho D2, D3, D3b.
 - Không thêm thư viện.
+- **Tài liệu**: `docs/requirements.md` 0.2 thêm #27 (giá lô hàng cũ theo tình trạng, chốt 27/10/2026).
 - **Số mẫu trên bản vẽ D3** lệch 1 ₫ ở hai dòng (Chéo 771.839 → **771.840**, Phế liệu 565.539 → **565.538**) vì cách chia phần dư (design D3). Spec thắng. Giá nhập một đơn vị vẫn khớp bản vẽ.
 - **Ràng buộc cho `goods-receipt`** (design D9):
   - Dùng hàm chia chi phí của change này cho từng chuyến, theo cách chia đã chọn trên đơn.
-  - Chia giá một dòng hàng cũ ra các tình trạng theo số cái.
+  - Chia giá một dòng hàng cũ ra tình trạng bằng hàm của D5.
+  - Thêm chỗ lưu **giá sắt vụn tham khảo** (₫/kg) và màn để Giám đốc nhập.
   - Thêm quyền đọc đơn cho Thủ kho.
   - Thay phần "Chưa có chuyến nhập" ở D3b bằng số thật.
 
@@ -102,5 +109,6 @@ Kinh doanh đang ghi đơn mua hàng ra giấy hoặc nhắn tin. Thủ kho vì 
 - Nút **"In đơn"** ở D3b: chưa hiện.
 - Duyệt đơn mua bởi Giám đốc: không có trong quyết định đã chốt, đơn đặt là có hiệu lực.
 - Chia giá theo hệ số riêng cho từng tình trạng (VD: Chờ sửa rẻ hơn Tốt): không làm (design D5).
+- Bảng và màn nhập **giá sắt vụn tham khảo**: thuộc `goods-receipt` (#8).
 - Đơn mua bằng ngoại tệ, thuế VAT, chiết khấu.
 - Tạo đơn từ file Excel.

@@ -153,11 +153,15 @@ Chỉ các lệnh sau SHALL hợp lệ; mọi lệnh khác SHALL bị từ chố
 - Đơn đã có chuyến nhập: SHALL chỉ sửa được ngày dự kiến, giờ, phương tiện, ghi chú, vì phiếu nhập đã tính theo đơn giá và cách chia của đơn.
 - Đơn đã xong: SHALL không sửa được.
 
-Mỗi lần sửa đơn đã đặt SHALL ghi vào lịch sử.
+Mỗi lần sửa đơn đã đặt SHALL ghi vào lịch sử. Lệnh sửa SHALL gửi kèm thời điểm sửa gần nhất đã đọc; nếu đơn đã bị sửa sau đó thì lệnh bị từ chối, không ghi gì.
 
 #### Scenario: Sửa đơn giá trước khi xe về
 - **WHEN** `PO-2026-055` đã đặt, chưa có chuyến nhập, Kinh doanh đổi đơn giá Khung 1,7m từ 185.000 ₫ thành 188.000 ₫
 - **THEN** thay đổi được lưu **AND** lịch sử có dòng "Quốc Bảo sửa đơn"
+
+#### Scenario: Hai người cùng sửa một đơn
+- **WHEN** Quốc Bảo và Giám đốc cùng mở form sửa `PO-2026-055`, Giám đốc lưu trước, rồi Quốc Bảo bấm "Lưu thay đổi"
+- **THEN** lệnh của Quốc Bảo trả 409 "Đơn vừa được người khác sửa, tải lại trang" **AND** đơn giữ thay đổi của Giám đốc
 
 #### Scenario: Sửa dòng hàng khi đã có chuyến nhập
 - **WHEN** `PO-2026-051` đã có phiếu nhập và Kinh doanh đổi số lượng Mâm

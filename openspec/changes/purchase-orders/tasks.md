@@ -16,7 +16,7 @@
 
 ## 2. Logic thuần + unit test (viết test trước)
 
-- [ ] 2.1 `src/domain/landed-cost.ts`: `allocate` (`VALUE`, `WEIGHT`, `QUANTITY`; phần dư lớn nhất; `bigint`), `lineWeightKgMilli`, `landedUnitCost` theo design D3. Unit test `landed-cost.test.ts`:
+- [ ] 2.1 `src/domain/landed-cost.ts`: `allocate` (`VALUE`, `WEIGHT`, `QUANTITY`; phần dư lớn nhất; `bigint`), `lineWeightKgMilli`, `landedUnitCost` theo design D3, `splitLotByCondition` theo design D5 (dùng `piecesToKg`, `lineAmount` có sẵn). Unit test `landed-cost.test.ts`:
   - bảng design D3 theo giá trị: 2.231.098 / 771.840 / 1.311.524 / 565.538, giá nhập 196.155 / 33.930 / 153.743 / 7.952;
   - theo trọng lượng: 1.960.568 / 813.273 / 1.198.125 / 908.034, giá nhập 194.803 / 34.033 / 152.988 / 8.226;
   - 100 ₫ cho 3 dòng → 34 / 33 / 33;
@@ -25,7 +25,7 @@
   - tổng 0 → mọi dòng 0;
   - giá trị bằng 0 → thông báo đúng spec; không có dòng → "Không có hàng để chia chi phí";
   - 999.999.999 ₫ cho 9.000.000.000 ₫ + 1 ₫ không tràn;
-  - chia theo tình trạng 39.231.098 → 29.423.323 / 7.453.909 / 2.353.866;
+  - `splitLotByCondition` (design D5): 150 Tốt / 38 Chờ sửa / 12 Phế liệu, giá sắt vụn 7.500 → 30.331.993 / 7.684.105 / 1.215.000; S > T (10 khung, 800.000 ₫) → Phế liệu 800.000, Tốt 0; cả lô phế liệu → nhận toàn bộ T; không có phế liệu không cần giá; 7.333 ₫/kg × 13,5 kg → 98.996; thiếu giá khi cần → "Chưa có giá sắt vụn tham khảo, nhờ Giám đốc nhập ở Cài đặt"; mã tính theo kg lấy số kg;
   - property test 500 bộ ngẫu nhiên: tổng luôn khớp, mỗi phần lệch < 1 ₫ so với phần chính xác.
 
   Kiểm tra: `npm run test:unit` xanh
@@ -60,6 +60,7 @@
   - mã `PO-2026-055` sau `PO-2026-054`; sang 01/01/2027 giờ Việt Nam ra `PO-2027-001`;
   - nhà cung cấp hoặc vật tư ngừng dùng bị từ chối, đúng thông báo;
   - sửa đơn giá khi chưa có phiếu nhập ghi sự kiện `UPDATED`;
+  - sửa với `updatedAt` cũ → 409 "Đơn vừa được người khác sửa, tải lại trang", đơn không đổi;
   - hủy có lý do ra `DONE` + `CANCELLED`, hủy thiếu lý do bị từ chối;
   - xóa nháp xóa hẳn và đơn sau không nhận lại mã cũ; xóa đơn đã đặt bị từ chối;
   - lệnh lỗi để đơn y nguyên.
@@ -116,7 +117,7 @@
 - [ ] 5.2 D3 form `src/app/(desktop)/purchasing/orders/new/page.tsx`, `[code]/edit/page.tsx` + `order-form.tsx`, `order-lines.tsx`, `order-costs.tsx`, `allocation-choice.tsx`, `order-total.tsx` theo `D3-PurchaseOrder.dc.html`:
   - xem trước bằng `landed-cost`, nút đổi cái/kg, "≈ N cái";
   - gợi ý tên chi phí; lỗi dưới ô;
-  - khóa ô theo `editableFields`;
+  - khóa ô theo `editableFields`; gửi kèm `updatedAt` khi sửa, nhận 409 thì hiện thông báo và nút tải lại;
   - "Lưu đơn" / "Lưu nháp" / "Lưu thay đổi".
 
   Component test:
@@ -124,7 +125,8 @@
   - đổi "Theo trọng lượng" ra "+1.960.568", "194.803 ₫";
   - `GG-K17` 2.000 kg ra "≈ 148 cái";
   - `PL-SAT` không có nút "cái";
-  - lỗi "Số lượng phải lớn hơn 0" hiện dưới ô.
+  - lỗi "Số lượng phải lớn hơn 0" hiện dưới ô;
+  - 409 hiện "Đơn vừa được người khác sửa, tải lại trang".
 
   Kiểm tra: `npm run test` xanh
 - [ ] 5.3 D3b `src/app/(desktop)/purchasing/orders/[code]/page.tsx` + `order-detail.tsx`, `order-history.tsx`, `receiving-placeholder.tsx`, `cancel-dialog.tsx`, `close-dialog.tsx` theo `D3b-PurchaseOrderDetail.dc.html` (phần đơn):
