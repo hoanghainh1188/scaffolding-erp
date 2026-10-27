@@ -60,7 +60,7 @@ jobs:
       - run: npm run build
 
   e2e:
-    name: E2E (Edge, Firefox, WebKit)
+    name: E2E (Edge)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Sign-in is real: the dev server and the E2E global setup need a database.
@@ -84,10 +84,17 @@ jobs:
       - run: npm ci
       - name: Migrate the database
         run: npm run db:migrate
-      - name: Install browsers
-        run: npx playwright install --with-deps msedge firefox webkit
+      # Edge only: Firefox and WebKit pull ~100 media packages from the
+      # Ubuntu mirror, which can crawl for half an hour. They run in the
+      # e2e-basic job instead, on an image that has them.
+      - name: Install Edge
+        timeout-minutes: 10
+        run: npx playwright install --with-deps msedge
       - name: E2E
-        run: npx playwright test --grep-invert @visual
+        run: >-
+          npx playwright test --grep-invert @visual
+          --project setup --project desktop-1280 --project desktop-1366
+          --project mobile-375
       - name: Visual baselines
         id: visual
         run: npx playwright test --grep @visual --project desktop-1280
@@ -104,6 +111,56 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  # Basic support (@basic) in Firefox and WebKit. The official Playwright
+  # image ships both browsers and their system packages, so nothing comes
+  # from apt. Sign-in runs on its Chromium (PW_CHANNEL), as Edge is not in
+  # the image; the database service is reached by its name.
+  e2e-basic:
+    name: E2E basic (Firefox, WebKit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      # Firefox refuses to run as root with a foreign HOME.
+      options: --user 1001
+    env:
+      DATABASE_URL: postgres://erp:erp@postgres:5432/scaffolding_erp_test
+      TEST_DATABASE_URL: postgres://erp:erp@postgres:5432/scaffolding_erp_test
+      PW_CHANNEL: chromium
+      HOME: /home/pwuser
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp
+          POSTGRES_DB: scaffolding_erp_test
+        options: >-
+          --health-cmd "pg_isready -U erp -d scaffolding_erp_test"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Migrate the database
+        run: npm run db:migrate
+      - name: E2E basic
+        run: >-
+          npx playwright test --grep-invert @visual
+          --project setup --project firefox --project webkit
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-basic
           path: |
             playwright-report/
             test-results/
@@ -130,7 +187,7 @@ jobs:
 
   dispatch-result:
     name: Report final status
-    needs: [checks, e2e]
+    needs: [checks, e2e, e2e-basic]
     if: always() && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -140,10 +197,10 @@ jobs:
       - name: Mark the commit with the run result
         env:
           GH_TOKEN: ${{ github.token }}
-          RESULTS: ${{ needs.checks.result }} ${{ needs.e2e.result }}
+          RESULTS: ${{ needs.checks.result }} ${{ needs.e2e.result }} ${{ needs.e2e-basic.result }}
         run: |
           case "$RESULTS" in
-            "success success") state=success; msg="All jobs passed" ;;
+            "success success success") state=success; msg="All jobs passed" ;;
             *cancelled*)       state=error;   msg="Run cancelled" ;;
             *)                 state=failure; msg="Jobs: $RESULTS" ;;
           esac
