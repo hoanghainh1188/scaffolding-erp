@@ -15,13 +15,11 @@ import {
   purchaseOrderLine,
   site,
   stockAdjustmentLine,
-  supplier,
   user,
 } from "@/db/schema";
 import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
 import { createItem } from "@/lib/catalog/items";
-import { createSupplier } from "@/lib/catalog/partners";
 import { seedCatalog } from "@/lib/catalog/seed";
 import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
@@ -59,37 +57,15 @@ async function removeTestCatalogRows(db: Database): Promise<void> {
     .where(eq(customer.code, "NT-0001"));
 }
 
-/** Supplier of every order purchasing.spec.ts creates; never deleted. */
-export const E2E_SUPPLIER = "E2E NCC";
-
 /**
- * Orders are not ledger rows (purchase-orders design D13): the ones earlier
- * runs created for E2E NCC go, so D2 counts and codes stay small.
+ * Note of every order purchasing.spec.ts creates. Orders are not ledger
+ * rows (purchase-orders design D13): earlier runs' orders go, so D2 counts
+ * and codes stay small. No supplier of its own: D16 would count it.
  */
-async function removeTestOrders(db: Database) {
-  const [found] = await db
-    .select({ id: supplier.id })
-    .from(supplier)
-    .where(eq(supplier.name, E2E_SUPPLIER));
-  if (found) {
-    await db
-      .delete(purchaseOrder)
-      .where(eq(purchaseOrder.supplierId, found.id));
-  }
-}
+export const E2E_ORDER_NOTE = "E2E thử";
 
-/** After seedCatalog, which only adds suppliers to an empty table. */
-async function ensureTestSupplier(db: Database, actor: { id: string }) {
-  const [found] = await db
-    .select({ id: supplier.id })
-    .from(supplier)
-    .where(eq(supplier.name, E2E_SUPPLIER));
-  if (found) return;
-  const created = await createSupplier(db, actor, {
-    kind: "COMPANY",
-    name: E2E_SUPPLIER,
-  });
-  if (!created.ok) throw new Error(`${E2E_SUPPLIER}: ${created.error}`);
+async function removeTestOrders(db: Database) {
+  await db.delete(purchaseOrder).where(eq(purchaseOrder.note, E2E_ORDER_NOTE));
 }
 
 /** Fixed items inventory.spec.ts posts to; created once, never deleted. */
@@ -151,7 +127,6 @@ export default async function globalSetup(): Promise<void> {
       await seedInventory(handle.db, director);
       // D2 / D3b sample orders (purchase-orders design D13), once.
       await seedPurchasing(handle.db, director);
-      await ensureTestSupplier(handle.db, director);
     }
   } finally {
     await handle.close();
