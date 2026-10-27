@@ -41,7 +41,7 @@
 - [x] 6.2 E2E `tests/e2e/catalog.spec.ts` (luồng chính 5.3–5.5), thêm `/catalog/items`, `/catalog/partners` vào `responsive.spec.ts` (6 cỡ, không cuộn ngang) và `a11y.spec.ts`; thêm D9, D16 vào `visual.spec.ts` — kiểm tra: `npm run test:e2e` xanh ở local; CI xanh sau workflow Update Playwright snapshots
 - [x] 6.3 Cập nhật `CLAUDE.md` nếu có quy ước mới (mã danh mục, `catalog.*` quyền) — kiểm tra: đọc lại khớp design
 - [x] 6.4 Chạy `npm run lint`, `typecheck`, `format:check`, `test`, `test:coverage`, `build`, `openspec validate master-data --strict` — kiểm tra: tất cả xanh
-- [ ] 6.5 Kiểm tra tay trên Edge 1366px: D9, D16 so với file thiết kế; Kế toán và Kinh doanh thấy đúng nút — kiểm tra: ghi kết quả vào PR
+- [x] 6.5 Kiểm tra tay trên Edge 1366px: D9, D16 so với file thiết kế; Kế toán và Kinh doanh thấy đúng nút — kiểm tra: ghi kết quả vào PR
 
 ## Workflow follow-up
 
