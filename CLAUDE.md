@@ -84,7 +84,7 @@ Sửa lỗi nhỏ, đổi chữ, chỉnh style: không cần change.
 - Quyết định nghiệp vụ mới (người dùng chốt khi review) ghi vào `docs/requirements.md` mục 0.2, kèm ngày, trong cùng PR.
 - **Review nằm trong comment PR.** Khi được bảo "đọc review", đọc comment mới nhất, sửa hết mục "Cần sửa", kèm test cho từng điểm.
 - Trước khi báo apply xong: `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate <change> --strict` đều xanh. Giao diện đổi thì chạy workflow Update Playwright snapshots.
-- Archive: không tự tick task chưa làm. Task kiểm tra tay chưa làm thì ghi "làm sau, theo dõi ở #<issue>" và báo người dùng.
+- Archive: không tự tick task chưa làm. Task kiểm tra tay chưa làm thì ghi "làm sau, theo dõi ở #33" trong `tasks.md`, thêm một mục cho change đó vào issue **#33** (tổng hợp kiểm tra tay mọi change; ghi các bước và số cần so), rồi báo người dùng. Không để kiểm tra tay rải ở issue của từng change.
 
 ## Quy tắc nghiệp vụ không được phá
 
