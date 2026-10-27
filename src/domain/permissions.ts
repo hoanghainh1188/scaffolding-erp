@@ -1,6 +1,13 @@
 import type { Role } from "./role";
 
 const OFFICE = ["DIRECTOR", "ACCOUNTANT", "SALES"] as const;
+const EVERYONE = [
+  "DIRECTOR",
+  "ACCOUNTANT",
+  "SALES",
+  "WAREHOUSE",
+  "WORKSHOP",
+] as const;
 
 /**
  * The one table of who may do what (design D7). The desktop menu and every
@@ -18,6 +25,12 @@ export const PERMISSIONS = {
   "catalog.view": OFFICE,
   "settings.view": ["DIRECTOR"],
   "users.manage": ["DIRECTOR"],
+  // master-data design D9: everyone reads the catalog (the phone screens of
+  // later changes need it); writes are split by who owns the data.
+  "catalog.read": EVERYONE,
+  "items.manage": ["DIRECTOR", "SALES"],
+  "partners.manage": ["DIRECTOR", "SALES", "ACCOUNTANT"],
+  "locations.manage": ["DIRECTOR"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;
