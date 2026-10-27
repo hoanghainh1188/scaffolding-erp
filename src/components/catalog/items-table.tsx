@@ -10,9 +10,13 @@ import { QUANTITY_UNIT_LABELS } from "@/domain/quantity";
 import type { ItemRow } from "@/lib/catalog/items";
 
 import { formatPrice, formatWeight, monthlyPrice } from "./format";
+import { ItemRowActions } from "./item-row-actions";
 
 interface ItemsTableProps {
   items: ItemRow[];
+  /** Adds the per-row menu (people with items.manage). */
+  canEdit?: boolean;
+  groups?: { id: string; name: string }[];
   /** Current query string without `item`, to build the select links. */
   query: string;
   selectedCode: string | null;
@@ -21,7 +25,13 @@ interface ItemsTableProps {
 const NOT_FOR_RENT = "Không cho thuê";
 
 /** D9 item list; the name opens "Thuộc bộ" for that item. */
-export function ItemsTable({ items, query, selectedCode }: ItemsTableProps) {
+export function ItemsTable({
+  items,
+  query,
+  selectedCode,
+  canEdit = false,
+  groups = [],
+}: ItemsTableProps) {
   const linkFor = (code: string) => {
     const params = new URLSearchParams(query);
     params.set("item", code);
@@ -76,6 +86,18 @@ export function ItemsTable({ items, query, selectedCode }: ItemsTableProps) {
           : formatPrice(monthlyPrice(row.dailyRentalPrice)),
       meta: { align: "right", hideBelow: "lg" },
     },
+    ...(canEdit
+      ? [
+          {
+            id: "actions",
+            header: () => <span className="sr-only">Thao tác</span>,
+            enableSorting: false,
+            cell: ({ row }) => (
+              <ItemRowActions item={row.original} groups={groups} />
+            ),
+          } satisfies DataTableColumn<ItemRow>,
+        ]
+      : []),
   ];
 
   return (

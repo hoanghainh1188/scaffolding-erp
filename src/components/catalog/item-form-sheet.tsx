@@ -28,7 +28,6 @@ import {
 import { WEIGHT_MESSAGES } from "@/domain/weight-conversion";
 import type { ItemRow } from "@/lib/catalog/items";
 
-import { ConfirmAction } from "./confirm-action";
 import { FormError } from "./form-error";
 import { formatPrice, monthlyPrice } from "./format";
 import { useCatalogAction } from "./use-catalog-action";
@@ -38,6 +37,9 @@ interface ItemFormSheetProps {
   /** Editing this item; absent to add one. */
   item?: ItemRow;
   trigger?: ReactNode;
+  /** Opened from a row menu instead of a trigger. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 /** Empty text is "no price"; anything else must be a whole VND amount. */
@@ -51,9 +53,20 @@ function priceText(value: number | null): string {
 }
 
 /** D9 add / edit item (spec item-catalog; design D13). */
-export function ItemFormSheet({ groups, item, trigger }: ItemFormSheetProps) {
+export function ItemFormSheet({
+  groups,
+  item,
+  trigger,
+  open: openProp,
+  onOpenChange,
+}: ItemFormSheetProps) {
   const editing = item !== undefined;
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = openProp ?? ownOpen;
+  const setOpen = (next: boolean) => {
+    setOwnOpen(next);
+    onOpenChange?.(next);
+  };
   const [unit, setUnit] = useState<QuantityUnit>(item?.unit ?? "PIECE");
   const [code, setCode] = useState(item?.code ?? "");
   const [weight, setWeight] = useState<Quantity>(
@@ -63,7 +76,6 @@ export function ItemFormSheet({ groups, item, trigger }: ItemFormSheetProps) {
   );
   const [daily, setDaily] = useState(priceText(item?.dailyRentalPrice ?? null));
   const action = useCatalogAction();
-  const archive = useCatalogAction();
 
   let monthly = "–";
   try {
@@ -105,14 +117,16 @@ export function ItemFormSheet({ groups, item, trigger }: ItemFormSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        {trigger ?? (
-          <Button>
-            <Plus aria-hidden />
-            Thêm vật tư
-          </Button>
-        )}
-      </SheetTrigger>
+      {openProp === undefined ? (
+        <SheetTrigger asChild>
+          {trigger ?? (
+            <Button>
+              <Plus aria-hidden />
+              Thêm vật tư
+            </Button>
+          )}
+        </SheetTrigger>
+      ) : null}
       <SheetContent className="w-full overflow-y-auto sm:max-w-md">
         <SheetHeader>
           <SheetTitle>
@@ -268,71 +282,6 @@ export function ItemFormSheet({ groups, item, trigger }: ItemFormSheetProps) {
                 ? "Lưu thay đổi"
                 : "Thêm vật tư"}
           </Button>
-          {editing ? (
-            <div className="flex flex-wrap gap-2 border-t pt-4">
-              <ConfirmAction
-                trigger={
-                  <Button type="button" variant="outline">
-                    {item.status === "ACTIVE" ? "Ngừng dùng" : "Dùng lại"}
-                  </Button>
-                }
-                title={
-                  item.status === "ACTIVE"
-                    ? `Ngừng dùng ${item.code}?`
-                    : `Dùng lại ${item.code}?`
-                }
-                description={
-                  item.status === "ACTIVE"
-                    ? "Không chọn được ở bộ và chứng từ mới. Chứng từ cũ vẫn giữ nguyên."
-                    : "Vật tư chọn được lại ở bộ và chứng từ mới."
-                }
-                confirmLabel={
-                  item.status === "ACTIVE" ? "Ngừng dùng" : "Dùng lại"
-                }
-                error={archive.error}
-                onConfirm={async () => {
-                  const done = await archive.run(
-                    `/api/catalog/items/${item.id}`,
-                    {
-                      method: "PATCH",
-                      body: {
-                        status:
-                          item.status === "ACTIVE" ? "ARCHIVED" : "ACTIVE",
-                      },
-                    },
-                  );
-                  if (done !== null) setOpen(false);
-                  return done !== null;
-                }}
-              />
-              <ConfirmAction
-                trigger={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-destructive"
-                  >
-                    Xóa
-                  </Button>
-                }
-                title={`Xóa ${item.code}?`}
-                description="Chỉ xóa được vật tư chưa dùng ở đâu. Vật tư đã dùng thì ngừng dùng."
-                confirmLabel="Xóa"
-                destructive
-                error={archive.error}
-                onConfirm={async () => {
-                  const done = await archive.run(
-                    `/api/catalog/items/${item.id}`,
-                    {
-                      method: "DELETE",
-                    },
-                  );
-                  if (done !== null) setOpen(false);
-                  return done !== null;
-                }}
-              />
-            </div>
-          ) : null}
         </form>
       </SheetContent>
     </Sheet>

@@ -17,7 +17,10 @@ import {
 import { FormError } from "./form-error";
 
 interface ConfirmActionProps {
-  trigger: ReactNode;
+  /** Omit when the dialog is opened from elsewhere (open / onOpenChange). */
+  trigger?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   title: string;
   description: string;
   confirmLabel: string;
@@ -31,6 +34,8 @@ interface ConfirmActionProps {
 /** Archive / delete behind a confirmation (master-data design D13). */
 export function ConfirmAction({
   trigger,
+  open: openProp,
+  onOpenChange,
   title,
   description,
   confirmLabel,
@@ -38,11 +43,18 @@ export function ConfirmAction({
   error = null,
   onConfirm,
 }: ConfirmActionProps) {
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const open = openProp ?? ownOpen;
+  const setOpen = (next: boolean) => {
+    setOwnOpen(next);
+    onOpenChange?.(next);
+  };
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      {trigger ? (
+        <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      ) : null}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

@@ -17,7 +17,7 @@ export function ItemKitsPanel({ item, kits, editKit }: ItemKitsPanelProps) {
   return (
     <section
       aria-labelledby="item-kits"
-      className="flex min-w-0 flex-[1_1_300px] flex-col gap-4 rounded-xl border bg-card p-5"
+      className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-5 min-[1700px]:w-[360px] min-[1700px]:shrink-0"
     >
       <h2 id="item-kits" className="text-h2">
         Thuộc bộ

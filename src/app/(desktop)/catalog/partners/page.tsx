@@ -36,6 +36,14 @@ const TABS: readonly Tab[] = ["customers", "suppliers", "sites", "locations"];
 const one = (value: string | string[] | undefined) =>
   typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
 
+/**
+ * The row named in ?id=, else the first one: D16 opens with a detail
+ * showing, as in the design (review of PR #28, point 2).
+ */
+function pick<T extends { id: string }>(rows: T[], id: string | undefined) {
+  return rows.find((row) => row.id === id) ?? rows[0];
+}
+
 interface ListEntry {
   id: string;
   title: string;
@@ -64,6 +72,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   ]);
 
   let entries: ListEntry[] = [];
+  let shownId: string | undefined;
   let detail: ReactNode = null;
   let addButton: ReactNode = null;
 
@@ -74,11 +83,13 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       title: row.name,
       subtitle: `${row.code} · ${row.siteCount} công trình`,
     }));
-    const selected = rows.find((row) => row.id === selectedId);
+    const selected = pick(rows, selectedId);
+    shownId = selected?.id;
     if (selected) {
       const sites = await listSites(db, { customerId: selected.id });
       detail = (
         <CustomerDetail
+          key={selected.id}
           customer={selected}
           sites={sites}
           canEdit={canEditPartners}
@@ -113,9 +124,16 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         .filter(Boolean)
         .join(" · "),
     }));
-    const selected = rows.find((row) => row.id === selectedId);
+    const selected = pick(rows, selectedId);
+    shownId = selected?.id;
     if (selected)
-      detail = <SupplierDetail supplier={selected} canEdit={canEditPartners} />;
+      detail = (
+        <SupplierDetail
+          key={selected.id}
+          supplier={selected}
+          canEdit={canEditPartners}
+        />
+      );
     if (canEditPartners) {
       addButton = (
         <RecordFormSheet
@@ -142,9 +160,16 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       title: row.name,
       subtitle: `${row.code} · ${row.customerName}`,
     }));
-    const selected = rows.find((row) => row.id === selectedId);
+    const selected = pick(rows, selectedId);
+    shownId = selected?.id;
     if (selected)
-      detail = <SiteDetail site={selected} canEdit={canEditPartners} />;
+      detail = (
+        <SiteDetail
+          key={selected.id}
+          site={selected}
+          canEdit={canEditPartners}
+        />
+      );
   } else {
     const rows = (await listLocations(db, { status })).filter(
       (row) => row.type !== "SITE",
@@ -154,9 +179,16 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       title: row.name,
       subtitle: `${row.code} · ${row.type === "YARD" ? "Bãi" : "Xưởng"}`,
     }));
-    const selected = rows.find((row) => row.id === selectedId);
+    const selected = pick(rows, selectedId);
+    shownId = selected?.id;
     if (selected)
-      detail = <LocationDetail place={selected} canEdit={canEditLocations} />;
+      detail = (
+        <LocationDetail
+          key={selected.id}
+          place={selected}
+          canEdit={canEditLocations}
+        />
+      );
     if (canEditLocations) {
       addButton = (
         <RecordFormSheet
@@ -177,6 +209,8 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
     }
   }
 
+  // Details carry key={selected.id}: switching records remounts them, so a
+  // form opened on one record can never save its values onto the next.
   const tabHref = (target: Tab) => `/catalog/partners?tab=${target}`;
   const query = new URLSearchParams({ tab });
   if (q) query.set("q", q);
@@ -243,12 +277,10 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
                     <Link
                       href={`/catalog/partners?${link.toString()}`}
                       scroll={false}
-                      aria-current={
-                        entry.id === selectedId ? "true" : undefined
-                      }
+                      aria-current={entry.id === shownId ? "true" : undefined}
                       className={cn(
                         "flex flex-col p-3 hover:bg-accent",
-                        entry.id === selectedId && "bg-accent",
+                        entry.id === shownId && "bg-accent",
                       )}
                     >
                       <span className="font-medium">{entry.title}</span>

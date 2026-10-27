@@ -70,6 +70,11 @@ test.describe("D9 as Kinh doanh", () => {
     const name = `Công trình thử ${uniqueCode()}`;
     await page.goto("/catalog/partners?tab=customers");
     await page.getByRole("link", { name: /Minh Phát/ }).click();
+    await expect(
+      page
+        .getByRole("region", { name: "Chi tiết" })
+        .getByRole("heading", { level: 2 }),
+    ).toHaveText("Cty TNHH Xây dựng Minh Phát");
     await page.getByRole("button", { name: "Thêm công trình" }).click();
     const sheet = page.getByRole("dialog");
     await expect(sheet.getByLabel("Nhà thầu")).toBeDisabled();
@@ -100,6 +105,11 @@ test.describe("as Kế toán", () => {
     await page.goto("/catalog/partners?tab=customers");
     await waitForHydration(page, DESKTOP_READY);
     await page.getByRole("link", { name: /Minh Phát/ }).click();
+    await expect(
+      page
+        .getByRole("region", { name: "Chi tiết" })
+        .getByRole("heading", { level: 2 }),
+    ).toHaveText("Cty TNHH Xây dựng Minh Phát");
     await page.getByRole("button", { name: "Sửa thông tin" }).click();
     const sheet = page.getByRole("dialog");
     await sheet.getByLabel("Hạn thanh toán mặc định (ngày)").fill(days);
