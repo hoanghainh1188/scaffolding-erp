@@ -30,7 +30,7 @@ test.describe("mobile shell", () => {
   });
 
   test("lets the director use the mobile area", async ({ page }) => {
-    // DEV_ROLE defaults to DIRECTOR on the E2E server.
+    // Tests run signed in as Giám đốc unless they pick another role.
     await page.goto("/m/history");
     await expect(page).toHaveURL(/\/m\/history$/);
     await expect(
