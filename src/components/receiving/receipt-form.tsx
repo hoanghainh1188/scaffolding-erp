@@ -23,7 +23,7 @@ import { formatMoney } from "@/domain/money";
 import { PURCHASE_KIND_LABELS } from "@/domain/purchase-order";
 import type { Anomaly } from "@/domain/receipt-anomalies";
 import { useDraft } from "@/hooks/use-draft";
-import { outboxFor } from "@/lib/drafts/runtime";
+import { outboxFor, postedNotices } from "@/lib/drafts/runtime";
 import { preloadQrDetector } from "@/lib/scan/detector";
 
 import { AnomalyDialog } from "./anomaly-dialog";
@@ -130,6 +130,8 @@ export function ReceiptFormView({
     });
     const outcome = await outboxFor(userId).submit(saved.draftId);
     if (outcome.kind === "POSTED") {
+      // The receipt page says it; the shell banner is for background sends.
+      postedNotices.clear();
       router.push(`/m/receipts/${outcome.code}?posted=1`);
     } else if (outcome.kind === "REJECTED") {
       if (outcome.field) {
@@ -213,7 +215,7 @@ export function ReceiptFormView({
               }}
               className="h-10"
             />
-            <span className="shrink-0 text-muted-foreground">
+            <span data-mask className="shrink-0 text-muted-foreground">
               về lúc {timeOf(form.arrivedAt)}
             </span>
           </dd>

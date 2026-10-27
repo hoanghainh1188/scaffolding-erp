@@ -212,3 +212,49 @@ describe("receiptSender", () => {
     });
   });
 });
+
+describe("draft runtime", () => {
+  it("knows while a page holds a draft", async () => {
+    const { draftPresence, resetDraftRuntime } = await import("./runtime");
+    resetDraftRuntime();
+    const seen: boolean[] = [];
+    const stop = draftPresence.subscribe(() =>
+      seen.push(draftPresence.current()),
+    );
+    const leave = draftPresence.enter();
+    expect(draftPresence.current()).toBe(true);
+    leave();
+    stop();
+    expect(seen).toEqual([true, false]);
+  });
+
+  it("keeps one outbox per user and reports what it posted", async () => {
+    const { outboxFor, postedNotices, resetDraftRuntime, draftsChanged } =
+      await import("./runtime");
+    const { setDraftStore } = await import("./store");
+    resetDraftRuntime();
+    const store = memoryDraftStore();
+    setDraftStore(store);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({ data: { code: "PN-2026-094" } }, { status: 201 }),
+      ),
+    );
+    const changed = vi.fn();
+    const stop = draftsChanged.subscribe(changed);
+    expect(outboxFor("vantung")).toBe(outboxFor("vantung"));
+    await store.put(draft());
+    await outboxFor("vantung").submit(draft().draftId);
+    expect(postedNotices.current()).toEqual({
+      title: draft().title,
+      code: "PN-2026-094",
+    });
+    expect(changed).toHaveBeenCalled();
+    postedNotices.clear();
+    expect(postedNotices.current()).toBeNull();
+    stop();
+    vi.unstubAllGlobals();
+    setDraftStore(null);
+  });
+});

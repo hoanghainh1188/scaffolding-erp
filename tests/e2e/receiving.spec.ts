@@ -95,7 +95,8 @@ const card = (page: Page, name: string) =>
 
 async function count(page: Page, name: string, total: string, split: string[]) {
   const box = card(page, name);
-  await box.getByRole("button", { name: "Đếm" }).click();
+  const start = box.getByRole("button", { name: "Đếm", exact: true });
+  if (await start.isVisible()) await start.click();
   const field = box.getByLabel(`Thực nhận ${name}`);
   await field.fill(total);
   await field.press("Enter");
@@ -181,7 +182,8 @@ test("a receipt confirmed offline is sent once when the network is back", async 
   const code = await placeOrder([3]);
   await page.goto(`/m/receive/${code}`);
   await waitForHydration(page, MOBILE_READY);
-  await count(page, "Vật tư kho thử 1", "3", ["0", "3", "0"]);
+  // Phế liệu: the two-trip test reads Chờ sửa of the same item meanwhile.
+  await count(page, "Vật tư kho thử 1", "3", ["0", "0", "3"]);
 
   await context.setOffline(true);
   await page.getByRole("button", { name: "Xác nhận nhập kho" }).click();
