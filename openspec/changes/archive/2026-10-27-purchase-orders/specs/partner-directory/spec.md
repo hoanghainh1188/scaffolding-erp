@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Ngừng dùng và xóa đối tác
-Nhà thầu và nhà cung cấp SHALL ngừng dùng và dùng lại được. Đối tác đang được tham chiếu (nhà thầu có công trình, nhà cung cấp có đơn thu mua kể cả đơn nháp hay đơn đã hủy, và sau này hợp đồng) SHALL không xóa được. Nhà thầu còn công trình đang dùng SHALL không ngừng dùng được. Nhà cung cấp còn đơn thu mua đang xử lý (`IN_PROGRESS`) SHALL không ngừng dùng được; đơn nháp không chặn ngừng dùng nhưng sẽ không đặt được cho tới khi nhà cung cấp được dùng lại. Đối tác ngừng dùng SHALL không chọn được cho chứng từ hay công trình mới.
+Nhà thầu và nhà cung cấp SHALL ngừng dùng và dùng lại được. Đối tác đã được tham chiếu (nhà thầu có công trình, nhà cung cấp có đơn thu mua kể cả nháp hay đã hủy, và sau này hợp đồng) SHALL chỉ ngừng dùng, không xóa. Nhà thầu còn công trình đang dùng, hoặc nhà cung cấp còn đơn thu mua đang xử lý (`IN_PROGRESS`), SHALL không ngừng dùng được; đơn nháp không chặn. Đối tác ngừng dùng SHALL không chọn được cho chứng từ hay công trình mới.
 
 #### Scenario: Xóa nhà thầu đã có công trình
 - **WHEN** xóa `NT-0001` đang có công trình (kể cả công trình đã ngừng dùng)

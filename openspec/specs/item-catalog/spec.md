@@ -145,7 +145,7 @@ Khi chọn một vật tư ở D9, hệ thống SHALL hiện các bộ có chứ
 - **THEN** khung "Thuộc bộ" hiện "Bộ giàn giáo 1,7m" với ×2 Khung giàn giáo 1,7m, ×2 Chéo giàn giáo, ×1 Mâm giàn giáo 1,6m, 43,6 kg, 3.900 ₫/ngày
 
 ### Requirement: Ngừng dùng và xóa vật tư, bộ
-Vật tư, bộ và nhóm SHALL ngừng dùng được và dùng lại được. Bản ghi đang được tham chiếu (vật tư trong bộ, nhóm có vật tư, vật tư đã có dòng sổ kho, và sau này là chứng từ) SHALL không xóa được, chỉ ngừng dùng. Vật tư đang nằm trong một bộ đang dùng SHALL không ngừng dùng được. Vật tư **còn tồn** (tổng số lượng khác 0 ở bất kỳ tình trạng và vị trí nào, kể cả hàng đang ở công trình) SHALL không ngừng dùng được. Bản ghi ngừng dùng SHALL không chọn được cho bộ hay chứng từ mới.
+Vật tư, bộ và nhóm SHALL ngừng dùng và dùng lại được. Bản ghi đã được tham chiếu (vật tư trong bộ, nhóm có vật tư, vật tư có dòng sổ kho hoặc nằm trong đơn thu mua, và sau này chứng từ khác) SHALL chỉ ngừng dùng, không xóa. Vật tư SHALL không ngừng dùng được khi nằm trong bộ đang dùng, khi **còn tồn** (khác 0 ở bất kỳ tình trạng, vị trí nào, kể cả công trình), hoặc khi nằm trong đơn thu mua đang xử lý (`IN_PROGRESS`). Bản ghi ngừng dùng SHALL không chọn được cho bộ hay chứng từ mới.
 
 #### Scenario: Xóa vật tư chưa dùng
 - **WHEN** Kinh doanh xóa vật tư `TEST-01` vừa tạo nhầm, chưa ở bộ nào
@@ -174,6 +174,14 @@ Vật tư, bộ và nhóm SHALL ngừng dùng được và dùng lại được.
 #### Scenario: Dùng lại
 - **WHEN** người dùng chọn "Dùng lại" cho `KK-01`
 - **THEN** `KK-01` trở lại trạng thái đang dùng và chọn được ở bộ mới
+
+#### Scenario: Ngừng dùng vật tư trong đơn thu mua đang xử lý
+- **WHEN** ngừng dùng `GG-M16` khi đơn `PO-2026-051` còn đang nhận và có dòng `GG-M16`
+- **THEN** hệ thống từ chối với "GG-M16 còn trong đơn thu mua đang xử lý: PO-2026-051" **AND** `GG-M16` vẫn đang dùng
+
+#### Scenario: Xóa vật tư đã có trong đơn thu mua
+- **WHEN** xóa `TEST-02` chỉ nằm trong một đơn nháp
+- **THEN** hệ thống từ chối với "Vật tư đã được dùng nên chỉ ngừng dùng được"
 
 ### Requirement: Danh sách vật tư D9
 D9 SHALL hiện bảng vật tư gồm: tên kèm mã, nhóm, ĐVT, trọng lượng chuẩn, giá thuê/ngày, giá thuê/tháng (ở 1366px thấy đủ cả hai cột giá, không cuộn ngang; thao tác sửa / ngừng dùng / xóa ở menu cuối mỗi dòng); đầu trang đếm số mã hàng và số bộ đang dùng; tìm theo tên hoặc mã (không phân biệt dấu, hoa thường); lọc theo nhóm và theo "Đang dùng / Ngừng dùng". Bộ lọc và từ khóa SHALL nằm trên URL.
