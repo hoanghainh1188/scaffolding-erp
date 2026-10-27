@@ -25,6 +25,7 @@ import {
   type ReceiptLineStatus,
   type ReceivingLine,
 } from "@/domain/goods-receipt";
+import type { AllocationMethod } from "@/domain/landed-cost";
 import { toMoney, type Money } from "@/domain/money";
 import type { PurchaseKind, PurchaseStatus } from "@/domain/purchase-order";
 import { quantityFromDb, type QuantityUnit } from "@/domain/quantity";
@@ -73,8 +74,12 @@ export interface Arrivals {
 export async function arrivals(
   db: Database,
   today: BusinessDate,
+  options: { includeLater?: boolean } = {},
 ): Promise<Arrivals> {
   const tomorrow = addDays(today, 1);
+  const until = options.includeLater
+    ? sql`true`
+    : lte(purchaseOrder.expectedDate, tomorrow);
   const rows = await db
     .select({
       id: purchaseOrder.id,
@@ -87,12 +92,7 @@ export async function arrivals(
     })
     .from(purchaseOrder)
     .innerJoin(supplier, eq(supplier.id, purchaseOrder.supplierId))
-    .where(
-      and(
-        eq(purchaseOrder.status, "IN_PROGRESS"),
-        lte(purchaseOrder.expectedDate, tomorrow),
-      ),
-    )
+    .where(and(eq(purchaseOrder.status, "IN_PROGRESS"), until))
     .orderBy(
       asc(purchaseOrder.expectedDate),
       sql`${purchaseOrder.expectedTime} asc nulls last`,
@@ -136,7 +136,7 @@ export async function arrivals(
     dueToday: cards.filter(
       (card) => card.label.day === "LATE" || card.label.day === "TODAY",
     ).length,
-    later: laterRow?.count ?? 0,
+    later: options.includeLater ? 0 : (laterRow?.count ?? 0),
   };
 }
 
@@ -151,6 +151,7 @@ export interface OrderForReceiving {
   supplierName: string;
   kind: PurchaseKind;
   status: PurchaseStatus;
+  allocationMethod: AllocationMethod;
   vehicle: string | null;
   /** The trip this receipt would be. */
   tripNo: number;
@@ -175,6 +176,7 @@ export async function orderForReceiving(
       supplierName: supplier.name,
       kind: purchaseOrder.kind,
       status: purchaseOrder.status,
+      allocationMethod: purchaseOrder.allocationMethod,
       vehicle: purchaseOrder.vehicle,
     })
     .from(purchaseOrder)
@@ -208,6 +210,7 @@ export async function orderForReceiving(
     supplierName: order.supplierName,
     kind: order.kind as PurchaseKind,
     status: order.status as PurchaseStatus,
+    allocationMethod: order.allocationMethod as AllocationMethod,
     vehicle: order.vehicle,
     tripNo: summary.trips + 1,
     lines: summary.lines.filter(isOpenLine).map((line) => ({
