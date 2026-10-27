@@ -25,6 +25,7 @@ export const LANDED_COST_MESSAGES = {
     "Tiền hàng bằng 0 nên không chia chi phí theo giá trị được, chọn chia theo trọng lượng",
   noGoods: "Không có hàng để chia chi phí",
   noScrapPrice: "Chưa có giá sắt vụn tham khảo, nhờ Giám đốc nhập ở Cài đặt",
+  noWeight: "Vật tư chưa có trọng lượng chuẩn, không quy được phế liệu ra kg",
 } as const;
 
 export interface AllocationLine {
@@ -177,6 +178,7 @@ export function splitLotByCondition(input: LotSplitInput): LotSplit {
       input.unit === "KG"
         ? scrapMilli
         : lineWeightKgMilli("PIECE", scrapMilli, input.standardWeightKg);
+    if (kgMilli <= 0) throw new DomainValueError(LANDED_COST_MESSAGES.noWeight);
     const value = lineAmount(kgMilli, input.scrapPricePerKg);
     scrap = toMoney(Math.min(value, total));
   }

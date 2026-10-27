@@ -237,6 +237,19 @@ describe("splitLotByCondition", () => {
     ).toThrow(LANDED_COST_MESSAGES.noScrapPrice);
   });
 
+  it("refuses to price scrap of a piece item without a standard weight", () => {
+    expect(() =>
+      splitLotByCondition({
+        ...frames,
+        standardWeightKg: null,
+        total: m(1_000_000),
+        goodMilli: 10_000,
+        repairMilli: 0,
+        scrapMilli: 5_000,
+      }),
+    ).toThrow(LANDED_COST_MESSAGES.noWeight);
+  });
+
   it("takes the kg themselves for an item counted in kg", () => {
     expect(
       splitLotByCondition({

@@ -185,6 +185,86 @@ describe("D3 form", () => {
     });
   });
 
+  it("shows a server error on its row even after a blank row", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: false,
+          data: { field: "lines.0.quantity" },
+          error: "GG-K17 tính theo cái, số lượng phải là số nguyên",
+        }),
+        { status: 422 },
+      ),
+    );
+    render(
+      <OrderForm
+        suppliers={SUPPLIERS}
+        items={ITEMS}
+        order={{ ...D3, lines: [D3.lines[0]!] }}
+      />,
+    );
+    // Row 1 becomes blank, row 2 holds the line: the server's lines.0.
+    await userEvent.click(
+      screen.getByRole("button", { name: /Thêm dòng hàng/ }),
+    );
+    await userEvent.selectOptions(rowOf("2").querySelector("select")!, "ch");
+    await userEvent.type(within(rowOf("2")).getByLabelText(/Số lượng/), "3");
+    await userEvent.type(within(rowOf("2")).getByLabelText(/Đơn giá/), "1");
+    await userEvent.selectOptions(rowOf("1").querySelector("select")!, "");
+    await userEvent.clear(within(rowOf("1")).getByLabelText(/Số lượng/));
+    await userEvent.clear(within(rowOf("1")).getByLabelText(/Đơn giá/));
+    await userEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+    const sent = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
+    expect(sent.lines).toHaveLength(1);
+    expect(
+      await within(rowOf("2")).findByText(
+        "GG-K17 tính theo cái, số lượng phải là số nguyên",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(rowOf("1")).queryByText(
+        "GG-K17 tính theo cái, số lượng phải là số nguyên",
+      ),
+    ).toBeNull();
+  });
+
+  it("says the draft was saved when only placing it failed", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: true,
+            data: { code: D3.code },
+            error: null,
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: false,
+            data: null,
+            error: "Nhà cung cấp NCC-0002 đã ngừng dùng",
+          }),
+          { status: 409 },
+        ),
+      );
+    render(
+      <OrderForm
+        suppliers={SUPPLIERS}
+        items={ITEMS}
+        order={{ ...D3, status: "DRAFT" }}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Lưu đơn" }));
+    expect(
+      await screen.findByText(
+        "Đã lưu nháp, nhưng chưa đặt được: Nhà cung cấp NCC-0002 đã ngừng dùng",
+      ),
+    ).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it("offers a reload when someone else saved first", async () => {
     fetchMock.mockResolvedValue(
       new Response(
