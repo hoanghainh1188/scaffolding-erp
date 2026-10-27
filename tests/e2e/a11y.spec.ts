@@ -77,6 +77,27 @@ test.describe("accessibility", () => {
   });
 });
 
+// goods-receipt task 10.3: M1, M2, M3, M7 (as Giám đốc, who can receive).
+test("receiving phone pages have no serious or critical issues", async ({
+  page,
+}, testInfo) => {
+  test.skip(!runOnlyIn(testInfo, "mobile-375"), "phone pages");
+  for (const path of ["/m", "/m/scan", "/m/history"]) {
+    await page.goto(path);
+    await waitForHydration(page, MOBILE_READY);
+    expect(await seriousViolations(page), path).toEqual([]);
+  }
+  await page.goto("/m");
+  await waitForHydration(page, MOBILE_READY);
+  await page
+    .getByRole("link", { name: /Bắt đầu nhập hàng|Tiếp tục nhập/ })
+    .filter({ visible: true })
+    .first()
+    .click();
+  await expect(page.getByText(/Chuyến \d+ · /)).toBeVisible();
+  expect(await seriousViolations(page), page.url()).toEqual([]);
+});
+
 test.describe("accessibility signed out", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 

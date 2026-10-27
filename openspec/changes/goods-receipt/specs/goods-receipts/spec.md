@@ -30,7 +30,7 @@ Phiếu SHALL có đúng một dòng cho mỗi dòng còn mở của đơn, khô
 
 #### Scenario: Còn dòng chưa đếm
 - **WHEN** đơn có 4 dòng mở, Thủ kho đã đếm Khung, Chéo, Phế liệu sắt lẫn, còn Mâm 1,6m chưa đếm và chưa đánh dấu
-- **THEN** nút "Xác nhận nhập kho" bị vô hiệu kèm "Đếm Mâm 1,6m hoặc chọn "Chuyến này không có" để xác nhận" **AND** API cũng từ chối phiếu thiếu dòng đó với "Còn 1 mã chưa đếm hoặc đánh dấu "Chuyến này không có""
+- **THEN** nút "Xác nhận nhập kho" bị vô hiệu kèm "Đếm Mâm giàn giáo 1,6m hoặc chọn "Chuyến này không có" để xác nhận" (tên vật tư đầy đủ) **AND** API cũng từ chối phiếu thiếu dòng đó với "Còn 1 mã chưa đếm hoặc đánh dấu "Chuyến này không có""
 
 #### Scenario: Đánh dấu chuyến này không có
 - **WHEN** Thủ kho chọn "Chuyến này không có" cho Mâm 1,6m và các dòng khác đã đếm
