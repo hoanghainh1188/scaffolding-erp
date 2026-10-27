@@ -154,7 +154,7 @@ export const purchaseOrderEvent = pgTable(
   (table) => [
     check(
       "purchase_order_event_kind_check",
-      sql`${table.kind} in ('CREATED', 'PLACED', 'UPDATED', 'CANCELLED', 'CLOSED')`,
+      sql`${table.kind} in ('CREATED', 'PLACED', 'UPDATED', 'CANCELLED', 'CLOSED', 'RECEIPT_POSTED', 'BACKORDER_MARKED', 'RECEIVED')`,
     ),
     index("purchase_order_event_order_idx").on(table.orderId, table.id),
   ],
