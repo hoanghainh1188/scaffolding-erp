@@ -18,10 +18,10 @@ export const GET = withAuth(
 );
 
 export const POST = withAuth(
-  async (request) => {
+  async (request, { user }) => {
     const body = await readJson(request, createUserSchema);
     if (!body.ok) return body.response;
-    return respond(await createUser(userServiceDeps(), body.data), 201);
+    return respond(await createUser(userServiceDeps(), user, body.data), 201);
   },
   { permission: "users.manage" },
 );
