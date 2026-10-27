@@ -26,7 +26,7 @@ Người có quyền `receiving.manage` SHALL thấy khối "Xe sắp về bãi"
 
 #### Scenario: Đơn trễ hẹn
 - **WHEN** `PO-2026-049` dự kiến 24/10/2026, chưa nhận, hôm nay 26/10/2026
-- **THEN** thẻ hiện nhãn "Trễ 2 ngày" và đứng trước các đơn hôm nay
+- **THEN** thẻ hiện nhãn "Trễ 2 ngày" màu `warning` và đứng trước các đơn hôm nay
 
 #### Scenario: Đơn đang chờ giao bù
 - **WHEN** `PO-2026-051` đã có phiếu nhập và còn chờ giao bù 40 mâm

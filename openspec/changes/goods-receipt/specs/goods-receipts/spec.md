@@ -161,7 +161,50 @@ Mỗi dòng còn thiếu sau chuyến SHALL có ô "Chờ giao bù phần thiế
 
 #### Scenario: Nhận dư
 - **WHEN** `PL-SAT` đặt 200 kg, chuyến nhận 212,5 kg
-- **THEN** dòng hiện "Nhiều hơn đơn 12,5 kg" **AND** vẫn xác nhận được **AND** không có ô chờ giao bù
+- **THEN** dòng hiện "Nhiều hơn đơn 12,5 kg" **AND** vẫn xác nhận được, không hỏi lại (dư 6,25 % ≤ 10 %) **AND** không có ô chờ giao bù
+
+### Requirement: Hỏi lại khi số nhận hoặc chi phí bất thường
+Trước khi ghi sổ, M3 SHALL hỏi lại trong hộp thoại khi: dòng tính theo cái nhận vượt số đơn còn lại; dòng tính theo kg (so kg cân) vượt quá 10 % số đơn còn lại; tổng chi phí chuyến lớn hơn tổng chi phí dự kiến của cả đơn. Phiếu SHALL chỉ ghi được khi từng điểm đã được xác nhận; server SHALL tự kiểm lại và từ chối phiếu thiếu xác nhận.
+
+#### Scenario: Gõ thừa số 0
+- **WHEN** Khung còn 200 theo đơn và Thủ kho nhập 2.000 rồi bấm "Xác nhận nhập kho"
+- **THEN** hộp thoại hỏi "Nhận 2.000 cái, đơn chỉ còn 200. Đúng không?" với nút "Sửa lại" và "Đúng, nhập 2.000 cái" **AND** chưa ghi gì cho tới khi bấm nút sau
+
+#### Scenario: Nhận dư một cái
+- **WHEN** Chéo còn 400 theo đơn và Thủ kho nhập 401
+- **THEN** hộp thoại hỏi "Nhận 401 cái, đơn chỉ còn 400. Đúng không?"
+
+#### Scenario: Cân dư đúng 10 %
+- **WHEN** `PL-SAT` còn 200 kg theo đơn và cân được 220 kg
+- **THEN** không hỏi lại
+
+#### Scenario: Cân dư quá 10 %
+- **WHEN** `PL-SAT` còn 200 kg theo đơn và cân được 220,5 kg
+- **THEN** hộp thoại hỏi "Nhận 220,5 kg, đơn chỉ còn 200 kg. Đúng không?"
+
+#### Scenario: Dòng mua theo cân của mã tính theo cái
+- **WHEN** dòng `GG-K17` đặt 2.000 kg, Thủ kho đếm 146 cái và cân 2.250 kg
+- **THEN** hộp thoại hỏi "Nhận 2.250 kg, đơn chỉ còn 2.000 kg. Đúng không?"
+
+#### Scenario: Chi phí chuyến cao bất thường
+- **WHEN** đơn có tổng chi phí dự kiến 4.880.000 ₫ và Thủ kho nhập Cước xe tải 35.000.000 ₫
+- **THEN** hộp thoại hỏi "Chi phí chuyến 35.000.000 ₫, cả đơn dự kiến 4.880.000 ₫. Đúng không?"
+
+#### Scenario: Chi phí bằng dự kiến
+- **WHEN** chi phí chuyến là 4.880.000 ₫ và cả đơn dự kiến 4.880.000 ₫
+- **THEN** không hỏi lại
+
+#### Scenario: Server từ chối phiếu thiếu xác nhận
+- **WHEN** một yêu cầu gửi phiếu có Khung 2.000 cái (đơn còn 200) mà không kèm xác nhận cho dòng đó
+- **THEN** API trả 422 "Nhận 2.000 cái, đơn chỉ còn 200. Đúng không?" kèm `field` của dòng Khung **AND** không ghi gì
+
+#### Scenario: Nháp chờ gửi gặp số còn lại đã đổi
+- **WHEN** nháp đã xác nhận nhận 200 Khung (đơn còn 200) đang chờ gửi, trong lúc đó một chuyến khác nhận 100 Khung, rồi nháp tự gửi lại
+- **THEN** server trả 422 vì đơn chỉ còn 100 **AND** nháp chuyển "Bị từ chối" để Thủ kho xác nhận lại
+
+#### Scenario: Ghi lịch sử phần đã xác nhận
+- **WHEN** Văn Tùng xác nhận nhận 2.000 cái Khung (đơn còn 200) và ghi sổ `PN-2026-094`
+- **THEN** lịch sử đơn có dòng "Văn Tùng ghi sổ PN-2026-094 · đã xác nhận nhận dư GG-K17 2.000/200 cái"
 
 ### Requirement: Trạng thái đơn sau mỗi phiếu
 Sau mỗi phiếu, đơn SHALL: chuyển "Đã nhận đủ" khi mọi dòng đã nhận ít nhất bằng số đặt (dòng kg so kg cân); giữ "Đang nhận" khi còn dòng chờ giao bù; chuyển "Đã đóng" với lý do "Nhận thiếu, không chờ giao bù" khi còn dòng thiếu nhưng không dòng nào chờ.

@@ -165,7 +165,7 @@ Theo trọng lượng (cùng chuyến 1): Khung 2.574.002, Chéo 1.089.524, Ph�
 4. Đọc dòng đơn và tóm tắt các phiếu trước (`receiptSummaries`) để biết **dòng còn mở** (D6). Phiếu phải có đúng một dòng cho mỗi dòng còn mở và không có dòng nào khác:
    - thiếu dòng còn mở → 422 "Còn N mã chưa đếm hoặc đánh dấu "Chuyến này không có"";
    - có dòng lạ (không thuộc đơn, hoặc đã chốt/đã đủ ở phiếu khác) → 409 "Đơn PO-2026-052 vừa thay đổi, mở lại đơn để đếm theo số mới". Gồm cả khi văn phòng sửa dòng đơn trước chuyến đầu: lệnh sửa thay dòng nên dòng mới có id mới.
-5. Kiểm từng dòng bằng hàm thuần `checkReceiptLines` (luật ở spec `goods-receipts`), kiểm chi phí bằng `checkOrderCosts` có sẵn.
+5. Kiểm từng dòng bằng hàm thuần `checkReceiptLines` (luật ở spec `goods-receipts`), kiểm chi phí bằng `checkOrderCosts` có sẵn, rồi kiểm điểm bất thường bằng `receiptAnomalies` (D5b): điểm nào chưa có trong `confirmedOverrides` → 422 kèm `field`.
 6. Vị trí nhập: bãi (`YARD`) đang dùng, `FOR SHARE`. Có một bãi thì lấy luôn; nhiều bãi thì M3 cho chọn.
 7. Đọc giá sắt vụn hiện hành nếu cần (D9). `costTrip` (D4).
 8. Cấp mã `PN` (`nextDocumentCode`), số chuyến = số phiếu trước + 1. Ghi `goods_receipt`, dòng, chi phí.
@@ -175,6 +175,28 @@ Theo trọng lượng (cùng chuyến 1): Khung 2.574.002, Chéo 1.089.524, Ph�
 Mọi lỗi nghiệp vụ trả 409/422 qua `src/lib/catalog/respond.ts`, kèm `field` (VD `lines.2.split`) để M3 hiện dưới dòng.
 
 Lựa chọn đã cân nhắc: **Chỉ dựa vào `unique` của `client_draft_id`, không khóa đơn.** Không chọn: hai chuyến khác nhau cùng lúc sẽ cùng tính "dòng còn mở" từ dữ liệu cũ và cùng lấy số chuyến 2.
+
+### D5b. Hỏi lại khi nhập bất thường (0.2 #30, chốt khi review PR #41)
+
+Sổ kho chỉ ghi thêm, và phiếu điều chỉnh kho hiện chỉ đổi số lượng, không đổi được giá trị (issue #42). Gõ thừa một số 0 trên điện thoại sẽ làm sai giá vốn mà không sửa được, nên phải chặn **trước** khi ghi.
+
+Hàm thuần `receiptAnomalies(input)` trong `src/domain/goods-receipt.ts`, dùng chung cho M3 và server:
+- **Nhận vượt** (mỗi dòng đã đếm, so cùng đơn vị với dòng đơn, "còn lại" = đặt − đã nhận ở các phiếu trước):
+  - dòng cái: số nhận > còn lại → điểm `line:<orderLineId>`;
+  - dòng kg (kg cân, kể cả dòng kg của mã cái): `nhận × 10 > còn lại × 11` (quá 10 %, so bằng số nguyên phần nghìn) → điểm `line:<orderLineId>`. Đúng 10 % cho qua (cân lệch bình thường).
+- **Chi phí cao**: tổng chi phí chuyến > tổng chi phí dự kiến của cả đơn → điểm `costs`. Đơn không có chi phí dự kiến thì mọi chi phí > 0 đều hỏi.
+- Mỗi điểm có `key`, `field` (`lines.<i>.quantity`, `lines.<i>.weighedKg`, `costs`) và câu hỏi đúng spec ("Nhận 2.000 cái, đơn chỉ còn 200. Đúng không?", "Chi phí chuyến 35.000.000 ₫, cả đơn dự kiến 4.880.000 ₫. Đúng không?").
+
+Luồng:
+- M3: bấm "Xác nhận nhập kho" → có điểm chưa xác nhận thì mở hộp thoại lần lượt từng điểm ("Sửa lại" / "Đúng, nhập …"). Xác nhận thì key vào `confirmedOverrides` của nháp. Sửa số ở dòng đó thì xóa key của dòng đó (phải xác nhận lại với số mới).
+- Server tính lại `receiptAnomalies` **trong** transaction (sau khi khóa đơn, nên "còn lại" là số mới nhất). Thiếu key nào → 422 với câu hỏi đó và `field`, không ghi gì. Key thừa bỏ qua.
+- Nháp tự gửi lại không bao giờ tự xác nhận: 422 → `REJECTED` (D1), Thủ kho mở lại và thấy hộp thoại. Gồm cả ca số còn lại đã giảm vì một chuyến khác ghi trước.
+- Phần đã xác nhận ghi vào `note` của sự kiện `RECEIPT_POSTED`: "PN-2026-094 · đã xác nhận nhận dư GG-K17 2.000/200 cái; chi phí cao 35.000.000 ₫". D3b hiện nguyên câu này trong lịch sử, và nhãn "Nhận dư" ở dòng đã nhận nhiều hơn số đặt (D10).
+
+Lựa chọn đã cân nhắc:
+- **Chặn hẳn số vượt đơn.** Không chọn: người bán giao dư là có thật (D3b mẫu cân dư 12,5 kg) và tiền trả theo thực nhận (#13).
+- **Chỉ cảnh báo ở giao diện, server không kiểm.** Không chọn: nháp gửi lại tự động và các client khác đi vòng qua được.
+- **Ngưỡng % cho cả dòng cái.** Không chọn: đếm cái là số chính xác, dư một cái cũng đáng hỏi.
 
 ### D6. "Chuyến này không có", "Chờ giao bù" và trạng thái đơn (điểm cần chốt 5; mặc định đã chốt thành 0.2 #29)
 
@@ -275,7 +297,7 @@ Lựa chọn đã cân nhắc: **Một dòng cấu hình, sửa đè.** Không c
   - thêm `openLineIds` (D6) và `waiting` (dòng mở còn thiếu, số thiếu) cho M1, M3, D3b.
 - `hasReceiptsSql(orderId)` = `exists (select 1 from goods_receipt where order_id = …)`. Các chỗ đang gọi (tab D2, nhãn, luật sửa/hủy/đóng) chạy đúng mà không sửa.
 - D3b dùng hàm thuần `orderReceivingSummary` (tiền theo từng chuyến, so với đơn):
-  - "Đã nhận" của dòng = Σ các chuyến, kèm "đủ", "thiếu 40 · Chờ giao bù", "thiếu 4 · Không chờ", "cân dư 12,5 kg";
+  - "Đã nhận" của dòng = Σ các chuyến, kèm "đủ", "thiếu 40 · Chờ giao bù", "thiếu 4 · Không chờ", hoặc nhãn "Nhận dư" + "cân dư 12,5 kg" / "dư 5 cái" (D5b);
   - "Thành tiền" của dòng = Σ tiền hàng từng chuyến (mỗi chuyến làm tròn riêng, khớp từng chuyến người bán giao);
   - "Phải trả người bán" = Σ tiền hàng mọi chuyến (#13, #26), chữ phụ "chưa chốt vì còn chờ giao bù" khi đơn còn mở;
   - "So với đơn": tiền hàng dự kiến, thực nhận, từng dòng thiếu/dư, chi phí dự kiến, chi phí thực tế (Σ chi phí các chuyến);
@@ -287,7 +309,7 @@ Lựa chọn đã cân nhắc: **Một dòng cấu hình, sửa đè.** Không c
 |---|---|---|---|
 | `GET /api/receiving/arrivals` | `receiving.manage` | – | thẻ M1 (D7) |
 | `GET /api/receiving/orders/[code]` | `receiving.manage` | – | dữ liệu M3: đơn, dòng còn mở (đã nhận, còn lại, đơn vị, trọng lượng chuẩn), chi phí điền sẵn (chuyến đầu: chi phí dự kiến; sau: rỗng), bãi đang dùng, giá sắt vụn hiện hành |
-| `POST /api/receiving/receipts` | `receiving.manage` | `draftId`, `orderCode`, `locationId`, `arrivedAt`, `vehicle`, `lines[{ orderLineId, status, quantity, weighedKg, split: { NEW, GOOD, NEEDS_REPAIR, SCRAP }, awaitsRest }]`, `costs[{ label, amount }]` | 201 `{ code, tripNo, orderLabel }`; 200 cùng dạng + `replayed: true` |
+| `POST /api/receiving/receipts` | `receiving.manage` | `draftId`, `orderCode`, `locationId`, `arrivedAt`, `vehicle`, `lines[{ orderLineId, status, quantity, weighedKg, split: { NEW, GOOD, NEEDS_REPAIR, SCRAP }, awaitsRest }]`, `costs[{ label, amount }]`, `confirmedOverrides: string[]` (D5b) | 201 `{ code, tripNo, orderLabel }`; 200 cùng dạng + `replayed: true` |
 | `GET /api/receiving/receipts` | `receiving.manage` | `before` (ngày), `days` (mặc định 2) | phiếu M7 nhóm theo ngày |
 | `GET /api/receiving/receipts/[code]` | `receiving.manage` hoặc `purchasing.view` | – | phiếu chỉ xem |
 | `GET /api/stock/lookup` | `stock.lookup` | `code` | vật tư + tồn theo tình trạng ở bãi, ở xưởng, ở công trình (không có giá vốn) |
@@ -343,6 +365,7 @@ Thêm vào `src/domain/permissions.ts`:
 - **[Nháp chỉ ở một máy]** Mất/hỏng điện thoại thì mất nháp chưa gửi. → Nháp tự gửi ngay khi có mạng; phiếu đếm xong thường gửi trong vài phút. Ghi rõ trong hướng dẫn thủ kho.
 - **[Trình duyệt xóa IndexedDB]** (Safari xóa dữ liệu trang không dùng 7 ngày). → `storage.persist()`; app cài lên màn hình chính được miễn; nháp thường sống vài giờ.
 - **[Ngày nghiệp vụ là ngày server nhận]** Nháp xác nhận lúc 23:50 mất sóng, tới 00:10 mới gửi được → ghi ngày hôm sau. → Chấp nhận: sổ kho không cho ghi lùi ngày; phiếu vẫn lưu `arrived_at` thật để tra.
+- **[Chưa có cách sửa giá trị đã ghi sai]** Sổ kho chỉ ghi thêm; phiếu điều chỉnh kho hiện chỉ đổi số lượng theo giá BQ. Phiếu nhập ghi sai đơn giá hay chi phí thì giá vốn BQ sai mà không kéo về được. → Chặn trước khi ghi (D5b); tách issue #42 "Phiếu điều chỉnh giá trị kho" (Giám đốc duyệt, chỉ đổi giá trị) để làm sau.
 - **[Đơn đổi trong lúc đếm]** Văn phòng sửa dòng đơn trước chuyến đầu, hoặc đóng đơn. → Server từ chối (409), nháp giữ nguyên số đã đếm; mở lại đơn thì giữ số của các mã vẫn còn trong đơn.
 - **[Giá sắt vụn cũ]** → M3 hiện ngày cập nhật giá; tổng giá trị lô vẫn đúng bằng tiền thật bỏ ra (#27).
 - **[File wasm ~1 MB]** → Chỉ tải ở màn quét, chỉ trên trình duyệt không có `BarcodeDetector`, trình duyệt cache lại.
@@ -356,3 +379,5 @@ Thêm vào `src/domain/permissions.ts`:
 
 1. Thư viện quét QR: `barcode-detector` (D2), chốt 27/10/2026.
 2. Dòng "Chuyến này không có" mặc định **chờ chuyến sau** (D6), chốt 27/10/2026, ghi thành 0.2 #29.
+3. Review PR #41: hỏi lại khi nhập bất thường (D5b), ghi thành 0.2 #30; issue #42 cho phiếu điều chỉnh giá trị kho.
+4. Góp ý nhỏ của review: nhãn "Trễ N ngày" trên M1 dùng màu `warning` (đã thêm vào spec `mobile-home`). Hiện "có nháp chưa gửi" trên D3b: **không làm**, vì nháp chỉ nằm trên máy Thủ kho (D1), server không biết; muốn có thì phải gửi nháp lên server, là thay đổi lớn.
