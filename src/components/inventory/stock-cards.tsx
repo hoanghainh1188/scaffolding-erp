@@ -19,7 +19,10 @@ export function StockCards({ cards }: { cards: Cards }) {
         <h2 id="stock-value" className="relative text-base font-semibold">
           Giá trị hàng tồn
         </h2>
-        <p className="relative font-display text-display tabular-nums">
+        <p
+          data-mask
+          className="relative font-display text-display tabular-nums"
+        >
           {formatMoney(toMoney(cards.totalValue))}
         </p>
         <p className="relative text-sm">
@@ -31,7 +34,7 @@ export function StockCards({ cards }: { cards: Cards }) {
         className="flex flex-[1_1_220px] flex-col gap-1.5 rounded-lg border bg-card p-5"
       >
         <ConditionBadge condition="NEEDS_REPAIR" className="self-start" />
-        <p className="font-display text-h1 tabular-nums">
+        <p data-mask className="font-display text-h1 tabular-nums">
           {formatStock(cards.needsRepairPieces, "PIECE")} cái
         </p>
         <p className="text-sm text-muted-foreground">Tại bãi và xưởng</p>
@@ -41,10 +44,10 @@ export function StockCards({ cards }: { cards: Cards }) {
         className="flex flex-[1_1_220px] flex-col gap-1.5 rounded-lg border bg-card p-5"
       >
         <ConditionBadge condition="SCRAP" className="self-start" />
-        <p className="font-display text-h1 tabular-nums">
+        <p data-mask className="font-display text-h1 tabular-nums">
           {formatStock(cards.scrapKgMilli, "KG")} kg
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p data-mask className="text-sm text-muted-foreground">
           {cards.convertedPieces > 0
             ? `gồm ${formatStock(cards.convertedKgMilli, "KG")} kg quy đổi từ ${formatStock(cards.convertedPieces, "PIECE")} cái`
             : "Phế liệu tại bãi"}

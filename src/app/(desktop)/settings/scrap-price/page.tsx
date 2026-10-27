@@ -65,16 +65,16 @@ export default async function Page() {
       {history.length > 0 && (
         <section className="flex flex-col gap-3 rounded-lg border bg-card p-5">
           <h2 className="font-display text-h2">Các lần đổi giá</h2>
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full table-fixed border-collapse text-sm">
             <thead className="bg-muted text-left">
               <tr>
-                <th scope="col" className="px-3 py-2">
+                <th scope="col" className="w-40 px-3 py-2">
                   Thời điểm
                 </th>
-                <th scope="col" className="px-3 py-2 text-right">
+                <th scope="col" className="w-32 px-3 py-2 text-right">
                   Giá
                 </th>
-                <th scope="col" className="px-3 py-2">
+                <th scope="col" className="w-40 px-3 py-2">
                   Người đổi
                 </th>
                 <th scope="col" className="px-3 py-2">

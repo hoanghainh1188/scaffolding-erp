@@ -72,7 +72,12 @@ const PAGES = [
     name: "m3-receive",
     ready: MOBILE_READY,
   },
-  { path: "/m/history", name: "m7-history", ready: MOBILE_READY },
+  // M7 before any receipt: the list other tests feed is not in the image.
+  {
+    path: "/m/history?before=2000-01-01",
+    name: "m7-history",
+    ready: MOBILE_READY,
+  },
 ] as const;
 
 test.describe("visual baselines @visual", () => {
@@ -86,6 +91,10 @@ test.describe("visual baselines @visual", () => {
         await page.setViewportSize({ width, height: 900 });
         await page.goto(path);
         if (ready !== "main") await waitForHydration(page, ready);
+        // Next's dev issue badge comes and goes with unrelated dev warnings.
+        await page.addStyleTag({
+          content: "nextjs-portal { display: none !important; }",
+        });
         await page.evaluate(() => document.fonts.ready);
         await expect(page).toHaveScreenshot(`${name}-${width}.png`, {
           fullPage: true,
