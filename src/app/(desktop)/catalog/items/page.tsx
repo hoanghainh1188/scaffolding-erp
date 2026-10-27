@@ -1,4 +1,3 @@
-import { Pencil } from "lucide-react";
 import type { Metadata } from "next";
 
 import { ItemFormSheet } from "@/components/catalog/item-form-sheet";
@@ -62,33 +61,24 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         tab="items"
         action={canEdit ? <ItemFormSheet groups={activeGroups} /> : undefined}
       />
-      <div className="flex flex-wrap items-start gap-6">
+      {/* The table needs ~1.000px for every column, prices included: the
+          Thuộc bộ panel sits beside it only on very wide screens. */}
+      <div className="flex flex-col gap-6 min-[1700px]:flex-row min-[1700px]:items-start">
         <section
           aria-labelledby="item-list"
-          className="flex min-w-0 flex-[2_1_600px] flex-col gap-4 rounded-xl border bg-card p-5"
+          className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-4 min-[1700px]:flex-1"
         >
           <h2 id="item-list" className="sr-only">
             Danh sách vật tư
           </h2>
           <ItemsFilters groups={activeGroups} placeholder="Tìm vật tư" />
-          <ItemsTable items={items} query={query} selectedCode={selectedCode} />
-          {canEdit && selected ? (
-            <div className="flex flex-wrap items-center gap-2 border-t pt-4">
-              <span className="text-sm text-muted-foreground">
-                Đang chọn {selected.code}
-              </span>
-              <ItemFormSheet
-                groups={activeGroups}
-                item={selected}
-                trigger={
-                  <Button variant="outline">
-                    <Pencil aria-hidden />
-                    Sửa {selected.code}
-                  </Button>
-                }
-              />
-            </div>
-          ) : null}
+          <ItemsTable
+            items={items}
+            query={query}
+            selectedCode={selectedCode}
+            canEdit={canEdit}
+            groups={activeGroups}
+          />
         </section>
         <ItemKitsPanel
           item={selected}
