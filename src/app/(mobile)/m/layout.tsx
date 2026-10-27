@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
+import { DraftUser } from "@/components/drafts/draft-user";
 import { MobileShell } from "@/components/shell/mobile/mobile-shell";
 
 // Pages wait for the session check before sending anything, so a signed-out
@@ -8,5 +9,15 @@ export const instant = false;
 
 /** Phone area for every role, including office roles on their phones. */
 export default function MobileLayout({ children }: { children: ReactNode }) {
-  return <MobileShell>{children}</MobileShell>;
+  return (
+    <MobileShell
+      outbox={
+        <Suspense fallback={null}>
+          <DraftUser />
+        </Suspense>
+      }
+    >
+      {children}
+    </MobileShell>
+  );
 }
