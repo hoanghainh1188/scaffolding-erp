@@ -12,7 +12,7 @@
   - **M7** Lịch sử (`M7-History.dc.html`), phần phiếu nhập và phiếu nháp;
   - **D3b** Chi tiết đơn thu mua (`D3b-PurchaseOrderDetail.dc.html`), phần nhận hàng còn để trống;
   - **Cài đặt** (Desktop): màn mới "Giá sắt vụn tham khảo".
-- Quyết định đã chốt dùng: `docs/requirements.md` mục 0.2 số 2, 3, 7, 10, 11, 12, 13, 14, 24, 25, 26, 27, 28.
+- Quyết định đã chốt dùng: `docs/requirements.md` mục 0.2 số 2, 3, 7, 10, 11, 12, 13, 14, 24, 25, 26, 27, 28, và **#29 mới** (chốt khi review PR #41).
 
 ## What Changes
 
@@ -32,7 +32,7 @@
   - mỗi (mã + tình trạng) có hàng thành một dòng `PURCHASE_IN` vào bãi, làm đổi giá vốn bình quân.
 - **Chờ giao bù** (#12), theo từng dòng:
   - Dòng đếm thiếu: mặc định **không** chờ (dòng chốt theo số đã nhận); tích "Chờ giao bù phần thiếu" thì chờ.
-  - Dòng "Chuyến này không có": mặc định **chờ chuyến sau**; bỏ tích nếu người bán không giao mã này nữa. *(Đề xuất mới, cần chốt, xem design D6.)*
+  - Dòng "Chuyến này không có": mặc định **chờ chuyến sau**; bỏ tích nếu người bán không giao mã này nữa. (0.2 #29, chốt 27/10/2026.)
 - **Trạng thái đơn sau mỗi phiếu** (gọi `transition()` có sẵn): mọi dòng nhận đủ → **Đã nhận đủ**; còn dòng chờ → giữ **Đang nhận**; còn lại → **Đã đóng**.
 - **Lưu nháp trên máy** (#7): phiếu đang làm tự lưu vào **IndexedDB** của trình duyệt. Mất sóng lúc xác nhận thì phiếu chờ gửi và tự gửi lại khi có mạng. Mỗi nháp có **mã nháp sinh trên máy**; server dùng mã này để **không bao giờ tạo hai phiếu** cho một nháp.
 - **Giá sắt vụn tham khảo** (₫/kg): bảng chỉ ghi thêm, Giám đốc nhập ở `/settings/scrap-price`. Phiếu dùng giá hiện hành lúc ghi sổ và lưu lại giá đã dùng. Lô có phế liệu mà chưa có giá thì không xác nhận được.

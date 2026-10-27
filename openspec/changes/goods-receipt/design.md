@@ -176,7 +176,7 @@ Mọi lỗi nghiệp vụ trả 409/422 qua `src/lib/catalog/respond.ts`, kèm `
 
 Lựa chọn đã cân nhắc: **Chỉ dựa vào `unique` của `client_draft_id`, không khóa đơn.** Không chọn: hai chuyến khác nhau cùng lúc sẽ cùng tính "dòng còn mở" từ dữ liệu cũ và cùng lấy số chuyến 2.
 
-### D6. "Chuyến này không có", "Chờ giao bù" và trạng thái đơn (điểm cần chốt 5)
+### D6. "Chuyến này không có", "Chờ giao bù" và trạng thái đơn (điểm cần chốt 5; mặc định đã chốt thành 0.2 #29)
 
 **Lưu ở dòng phiếu**, không lưu ở đơn:
 - `status`: `COUNTED` (đã đếm, số > 0) hoặc `NOT_IN_TRIP` (chuyến này không có, số = 0).
@@ -185,7 +185,7 @@ Lựa chọn đã cân nhắc: **Chỉ dựa vào `unique` của `client_draft_i
 **Mặc định trên M3:**
 - Dòng đếm thiếu: không tích (#12, mặc định đóng theo số thực nhận). Chữ dưới ô: "Không tích: đơn tính theo 196 cái thực nhận".
 - Dòng "Chuyến này không có": **tích sẵn** "Chờ chuyến sau". Bỏ tích khi người bán báo không giao mã này nữa.
-- *Đây là đề xuất mới cần chốt khi duyệt PR.* Lý do: #14 tạo "Chuyến này không có" chính là cho trường hợp hàng về chuyến sau; nếu mặc định không chờ thì chuyến đầu thiếu một mã sẽ đóng cả đơn, ngược ý #14. Nếu người dùng chọn khác, chỉ đổi giá trị mặc định ở M3, không đổi bảng.
+- Người dùng chốt khi review PR #41 (27/10/2026), ghi thành 0.2 #29. Lý do: #14 tạo "Chuyến này không có" chính là cho trường hợp hàng về chuyến sau; nếu mặc định không chờ thì chuyến đầu thiếu một mã sẽ đóng cả đơn, ngược ý #14.
 
 **Dòng còn mở** (hiện ở chuyến sau) = dòng đơn chưa nhận đủ **và** (chưa có phiếu nào nhắc tới, hoặc dòng phiếu gần nhất của nó có `awaits_rest = true`). Dòng đã chốt thiếu không hiện ở chuyến sau.
 
@@ -345,7 +345,6 @@ Thêm vào `src/domain/permissions.ts`:
 - **[Ngày nghiệp vụ là ngày server nhận]** Nháp xác nhận lúc 23:50 mất sóng, tới 00:10 mới gửi được → ghi ngày hôm sau. → Chấp nhận: sổ kho không cho ghi lùi ngày; phiếu vẫn lưu `arrived_at` thật để tra.
 - **[Đơn đổi trong lúc đếm]** Văn phòng sửa dòng đơn trước chuyến đầu, hoặc đóng đơn. → Server từ chối (409), nháp giữ nguyên số đã đếm; mở lại đơn thì giữ số của các mã vẫn còn trong đơn.
 - **[Giá sắt vụn cũ]** → M3 hiện ngày cập nhật giá; tổng giá trị lô vẫn đúng bằng tiền thật bỏ ra (#27).
-- **[Mặc định "Chờ chuyến sau" cho dòng không có]** khác cách đọc #12 nếu người dùng muốn mặc định đóng cho mọi dòng thiếu. → Nêu rõ trong PR để chốt (D6); đổi chỉ là đổi mặc định.
 - **[File wasm ~1 MB]** → Chỉ tải ở màn quét, chỉ trên trình duyệt không có `BarcodeDetector`, trình duyệt cache lại.
 
 ## Migration Plan
@@ -353,7 +352,7 @@ Thêm vào `src/domain/permissions.ts`:
 - Migration chỉ thêm 4 bảng và nới CHECK `kind` của `purchase_order_event`. Không đụng dòng sổ kho cũ.
 - Rollback trước khi có phiếu thật: xóa 4 bảng, trả CHECK cũ. Sau khi đã ghi phiếu thật thì không rollback được (sổ kho chỉ ghi thêm); sửa bằng phiếu điều chỉnh kho.
 
-## Cần chốt khi duyệt PR
+## Đã chốt khi duyệt PR
 
-1. ~~Thư viện quét QR~~: **đã chốt 27/10/2026**, dùng `barcode-detector` (D2).
-2. Dòng "Chuyến này không có" mặc định **chờ chuyến sau** (D6). Nếu đồng ý, ghi thành quyết định 0.2 mới khi archive.
+1. Thư viện quét QR: `barcode-detector` (D2), chốt 27/10/2026.
+2. Dòng "Chuyến này không có" mặc định **chờ chuyến sau** (D6), chốt 27/10/2026, ghi thành 0.2 #29.

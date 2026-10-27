@@ -45,6 +45,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 26 | Chi phí mua hàng và tiền trả người bán | Chi phí mua hàng trả cho **nhà xe, bốc xếp**, chỉ tính vào giá vốn; **không cộng** vào tiền phải trả người bán. Tiền trả người bán = tiền hàng thực nhận (#13) (chốt 27/10/2026) |
 | 27 | Giá lô hàng cũ theo tình trạng | Lô hàng cũ mua chưa phân loại, khi tách tình trạng: **Phế liệu** lấy giá = kg quy đổi (theo trọng lượng chuẩn) × **giá sắt vụn tham khảo** (₫/kg). Phần còn lại của tiền dòng (tiền hàng thực nhận + chi phí mua hàng phân bổ) **chia cho Tốt và Chờ sửa theo số cái**. Giá trị phế liệu lớn hơn tiền dòng, hoặc cả lô là phế liệu, thì phế liệu nhận đúng tiền dòng (chốt 27/10/2026) |
 | 28 | Ai nhập chi phí từng chuyến | **Thủ kho nhập trên M3** lúc nhận hàng, trước khi xác nhận nhập kho. Chuyến đầu điền sẵn chi phí dự kiến của đơn; chuyến sau để trống. Thủ kho sửa theo số thật trả nhà xe, bốc xếp. Chi phí ghi cùng phiếu nhập và chia vào giá nhập ngay khi ghi sổ (#25) (chốt 27/10/2026) |
+| 29 | Mã "Chuyến này không có" | Trên phiếu nhập, dòng đánh dấu **"Chuyến này không có"** mặc định **tích sẵn "Chờ chuyến sau"**: đơn giữ Đang nhận để chờ mã đó. Thủ kho bỏ tích nếu người bán không giao mã này nữa. Dòng **đếm thiếu** vẫn mặc định **không chờ** (#12) (chốt 27/10/2026) |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 
