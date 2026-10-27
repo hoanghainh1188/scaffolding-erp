@@ -29,7 +29,7 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 - **Next.js 16** (App Router, Cache Components bật sẵn) + **TypeScript** (strict, `noUncheckedIndexedAccess`) — làm cả giao diện và API. Node 24, quản lý gói bằng `npm`.
 - **PostgreSQL 17** chạy local bằng **Docker Compose**.
 - ORM: **Drizzle** (`drizzle-orm` + driver `postgres`). Migration là file SQL trong `drizzle/`, chạy bằng `npm run db:migrate`; không dùng `drizzle-kit push`.
-- Đăng nhập: **Better Auth** — cài ở change `auth-and-roles`. Trước đó dùng người dùng giả lập (chỉ ở dev).
+- Đăng nhập: **Better Auth** (tên đăng nhập + mật khẩu), mọi chỗ gọi thư viện nằm trong `src/lib/auth/`. Không có người dùng giả lập: dev và test đăng nhập bằng tài khoản thật. Bảng quyền duy nhất: `src/domain/permissions.ts`; trang gọi `requirePermission`, API bọc `withAuth` (test `src/app/route-guards.test.ts` bắt chỗ quên).
 - Test: **Vitest** (unit, component, integration) + **Playwright** (E2E trên Edge; ảnh mốc chỉ chạy trên CI).
 - **Tailwind CSS 4** + **shadcn/ui**. Design system: **Bright Blue Base** (token sinh từ `docs/design-system/tokens.json`).
 - Hai giao diện: `(desktop)` cho văn phòng, `(mobile)` PWA ở `/m` cho thủ kho/xưởng.
@@ -40,7 +40,7 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 | Lệnh | Việc |
 |---|---|
 | `npm run dev` | Chạy local ở http://localhost:3000 |
-| `npm run build` / `npm start` | Build và chạy bản production (hiện từ chối người dùng giả lập) |
+| `npm run build` / `npm start` | Build và chạy bản production (cần `BETTER_AUTH_URL`) |
 | `npm run lint` | ESLint + `scripts/check-colors.mts` (chặn màu Tailwind cứng, mã hex) |
 | `npm run typecheck` | `next typegen` + `tsc --noEmit` |
 | `npm run format` / `format:check` | Prettier |
@@ -50,11 +50,14 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 | `npm run tokens` | Sinh `src/styles/tokens.css` từ `docs/design-system/tokens.json` |
 | `npm run db:up` / `db:down` | Bật / tắt PostgreSQL trong Docker |
 | `npm run db:generate` / `db:migrate` / `db:studio` | Sinh migration SQL / chạy migration / xem dữ liệu |
+| `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD` |
+| `npm run auth:create-director -- --username <tên> --name "<Họ tên>"` | Tạo tài khoản Giám đốc đầu tiên, in mật khẩu tạm một lần |
 
 Lưu ý:
 
 - Sửa `tokens.json` thì chạy `npm run tokens`; test chống lệch sẽ đỏ nếu quên.
-- Không chạy hai `next dev` cùng lúc trên repo (trang sẽ tự tải lại liên tục). Muốn Playwright dùng lại dev server đang chạy: `PW_PORT=<cổng> npm run test:e2e`.
+- Không chạy hai `next dev` cùng lúc trên repo (trang sẽ tự tải lại liên tục). Muốn Playwright dùng lại dev server đang chạy: `PW_PORT=<cổng> npm run test:e2e` — server đó phải chạy với `AUTH_SIGN_IN_LIMIT_PER_MINUTE=1000`, không thì E2E bị giới hạn 20 lần đăng nhập/phút.
+- E2E đăng nhập bằng tài khoản `e2e.*` (global setup tạo lại mỗi lần chạy) và chạy với vai trò Giám đốc mặc định; test cần vai trò khác dùng `test.use({ storageState: statePath("ACCOUNTANT") })`.
 - Ảnh mốc Playwright chỉ tạo trên CI: tab Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow.
 - Trong E2E, Next 16 giữ trang cũ ẩn trong DOM sau khi điều hướng: tìm theo chữ thì thêm `.filter({ visible: true })`.
 
