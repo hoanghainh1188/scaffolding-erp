@@ -6,7 +6,7 @@
 - `src/lib/navigation.ts` khai báo `roles` ngay trên từng mục menu. Chưa có kiểm tra quyền ở server.
 - DB chưa có bảng nào (`drizzle/0000_init.sql` chỉ `SELECT 1`). Next 16 bật Cache Components: đọc `cookies()` làm phần đó render theo request và phải nằm trong `<Suspense>`. Next 16 dùng `src/proxy.ts` thay `middleware.ts`.
 - Đã chốt ở requirements 0.5: đăng nhập bằng tên + mật khẩu, chỉ Giám đốc tạo tài khoản, mật khẩu tạm bắt đổi, Giám đốc đặt lại, ô "Giữ đăng nhập", mỗi người một vai trò, khóa chứ không xóa.
-- Thiết kế đã duyệt: `Login.dc.html`, `D17-Users.dc.html` (nhánh `docs-ui-design`, chưa merge vào nhánh này — đọc qua `git show origin/docs-ui-design:docs/design/screens/...`).
+- Thiết kế đã duyệt: `docs/design/screens/Login.dc.html`, `docs/design/screens/D17-Users.dc.html` (vào `main` qua PR #2).
 
 ## Goals / Non-Goals
 
@@ -79,7 +79,7 @@ Hai lớp:
 
 ### D6. Bảo vệ Giám đốc (câu hỏi 6)
 
-Hàm `src/lib/users/service.ts` cho khóa và đổi vai trò, mỗi lệnh một transaction:
+Hàm `src/lib/users/service.ts` cho khóa và đổi vai trò, mỗi lệnh một transaction (tạo tài khoản, đặt lại mật khẩu, mở khóa cũng làm bước 1–2, để Giám đốc vừa bị khóa hoặc hạ vai trò ở tab khác không thao tác tiếp được; bổ sung sau review PR #22):
 1. `SELECT ... FROM "user" WHERE role = 'DIRECTOR' AND status = 'ACTIVE' ORDER BY id FOR UPDATE` — khóa mọi dòng Giám đốc đang dùng (cũng khóa dòng người yêu cầu).
 2. Người yêu cầu phải nằm trong danh sách đó (còn là Giám đốc đang dùng). Không → 403.
 3. Đích = người yêu cầu → 409 "Không thể tự khóa tài khoản của mình" / "Không thể tự đổi vai trò của mình".
@@ -207,7 +207,6 @@ Logic nằm ở `src/lib/auth/sign-in.ts`, `src/lib/auth/change-password.ts`, `s
 - **Mật khẩu tạm không hết hạn**: tài khoản tạo xong mà chưa đăng nhập giữ mật khẩu tạm mãi. Hướng sửa sau: mật khẩu tạm hết hạn sau 48 giờ.
 - **Văn phòng chung một IP** → giới hạn 20/phút/IP có thể chặn nhầm khi cả văn phòng đăng nhập cùng phút đầu giờ; 10 người thì còn xa ngưỡng.
 - **E2E và ảnh mốc**: header thêm menu người dùng (không đổi hình khi đóng) — ảnh mốc có thể phải cập nhật qua workflow CI.
-- **Nhánh tài liệu chưa merge**: `requirements.md` 0.5 và file thiết kế đang ở `docs-ui-design`. Nên merge nhánh đó trước hoặc cùng PR này để reviewer đọc được.
 
 ## Migration Plan
 
