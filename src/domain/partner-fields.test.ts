@@ -5,6 +5,7 @@ import {
   formatPhone,
   isValidIdNumber,
   isValidTaxCode,
+  maskBankAccount,
   maskIdNumber,
   normalizePhone,
 } from "./partner-fields";
@@ -42,6 +43,11 @@ describe("tax codes and ID numbers", () => {
   it("accepts 12-digit CCCD only", () => {
     expect(isValidIdNumber("001203012345")).toBe(true);
     expect(isValidIdNumber("0012030123")).toBe(false);
+  });
+
+  it("masks a bank account down to its last 4 characters", () => {
+    expect(maskBankAccount("0451 0003 1234 5678")).toBe("•••• 5678");
+    expect(maskBankAccount("123")).toBe("•••• 123");
   });
 
   it("masks all but the last 4 digits", () => {

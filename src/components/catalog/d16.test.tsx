@@ -46,7 +46,7 @@ const SELLER: SupplierRow = {
   address: null,
   taxCode: null,
   idNumberMasked: "•••• •••• 2345",
-  bankAccount: null,
+  bankAccountMasked: "•••• 5678",
   bankName: null,
   note: null,
   status: "ACTIVE",
@@ -86,9 +86,15 @@ describe("D16 customer detail", () => {
 });
 
 describe("D16 supplier detail", () => {
-  it("shows only the last 4 digits of the CCCD", () => {
-    render(<SupplierDetail supplier={SELLER} canEdit />);
+  it("shows only the last 4 digits of the CCCD and the bank account", () => {
+    render(
+      <SupplierDetail
+        supplier={{ ...SELLER, bankName: "Vietcombank" }}
+        canEdit
+      />,
+    );
     expect(screen.getByText("•••• •••• 2345")).toBeInTheDocument();
+    expect(screen.getByText("•••• 5678 · Vietcombank")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/\d{12}/);
   });
 

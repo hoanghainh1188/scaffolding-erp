@@ -37,7 +37,12 @@ export const SUPPLIER_FIELDS: FormField[] = [
     inputMode: "numeric",
     hint: "12 chữ số. Ngoài form này chỉ hiện 4 số cuối.",
   },
-  { name: "bankAccount", label: "Số tài khoản" },
+  {
+    name: "bankAccount",
+    label: "Số tài khoản",
+    inputMode: "numeric",
+    hint: "Ngoài form này chỉ hiện 4 số cuối.",
+  },
   { name: "bankName", label: "Ngân hàng" },
   { name: "note", label: "Ghi chú", kind: "textarea" },
 ];

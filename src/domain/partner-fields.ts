@@ -42,3 +42,11 @@ export function isValidIdNumber(idNumber: string): boolean {
 export function maskIdNumber(idNumber: string): string {
   return `•••• •••• ${idNumber.slice(-4)}`;
 }
+
+/**
+ * A bank account number is personal data too (review of PR #28): only its
+ * last 4 characters leave the edit form. "0451000312345678" → "•••• 5678".
+ */
+export function maskBankAccount(account: string): string {
+  return `•••• ${account.replace(/\s/g, "").slice(-4)}`;
+}
