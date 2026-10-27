@@ -213,6 +213,27 @@ describe("suppliers", () => {
     expect(await listSuppliers(ctx.db, { q: "001203" })).toHaveLength(0);
   });
 
+  it("lists the bank account masked; only the edit read has it in full", async () => {
+    const created = await createSupplier(ctx.db, actor, {
+      kind: "PERSON",
+      name: "Chú Ba ve chai",
+      bankAccount: "0451000312345678",
+      bankName: "Vietcombank",
+    });
+    const id = created.ok ? created.data.id : "";
+    const listed = await listSuppliers(ctx.db);
+    expect(listed[0]).toMatchObject({
+      bankAccountMasked: "•••• 5678",
+      bankName: "Vietcombank",
+    });
+    expect(JSON.stringify(listed)).not.toContain("0451000312345678");
+    expect(JSON.stringify(created)).not.toContain("0451000312345678");
+    expect((await getSupplierForEdit(ctx.db, id))?.bankAccount).toBe(
+      "0451000312345678",
+    );
+    expect(await listSuppliers(ctx.db, { q: "04510003" })).toHaveLength(0);
+  });
+
   it("keeps the CCCD when an edit leaves it out, archives and deletes", async () => {
     const created = await createSupplier(ctx.db, actor, {
       kind: "PERSON",

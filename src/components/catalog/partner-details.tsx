@@ -200,8 +200,10 @@ export function SupplierDetail({
           ["Số CCCD", supplier.idNumberMasked],
           [
             "Tài khoản",
-            supplier.bankAccount
-              ? `${supplier.bankAccount} · ${supplier.bankName ?? ""}`
+            supplier.bankAccountMasked
+              ? [supplier.bankAccountMasked, supplier.bankName]
+                  .filter(Boolean)
+                  .join(" · ")
               : null,
           ],
           ["Ghi chú", supplier.note],

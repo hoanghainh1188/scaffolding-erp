@@ -19,6 +19,7 @@ import {
   PARTNER_FIELD_MESSAGES,
   isValidIdNumber,
   isValidTaxCode,
+  maskBankAccount,
   maskIdNumber,
   normalizePhone,
 } from "@/domain/partner-fields";
@@ -199,7 +200,9 @@ export async function getCustomer(
   return rows.find((candidate) => candidate.id === id) ?? null;
 }
 
-function customerValues(input: CustomerInput, current?: CustomerRow) {
+type CustomerRecord = typeof customer.$inferSelect;
+
+function customerValues(input: CustomerInput, current?: CustomerRecord) {
   const name =
     input.name === undefined && current
       ? current.name
@@ -207,7 +210,7 @@ function customerValues(input: CustomerInput, current?: CustomerRow) {
   const values = {
     kind:
       input.kind === undefined && current
-        ? current.kind
+        ? partnerKind(current.kind)
         : partnerKind(input.kind),
     name,
     taxCode:
@@ -275,10 +278,17 @@ export function updateCustomer(
   input: CustomerInput,
 ): Promise<ServiceResult<CustomerRow>> {
   return runService(async () => {
-    const current = await getCustomer(db, id);
-    if (!current) return notFound();
-    const values = customerValues(input, current);
-    await db.transaction(async (tx) => {
+    const found = await db.transaction(async (tx) => {
+      // Locked for the whole change: a second editor waits and then builds
+      // on this one; a site creation (FOR SHARE) waits for an archive and
+      // then sees it (review of PR #28, point 4).
+      const [current] = await tx
+        .select()
+        .from(customer)
+        .where(eq(customer.id, id))
+        .for("update");
+      if (!current) return false;
+      const values = customerValues(input, current);
       if (input.status === "ARCHIVED" && current.status === "ACTIVE") {
         const [active] = await tx
           .select({ id: site.id })
@@ -305,7 +315,9 @@ export function updateCustomer(
           updatedAt: new Date(),
         })
         .where(eq(customer.id, id));
+      return true;
     });
+    if (!found) return notFound();
     const updated = await getCustomer(db, id);
     return updated ? ok(updated) : notFound();
   });
@@ -333,7 +345,7 @@ export function deleteCustomer(
 
 // ---------------------------------------------------------------- suppliers
 
-/** What everyone may read: the CCCD only masked (design D5). */
+/** What everyone may read: CCCD and bank account only masked (design D5). */
 export interface SupplierRow {
   id: string;
   code: string;
@@ -344,15 +356,17 @@ export interface SupplierRow {
   taxCode: string | null;
   /** "•••• •••• 2345", or null when there is no CCCD. */
   idNumberMasked: string | null;
-  bankAccount: string | null;
+  /** "•••• 5678", or null when there is none. */
+  bankAccountMasked: string | null;
   bankName: string | null;
   note: string | null;
   status: CatalogStatus;
 }
 
-/** The edit form only, for partners.manage: carries the full CCCD. */
+/** The edit form only, for partners.manage: full CCCD and bank account. */
 export interface SupplierEditRow extends SupplierRow {
   idNumber: string | null;
+  bankAccount: string | null;
 }
 
 export interface SupplierInput {
@@ -380,7 +394,9 @@ function toSupplierRow(row: SupplierRecord): SupplierRow {
     address: row.address,
     taxCode: row.taxCode,
     idNumberMasked: row.idNumber ? maskIdNumber(row.idNumber) : null,
-    bankAccount: row.bankAccount,
+    bankAccountMasked: row.bankAccount
+      ? maskBankAccount(row.bankAccount)
+      : null,
     bankName: row.bankName,
     note: row.note,
     status: row.status as CatalogStatus,
@@ -403,11 +419,19 @@ export async function listSuppliers(
 
 /** Full record for the edit form; callers must hold partners.manage. */
 export async function getSupplierForEdit(
-  db: Database,
+  db: Pick<Database, "select">,
   id: string,
+  lock: "update" | null = null,
 ): Promise<SupplierEditRow | null> {
-  const [row] = await db.select().from(supplier).where(eq(supplier.id, id));
-  return row ? { ...toSupplierRow(row), idNumber: row.idNumber } : null;
+  const query = db.select().from(supplier).where(eq(supplier.id, id));
+  const [row] = await (lock ? query.for(lock) : query);
+  return row
+    ? {
+        ...toSupplierRow(row),
+        idNumber: row.idNumber,
+        bankAccount: row.bankAccount,
+      }
+    : null;
 }
 
 function supplierValues(input: SupplierInput, current?: SupplierEditRow) {
@@ -479,20 +503,23 @@ export function updateSupplier(
   input: SupplierInput,
 ): Promise<ServiceResult<SupplierRow>> {
   return runService(async () => {
-    const current = await getSupplierForEdit(db, id);
-    if (!current) return notFound();
-    const values = supplierValues(input, current);
-    const [row] = await db
-      .update(supplier)
-      .set({
-        ...values,
-        searchText: supplierSearchText(values, current.code),
-        ...statusSet(input.status),
-        updatedBy: actor.id,
-        updatedAt: new Date(),
-      })
-      .where(eq(supplier.id, id))
-      .returning();
+    const row = await db.transaction(async (tx) => {
+      const current = await getSupplierForEdit(tx, id, "update");
+      if (!current) return null;
+      const values = supplierValues(input, current);
+      const [updated] = await tx
+        .update(supplier)
+        .set({
+          ...values,
+          searchText: supplierSearchText(values, current.code),
+          ...statusSet(input.status),
+          updatedBy: actor.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(supplier.id, id))
+        .returning();
+      return updated ?? null;
+    });
     return row ? ok(toSupplierRow(row)) : notFound();
   });
 }

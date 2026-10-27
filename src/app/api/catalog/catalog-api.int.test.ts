@@ -83,6 +83,7 @@ beforeEach(async () => {
     kind: "PERSON",
     name: "Chú Ba ve chai",
     idNumber: "001203012345",
+    bankAccount: "0451000312345678",
   });
   const [yard] = await listLocations(ctx.db, { type: "WORKSHOP" });
   fixture = {
@@ -418,6 +419,8 @@ describe("supplier CCCD", () => {
     const text = await response.text();
     expect(text).toContain("•••• •••• 2345");
     expect(text).not.toContain("001203012345");
+    expect(text).toContain("•••• 5678");
+    expect(text).not.toContain("0451000312345678");
   });
 
   it("gives the edit form the full number for partners.manage only", async () => {
@@ -431,7 +434,9 @@ describe("supplier CCCD", () => {
       if (can(role, "partners.manage")) {
         expect(response.status, role).toBe(200);
         expect(response.headers.get("cache-control")).toBe("no-store");
-        expect((await response.json()).data.idNumber).toBe("001203012345");
+        const { data } = await response.json();
+        expect(data.idNumber).toBe("001203012345");
+        expect(data.bankAccount).toBe("0451000312345678");
       } else {
         expect(response.status, role).toBe(403);
       }
