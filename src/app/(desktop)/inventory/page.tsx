@@ -43,7 +43,11 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         <div className="flex flex-col gap-1">
           <h1 className="text-h1">Tồn kho</h1>
           <p className="text-sm text-muted-foreground tabular-nums">
-            Tính từ sổ kho · cập nhật {updatedAt}
+            Tính từ sổ kho · cập nhật{" "}
+            {/* Fixed width: the screenshots mask this box (visual.spec.ts). */}
+            <span data-clock className="inline-block w-36">
+              {updatedAt}
+            </span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
