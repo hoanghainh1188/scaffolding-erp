@@ -169,7 +169,7 @@ Vật tư, bộ và nhóm SHALL ngừng dùng được và dùng lại được.
 - **THEN** `KK-01` trở lại trạng thái đang dùng và chọn được ở bộ mới
 
 ### Requirement: Danh sách vật tư D9
-D9 SHALL hiện bảng vật tư gồm: tên kèm mã, nhóm, ĐVT, trọng lượng chuẩn, giá thuê/ngày, giá thuê/tháng; đầu trang đếm số mã hàng và số bộ đang dùng; tìm theo tên hoặc mã (không phân biệt dấu, hoa thường); lọc theo nhóm và theo "Đang dùng / Ngừng dùng". Bộ lọc và từ khóa SHALL nằm trên URL.
+D9 SHALL hiện bảng vật tư gồm: tên kèm mã, nhóm, ĐVT, trọng lượng chuẩn, giá thuê/ngày, giá thuê/tháng (ở 1366px thấy đủ cả hai cột giá, không cuộn ngang; thao tác sửa / ngừng dùng / xóa ở menu cuối mỗi dòng); đầu trang đếm số mã hàng và số bộ đang dùng; tìm theo tên hoặc mã (không phân biệt dấu, hoa thường); lọc theo nhóm và theo "Đang dùng / Ngừng dùng". Bộ lọc và từ khóa SHALL nằm trên URL.
 
 #### Scenario: Đếm đầu trang
 - **WHEN** có 48 vật tư và 6 bộ đang dùng, 2 vật tư đã ngừng dùng
@@ -178,6 +178,10 @@ D9 SHALL hiện bảng vật tư gồm: tên kèm mã, nhóm, ĐVT, trọng lư�
 #### Scenario: Tìm không dấu
 - **WHEN** người dùng gõ "khung gian" vào ô tìm
 - **THEN** bảng hiện "Khung giàn giáo 1,7m" và "Khung giàn giáo 1,5m" **AND** URL có `?q=khung%20gian`
+
+#### Scenario: Đủ cột giá ở 1366px
+- **WHEN** Kinh doanh mở D9 trên màn 1366px và đã chọn một vật tư
+- **THEN** cột "Giá thuê / ngày" và "Giá thuê / tháng" nằm trọn trong vùng nhìn thấy **AND** khung "Thuộc bộ" hiện dưới bảng
 
 #### Scenario: Ngừng dùng mặc định ẩn
 - **WHEN** mở D9 không có bộ lọc trạng thái
