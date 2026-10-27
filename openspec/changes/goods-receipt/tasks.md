@@ -44,7 +44,7 @@
 ## 7. Quét mã QR
 
 - [ ] 7.1 Cài `barcode-detector` (đã duyệt, design D2): bản cố định, chép file `.wasm` vào `public/` bằng script (`postinstall` hoặc `scripts/`), cấu hình `locateFile` tự phục vụ. Chạy lại `npm install` bằng npm 11.19 để lock không lỗi `@emnapi` — kiểm tra: `npm ci` xanh, `npm run build` xanh, bundle chung không chứa wasm
-- [ ] 7.2 Component `src/components/scan/qr-scanner.tsx` (camera sau, `import()` động, 5 lần/giây, chỉ QR, đọc qua `qr-payload`), ô "Không quét được? Nhập mã", báo chưa cho camera. Component test với bộ dò giả: đọc ra mã gọi callback; nội dung không phải mã hàng hiện "Mã QR này không phải mã hàng"; từ chối camera hiện đúng chữ và ô nhập vẫn dùng được — kiểm tra: `npm run test:unit` xanh
+- [x] 7.2 Component `src/components/scan/qr-scanner.tsx` (camera sau, `import()` động, 5 lần/giây, chỉ QR, đọc qua `qr-payload`), ô "Không quét được? Nhập mã", báo chưa cho camera. Component test với bộ dò giả: đọc ra mã gọi callback; nội dung không phải mã hàng hiện "Mã QR này không phải mã hàng"; từ chối camera hiện đúng chữ và ô nhập vẫn dùng được — kiểm tra: `npm run test:unit` xanh
 
 ## 8. Giao diện Mobile
 

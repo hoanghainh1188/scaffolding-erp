@@ -28,3 +28,6 @@ tests/e2e/.auth/
 *.pem
 *.log
 .vercel
+
+# copied by scripts/copy-zxing-wasm.mts on install
+public/vendor/
