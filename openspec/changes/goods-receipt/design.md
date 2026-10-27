@@ -353,7 +353,7 @@ Thêm vào `src/domain/permissions.ts`:
 - `npm run db:seed:dev` (qua service, chỉ chạy khi chưa có phiếu nào):
   - giá sắt vụn 7.500 ₫/kg;
   - đẩy bộ đếm `PN` năm 2026 lên 089 (sổ kho mẫu đã dùng tới `PN-2026-087`);
-  - đơn `PO-2026-051` như D3b: hai phiếu `PN-2026-090`, `PN-2026-093`, Mâm chờ giao bù 40 → "Đang nhận".
+  - một đơn như `PO-2026-051` của D3b: hai phiếu `PN-2026-090`, `PN-2026-091`, Mâm chờ giao bù 40 → "Đang nhận".
 - E2E:
   - `global-setup.ts` chỉ xóa đơn `E2E thử` **chưa có phiếu nhập**; đơn đã có phiếu ở lại (sổ kho không xóa được), ảnh mốc D2 đã lọc theo nhà cung cấp mẫu khác nên không đổi.
   - Đơn E2E nhập hàng dùng mã `E2E-KHO-01/02`, kiểm tồn theo chênh lệch như `inventory.spec.ts`.

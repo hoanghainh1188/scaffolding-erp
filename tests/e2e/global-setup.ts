@@ -6,6 +6,7 @@ import { and, eq, like, notInArray, sql } from "drizzle-orm";
 import { createDatabase, type Database } from "@/db/client";
 import {
   customer,
+  goodsReceipt,
   inventoryLedger,
   item,
   itemGroup,
@@ -23,6 +24,8 @@ import { createItem } from "@/lib/catalog/items";
 import { seedCatalog } from "@/lib/catalog/seed";
 import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
+import { seedReceiving } from "@/lib/receiving/sample";
+import { currentScrapPrice, setScrapPrice } from "@/lib/receiving/scrap-price";
 import { E2E_ACCOUNTS, E2E_TEMP_PREFIX } from "@/lib/users/e2e-accounts";
 import { seedAccounts } from "@/lib/users/seed";
 
@@ -58,14 +61,22 @@ async function removeTestCatalogRows(db: Database): Promise<void> {
 }
 
 /**
- * Note of every order purchasing.spec.ts creates. Orders are not ledger
- * rows (purchase-orders design D13): earlier runs' orders go, so D2 counts
- * and codes stay small. No supplier of its own: D16 would count it.
+ * Note of every order purchasing.spec.ts and receiving.spec.ts create.
+ * Earlier runs' orders go, so D2 counts and codes stay small; an order with
+ * a goods receipt stays, because its ledger lines cannot be deleted
+ * (goods-receipt design D14). No supplier of its own: D16 would count it.
  */
 export const E2E_ORDER_NOTE = "E2E thử";
 
 async function removeTestOrders(db: Database) {
-  await db.delete(purchaseOrder).where(eq(purchaseOrder.note, E2E_ORDER_NOTE));
+  await db
+    .delete(purchaseOrder)
+    .where(
+      and(
+        eq(purchaseOrder.note, E2E_ORDER_NOTE),
+        sql`not exists (select 1 from ${goodsReceipt} where ${goodsReceipt.orderId} = ${purchaseOrder.id})`,
+      ),
+    );
 }
 
 /** Fixed items inventory.spec.ts posts to; created once, never deleted. */
@@ -127,6 +138,17 @@ export default async function globalSetup(): Promise<void> {
       await seedInventory(handle.db, director);
       // D2 / D3b sample orders (purchase-orders design D13), once.
       await seedPurchasing(handle.db, director);
+      // A scrap price for M3 lots with scrap, and the D3b receiving sample.
+      if (!(await currentScrapPrice(handle.db))) {
+        await setScrapPrice(handle.db, director, { pricePerKg: 7_500 });
+      }
+      const [warehouse] = await handle.db
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.username, "e2e.thukho"));
+      if (warehouse) {
+        await seedReceiving(handle.db, { director, warehouse });
+      }
     }
   } finally {
     await handle.close();
