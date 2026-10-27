@@ -11,7 +11,14 @@ export interface Actor {
 }
 
 export type ServiceResult<T> =
-  { ok: true; data: T } | { ok: false; status: 400 | 404 | 409; error: string };
+  | { ok: true; data: T }
+  | {
+      ok: false;
+      status: 400 | 404 | 409 | 422;
+      error: string;
+      /** The form field the error belongs to ("lines.0.quantity"). */
+      field?: string;
+    };
 
 export const COMMON_MESSAGES = {
   notFound: "Không tìm thấy bản ghi",

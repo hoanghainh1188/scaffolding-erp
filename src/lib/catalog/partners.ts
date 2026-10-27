@@ -41,6 +41,10 @@ import {
   type ServiceResult,
 } from "./common";
 import { escapeLike } from "./items";
+import {
+  describeOrderCodes,
+  openOrderCodesForSupplier,
+} from "@/lib/purchasing/references";
 
 export const PARTNER_MESSAGES = {
   kind: "Chọn công ty hoặc cá nhân",
@@ -48,6 +52,8 @@ export const PARTNER_MESSAGES = {
   customerInUse: "Nhà thầu đã được dùng nên chỉ ngừng dùng được",
   supplierInUse: "Nhà cung cấp đã được dùng nên chỉ ngừng dùng được",
   customerHasSites: "Ngừng dùng các công trình của nhà thầu này trước",
+  supplierHasOrders: (code: string, orders: string) =>
+    `${code} còn đơn thu mua đang xử lý: ${orders}. Đóng hoặc hủy đơn trước`,
 } as const;
 
 export type PartnerKind = "COMPANY" | "PERSON";
@@ -507,6 +513,20 @@ export function updateSupplier(
       const current = await getSupplierForEdit(tx, id, "update");
       if (!current) return null;
       const values = supplierValues(input, current);
+      if (input.status === "ARCHIVED" && current.status === "ACTIVE") {
+        // An order on its way would point at a supplier nobody can pick.
+        const orders = await openOrderCodesForSupplier(tx, id);
+        if (orders.length > 0) {
+          throw new ServiceFailure(
+            conflict(
+              PARTNER_MESSAGES.supplierHasOrders(
+                current.code,
+                describeOrderCodes(orders),
+              ),
+            ),
+          );
+        }
+      }
       const [updated] = await tx
         .update(supplier)
         .set({
