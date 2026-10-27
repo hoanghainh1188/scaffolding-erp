@@ -103,7 +103,9 @@ export async function seedReceiving(
     {
       supplierId: seller.id,
       kind: "USED",
-      expectedDate: toBusinessDate(now),
+      // Fixed, so D3b screenshots do not change with the day; late orders
+      // still show on M1.
+      expectedDate: "2026-10-24",
       vehicle: "29C-123.45",
       note: SAMPLE_RECEIVING_NOTE,
       allocationMethod: "VALUE",
