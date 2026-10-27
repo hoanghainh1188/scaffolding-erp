@@ -16,13 +16,27 @@ permissions:
 env:
   CI: "true"
   DATABASE_URL: postgres://erp:erp@localhost:5432/scaffolding_erp_test
-  DEV_ROLE: DIRECTOR
+  # Throwaway values for the CI-only database; never used anywhere else.
+  BETTER_AUTH_SECRET: ci-only-secret-not-for-real-use-0123456789
+  E2E_PASSWORD: e2e-pass-1234
 
 jobs:
   update:
     name: Update visual baselines
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Screens are behind sign-in: the dev server needs a database.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp
+          POSTGRES_DB: scaffolding_erp_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U erp -d scaffolding_erp_test"
+          --health-interval 2s --health-timeout 3s --health-retries 30
     steps:
       - uses: actions/checkout@v7
         with:
@@ -32,6 +46,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Migrate the database
+        run: npm run db:migrate
       - name: Install Edge
         run: npx playwright install --with-deps msedge
       - name: Write baselines
