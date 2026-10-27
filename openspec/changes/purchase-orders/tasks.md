@@ -169,4 +169,4 @@
   - nhập đơn D3 và so cột chi phí phân bổ với bảng design D3 (khác bản vẽ 1 ₫ ở Chéo và Phế liệu là đúng);
   - Kế toán chỉ xem.
 
-  Kiểm tra: ghi kết quả vào PR; chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào #33
+  Kiểm tra: ghi kết quả vào PR; chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào #33 — **làm sau, theo dõi ở #33** (mục 4)
