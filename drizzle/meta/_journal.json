@@ -36,6 +36,13 @@
       "when": 1793101875576,
       "tag": "0004_purchase_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793113035680,
+      "tag": "0005_goods_receipts",
+      "breakpoints": true
     }
   ]
 }

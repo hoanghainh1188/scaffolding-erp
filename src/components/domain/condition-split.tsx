@@ -27,6 +27,8 @@ interface ConditionSplitProps {
   onValueChange: (value: SplitParts) => void;
   /** Returns from a site (M4) also record lost items. */
   withLost?: boolean;
+  /** Said when the parts add up; "Đã khớp" by default. */
+  balancedLabel?: string;
   className?: string;
 }
 
@@ -36,6 +38,7 @@ export function ConditionSplit({
   value,
   onValueChange,
   withLost = false,
+  balancedLabel = "Đã khớp",
   className,
 }: ConditionSplitProps) {
   const parts: SplitPart[] = withLost
@@ -52,7 +55,7 @@ export function ConditionSplit({
 
   const message =
     status === "balanced"
-      ? "Đã khớp"
+      ? balancedLabel
       : status === "under"
         ? `Còn ${gap} chưa phân loại`
         : `Vượt ${gap} so với tổng`;
