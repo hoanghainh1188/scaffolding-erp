@@ -1,16 +1,9 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { PlaceholderPage } from "@/components/shell/placeholder-page";
 import { requirePermission } from "@/lib/auth/guard";
 
-export const metadata: Metadata = { title: "Danh mục" };
-
+/** "Danh mục" opens D9; D16 is one link away (master-data design D13). */
 export default async function Page() {
   await requirePermission("catalog.view");
-  return (
-    <PlaceholderPage
-      title="Danh mục"
-      description="D16: nhà cung cấp, nhà thầu, công trình, kho bãi."
-    />
-  );
+  redirect("/catalog/items");
 }

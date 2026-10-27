@@ -29,11 +29,14 @@ test.describe("accessibility", () => {
     for (const path of [
       "/dashboard",
       "/settings/users",
+      "/catalog/items?item=GG-K17",
+      "/catalog/kits",
+      "/catalog/partners?tab=customers",
       "/change-password",
       "/dev/components",
     ]) {
       await page.goto(path);
-      if (path === "/dashboard" || path === "/settings/users") {
+      if (path !== "/change-password" && path !== "/dev/components") {
         await waitForHydration(page, DESKTOP_READY);
       }
       await page.evaluate(() => document.fonts.ready);

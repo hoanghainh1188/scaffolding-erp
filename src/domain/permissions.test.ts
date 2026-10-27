@@ -15,6 +15,10 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "catalog.view": ["DIRECTOR", "ACCOUNTANT", "SALES"],
   "settings.view": ["DIRECTOR"],
   "users.manage": ["DIRECTOR"],
+  "catalog.read": ["DIRECTOR", "ACCOUNTANT", "SALES", "WAREHOUSE", "WORKSHOP"],
+  "items.manage": ["DIRECTOR", "SALES"],
+  "partners.manage": ["DIRECTOR", "SALES", "ACCOUNTANT"],
+  "locations.manage": ["DIRECTOR"],
 };
 
 const PAIRS = (Object.keys(PERMISSIONS) as Permission[]).flatMap((permission) =>
@@ -38,8 +42,9 @@ describe("can", () => {
     ]);
   });
 
-  it("gives the phone roles no desktop page", () => {
+  it("gives the phone roles nothing but reading the catalog", () => {
     for (const permission of Object.keys(PERMISSIONS) as Permission[]) {
+      if (permission === "catalog.read") continue;
       expect(can("WAREHOUSE", permission)).toBe(false);
       expect(can("WORKSHOP", permission)).toBe(false);
     }
