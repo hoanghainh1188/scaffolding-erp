@@ -10,6 +10,8 @@ import {
 } from "./helpers";
 
 const WIDTHS = [360, 375, 768, 1024, 1280, 1366] as const;
+/** The D3 sample order: the first order of a fresh database. */
+const SAMPLE_ORDER = `PO-${new Date().getFullYear()}-001`;
 const PAGES = [
   { path: "/dashboard", ready: DESKTOP_READY },
   { path: "/inventory", ready: DESKTOP_READY },
@@ -18,6 +20,9 @@ const PAGES = [
     ready: DESKTOP_READY,
   },
   { path: "/inventory/adjustments", ready: DESKTOP_READY },
+  { path: "/purchasing", ready: DESKTOP_READY },
+  { path: "/purchasing/orders/new", ready: DESKTOP_READY },
+  { path: `/purchasing/orders/${SAMPLE_ORDER}`, ready: DESKTOP_READY },
   { path: "/settings/users", ready: DESKTOP_READY },
   { path: "/catalog/items?item=GG-K17", ready: DESKTOP_READY },
   { path: "/catalog/partners?tab=customers", ready: DESKTOP_READY },

@@ -11,6 +11,8 @@ import {
 // skip @visual (playwright.config.ts). Update them with the
 // "Update Playwright snapshots" workflow, never from a dev machine.
 const WIDTHS = [360, 375, 768, 1024, 1280, 1366] as const;
+/** The D3 sample order: the first order of a fresh database (D13). */
+const SAMPLE_ORDER = `PO-${new Date().getFullYear()}-001`;
 const PAGES = [
   { path: "/dashboard", name: "dashboard", ready: DESKTOP_READY },
   { path: "/m", name: "mobile-home", ready: MOBILE_READY },
@@ -20,8 +22,10 @@ const PAGES = [
     name: "d9-items",
     ready: DESKTOP_READY,
   },
+  // D16: one sample customer, and the tab counts masked, so customers,
+  // suppliers or sites other tests add never change the image.
   {
-    path: "/catalog/partners?tab=customers",
+    path: "/catalog/partners?tab=customers&q=minh+phat",
     name: "d16-partners",
     ready: DESKTOP_READY,
   },
@@ -31,6 +35,20 @@ const PAGES = [
   {
     path: "/inventory/items/GG-K17?from=2026-10-01&to=2026-10-31",
     name: "d11-stock-card",
+    ready: DESKTOP_READY,
+  },
+  // D2, D3b: the sample orders of the seed; dates of today and the
+  // history are masked ([data-mask]). D2 shows one sample supplier only, so
+  // the orders purchasing.spec.ts creates never appear.
+  { path: "/purchasing?q=chu+ba", name: "d2-orders", ready: DESKTOP_READY },
+  {
+    path: "/purchasing/orders/new",
+    name: "d3-order-form",
+    ready: DESKTOP_READY,
+  },
+  {
+    path: `/purchasing/orders/${SAMPLE_ORDER}`,
+    name: "d3b-order",
     ready: DESKTOP_READY,
   },
 ] as const;
@@ -51,6 +69,7 @@ test.describe("visual baselines @visual", () => {
           fullPage: true,
           mask: [
             page.locator("[data-clock]"),
+            page.locator("[data-mask]"),
             page.getByRole("row").filter({ hasText: "E2E-KHO" }),
           ],
           animations: "disabled",

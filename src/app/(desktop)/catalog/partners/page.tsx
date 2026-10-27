@@ -227,22 +227,26 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         label="Loại đối tác"
         tabs={[
           {
-            label: `Nhà thầu · ${activeCustomers.length}`,
+            label: "Nhà thầu",
+            count: activeCustomers.length,
             href: tabHref("customers"),
             active: tab === "customers",
           },
           {
-            label: `Nhà cung cấp · ${activeSuppliers.length}`,
+            label: "Nhà cung cấp",
+            count: activeSuppliers.length,
             href: tabHref("suppliers"),
             active: tab === "suppliers",
           },
           {
-            label: `Công trình · ${places.sites}`,
+            label: "Công trình",
+            count: places.sites,
             href: tabHref("sites"),
             active: tab === "sites",
           },
           {
-            label: `Kho, bãi, xưởng · ${places.locations}`,
+            label: "Kho, bãi, xưởng",
+            count: places.locations,
             href: tabHref("locations"),
             active: tab === "locations",
           },

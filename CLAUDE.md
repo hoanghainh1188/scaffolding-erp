@@ -50,7 +50,7 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 | `npm run tokens` | Sinh `src/styles/tokens.css` từ `docs/design-system/tokens.json` |
 | `npm run db:up` / `db:down` | Bật / tắt PostgreSQL trong Docker |
 | `npm run db:generate` / `db:migrate` / `db:studio` | Sinh migration SQL / chạy migration / xem dữ liệu |
-| `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD`, danh mục mẫu như thiết kế D9/D16 và sổ kho mẫu (ví dụ tính tay design D11 của `inventory-ledger`) |
+| `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD`, danh mục mẫu như thiết kế D9/D16 sổ kho mẫu (ví dụ tính tay design D11 của `inventory-ledger`) và 5 đơn thu mua mẫu (đơn D3 của `purchase-orders`) |
 | `npm run inventory:check` | Đối chiếu giá vốn lưu riêng với sổ kho; lệch thì thoát mã 1 |
 | `npm run auth:create-director -- --username <tên> --name "<Họ tên>"` | Tạo tài khoản Giám đốc đầu tiên, in mật khẩu tạm một lần |
 
@@ -59,6 +59,7 @@ Lưu ý:
 - Sửa `tokens.json` thì chạy `npm run tokens`; test chống lệch sẽ đỏ nếu quên.
 - Không chạy hai `next dev` cùng lúc trên repo (trang sẽ tự tải lại liên tục). Muốn Playwright dùng lại dev server đang chạy: `PW_PORT=<cổng> npm run test:e2e` — server đó phải chạy với `AUTH_SIGN_IN_LIMIT_PER_MINUTE=1000`, không thì E2E bị giới hạn 20 lần đăng nhập/phút.
 - Sổ kho ở DB dev không xóa được: E2E ghi vào mã cố định `E2E-KHO-01/02` và kiểm theo chênh lệch.
+- Đơn thu mua do E2E tạo có ghi chú `E2E thử` (nhà cung cấp Hòa Phát mẫu); global setup xóa các đơn đó trước mỗi lần chạy. Không thêm nhà cung cấp riêng cho E2E: ảnh mốc D16 đếm số nhà cung cấp.
 - E2E đăng nhập bằng tài khoản `e2e.*` (global setup tạo lại mỗi lần chạy) và chạy với vai trò Giám đốc mặc định; test cần vai trò khác dùng `test.use({ storageState: statePath("ACCOUNTANT") })`.
 - Ảnh mốc Playwright chỉ tạo trên CI: tab Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow.
 - Trong E2E, Next 16 giữ trang cũ ẩn trong DOM sau khi điều hướng: tìm theo chữ thì thêm `.filter({ visible: true })`.
@@ -109,6 +110,7 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 - **CCCD và số tài khoản** của nhà cung cấp là dữ liệu cá nhân: chỉ trả số đã che, trừ dữ liệu form sửa (`partners.manage`).
 - Lệnh sửa trong service đọc lại bản ghi **trong** transaction bằng `FOR UPDATE` trước khi kiểm tra và ghi; bản ghi được tham chiếu (vật tư trong bộ, nhà thầu của công trình) giữ `FOR SHARE`.
 - **Sổ kho** (`src/lib/inventory/`): mọi biến động ghi qua `postMovements` trong transaction của chứng từ; không INSERT thẳng vào `inventory_ledger` (DB chặn UPDATE/DELETE/TRUNCATE). Giá BQ theo (mã + tình trạng) gộp **mọi vị trí** kể cả công trình (0.2 #24); chỉ `OPENING`, `PURCHASE_IN`, `REPAIR_IN` đổi giá. Không ghi lùi ngày nghiệp vụ; ngày tính thuê lấy ngày giao/trả thực tế trên phiếu, không lấy ngày ghi sổ. Đối chiếu bằng `npm run inventory:check`.
+- **Đơn thu mua** (`src/lib/purchasing/`): đơn chỉ lưu số và chi phí **dự kiến**, **không ghi sổ kho** (`PURCHASE_IN` thuộc phiếu nhập). Chia chi phí mua hàng và chia giá lô hàng cũ theo tình trạng dùng hàm thuần `src/domain/landed-cost.ts` (phần dư lớn nhất, tổng khớp từng đồng; phế liệu theo giá sắt vụn, 0.2 #27). Chuyển trạng thái đơn qua `transition()` ở `src/domain/purchase-order.ts`; "đơn đã có phiếu nhập chưa" đọc qua `src/lib/purchasing/receipts.ts`. Sửa đơn gửi kèm `updatedAt`, lệch thì 409.
 - Trang dùng giờ hiện tại (`new Date()`) phải `await connection()` trước (Cache Components).
 
 ## Từ điển (tiếng Việt ↔ tên trong code)
