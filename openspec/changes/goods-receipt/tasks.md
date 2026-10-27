@@ -33,7 +33,7 @@
 
 ## 5. API (bọc `withAuth`, zod)
 
-- [ ] 5.1 Route theo design D11: `GET /api/receiving/arrivals`, `GET /api/receiving/orders/[code]`, `POST /api/receiving/receipts` (201 / 200 `replayed`), `GET /api/receiving/receipts`, `GET /api/receiving/receipts/[code]`, `GET /api/stock/lookup`, `GET`/`POST /api/settings/scrap-price`; lỗi nghiệp vụ qua `respond.ts` kèm `field`. Integration test `receiving-api.int.test.ts`: 401 khi chưa đăng nhập; 403 theo spec (Kinh doanh lập phiếu, Xưởng xem phiếu, Kế toán đổi giá, Thủ kho gọi `GET /api/purchasing/orders`); Kế toán xem được phiếu; `GET /api/receiving/orders/[code]` không có đơn giá; body sai kiểu → 422 — kiểm tra: `npm run test:int` xanh, `src/app/route-guards.test.ts` xanh
+- [x] 5.1 Route theo design D11: `GET /api/receiving/arrivals`, `GET /api/receiving/orders/[code]`, `POST /api/receiving/receipts` (201 / 200 `replayed`), `GET /api/receiving/receipts`, `GET /api/receiving/receipts/[code]`, `GET /api/stock/lookup`, `GET`/`POST /api/settings/scrap-price`; lỗi nghiệp vụ qua `respond.ts` kèm `field`. Integration test `receiving-api.int.test.ts`: 401 khi chưa đăng nhập; 403 theo spec (Kinh doanh lập phiếu, Xưởng xem phiếu, Kế toán đổi giá, Thủ kho gọi `GET /api/purchasing/orders`); Kế toán xem được phiếu; `GET /api/receiving/orders/[code]` không có đơn giá; body sai kiểu → 422 — kiểm tra: `npm run test:int` xanh, `src/app/route-guards.test.ts` xanh
 
 ## 6. Nháp trên máy (chạy ở trình duyệt)
 
