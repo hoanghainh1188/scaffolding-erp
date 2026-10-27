@@ -40,6 +40,7 @@ describe("getStockCard", () => {
       outflow: 430_000,
       closing: 1_240_000,
       currentAvg: 195_282,
+      openingAvg: 195_000,
     });
     expect(
       result?.lines.map((l) => [

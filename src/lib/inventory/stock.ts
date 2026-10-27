@@ -242,3 +242,34 @@ export async function getItemSites(
     quantity: quantityFromDb(row.total, "KG").milli,
   }));
 }
+
+/** Every item's sites in one query, for the whole D10 table. */
+export async function getSiteBreakdown(
+  db: Database,
+): Promise<Map<string, SiteStock[]>> {
+  const rows = await db
+    .select({
+      itemId: inventoryLedger.itemId,
+      locationId: site.locationId,
+      siteCode: site.code,
+      siteName: site.name,
+      total: sql<string>`sum(${inventoryLedger.quantity})`,
+    })
+    .from(inventoryLedger)
+    .innerJoin(site, eq(site.locationId, inventoryLedger.locationId))
+    .groupBy(inventoryLedger.itemId, site.locationId, site.code, site.name)
+    .having(ne(sql`sum(${inventoryLedger.quantity})`, 0))
+    .orderBy(asc(site.code));
+  const byItem = new Map<string, SiteStock[]>();
+  for (const row of rows) {
+    const list = byItem.get(row.itemId) ?? [];
+    list.push({
+      locationId: row.locationId,
+      siteCode: row.siteCode,
+      siteName: row.siteName,
+      quantity: quantityFromDb(row.total, "KG").milli,
+    });
+    byItem.set(row.itemId, list);
+  }
+  return byItem;
+}
