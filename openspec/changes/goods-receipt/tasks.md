@@ -72,5 +72,5 @@
 
 ## Workflow follow-up
 
-- Người dùng duyệt PR propose, trả lời điểm còn lại trong "Cần chốt khi duyệt PR" của design.md (mặc định "Chờ chuyến sau"); ghi quyết định đã chốt vào `docs/requirements.md` 0.2 trong PR apply.
+- Người dùng ghi "Duyệt" trên PR propose (#41) rồi mới chạy `/opsx:apply goods-receipt`.
 - Sau khi merge PR apply: `/opsx:archive goods-receipt`, PR archive ghi `Closes #8`.
