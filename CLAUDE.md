@@ -93,7 +93,8 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 - Mọi thao tác ghi nhiều bảng (VD: lưu phiếu + ghi sổ kho) chạy trong **một transaction**.
 - Phân quyền kiểm tra ở **server**, không chỉ ẩn nút trên giao diện.
 - **Danh mục** (`src/lib/catalog/`): mã vật tư, bộ, bãi gõ tay theo `src/domain/item-code.ts` và **không đổi được**; mã đối tác, công trình tự sinh (`NT-0001`, `NCC-0001`, `CT-0001`). Bảng nào tham chiếu danh mục thì khóa ngoại `ON DELETE RESTRICT` (bản ghi đã dùng chỉ ngừng dùng, không xóa). Quyền: đọc `catalog.read`, ghi `items.manage` / `partners.manage` / `locations.manage`.
-- **CCCD** của nhà cung cấp là dữ liệu cá nhân: chỉ trả số đã che, trừ dữ liệu form sửa (`partners.manage`).
+- **CCCD và số tài khoản** của nhà cung cấp là dữ liệu cá nhân: chỉ trả số đã che, trừ dữ liệu form sửa (`partners.manage`).
+- Lệnh sửa trong service đọc lại bản ghi **trong** transaction bằng `FOR UPDATE` trước khi kiểm tra và ghi; bản ghi được tham chiếu (vật tư trong bộ, nhà thầu của công trình) giữ `FOR SHARE`.
 
 ## Từ điển (tiếng Việt ↔ tên trong code)
 

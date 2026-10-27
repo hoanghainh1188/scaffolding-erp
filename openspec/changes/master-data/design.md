@@ -59,6 +59,7 @@ Lý do:
 - Bảng `supplier`: `kind` (`COMPANY`/`PERSON`), `name` (bắt buộc), `phone`, `address`, `tax_code` (công ty), `id_number` (CCCD, 12 chữ số, cá nhân), `bank_account`, `bank_name`, `note`.
 - Người bán sắt vụn chỉ cần **tên** là tạo được (thường mua tại chỗ, không có giấy tờ). CCCD, tài khoản để tùy chọn: dùng khi trả tiền chuyển khoản hoặc cần đối chiếu sau này (`payables` Bản 2).
 - Đã cân nhắc: bắt buộc CCCD cho cá nhân — làm chậm việc mua tại bãi, nhiều người không mang theo.
+- **Số tài khoản ngân hàng** cũng che như CCCD (`maskBankAccount`, 4 ký tự cuối, `•••• 5678`): danh sách trả `bankAccountMasked`, chỉ `/edit` có số đầy đủ (bổ sung sau review code PR #28).
 - **CCCD là dữ liệu cá nhân** (bổ sung sau review PR #28): danh sách và màn chi tiết D16 chỉ hiện **4 số cuối** dạng `•••• •••• 0123` (hàm `maskIdNumber`). `GET /api/catalog/suppliers` (quyền `catalog.read`, cả 5 vai trò) chỉ trả `idNumberMasked`, **không bao giờ** trả số đầy đủ. Số đầy đủ chỉ có ở `GET /api/catalog/suppliers/[id]/edit` (quyền `partners.manage`), dùng để điền form sửa. Không ghi CCCD vào log.
 
 ### D6. Công trình và vị trí SITE (câu hỏi 6)
@@ -144,13 +145,15 @@ Logic ghi ở `src/lib/catalog/*.ts` (nhận `db`, `actor`), mỗi lệnh một 
 | `GET/POST /api/catalog/sites` · `PATCH/DELETE …/[id]` | như trên | POST tạo cả vị trí `SITE` |
 | `GET/POST /api/catalog/locations` · `PATCH/DELETE …/[id]` | đọc `catalog.read`, ghi `locations.manage` | Không tạo/sửa loại `SITE` ở đây |
 
-Ngừng dùng / dùng lại = `PATCH { status: "ARCHIVED" | "ACTIVE" }`, để một route giữ mọi quy tắc trạng thái. Mọi route bọc `withAuth`; test quét hiện có tự kiểm.
+Ngừng dùng / dùng lại = `PATCH { status: "ARCHIVED" | "ACTIVE" }`, để một route giữ mọi quy tắc trạng thái.
+
+**Khóa dòng** (bổ sung sau review code PR #28): mọi lệnh sửa đọc lại bản ghi **trong** transaction bằng `SELECT … FOR UPDATE` rồi mới kiểm tra và ghi (vật tư, bộ, nhà thầu, nhà cung cấp, công trình), nên hai người sửa cùng lúc không ghi đè nhau. Tạo/sửa bộ giữ `FOR SHARE` các dòng vật tư linh kiện; tạo/dùng lại công trình giữ `FOR SHARE` dòng nhà thầu. Vì vậy "ngừng dùng vật tư" và "thêm vật tư đó vào bộ" (hay "ngừng dùng nhà thầu" và "tạo công trình cho họ") chạy lần lượt, việc sau thấy kết quả việc trước. Có integration test chạy đồng thời (`concurrency.int.test.ts`). Mọi route bọc `withAuth`; test quét hiện có tự kiểm.
 
 ### D13. Giao diện
 
 - `/catalog` chuyển sang `/catalog/items`. Đầu D9 và D16 có hai liên kết "Vật tư" / "Đối tác & công trình" để qua lại.
-- **D9** (`/catalog/items`, `/catalog/kits`, `/catalog/groups`): tab "Vật tư · 48 / Bộ · 6 / Nhóm hàng · 5" như thiết kế; bảng `DataTable`; ô tìm và chọn nhóm cập nhật URL (`?q=`, `?group=`, `?status=archived`); chọn dòng (`?item=<code>`) hiện khung "Thuộc bộ" bên phải (màn hẹp xuống dưới bảng, như D17). "Thêm vật tư" / "Sửa" mở `Sheet` bên phải với form; trọng lượng dùng `QuantityInput` đơn vị kg; giá dùng ô tiền, giá tháng hiện ngay bên dưới. Trình sửa bộ: Dialog, mỗi dòng chọn vật tư (danh sách lọc) + `Stepper` số lượng, hiện tổng trọng lượng và giá thuê ngay khi sửa.
-- **D16** (`/catalog/partners?tab=customers|suppliers|sites|locations&id=…`): danh sách bên trái, chi tiết bên phải như thiết kế; "Sửa thông tin" mở Sheet; chi tiết nhà thầu có danh sách công trình và nút "Thêm công trình". Cột công nợ, hợp đồng: không hiện ở change này (Ngoài phạm vi).
+- **D9** (`/catalog/items`, `/catalog/kits`, `/catalog/groups`): tab "Vật tư · 48 / Bộ · 6 / Nhóm hàng · 5" như thiết kế; bảng `DataTable`; ô tìm và chọn nhóm cập nhật URL (`?q=`, `?group=`, `?status=archived`); chọn dòng (`?item=<code>`) hiện khung "Thuộc bộ". Bảng cần ~1.000px để đủ cột giá, nên khung "Thuộc bộ" nằm **dưới** bảng khi màn dưới 1700px, bên phải khi rộng hơn; Sửa / Ngừng dùng / Xóa ở **menu cuối mỗi dòng** như D17 (sửa theo review code PR #28). "Thêm vật tư" / "Sửa" mở `Sheet` bên phải với form; trọng lượng dùng `QuantityInput` đơn vị kg; giá dùng ô tiền, giá tháng hiện ngay bên dưới. Trình sửa bộ: Dialog, mỗi dòng chọn vật tư (danh sách lọc) + `Stepper` số lượng, hiện tổng trọng lượng và giá thuê ngay khi sửa.
+- **D16** (`/catalog/partners?tab=customers|suppliers|sites|locations&id=…`): danh sách bên trái, chi tiết bên phải như thiết kế; không có `?id=` thì mở sẵn dòng đầu; "Sửa thông tin" mở Sheet; chi tiết nhà thầu có danh sách công trình và nút "Thêm công trình". Cột công nợ, hợp đồng: không hiện ở change này (Ngoài phạm vi).
 - Vai trò chỉ xem (Kế toán ở D9; Kế toán/Kinh doanh ở tab bãi xưởng) không thấy nút ghi.
 - Xóa / ngừng dùng có hộp xác nhận; lỗi 409 hiện bằng chữ của server.
 - Trang dùng `requirePermission("catalog.view")`; nằm trong layout `(desktop)` đã có `instant = false`.

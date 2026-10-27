@@ -70,8 +70,8 @@ Nhà cung cấp SHALL có: loại (công ty / cá nhân), tên (bắt buộc), �
 - **WHEN** nhập CCCD `0012030123`
 - **THEN** hệ thống từ chối với "Số CCCD gồm 12 chữ số"
 
-### Requirement: Che số CCCD
-Số CCCD là dữ liệu cá nhân. Danh sách và màn chi tiết D16 SHALL chỉ hiện 4 số cuối dạng `•••• •••• 0123`. API đọc dùng chung (mọi vai trò) SHALL không trả số đầy đủ. Số đầy đủ SHALL chỉ có trong dữ liệu form sửa, cho người có quyền sửa đối tác (`DIRECTOR`, `SALES`, `ACCOUNTANT`).
+### Requirement: Che số CCCD và số tài khoản
+Số CCCD và số tài khoản ngân hàng là dữ liệu cá nhân. Danh sách và màn chi tiết D16 SHALL chỉ hiện 4 số cuối (`•••• •••• 0123` cho CCCD, `•••• 5678` cho tài khoản). API đọc dùng chung (mọi vai trò) SHALL không trả số đầy đủ. Số đầy đủ SHALL chỉ có trong dữ liệu form sửa, cho người có quyền sửa đối tác (`DIRECTOR`, `SALES`, `ACCOUNTANT`).
 
 #### Scenario: Xem chi tiết người bán
 - **WHEN** Kinh doanh xem nhà cung cấp cá nhân có CCCD `001203012345` ở D16
@@ -89,12 +89,20 @@ Số CCCD là dữ liệu cá nhân. Danh sách và màn chi tiết D16 SHALL ch
 - **WHEN** `vantung` (Thủ kho) gọi `GET /api/catalog/suppliers/{id}/edit`
 - **THEN** API trả 403
 
+#### Scenario: Số tài khoản cũng bị che
+- **WHEN** người bán có tài khoản `0451000312345678` tại Vietcombank và `vantung` (Thủ kho) gọi `GET /api/catalog/suppliers`
+- **THEN** phản hồi có `•••• 5678` **AND** chuỗi `0451000312345678` không xuất hiện; form sửa của Kế toán vẫn điền số đầy đủ
+
 #### Scenario: Không có CCCD
 - **WHEN** nhà cung cấp không có CCCD
 - **THEN** danh sách và chi tiết không hiện dòng CCCD
 
 ### Requirement: Danh sách đối tác D16
 D16 SHALL có tab Nhà thầu và Nhà cung cấp, mỗi tab kèm số lượng đang dùng; danh sách bên trái tìm được theo tên, mã, điện thoại hoặc MST (không phân biệt dấu); chọn một đối tác thì bên phải hiện chi tiết. Tab đang chọn, từ khóa và đối tác đang chọn SHALL nằm trên URL. Nhà thầu SHALL hiện số công trình đang dùng.
+
+#### Scenario: Mở D16 lần đầu
+- **WHEN** người dùng mở `/catalog/partners` không kèm `?id=`
+- **THEN** bên phải hiện sẵn chi tiết nhà thầu đầu danh sách và dòng đó được đánh dấu đang chọn
 
 #### Scenario: Chọn nhà thầu
 - **WHEN** người dùng chọn "Cty TNHH Xây dựng Minh Phát" (3 công trình)
