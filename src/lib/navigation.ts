@@ -1,3 +1,4 @@
+import { can, type Permission } from "@/domain/permissions";
 import type { Role } from "@/domain/role";
 
 /** Icon names from lucide-react; the sidebar maps them to components. */
@@ -16,57 +17,70 @@ export interface NavItem {
   href: string;
   label: string;
   icon: NavIcon;
-  roles: readonly Role[];
+  permission: Permission;
 }
 
-const OFFICE: readonly Role[] = ["DIRECTOR", "ACCOUNTANT", "SALES"];
-
 /**
- * Desktop menu (design D3). Hiding an item only tidies the UI; permissions
- * are enforced on the server from auth-and-roles onwards.
+ * Desktop menu (design D3). Who sees an item comes from the permission table;
+ * hiding it only tidies the UI, the page checks the same permission.
  */
 export const NAV_ITEMS: readonly NavItem[] = [
   {
     href: "/dashboard",
     label: "Tổng quan",
     icon: "layout-dashboard",
-    roles: OFFICE,
+    permission: "dashboard.view",
   },
   {
     href: "/purchasing",
     label: "Thu mua",
     icon: "shopping-cart",
-    roles: OFFICE,
+    permission: "purchasing.view",
   },
-  { href: "/inventory", label: "Kho", icon: "warehouse", roles: OFFICE },
-  { href: "/repairs", label: "Sửa chữa", icon: "wrench", roles: OFFICE },
+  {
+    href: "/inventory",
+    label: "Kho",
+    icon: "warehouse",
+    permission: "inventory.view",
+  },
+  {
+    href: "/repairs",
+    label: "Sửa chữa",
+    icon: "wrench",
+    permission: "repairs.view",
+  },
   {
     href: "/sales",
     label: "Bán & Thuê",
     icon: "file-signature",
-    roles: OFFICE,
+    permission: "sales.view",
   },
   {
     href: "/receivables",
     label: "Công nợ",
     icon: "wallet",
-    roles: ["DIRECTOR", "ACCOUNTANT"],
+    permission: "receivables.view",
   },
   {
     href: "/reports",
     label: "Báo cáo",
     icon: "chart-column",
-    roles: ["DIRECTOR"],
+    permission: "reports.view",
   },
-  { href: "/catalog", label: "Danh mục", icon: "list", roles: OFFICE },
+  {
+    href: "/catalog",
+    label: "Danh mục",
+    icon: "list",
+    permission: "catalog.view",
+  },
   {
     href: "/settings",
     label: "Cài đặt",
     icon: "settings",
-    roles: ["DIRECTOR"],
+    permission: "settings.view",
   },
 ];
 
 export function navItemsForRole(role: Role): readonly NavItem[] {
-  return NAV_ITEMS.filter((item) => item.roles.includes(role));
+  return NAV_ITEMS.filter((item) => can(role, item.permission));
 }
