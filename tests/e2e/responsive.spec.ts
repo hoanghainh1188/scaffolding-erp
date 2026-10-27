@@ -13,6 +13,8 @@ const WIDTHS = [360, 375, 768, 1024, 1280, 1366] as const;
 const PAGES = [
   { path: "/dashboard", ready: DESKTOP_READY },
   { path: "/inventory", ready: DESKTOP_READY },
+  { path: "/settings/users", ready: DESKTOP_READY },
+  { path: "/change-password", ready: null },
   { path: "/m", ready: MOBILE_READY },
   { path: "/m/history", ready: MOBILE_READY },
   { path: "/dev/components", ready: null },

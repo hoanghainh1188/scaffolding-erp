@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
-// Applied to every response. CSP needs a per-request nonce and is added with
-// the middleware in the auth-and-roles change.
+// Applied to every response. CSP needs a per-request nonce, which makes every
+// page render per request; it gets its own change (security-headers).
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -17,6 +17,14 @@ const nextConfig: NextConfig = {
   // Playwright runs on `next dev` (design D15); hide the dev indicator there.
   devIndicators: process.env.E2E === "1" ? false : undefined,
   cacheComponents: true,
+  experimental: {
+    // forbidden() renders src/app/forbidden.tsx for a role without access.
+    authInterrupts: true,
+    // Every screen waits for the session check (auth-and-roles design D7),
+    // so none can be an instant navigation. Validate only segments that
+    // opt in with `export const instant = true`.
+    instantInsights: { validationLevel: "manual-warning" },
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {

@@ -26,9 +26,16 @@ test.describe("accessibility", () => {
     page,
   }, testInfo) => {
     test.skip(!runOnlyIn(testInfo, "desktop-1280"), "desktop pages");
-    for (const path of ["/dashboard", "/dev/components"]) {
+    for (const path of [
+      "/dashboard",
+      "/settings/users",
+      "/change-password",
+      "/dev/components",
+    ]) {
       await page.goto(path);
-      if (path === "/dashboard") await waitForHydration(page, DESKTOP_READY);
+      if (path === "/dashboard" || path === "/settings/users") {
+        await waitForHydration(page, DESKTOP_READY);
+      }
       await page.evaluate(() => document.fonts.ready);
       expect(await seriousViolations(page), path).toEqual([]);
     }
@@ -38,10 +45,26 @@ test.describe("accessibility", () => {
     page,
   }, testInfo) => {
     test.skip(!runOnlyIn(testInfo, "mobile-375"), "phone pages");
-    for (const path of ["/m", "/dev/components"]) {
+    for (const path of ["/m", "/m/profile", "/dev/components"]) {
       await page.goto(path);
       if (path === "/m") await waitForHydration(page, MOBILE_READY);
       expect(await seriousViolations(page), path).toEqual([]);
     }
+  });
+});
+
+test.describe("accessibility signed out", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("the sign-in page has no serious or critical issues", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !runOnlyIn(testInfo, "desktop-1280", "mobile-375"),
+      "one desktop and one phone width",
+    );
+    await page.goto("/login");
+    await page.evaluate(() => document.fonts.ready);
+    expect(await seriousViolations(page)).toEqual([]);
   });
 });
