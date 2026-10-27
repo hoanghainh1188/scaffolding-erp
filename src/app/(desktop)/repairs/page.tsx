@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 
 import { PlaceholderPage } from "@/components/shell/placeholder-page";
+import { requirePermission } from "@/lib/auth/guard";
 
 export const metadata: Metadata = { title: "Sửa chữa" };
 
-export default function Page() {
+export default async function Page() {
+  await requirePermission("repairs.view");
   return (
     <PlaceholderPage
       title="Sửa chữa"

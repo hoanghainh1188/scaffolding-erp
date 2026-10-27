@@ -1,7 +1,6 @@
 import { Bell, ChevronDown, Menu, Plus, Search } from "lucide-react";
 import Link from "next/link";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,13 +10,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ROLE_LABELS } from "@/domain/role";
 import type { CurrentUser } from "@/lib/current-user";
 
-function initials(name: string): string {
-  const words = name.trim().split(/\s+/);
-  return ((words.at(-2)?.[0] ?? "") + (words.at(-1)?.[0] ?? "")).toUpperCase();
-}
+import { UserMenu } from "../user-menu";
 
 const QUICK_CREATE = [
   { label: "Tạo hợp đồng", href: "/sales" },
@@ -78,19 +73,7 @@ export function TopHeader({ user }: { user: CurrentUser }) {
           <Bell aria-hidden className="size-5" />
         </Button>
 
-        <div className="flex min-w-0 items-center gap-3 pl-1">
-          <Avatar className="size-10">
-            <AvatarFallback className="bg-accent text-label text-accent-foreground">
-              {initials(user.name)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="hidden min-w-0 flex-col sm:flex">
-            <span className="truncate text-label">{user.name}</span>
-            <span className="truncate text-caption text-muted-foreground">
-              {ROLE_LABELS[user.role]}
-            </span>
-          </div>
-        </div>
+        <UserMenu user={user} />
       </div>
     </header>
   );
