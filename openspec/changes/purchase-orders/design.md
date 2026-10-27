@@ -392,8 +392,8 @@ Thêm vào `src/domain/permissions.ts`:
   - một đơn đặt hôm nay.
   - Chưa có đơn "Đang nhận" hay "Đã nhập" vì cần phiếu nhập. `goods-receipt` thêm sau.
 - E2E:
-  - Đơn tạo trong test dùng nhà cung cấp cố định `E2E NCC` (tạo một lần ở `global-setup.ts`).
-  - `global-setup.ts` xóa mọi đơn của nhà cung cấp này trước khi chạy. Đơn không thuộc sổ kho nên xóa được; `goods-receipt` sẽ phải đổi chỗ này khi đơn có phiếu nhập.
+  - Đơn tạo trong test có ghi chú `E2E thử`, nhà cung cấp mẫu Hòa Phát. Không tạo nhà cung cấp riêng: ảnh mốc D16 đếm số nhà cung cấp.
+  - `global-setup.ts` xóa mọi đơn có ghi chú đó trước khi chạy. Đơn không thuộc sổ kho nên xóa được; `goods-receipt` sẽ phải đổi chỗ này khi đơn có phiếu nhập.
   - Ảnh mốc D2 lọc `?q=` theo nhà cung cấp mẫu để không đổi theo số đơn E2E. Che ô mã đơn và lời nhắc xe về.
 
 ## Risks / Trade-offs

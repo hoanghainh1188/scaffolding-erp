@@ -145,7 +145,7 @@
 
 ## 6. E2E, ảnh mốc, tài liệu
 
-- [x] 6.1 Dữ liệu E2E theo design D13: nhà cung cấp cố định `E2E NCC`; `global-setup.ts` xóa đơn của nhà cung cấp này trước mỗi lần chạy — kiểm tra: chạy `npm run test:e2e` hai lần liền đều xanh
+- [x] 6.1 Dữ liệu E2E theo design D13: đơn E2E ghi chú `E2E thử` (nhà cung cấp mẫu Hòa Phát); `global-setup.ts` xóa các đơn đó trước mỗi lần chạy — kiểm tra: chạy `npm run test:e2e` hai lần liền đều xanh
 - [x] 6.2 E2E `tests/e2e/purchasing.spec.ts`:
   - Kinh doanh tạo đơn 2 dòng (một dòng theo kg) + 2 khoản chi phí; thấy giá nhập xem trước;
   - "Lưu đơn" mở D3b "Chờ xe về"; D2 tab "Chờ xe về" có đơn;

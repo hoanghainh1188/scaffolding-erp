@@ -1,5 +1,6 @@
-// D2, D3, D3b flows (purchase-orders task 6.2). Orders go to the supplier
-// E2E NCC; global setup deletes them before each run (design D13).
+// D2, D3, D3b flows (purchase-orders task 6.2). Orders carry the note
+// "E2E thử"; global setup deletes them before each run (design D13). They
+// go to Hòa Phát, so the D2 screenshot (Chú Ba only) never shows them.
 import { expect, test, type Page } from "@playwright/test";
 
 import { statePath } from "./auth-helpers";
@@ -42,10 +43,11 @@ async function newOrder(page: Page) {
   await open(page, "/purchasing/orders/new");
   const supplier = page.getByLabel("Nhà cung cấp / cai thầu");
   const value = await supplier
-    .locator("option", { hasText: "E2E NCC" })
+    .locator("option", { hasText: "Thép Hòa Phát" })
     .getAttribute("value");
   await supplier.selectOption(value ?? "");
   await page.getByLabel("Ngày dự kiến nhập").fill("2030-01-15");
+  await page.getByLabel("Ghi chú").fill("E2E thử");
   const frames = await fillLine(page, 1, {
     item: "GG-K17 · Khung giàn giáo 1,7m",
     quantity: "200",
@@ -87,7 +89,7 @@ test.describe("as Kinh doanh", () => {
       page.getByText("Chờ xe về").filter({ visible: true }).first(),
     ).toBeVisible();
 
-    await open(page, "/purchasing?tab=waiting&q=e2e");
+    await open(page, `/purchasing?tab=waiting&q=${code.toLowerCase()}`);
     await expect(page.getByRole("link", { name: code })).toBeVisible();
 
     await open(page, `/purchasing/orders/${code}/edit`);
