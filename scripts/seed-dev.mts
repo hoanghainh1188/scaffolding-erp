@@ -5,6 +5,7 @@ import { createDatabase } from "@/db/client";
 import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
 import { seedCatalog } from "@/lib/catalog/seed";
+import { seedInventory } from "@/lib/inventory/sample";
 import { DEV_ACCOUNTS, seedAccounts } from "@/lib/users/seed";
 
 async function main(): Promise<number> {
@@ -37,6 +38,9 @@ async function main(): Promise<number> {
     });
     const catalogRows = director ? await seedCatalog(handle.db, director) : 0;
     process.stdout.write(`Danh mục mẫu: thêm ${catalogRows} bản ghi.\n`);
+    // Sample stock: the worked example of inventory-ledger design D11.
+    const ledgerRows = director ? await seedInventory(handle.db, director) : 0;
+    process.stdout.write(`Sổ kho mẫu: thêm ${ledgerRows} dòng.\n`);
     process.stdout.write(
       created.length > 0
         ? `Đã tạo ${created.length} tài khoản: ${created.join(", ")}.\n`
