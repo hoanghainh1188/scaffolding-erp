@@ -50,7 +50,7 @@ test.describe("visual baselines @visual", () => {
         await expect(page).toHaveScreenshot(`${name}-${width}.png`, {
           fullPage: true,
           mask: [
-            page.getByText(/^Tính từ sổ kho · cập nhật/),
+            page.locator("[data-clock]"),
             page.getByRole("row").filter({ hasText: "E2E-KHO" }),
           ],
           animations: "disabled",
