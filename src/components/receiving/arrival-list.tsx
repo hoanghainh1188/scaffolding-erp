@@ -21,7 +21,11 @@ const KIND_SHORT = { NEW: "hàng mới", USED: "hàng cũ" } as const;
 export function ArrivalList({ cards, later, userId }: ArrivalListProps) {
   const drafts = useDrafts(userId) ?? [];
   return (
-    <section aria-labelledby="arrivals-title" className="flex flex-col gap-3">
+    <section
+      aria-labelledby="arrivals-title"
+      data-mask
+      className="flex flex-col gap-3"
+    >
       <h2 id="arrivals-title" className="text-h3">
         Xe sắp về bãi
       </h2>

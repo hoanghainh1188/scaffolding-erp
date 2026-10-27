@@ -35,7 +35,7 @@ export function HistoryList({
     <div className="flex flex-col gap-6">
       <DraftList userId={userId} drafts={drafts ?? []} now={new Date(now)} />
       {days.map((day) => (
-        <section key={day.date} className="flex flex-col gap-2">
+        <section key={day.date} data-mask className="flex flex-col gap-2">
           <h2 className="text-label text-muted-foreground">
             {dayLabels[day.date]}
           </h2>

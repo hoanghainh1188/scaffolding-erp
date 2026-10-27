@@ -40,7 +40,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const day = weekday.format(now);
   return (
     <MobilePage title="Việc hôm nay">
-      <section className="flex flex-col gap-1">
+      <section data-mask className="flex flex-col gap-1">
         <p className="text-label text-muted-foreground">
           {day.charAt(0).toUpperCase() + day.slice(1)},{" "}
           {formatBusinessDate(today)}
