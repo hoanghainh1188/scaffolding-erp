@@ -22,8 +22,10 @@ const PAGES = [
     name: "d9-items",
     ready: DESKTOP_READY,
   },
+  // D16: one sample customer, and the tab counts masked, so customers,
+  // suppliers or sites other tests add never change the image.
   {
-    path: "/catalog/partners?tab=customers",
+    path: "/catalog/partners?tab=customers&q=minh+phat",
     name: "d16-partners",
     ready: DESKTOP_READY,
   },

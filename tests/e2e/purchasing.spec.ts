@@ -173,6 +173,41 @@ test.describe("as Kế toán", () => {
   });
 });
 
+test("D3 at 1366px shows every column of the lines with room to spare", async ({
+  page,
+}, testInfo) => {
+  test.skip(!runOnlyIn(testInfo, "desktop-1366"), "the 1366px screen");
+  await open(
+    page,
+    `/purchasing/orders/PO-${new Date().getFullYear()}-001/edit`,
+  );
+  const table = page
+    .getByRole("region", { name: "Hàng hóa" })
+    .getByRole("table");
+  for (const name of ["Chi phí phân bổ", "Giá nhập / đơn vị"]) {
+    await expect(page.getByRole("columnheader", { name })).toBeInViewport({
+      ratio: 1,
+    });
+  }
+  const frame = await table.evaluate((element) => {
+    const parent = element.parentElement as HTMLElement;
+    return { content: parent.scrollWidth, shown: parent.clientWidth };
+  });
+  expect(frame.content).toBeLessThanOrEqual(frame.shown);
+  // Fonts differ by a pixel or two between macOS and the Linux CI.
+  const narrowest = await table.evaluate((element) => {
+    const min = element.style.minWidth;
+    element.style.minWidth = "0";
+    element.style.width = "min-content";
+    const width = element.scrollWidth;
+    element.style.width = "";
+    element.style.minWidth = min;
+    return width;
+  });
+  expect(narrowest).toBeLessThanOrEqual(frame.shown - 24);
+  await expectNoHorizontalScroll(page);
+});
+
 test("D2 and D3 at 1366px do not scroll sideways", async ({
   page,
 }, testInfo) => {
