@@ -176,7 +176,7 @@ Mọi trang và API SHALL yêu cầu phiên đăng nhập hợp lệ, trừ `/lo
 - **THEN** hệ thống chuyển tới `/dashboard`
 
 ### Requirement: Bảng quyền theo vai trò
-Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền tới các vai trò được phép. Ở change này: xem Tổng quan, Thu mua, Kho, Sửa chữa, Bán & Thuê, Danh mục — Giám đốc, Kế toán, Kinh doanh; xem Công nợ — Giám đốc, Kế toán; xem Báo cáo, vào Cài đặt, quản lý người dùng — chỉ Giám đốc. Menu Desktop và kiểm tra quyền ở server SHALL cùng đọc bảng này.
+Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền tới các vai trò được phép. Xem Tổng quan, Thu mua, Kho, Sửa chữa, Bán & Thuê, Danh mục — Giám đốc, Kế toán, Kinh doanh; xem Công nợ — Giám đốc, Kế toán; xem Báo cáo, Cài đặt, quản lý người dùng — Giám đốc. Đọc danh mục qua API — mọi vai trò; sửa vật tư, bộ, nhóm — Giám đốc, Kinh doanh; sửa đối tác, công trình — Giám đốc, Kinh doanh, Kế toán; sửa bãi, xưởng — Giám đốc. Menu và server SHALL cùng đọc bảng này.
 
 #### Scenario: Menu và server khớp nhau
 - **WHEN** vai trò `ACCOUNTANT` không có quyền vào Cài đặt trong bảng quyền
@@ -185,6 +185,14 @@ Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền t
 #### Scenario: Thêm quyền mới
 - **WHEN** một change sau thêm quyền "duyệt hợp đồng" chỉ cho `DIRECTOR` vào bảng quyền
 - **THEN** cả nút trên giao diện lẫn API duyệt đều dùng quyền đó, không khai báo vai trò ở chỗ khác
+
+#### Scenario: Quyền danh mục theo vai trò
+- **WHEN** đọc bảng quyền cho các quyền danh mục
+- **THEN** `catalog.read` cho cả 5 vai trò; `items.manage` cho `DIRECTOR`, `SALES`; `partners.manage` cho `DIRECTOR`, `SALES`, `ACCOUNTANT`; `locations.manage` chỉ cho `DIRECTOR`
+
+#### Scenario: Kế toán xem Danh mục nhưng không sửa vật tư
+- **WHEN** `thuha` (Kế toán) mở `/catalog/items` rồi gửi `POST /api/catalog/items`
+- **THEN** trang mở được **AND** API trả 403
 
 ### Requirement: Từ chối thao tác sai vai trò ở server
 Mỗi API và trang có giới hạn vai trò SHALL kiểm tra quyền ở server theo bảng quyền, độc lập với việc ẩn nút trên giao diện. API sai vai trò SHALL trả 403 với "Bạn không có quyền thực hiện thao tác này" và không thay đổi dữ liệu. Trang sai vai trò SHALL hiện trang 403 "Bạn không có quyền xem trang này" kèm nút về trang mặc định.
