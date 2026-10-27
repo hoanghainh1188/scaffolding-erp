@@ -13,6 +13,8 @@ import {
 const WIDTHS = [360, 375, 768, 1024, 1280, 1366] as const;
 /** The D3 sample order: the first order of a fresh database (D13). */
 const SAMPLE_ORDER = `PO-${new Date().getFullYear()}-001`;
+/** The receiving sample (goods-receipt D14): after the five D13 orders. */
+const RECEIVING_ORDER = `PO-${new Date().getFullYear()}-006`;
 const PAGES = [
   { path: "/dashboard", name: "dashboard", ready: DESKTOP_READY },
   { path: "/m", name: "mobile-home", ready: MOBILE_READY },
@@ -51,6 +53,31 @@ const PAGES = [
     name: "d3b-order",
     ready: DESKTOP_READY,
   },
+  // goods-receipt design D14: the sample order receiving in two trips is
+  // the sixth order of a fresh database. Dates, clock and lists other
+  // tests feed (arrivals, receipts by day) are masked.
+  {
+    path: `/purchasing/orders/${RECEIVING_ORDER}`,
+    name: "d3b-receiving",
+    ready: DESKTOP_READY,
+  },
+  {
+    path: "/settings/scrap-price",
+    name: "scrap-price",
+    ready: DESKTOP_READY,
+  },
+  { path: "/m/scan", name: "m2-scan", ready: MOBILE_READY },
+  {
+    path: `/m/receive/${RECEIVING_ORDER}`,
+    name: "m3-receive",
+    ready: MOBILE_READY,
+  },
+  // M7 before any receipt: the list other tests feed is not in the image.
+  {
+    path: "/m/history?before=2000-01-01",
+    name: "m7-history",
+    ready: MOBILE_READY,
+  },
 ] as const;
 
 test.describe("visual baselines @visual", () => {
@@ -64,6 +91,10 @@ test.describe("visual baselines @visual", () => {
         await page.setViewportSize({ width, height: 900 });
         await page.goto(path);
         if (ready !== "main") await waitForHydration(page, ready);
+        // Next's dev issue badge comes and goes with unrelated dev warnings.
+        await page.addStyleTag({
+          content: "nextjs-portal { display: none !important; }",
+        });
         await page.evaluate(() => document.fonts.ready);
         await expect(page).toHaveScreenshot(`${name}-${width}.png`, {
           fullPage: true,

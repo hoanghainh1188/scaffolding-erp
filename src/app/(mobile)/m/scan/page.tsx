@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 
+import { ScanScreen } from "@/components/scan/scan-screen";
 import { MobilePage } from "@/components/shell/mobile/mobile-page";
-import { requireUser } from "@/lib/auth/guard";
-import { UnderConstruction } from "@/components/shell/placeholder-page";
+import { can } from "@/domain/permissions";
+import { requirePermission } from "@/lib/auth/guard";
 
 export const metadata: Metadata = { title: "Quét mã" };
 
+/** M2 (spec item-scan "Màn quét mã M2"). */
 export default async function Page() {
-  await requireUser();
+  const user = await requirePermission("stock.lookup");
   return (
     <MobilePage title="Quét mã">
-      <UnderConstruction description="M2: quét mã QR trên hàng hoặc chọn thủ công." />
+      <ScanScreen canViewCard={can(user.role, "inventory.view")} />
     </MobilePage>
   );
 }

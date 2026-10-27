@@ -7,6 +7,7 @@ import { getEnv } from "@/lib/env";
 import { seedCatalog } from "@/lib/catalog/seed";
 import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
+import { seedReceiving } from "@/lib/receiving/sample";
 import { DEV_ACCOUNTS, seedAccounts } from "@/lib/users/seed";
 
 async function main(): Promise<number> {
@@ -45,6 +46,16 @@ async function main(): Promise<number> {
     // Sample orders: the D3 order of purchase-orders design D3 and others.
     const orders = director ? await seedPurchasing(handle.db, director) : 0;
     process.stdout.write(`Đơn thu mua mẫu: thêm ${orders} đơn.\n`);
+    // Sample receipts: an order receiving like D3b (goods-receipt D14).
+    const warehouse = await handle.db.query.user.findFirst({
+      where: (row, { eq }) => eq(row.username, "thukho"),
+      columns: { id: true },
+    });
+    const receipts =
+      director && warehouse
+        ? await seedReceiving(handle.db, { director, warehouse })
+        : 0;
+    process.stdout.write(`Phiếu nhập mẫu: thêm ${receipts} phiếu.\n`);
     process.stdout.write(
       created.length > 0
         ? `Đã tạo ${created.length} tài khoản: ${created.join(", ")}.\n`

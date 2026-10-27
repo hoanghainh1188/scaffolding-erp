@@ -23,10 +23,12 @@
     "db:seed:dev": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/seed-dev.mts",
     "auth:create-director": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/create-director.mts",
     "inventory:check": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/inventory-check.mts",
-    "tokens": "node scripts/build-tokens.mts"
+    "tokens": "node scripts/build-tokens.mts",
+    "postinstall": "node scripts/copy-zxing-wasm.mts"
   },
   "dependencies": {
     "@tanstack/react-table": "8.21.3",
+    "barcode-detector": "3.2.3",
     "better-auth": "1.7.14",
     "class-variance-authority": "0.7.1",
     "cn": "0.5.0",

@@ -43,7 +43,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         <div className="flex flex-col gap-1">
           <h1 className="text-h1">Đơn thu mua</h1>
           {list.arrivingToday > 0 ? (
-            <p data-mask className="text-sm text-muted-foreground">
+            <p data-mask className="w-64 text-sm text-muted-foreground">
               Hôm nay có{" "}
               <strong className="text-foreground">
                 {list.arrivingToday} xe

@@ -39,6 +39,12 @@ export const PERMISSIONS = {
   // purchase-orders design D12: sales buys, the director oversees; the
   // accountant pays sellers and reads orders through purchasing.view.
   "purchasing.manage": ["DIRECTOR", "SALES"],
+  // goods-receipt design D13: the storekeeper receives on the phone; the
+  // director may stand in. Office roles read receipts through purchasing.view.
+  "receiving.manage": ["DIRECTOR", "WAREHOUSE"],
+  // M2 shows stock quantities (no cost) to anyone holding a phone.
+  "stock.lookup": EVERYONE,
+  "scrap-price.manage": ["DIRECTOR"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;
