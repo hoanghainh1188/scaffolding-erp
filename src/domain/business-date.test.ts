@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatBusinessDate,
+  monthRange,
   formatDateTime,
   isBusinessDate,
   toBusinessDate,
@@ -46,5 +47,18 @@ describe("formatting", () => {
     expect(isBusinessDate("2026-02-30")).toBe(false);
     expect(isBusinessDate("27/10/2026")).toBe(false);
     expect(() => formatBusinessDate("2026-13-01")).toThrow("Ngày không hợp lệ");
+  });
+});
+
+describe("monthRange", () => {
+  it("gives the first and last day of the month", () => {
+    expect(monthRange("2026-10-27" as never)).toEqual({
+      from: "2026-10-01",
+      to: "2026-10-31",
+    });
+    expect(monthRange("2028-02-10" as never)).toEqual({
+      from: "2028-02-01",
+      to: "2028-02-29",
+    });
   });
 });
