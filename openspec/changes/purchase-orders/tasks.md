@@ -156,7 +156,7 @@
   - D2, D3 ở 1366px không cuộn ngang.
 
   Kiểm tra: `npm run test:e2e` xanh ở local
-- [ ] 6.3 Thêm `/purchasing`, `/purchasing/orders/new`, `/purchasing/orders/<mã mẫu>` vào `responsive.spec.ts` và `a11y.spec.ts`; thêm D2, D3, D3b vào `visual.spec.ts` (D2 lọc theo nhà cung cấp mẫu; che lời nhắc xe về, ngày lập và lịch sử bằng `[data-mask]`) — kiểm tra: CI xanh sau workflow Update Playwright snapshots
+- [x] 6.3 Thêm `/purchasing`, `/purchasing/orders/new`, `/purchasing/orders/<mã mẫu>` vào `responsive.spec.ts` và `a11y.spec.ts`; thêm D2, D3, D3b vào `visual.spec.ts` (D2 lọc theo nhà cung cấp mẫu; che lời nhắc xe về, ngày lập và lịch sử bằng `[data-mask]`) — kiểm tra: CI xanh sau workflow Update Playwright snapshots
 - [x] 6.4 Cập nhật `CLAUDE.md`:
   - Đơn thu mua không ghi sổ kho.
   - Chia chi phí dùng `src/domain/landed-cost.ts` (phần dư lớn nhất, tổng khớp từng đồng).
