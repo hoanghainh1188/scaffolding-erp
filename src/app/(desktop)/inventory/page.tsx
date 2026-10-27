@@ -42,7 +42,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-h1">Tồn kho</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground tabular-nums">
             Tính từ sổ kho · cập nhật {updatedAt}
           </p>
         </div>
