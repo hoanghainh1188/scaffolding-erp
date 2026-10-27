@@ -84,7 +84,7 @@ test.describe("desktop shell when printing", () => {
     await expect(page.locator("[data-slot=sidebar]")).toBeHidden();
     await expect(page.locator("header")).toBeHidden();
     await expect(
-      page.getByRole("heading", { level: 1, name: "Kho" }),
+      page.getByRole("heading", { level: 1, name: "Tồn kho" }),
     ).toBeVisible();
   });
 });

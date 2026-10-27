@@ -7,7 +7,7 @@ import { createTestContext } from "@/test/auth";
 import { setupInventoryFixture, type InventoryFixture } from "@/test/inventory";
 
 import { postMovements } from "./post";
-import { getItemSites, getStockOverview } from "./stock";
+import { getItemSites, getSiteBreakdown, getStockOverview } from "./stock";
 
 const ctx = createTestContext();
 afterAll(ctx.close);
@@ -154,5 +154,13 @@ describe("getItemSites", () => {
       ].sort(),
     );
     expect(await getItemSites(ctx.db, fx.item("OT-06"))).toEqual([]);
+  });
+
+  it("gives the same lists for every item at once", async () => {
+    const all = await getSiteBreakdown(ctx.db);
+    expect(all.get(fx.item("GG-K17"))).toEqual(
+      await getItemSites(ctx.db, fx.item("GG-K17")),
+    );
+    expect(all.has(fx.item("OT-06"))).toBe(false);
   });
 });

@@ -34,10 +34,10 @@
 
 ## 5. Giao diện
 
-- [ ] 5.1 D10 `src/app/(desktop)/inventory/page.tsx` + `src/components/inventory/stock-table.tsx`, `stock-cards.tsx` theo `D10-Stock.dc.html` (token thay hex; tìm/lọc nhóm/"Hiện giá trị" trên URL; số là liên kết tới thẻ kho; popover từng công trình; thẻ phế liệu theo design D9; lời nhắc khi chưa có tồn; nút "Phiếu điều chỉnh", "Lập phiếu điều chỉnh" theo quyền) — kiểm tra: component test dòng `GG-K17`, thẻ phế liệu "gồm 1.108,4 kg quy đổi từ 141 cái", liên kết `?condition=NEEDS_REPAIR&place=yard`, Kinh doanh không thấy nút lập
-- [ ] 5.2 D11 `src/app/(desktop)/inventory/items/[code]/page.tsx` + `src/components/inventory/stock-card-*.tsx` theo `D11-StockCard.dc.html` (bộ lọc trên URL, 4 số tóm tắt, thẻ giá BQ, bảng có dòng tồn đầu và dòng cộng, nhãn "Điều chỉnh", ẩn cột giá khi "Tất cả", phế liệu kèm "≈ 567 kg", hàng kg) — kiểm tra: component test tóm tắt 1.220 / +450 / −430 / 1.240, ẩn cột giá, "≈ 567 kg"; 404 mã không có
-- [ ] 5.3 Danh sách và chi tiết phiếu `src/app/(desktop)/inventory/adjustments/page.tsx`, `[id]/page.tsx` + Sheet lập/sửa phiếu điều chỉnh và tồn đầu kỳ (chọn mã, tình trạng, vị trí; kiểu dòng; lý do; mã chứng từ bị sửa) — kiểm tra: component test lỗi lý do trống hiện đúng chữ, chọn kiểu "Tình trạng" hiện ô "Sang tình trạng", nút duyệt chỉ hiện cho Giám đốc ở phiếu Chờ duyệt
-- [ ] 5.4 Bỏ trang giữ chỗ "Kho"; sidebar mục "Kho" mở D10 — kiểm tra: `npm run lint && npm run typecheck && npm test` xanh
+- [x] 5.1 D10 `src/app/(desktop)/inventory/page.tsx` + `src/components/inventory/stock-table.tsx`, `stock-cards.tsx` theo `D10-Stock.dc.html` (token thay hex; tìm/lọc nhóm/"Hiện giá trị" trên URL; số là liên kết tới thẻ kho; popover từng công trình; thẻ phế liệu theo design D9; lời nhắc khi chưa có tồn; nút "Phiếu điều chỉnh", "Lập phiếu điều chỉnh" theo quyền) — kiểm tra: component test dòng `GG-K17`, thẻ phế liệu "gồm 1.108,4 kg quy đổi từ 141 cái", liên kết `?condition=NEEDS_REPAIR&place=yard`, Kinh doanh không thấy nút lập
+- [x] 5.2 D11 `src/app/(desktop)/inventory/items/[code]/page.tsx` + `src/components/inventory/stock-card-*.tsx` theo `D11-StockCard.dc.html` (bộ lọc trên URL, 4 số tóm tắt, thẻ giá BQ, bảng có dòng tồn đầu và dòng cộng, nhãn "Điều chỉnh", ẩn cột giá khi "Tất cả", phế liệu kèm "≈ 567 kg", hàng kg) — kiểm tra: component test tóm tắt 1.220 / +450 / −430 / 1.240, ẩn cột giá, "≈ 567 kg"; 404 mã không có
+- [x] 5.3 Danh sách và chi tiết phiếu `src/app/(desktop)/inventory/adjustments/page.tsx`, `[id]/page.tsx` + Sheet lập/sửa phiếu điều chỉnh và tồn đầu kỳ (chọn mã, tình trạng, vị trí; kiểu dòng; lý do; mã chứng từ bị sửa) — kiểm tra: component test lỗi lý do trống hiện đúng chữ, chọn kiểu "Tình trạng" hiện ô "Sang tình trạng", nút duyệt chỉ hiện cho Giám đốc ở phiếu Chờ duyệt
+- [x] 5.4 Bỏ trang giữ chỗ "Kho"; sidebar mục "Kho" mở D10 — kiểm tra: `npm run lint && npm run typecheck && npm test` xanh
 
 ## 6. E2E, ảnh mốc, tài liệu
 

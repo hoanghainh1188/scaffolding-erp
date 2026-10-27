@@ -3,6 +3,7 @@
 import {
   and,
   asc,
+  desc,
   eq,
   gte,
   inArray,
@@ -48,6 +49,7 @@ export interface CardLine {
   id: number;
   date: string;
   documentType: string;
+  documentId: string | null;
   documentCode: string;
   description: string;
   /** Thousandths of the item's unit; one of in / out is 0. */
@@ -73,6 +75,8 @@ export interface StockCard {
   closing: number;
   /** Current average of the chosen condition; null for "Tất cả". */
   currentAvg: number | null;
+  /** Average at the start of the period (the "Tồn đầu kỳ" row). */
+  openingAvg: number | null;
   lines: CardLine[];
 }
 
@@ -138,6 +142,7 @@ export async function getStockCard(
       id: inventoryLedger.id,
       date: inventoryLedger.businessDate,
       documentType: inventoryLedger.documentType,
+      documentId: inventoryLedger.documentId,
       documentCode: inventoryLedger.documentCode,
       description: inventoryLedger.description,
       quantity: inventoryLedger.quantity,
@@ -168,6 +173,7 @@ export async function getStockCard(
       id: row.id,
       date: row.date,
       documentType: row.documentType,
+      documentId: row.documentId,
       documentCode: row.documentCode,
       description: row.description,
       in: Math.max(quantity, 0),
@@ -179,7 +185,22 @@ export async function getStockCard(
   });
 
   let currentAvg: number | null = null;
+  let openingAvg: number | null = null;
   if (filter.condition) {
+    // The average is per (item + condition), whatever the location filter.
+    const [last] = await db
+      .select({ avg: inventoryLedger.avgCostAfter })
+      .from(inventoryLedger)
+      .where(
+        and(
+          eq(inventoryLedger.itemId, found.id),
+          eq(inventoryLedger.condition, filter.condition),
+          lt(inventoryLedger.businessDate, filter.from),
+        ),
+      )
+      .orderBy(desc(inventoryLedger.id))
+      .limit(1);
+    openingAvg = last?.avg ?? null;
     const [cost] = await db
       .select({ avg: inventoryCost.avgCost })
       .from(inventoryCost)
@@ -200,6 +221,7 @@ export async function getStockCard(
     outflow,
     closing: balance,
     currentAvg,
+    openingAvg,
     lines,
   };
 }
