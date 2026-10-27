@@ -4,9 +4,9 @@
 
 ### Requirement: Chuyển trạng thái đơn thu mua
 Chỉ các lệnh sau SHALL hợp lệ; mọi lệnh khác SHALL bị từ chối và đơn giữ nguyên:
-- Đặt đơn: `DRAFT` → `IN_PROGRESS` (Kinh doanh, Giám đốc);
-- Hủy đơn: `IN_PROGRESS` chưa có chuyến nhập → `DONE` + `CANCELLED` (Kinh doanh, Giám đốc);
-- Đóng đơn: `IN_PROGRESS` đã có chuyến nhập → `DONE` + `CLOSED` (Kinh doanh, Giám đốc);
+- Đặt đơn: `DRAFT` → `IN_PROGRESS`;
+- Hủy đơn: `IN_PROGRESS` chưa có chuyến nhập → `DONE` + `CANCELLED`;
+- Đóng đơn: `IN_PROGRESS` đã có chuyến nhập → `DONE` + `CLOSED`;
 - Xác nhận phiếu nhập (`goods-receipt`, Thủ kho, Giám đốc), xét từng dòng đơn: mọi dòng nhận đủ → `DONE` + `RECEIVED`; còn dòng chờ giao bù → giữ `IN_PROGRESS`; còn dòng thiếu nhưng không dòng nào chờ → `DONE` + `CLOSED`.
 
 #### Scenario: Đặt đơn nháp
@@ -92,11 +92,9 @@ Mỗi đơn SHALL có lịch sử chỉ ghi thêm. Mỗi dòng gồm thời đi�
 Trang `/purchasing/orders/<mã>` SHALL hiện:
 - đầu trang: mã đơn, nhãn trạng thái, "nhà cung cấp · loại hàng · N chuyến đã nhập";
 - thông tin chung: nhà cung cấp, loại hàng, ngày dự kiến, phương tiện, người lập và ngày lập, ghi chú, lý do hủy/đóng nếu có;
-- bảng "Đặt và thực nhận" (cộng dồn mọi chuyến): Hàng (tên + mã), Đặt, Đã nhận kèm "đủ" / "thiếu N" / "Chờ giao bù", và nhãn "Nhận dư" kèm số dư (VD "cân dư 12,5 kg") khi đã nhận nhiều hơn số đặt, Đơn giá, Thành tiền theo số thực nhận, dòng cộng tiền hàng thực nhận;
+- bảng "Đặt và thực nhận" (cộng dồn mọi chuyến): Hàng (tên + mã), Đặt, Đã nhận kèm "đủ" / "thiếu N" / "Chờ giao bù" / "Nhận dư" và số dư, Đơn giá, Thành tiền theo số thực nhận, dòng cộng;
 - chi phí mua hàng dự kiến và cách chia;
 - lịch sử.
-
-Mã đơn không có SHALL trả trang 404.
 
 #### Scenario: Mã đơn không có
 - **WHEN** mở `/purchasing/orders/PO-2026-999`
@@ -108,16 +106,14 @@ Mã đơn không có SHALL trả trang 404.
 
 ### Requirement: Phần nhận hàng trên D3b
 D3b SHALL có:
-- "Các chuyến nhập": mỗi phiếu một khối (mã, "Đã ghi sổ", ngày giờ, xe, người nhập, số từng mã đã nhận, các khoản chi phí, "Chi phí chuyến này"), và khối "Chuyến tiếp theo" khi còn dòng chờ giao bù;
-- "Phải trả người bán" = tổng tiền hàng thực nhận, kèm "chưa chốt vì còn chờ giao bù" khi đơn còn đang nhận;
-- "So với đơn": tiền hàng dự kiến, thực nhận, chênh lệch từng dòng thiếu/dư, chi phí dự kiến, chi phí thực tế các chuyến;
+- "Các chuyến nhập": mỗi phiếu một khối (mã, "Đã ghi sổ", ngày giờ, xe, người nhập, số đã nhận, chi phí, "Chi phí chuyến này"), thêm khối "Chuyến tiếp theo" khi còn chờ giao bù;
+- "Phải trả người bán" = tiền hàng thực nhận, kèm "chưa chốt vì còn chờ giao bù" khi đơn còn chờ;
+- "So với đơn": tiền hàng và chi phí, dự kiến so với thực tế, kèm chênh lệch từng dòng thiếu/dư;
 - thanh "Còn chờ giao bù …" với nút "Đóng đơn, không chờ nữa" khi đơn đang nhận và còn dòng chờ.
-
-Đơn chưa có chuyến nhập: cột "Đã nhận" hiện "–", khối chuyến nhập hiện "Chưa có chuyến nhập. Thủ kho nhập hàng trên điện thoại khi xe về.", "Phải trả người bán" hiện 0 ₫.
 
 #### Scenario: Đơn chưa có chuyến nhập
 - **WHEN** mở D3b của `PO-2026-055` chưa có chuyến nhập
-- **THEN** cột "Đã nhận" của mọi dòng là "–" **AND** "Phải trả người bán" là "0 ₫"
+- **THEN** cột "Đã nhận" của mọi dòng là "–" **AND** khối chuyến nhập hiện "Chưa có chuyến nhập. Thủ kho nhập hàng trên điện thoại khi xe về." **AND** "Phải trả người bán" là "0 ₫"
 
 #### Scenario: Đơn đang chờ giao bù
 - **WHEN** mở D3b của `PO-2026-051` có `PN-2026-090` (chi phí 1.800.000 ₫) và `PN-2026-093` (chi phí 500.000 ₫), còn chờ giao bù 40 mâm, tiền hàng thực nhận 54.942.500 ₫
