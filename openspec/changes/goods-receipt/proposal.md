@@ -12,7 +12,7 @@
   - **M7** Lịch sử (`M7-History.dc.html`), phần phiếu nhập và phiếu nháp;
   - **D3b** Chi tiết đơn thu mua (`D3b-PurchaseOrderDetail.dc.html`), phần nhận hàng còn để trống;
   - **Cài đặt** (Desktop): màn mới "Giá sắt vụn tham khảo".
-- Quyết định đã chốt dùng: `docs/requirements.md` mục 0.2 số 2, 3, 7, 10, 11, 12, 13, 14, 24, 25, 26, 27, 28, và **#29 mới** (chốt khi review PR #41).
+- Quyết định đã chốt dùng: `docs/requirements.md` mục 0.2 số 2, 3, 7, 10, 11, 12, 13, 14, 24, 25, 26, 27, 28, và **#29, #30 mới** (chốt khi review PR #41).
 
 ## What Changes
 
@@ -33,6 +33,7 @@
 - **Chờ giao bù** (#12), theo từng dòng:
   - Dòng đếm thiếu: mặc định **không** chờ (dòng chốt theo số đã nhận); tích "Chờ giao bù phần thiếu" thì chờ.
   - Dòng "Chuyến này không có": mặc định **chờ chuyến sau**; bỏ tích nếu người bán không giao mã này nữa. (0.2 #29, chốt 27/10/2026.)
+- **Hỏi lại khi nhập bất thường** (0.2 #30): nhận vượt số đơn còn lại (dòng cái: dư bất kỳ; dòng kg: quá 10 %), hoặc chi phí chuyến lớn hơn chi phí dự kiến của cả đơn thì M3 hỏi lại; server tự kiểm lại và từ chối phiếu thiếu xác nhận; phần đã xác nhận ghi vào lịch sử đơn. Lý do: sổ kho chỉ ghi thêm, chưa có phiếu sửa giá trị (issue #42).
 - **Trạng thái đơn sau mỗi phiếu** (gọi `transition()` có sẵn): mọi dòng nhận đủ → **Đã nhận đủ**; còn dòng chờ → giữ **Đang nhận**; còn lại → **Đã đóng**.
 - **Lưu nháp trên máy** (#7): phiếu đang làm tự lưu vào **IndexedDB** của trình duyệt. Mất sóng lúc xác nhận thì phiếu chờ gửi và tự gửi lại khi có mạng. Mỗi nháp có **mã nháp sinh trên máy**; server dùng mã này để **không bao giờ tạo hai phiếu** cho một nháp.
 - **Giá sắt vụn tham khảo** (₫/kg): bảng chỉ ghi thêm, Giám đốc nhập ở `/settings/scrap-price`. Phiếu dùng giá hiện hành lúc ghi sổ và lưu lại giá đã dùng. Lô có phế liệu mà chưa có giá thì không xác nhận được.
@@ -93,7 +94,7 @@
 - **Chụp ảnh hàng lúc nhận** trên M3: chưa có chỗ lưu file; làm cùng ảnh hiện trạng ở `returns-and-compensation`.
 - **In nhãn QR**: issue #40. Change này chỉ quét và tra mã.
 - **Chạy offline thật** (service worker, mở trang khi không có mạng): không làm ở MVP (#7). Chỉ trang đang mở tiếp tục làm được và nháp không mất.
-- **Sửa hoặc hủy phiếu nhập đã ghi sổ**: không có; sai thì lập phiếu điều chỉnh kho.
+- **Sửa hoặc hủy phiếu nhập đã ghi sổ**: không có; sai số lượng thì lập phiếu điều chỉnh kho. **Sửa giá trị** (đơn giá, chi phí ghi sai): issue #42.
 - **Nhập hàng không có đơn** (mua lẻ tại bãi), nhận mã không có trong đơn: lập đơn trước.
 - **Nhiều người cùng làm một nháp**, đồng bộ nháp giữa các máy: nháp chỉ ở máy đã tạo.
 - **Công nợ phải trả** người bán, nhà xe: `payables` [Bản 2]. Change này chỉ hiện số "Phải trả người bán".

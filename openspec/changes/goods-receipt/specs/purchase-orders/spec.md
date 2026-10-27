@@ -48,7 +48,7 @@ Chỉ các lệnh sau SHALL hợp lệ; mọi lệnh khác SHALL bị từ chố
 - **THEN** đơn chuyển `DONE` + `CLOSED` vì Khung đã chốt ở 196/200
 
 ### Requirement: Lịch sử đơn
-Mỗi đơn SHALL có lịch sử chỉ ghi thêm. Mỗi dòng gồm thời điểm, người làm và việc đã làm: tạo, đặt (hiện "gửi đơn cho kho"), sửa, hủy, đóng, ghi sổ phiếu nhập (kèm mã phiếu), đánh dấu chờ giao bù (kèm phần còn chờ), nhận đủ. Đơn bị đóng vì phiếu nhận thiếu SHALL có dòng đóng mang tên người nhập. D3b SHALL hiện lịch sử, mới nhất ở trên.
+Mỗi đơn SHALL có lịch sử chỉ ghi thêm. Mỗi dòng gồm thời điểm, người làm và việc đã làm: tạo, đặt (hiện "gửi đơn cho kho"), sửa, hủy, đóng, ghi sổ phiếu nhập (kèm mã phiếu và các điểm bất thường Thủ kho đã xác nhận), đánh dấu chờ giao bù (kèm phần còn chờ), nhận đủ. Đơn bị đóng vì phiếu nhận thiếu SHALL có dòng đóng mang tên người nhập. D3b SHALL hiện lịch sử, mới nhất ở trên.
 
 #### Scenario: Lịch sử sau khi đặt
 - **WHEN** Quốc Bảo tạo `PO-2026-051` lúc 15:50 ngày 23/10/2026 rồi đặt lúc 16:05
@@ -92,7 +92,7 @@ Mỗi đơn SHALL có lịch sử chỉ ghi thêm. Mỗi dòng gồm thời đi�
 Trang `/purchasing/orders/<mã>` SHALL hiện:
 - đầu trang: mã đơn, nhãn trạng thái, "nhà cung cấp · loại hàng · N chuyến đã nhập";
 - thông tin chung: nhà cung cấp, loại hàng, ngày dự kiến, phương tiện, người lập và ngày lập, ghi chú, lý do hủy/đóng nếu có;
-- bảng "Đặt và thực nhận" (cộng dồn mọi chuyến): Hàng (tên + mã), Đặt, Đã nhận kèm "đủ" / "thiếu N" / "cân dư N kg" / "Chờ giao bù", Đơn giá, Thành tiền theo số thực nhận, dòng cộng tiền hàng thực nhận;
+- bảng "Đặt và thực nhận" (cộng dồn mọi chuyến): Hàng (tên + mã), Đặt, Đã nhận kèm "đủ" / "thiếu N" / "Chờ giao bù", và nhãn "Nhận dư" kèm số dư (VD "cân dư 12,5 kg") khi đã nhận nhiều hơn số đặt, Đơn giá, Thành tiền theo số thực nhận, dòng cộng tiền hàng thực nhận;
 - chi phí mua hàng dự kiến và cách chia;
 - lịch sử.
 
@@ -104,7 +104,7 @@ Mã đơn không có SHALL trả trang 404.
 
 #### Scenario: Bảng đặt và thực nhận
 - **WHEN** `PO-2026-051` đặt 100 Mâm × 145.000 ₫, đã nhận 60 và đang chờ giao bù, đặt 200 kg `PL-SAT` × 8.200 ₫/kg, đã cân 212,5 kg
-- **THEN** dòng Mâm hiện "60 cái", "thiếu 40", "Chờ giao bù", thành tiền 8.700.000 ₫ **AND** dòng `PL-SAT` hiện "212,5 kg", "cân dư 12,5 kg", thành tiền 1.742.500 ₫
+- **THEN** dòng Mâm hiện "60 cái", "thiếu 40", "Chờ giao bù", thành tiền 8.700.000 ₫ **AND** dòng `PL-SAT` hiện "212,5 kg", nhãn "Nhận dư", "cân dư 12,5 kg", thành tiền 1.742.500 ₫
 
 ### Requirement: Phần nhận hàng trên D3b
 D3b SHALL có:

@@ -46,6 +46,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 27 | Giá lô hàng cũ theo tình trạng | Lô hàng cũ mua chưa phân loại, khi tách tình trạng: **Phế liệu** lấy giá = kg quy đổi (theo trọng lượng chuẩn) × **giá sắt vụn tham khảo** (₫/kg). Phần còn lại của tiền dòng (tiền hàng thực nhận + chi phí mua hàng phân bổ) **chia cho Tốt và Chờ sửa theo số cái**. Giá trị phế liệu lớn hơn tiền dòng, hoặc cả lô là phế liệu, thì phế liệu nhận đúng tiền dòng (chốt 27/10/2026) |
 | 28 | Ai nhập chi phí từng chuyến | **Thủ kho nhập trên M3** lúc nhận hàng, trước khi xác nhận nhập kho. Chuyến đầu điền sẵn chi phí dự kiến của đơn; chuyến sau để trống. Thủ kho sửa theo số thật trả nhà xe, bốc xếp. Chi phí ghi cùng phiếu nhập và chia vào giá nhập ngay khi ghi sổ (#25) (chốt 27/10/2026) |
 | 29 | Mã "Chuyến này không có" | Trên phiếu nhập, dòng đánh dấu **"Chuyến này không có"** mặc định **tích sẵn "Chờ chuyến sau"**: đơn giữ Đang nhận để chờ mã đó. Thủ kho bỏ tích nếu người bán không giao mã này nữa. Dòng **đếm thiếu** vẫn mặc định **không chờ** (#12) (chốt 27/10/2026) |
+| 30 | Hỏi lại khi nhập bất thường | Trên phiếu nhập, Thủ kho phải **xác nhận lại** trước khi ghi sổ khi: dòng tính theo cái nhận **vượt** số đơn còn lại; dòng tính theo kg (kg cân) vượt **quá 10 %** số còn lại; **tổng chi phí chuyến lớn hơn tổng chi phí dự kiến của cả đơn**. Phần đã xác nhận ghi vào lịch sử đơn; D3b hiện nhãn "Nhận dư". Lý do: sổ kho chỉ ghi thêm và chưa có phiếu sửa giá trị (#42) (chốt 27/10/2026) |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 
