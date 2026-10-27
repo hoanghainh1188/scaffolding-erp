@@ -1,4 +1,4 @@
-import { ChevronRight, Users } from "lucide-react";
+import { ChevronRight, Recycle, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -23,6 +23,21 @@ export default async function Page() {
           <span className="text-label">Người dùng</span>
           <span className="text-body text-muted-foreground">
             Thêm người, đổi vai trò, đặt lại mật khẩu, khóa tài khoản.
+          </span>
+        </span>
+        <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+      </Link>
+      <Link
+        href="/settings/scrap-price"
+        className="flex max-w-xl items-center gap-4 rounded-lg border bg-card p-5 hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
+        <span className="grid size-11 shrink-0 place-items-center rounded-md bg-accent text-accent-foreground">
+          <Recycle aria-hidden className="size-5" />
+        </span>
+        <span className="flex flex-1 flex-col gap-1">
+          <span className="text-label">Giá sắt vụn tham khảo</span>
+          <span className="text-body text-muted-foreground">
+            Định giá phần Phế liệu khi tách lô hàng cũ lúc nhập kho.
           </span>
         </span>
         <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
