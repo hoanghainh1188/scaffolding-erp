@@ -41,22 +41,26 @@ Chỉ dòng `OPENING`, `PURCHASE_IN`, `REPAIR_IN` SHALL làm đổi giá vốn b
 - **WHEN** `GG-K17` Tốt có giá vốn BQ 195.000 ₫ và phiếu `PX-2026-118` xuất 300 cái từ `BAI-01` tới công trình `CT-0003`
 - **THEN** sổ có 2 dòng: `DELIVERY_OUT` −300 tại `BAI-01` và `DELIVERY_IN` +300 tại `CT-0003`, cả hai đơn giá 195.000 ₫ **AND** giá vốn BQ sau vẫn là 195.000 ₫
 
+#### Scenario: Chuyển chỗ không đổi giá BQ và tổng giá trị
+- **WHEN** `GG-K17` Tốt tổng tồn 3.420 cái giá BQ 195.282 ₫ (tổng giá trị 667.864.440 ₫), rồi lần lượt xuất 120 cái cho công trình, thu hồi 40 cái về bãi, chuyển 30 cái bãi → xưởng, xuất 200 cái
+- **THEN** sau mỗi bước giá BQ vẫn 195.282 ₫ **AND** tổng tồn vẫn 3.420 **AND** tổng giá trị vẫn 667.864.440 ₫
+
 #### Scenario: Thu hồi sang tình trạng khác
-- **WHEN** thu hồi 10 cái `GG-K17` từ công trình đang ở tình trạng Tốt (giá BQ 195.861 ₫) về bãi ở tình trạng Chờ sửa (giá BQ 160.000 ₫)
-- **THEN** dòng `RETURN_OUT` −10 Tốt ghi 195.861 ₫ **AND** dòng `RETURN_IN` +10 Chờ sửa ghi 160.000 ₫ **AND** giá BQ của Tốt và Chờ sửa đều không đổi
+- **WHEN** thu hồi 10 cái `GG-K17` từ công trình đang ở tình trạng Tốt (giá BQ 195.282 ₫) về bãi ở tình trạng Chờ sửa (giá BQ 160.000 ₫)
+- **THEN** dòng `RETURN_OUT` −10 Tốt ghi 195.282 ₫ **AND** dòng `RETURN_IN` +10 Chờ sửa ghi 160.000 ₫ **AND** giá BQ của Tốt và Chờ sửa đều không đổi
 
 ### Requirement: Giá vốn bình quân gia quyền theo mã hàng và tình trạng
-Giá vốn bình quân SHALL tính riêng cho từng (mã hàng + tình trạng), gộp hàng **trong công ty** (mọi bãi và xưởng). Khi có dòng làm đổi giá: giá mới = (tồn trước × giá BQ trước + giá trị dòng vào) ÷ (tồn trước + số lượng vào), **làm tròn đến 1 ₫, 0,5 làm tròn lên**. Tồn trước là tồn của (mã hàng + tình trạng) tại bãi và xưởng ngay trước dòng đó; hàng đang ở công trình không tính vào. Phép tính SHALL dùng số nguyên lớn, không dùng số thực.
+Giá vốn bình quân SHALL tính riêng cho từng (mã hàng + tình trạng), gộp **toàn bộ hàng của công ty** ở mọi vị trí (bãi, xưởng, công trình). Khi có dòng làm đổi giá: giá mới = (tồn trước × giá BQ trước + giá trị dòng vào) ÷ (tồn trước + số lượng vào), **làm tròn đến 1 ₫, 0,5 làm tròn lên**. Tồn trước là tổng tồn của (mã hàng + tình trạng) ở mọi vị trí ngay trước dòng đó. Phép tính SHALL dùng số nguyên lớn, không dùng số thực.
 
-#### Scenario: Chuỗi trên thẻ kho D11
-- **WHEN** `GG-K17` Tốt tồn 920 cái giá BQ 195.000 ₫, rồi `PN-2026-087` nhập 160 cái tổng 31.384.800 ₫ (196.155 ₫/cái)
+#### Scenario: Chuỗi nhập mua rồi nhập sau sửa
+- **WHEN** `GG-K17` Tốt tổng tồn 920 cái (mọi vị trí) giá BQ 195.000 ₫, rồi `PN-2026-087` nhập 160 cái tổng 31.384.800 ₫ (196.155 ₫/cái)
 - **THEN** giá BQ mới = (920 × 195.000 + 31.384.800) ÷ 1.080 = 195.171,11 → **195.171 ₫**
 - **AND WHEN** sau đó `PSC-2026-021` nhập sau sửa 40 cái tổng 8.580.000 ₫ (214.500 ₫/cái)
 - **THEN** giá BQ mới = (1.080 × 195.171 + 8.580.000) ÷ 1.120 = 195.861,32 → **195.861 ₫**
 
-#### Scenario: Hàng ở công trình không pha giá
+#### Scenario: Hàng ở công trình cũng tính vào giá BQ
 - **WHEN** `GG-K17` Tốt có 920 cái tại bãi và 300 cái đang ở `CT-0003`, giá BQ 195.000 ₫, rồi nhập 160 cái tổng 31.384.800 ₫
-- **THEN** giá BQ mới tính trên 920 cái ở bãi: **195.171 ₫** (không phải 195.134 ₫ nếu gộp 1.220 cái)
+- **THEN** giá BQ mới tính trên 1.220 cái: (1.220 × 195.000 + 31.384.800) ÷ 1.380 = 195.133,91 → **195.134 ₫**
 
 #### Scenario: Đúng nửa đồng làm tròn lên
 - **WHEN** `GG-CH` Tốt tồn 1 cái giá BQ 100 ₫ và nhập 1 cái giá trị 101 ₫
@@ -79,7 +83,7 @@ Giá vốn bình quân SHALL tính riêng cho từng (mã hàng + tình trạng)
 - **THEN** giá BQ mới tính đúng là 1.000.000.000 ₫ (9.000.000.999.999.999 ÷ 9.000.001 = 999.999.999,9999999 → làm tròn lên)
 
 ### Requirement: Giá vốn khi tồn bằng 0
-Khi tồn trước (tại bãi và xưởng) bằng 0, giá mới SHALL bằng giá trị ÷ số lượng (làm tròn như trên), không pha giá cũ. Khi tồn về 0, giá BQ cuối cùng SHALL được giữ để ghi các dòng sau.
+Khi tồn trước bằng 0, giá mới SHALL bằng giá trị ÷ số lượng (làm tròn như trên), không pha giá cũ. Khi tồn về 0, giá BQ cuối cùng SHALL được giữ để ghi các dòng sau.
 
 #### Scenario: Nhập khi tồn bằng 0
 - **WHEN** `PK-KU` Mới đã xuất hết (tồn 0, giá BQ cuối 52.000 ₫) rồi nhập 500 cái tổng 27.500.000 ₫
@@ -162,9 +166,9 @@ Dòng sổ mới SHALL không được ghi cho vật tư hoặc vị trí đã n
 Giá vốn BQ hiện tại lưu riêng để khóa và đọc nhanh SHALL luôn khớp sổ kho: tổng số lượng bằng tổng các dòng của (mã hàng + tình trạng), giá BQ bằng giá BQ sau của dòng cuối. Lệnh `npm run inventory:check` SHALL liệt kê mọi (mã hàng + tình trạng) bị lệch và thoát với mã lỗi khác 0 nếu có lệch.
 
 #### Scenario: Không lệch
-- **WHEN** chạy `npm run inventory:check` sau chuỗi ghi sổ của D11
+- **WHEN** chạy `npm run inventory:check` sau chuỗi ghi sổ mẫu của thẻ kho `GG-K17`
 - **THEN** lệnh in "Sổ kho khớp: 0 lệch" và thoát mã 0
 
 #### Scenario: Có lệch
-- **WHEN** bảng giá vốn hiện tại của `GG-K17` Tốt bị sửa tay thành 196.000 ₫ trong khi dòng sổ cuối ghi 195.861 ₫
-- **THEN** lệnh in dòng "GG-K17 Tốt: giá BQ 196.000 ₫, sổ kho 195.861 ₫" và thoát mã 1
+- **WHEN** bảng giá vốn hiện tại của `GG-K17` Tốt bị sửa tay thành 196.000 ₫ trong khi dòng sổ cuối ghi 195.282 ₫
+- **THEN** lệnh in dòng "GG-K17 Tốt: giá BQ 196.000 ₫, sổ kho 195.282 ₫" và thoát mã 1

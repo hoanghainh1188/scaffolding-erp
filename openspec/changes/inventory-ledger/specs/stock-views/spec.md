@@ -53,8 +53,8 @@ Mỗi con số khác 0 trong bảng D10 SHALL là liên kết tới thẻ kho c�
 Trang `/inventory/items/<mã>` SHALL hiện tên, mã, đơn vị và bảng sổ trong kỳ: dòng đầu "Tồn đầu kỳ", rồi từng dòng sổ theo ngày nghiệp vụ và thứ tự ghi với các cột Ngày, Chứng từ (phiếu điều chỉnh có nhãn "Điều chỉnh"), Diễn giải, Nhập, Xuất, Tồn (cộng dồn theo bộ lọc), Đơn giá ghi sổ, Giá vốn BQ sau; dòng cuối "Cộng phát sinh trong kỳ". Chân bảng ghi "Sổ kho chỉ ghi thêm, không sửa dòng cũ. Phiếu ghi sai thì làm phiếu điều chỉnh."
 
 #### Scenario: Thẻ kho GG-K17 Tốt tại bãi tháng 10
-- **WHEN** mở thẻ kho `GG-K17`, Tốt, Tại bãi, kỳ 01/10/2026–31/10/2026 với số liệu mẫu của D11
-- **THEN** Tồn đầu kỳ 1.220, Nhập +450, Xuất −430, Tồn cuối 1.240 **AND** giá vốn BQ hiện tại 195.861 ₫ **AND** các dòng theo thứ tự: 03/10 `PX-2026-118` xuất 300, tồn 920, 195.000 ₫ → 195.000 ₫; 08/10 `PN-2026-087` nhập 160, tồn 1.080, 196.155 ₫ → 195.171 ₫; 12/10 `PSC-2026-021` nhập 40, tồn 1.120, 214.500 ₫ → 195.861 ₫; 15/10 `PTH-2026-064` nhập 210, tồn 1.330; 16/10 `ĐC-2026-004` xuất 10, tồn 1.320; 20/10 `PX-2026-131` xuất 120, tồn 1.200; 22/10 `PTH-2026-069` nhập 40, tồn 1.240 (các dòng từ 15/10 đều 195.861 ₫)
+- **WHEN** mở thẻ kho `GG-K17`, Tốt, Tại bãi, kỳ 01/10/2026–31/10/2026 với số liệu mẫu ở design D11
+- **THEN** Tồn đầu kỳ 1.220, Nhập +450, Xuất −430, Tồn cuối 1.240 **AND** giá vốn BQ hiện tại 195.282 ₫ **AND** các dòng theo thứ tự: 03/10 `PX-2026-118` xuất 300, tồn 920, 195.000 ₫ → 195.000 ₫; 08/10 `PN-2026-087` nhập 160, tồn 1.080, 196.155 ₫ → 195.055 ₫; 12/10 `PSC-2026-021` nhập 40, tồn 1.120, 214.500 ₫ → 195.282 ₫; 15/10 `PTH-2026-064` nhập 210, tồn 1.330; 16/10 `ĐC-2026-004` xuất 10, tồn 1.320; 20/10 `PX-2026-131` xuất 120, tồn 1.200; 22/10 `PTH-2026-069` nhập 40, tồn 1.240 (các dòng từ 15/10 đều 195.282 ₫)
 
 #### Scenario: Đơn giá ghi sổ của dòng nhập
 - **WHEN** dòng `PN-2026-087` nhập 160 cái tổng giá trị 31.384.800 ₫
