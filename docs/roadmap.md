@@ -37,10 +37,10 @@ Không có màn hình mới. Phát sinh khi làm các change trên; lý do chi t
 
 | # | Tên change | Nội dung | Nguồn | Phụ thuộc |
 |---|---|---|---|---|
-| K1 | `security-headers` | CSP theo nonce (mỗi request một mã). Thử cùng Cache Components | `setup-project`, `auth-and-roles` | 2 |
-| K2 | `e2e-production-build` | Chạy E2E trên `next build && next start` thay cho `next dev` | `setup-project` D15, `auth-and-roles` | 2 |
-| K3 | `login-lockout-hardening` | Chống cố tình nhập sai để chặn người khác (kể cả Giám đốc duy nhất): khóa theo tên + IP hoặc chờ tăng dần | `auth-and-roles` (security review) | 2 |
-| K4 | `temp-password-expiry` | Mật khẩu tạm hết hạn sau 48 giờ nếu chưa dùng | `auth-and-roles` (security review) | 2 |
+| K1 ([#23](https://github.com/hoanghainh1188/scaffolding-erp/issues/23)) | `security-headers` | CSP theo nonce (mỗi request một mã). Thử cùng Cache Components | `setup-project`, `auth-and-roles` | 2 |
+| K2 ([#24](https://github.com/hoanghainh1188/scaffolding-erp/issues/24)) | `e2e-production-build` | Chạy E2E trên `next build && next start` thay cho `next dev` | `setup-project` D15, `auth-and-roles` | 2 |
+| K3 ([#25](https://github.com/hoanghainh1188/scaffolding-erp/issues/25)) | `login-lockout-hardening` | Chống cố tình nhập sai để chặn người khác (kể cả Giám đốc duy nhất): khóa theo tên + IP hoặc chờ tăng dần | `auth-and-roles` (security review) | 2 |
+| K4 ([#26](https://github.com/hoanghainh1188/scaffolding-erp/issues/26)) | `temp-password-expiry` | Mật khẩu tạm hết hạn sau 48 giờ nếu chưa dùng | `auth-and-roles` (security review) | 2 |
 
 ## Ghi chú
 
