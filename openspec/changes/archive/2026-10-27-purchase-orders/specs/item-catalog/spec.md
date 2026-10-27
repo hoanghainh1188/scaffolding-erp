@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Ngừng dùng và xóa vật tư, bộ
-Vật tư, bộ và nhóm SHALL ngừng dùng được và dùng lại được. Bản ghi đang được tham chiếu (vật tư trong bộ, nhóm có vật tư, vật tư đã có dòng sổ kho, vật tư nằm trong đơn thu mua, và sau này là chứng từ khác) SHALL không xóa được, chỉ ngừng dùng. Vật tư đang nằm trong một bộ đang dùng SHALL không ngừng dùng được. Vật tư **còn tồn** (tổng số lượng khác 0 ở bất kỳ tình trạng và vị trí nào, kể cả hàng đang ở công trình) SHALL không ngừng dùng được. Vật tư nằm trong một đơn thu mua đang xử lý (`IN_PROGRESS`) SHALL không ngừng dùng được. Bản ghi ngừng dùng SHALL không chọn được cho bộ hay chứng từ mới.
+Vật tư, bộ và nhóm SHALL ngừng dùng và dùng lại được. Bản ghi đã được tham chiếu (vật tư trong bộ, nhóm có vật tư, vật tư có dòng sổ kho hoặc nằm trong đơn thu mua, và sau này chứng từ khác) SHALL chỉ ngừng dùng, không xóa. Vật tư SHALL không ngừng dùng được khi nằm trong bộ đang dùng, khi **còn tồn** (khác 0 ở bất kỳ tình trạng, vị trí nào, kể cả công trình), hoặc khi nằm trong đơn thu mua đang xử lý (`IN_PROGRESS`). Bản ghi ngừng dùng SHALL không chọn được cho bộ hay chứng từ mới.
 
 #### Scenario: Xóa vật tư chưa dùng
 - **WHEN** Kinh doanh xóa vật tư `TEST-01` vừa tạo nhầm, chưa ở bộ nào

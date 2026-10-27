@@ -176,7 +176,7 @@ Mọi trang và API SHALL yêu cầu phiên đăng nhập hợp lệ, trừ `/lo
 - **THEN** hệ thống chuyển tới `/dashboard`
 
 ### Requirement: Bảng quyền theo vai trò
-Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền tới các vai trò được phép, gồm quyền xem từng mục menu, quyền danh mục và quyền kho như các kịch bản dưới đây. Menu và server SHALL cùng đọc bảng này.
+Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền tới các vai trò được phép, gồm quyền xem từng mục menu, quyền danh mục, quyền kho và quyền thu mua như các kịch bản dưới đây. Menu và server SHALL cùng đọc bảng này.
 
 #### Scenario: Menu và server khớp nhau
 - **WHEN** vai trò `ACCOUNTANT` không có quyền vào Cài đặt trong bảng quyền
@@ -205,6 +205,14 @@ Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền t
 #### Scenario: Kế toán lập nhưng không duyệt điều chỉnh
 - **WHEN** `thuha` (Kế toán) gửi `POST /api/inventory/adjustments` rồi gửi duyệt chính phiếu đó qua `POST /api/inventory/adjustments/<id>/approve`
 - **THEN** phiếu được tạo **AND** lệnh duyệt trả 403
+
+#### Scenario: Quyền thu mua theo vai trò
+- **WHEN** đọc bảng quyền cho các quyền thu mua
+- **THEN** `purchasing.view` cho `DIRECTOR`, `ACCOUNTANT`, `SALES`; `purchasing.manage` chỉ cho `DIRECTOR`, `SALES`
+
+#### Scenario: Kế toán xem đơn thu mua nhưng không tạo
+- **WHEN** `thuha` (Kế toán) mở `/purchasing` rồi gửi `POST /api/purchasing/orders`
+- **THEN** trang mở được **AND** API trả 403
 
 ### Requirement: Từ chối thao tác sai vai trò ở server
 Mỗi API và trang có giới hạn vai trò SHALL kiểm tra quyền ở server theo bảng quyền, độc lập với việc ẩn nút trên giao diện. API sai vai trò SHALL trả 403 với "Bạn không có quyền thực hiện thao tác này" và không thay đổi dữ liệu. Trang sai vai trò SHALL hiện trang 403 "Bạn không có quyền xem trang này" kèm nút về trang mặc định.
