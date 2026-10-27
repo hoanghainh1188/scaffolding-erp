@@ -29,18 +29,18 @@
 
 ## 5. Giao diện
 
-- [ ] 5.1 `/catalog` chuyển `/catalog/items`; khung D9 với tab Vật tư / Bộ / Nhóm hàng (kèm số), liên kết sang D16; mọi trang `requirePermission("catalog.view")` — kiểm tra: `route-guards.test.ts` xanh; Kế toán mở được, không thấy nút ghi
-- [ ] 5.2 D9 bảng vật tư: cột theo thiết kế, tìm và lọc nhóm/trạng thái trên URL, đếm đầu trang, giá tháng = ngày × 30, "Không cho thuê" cho hàng kg — kiểm tra: component test với 8 vật tư mẫu của thiết kế (đếm, lọc, hiển thị giá, trọng lượng "–")
-- [ ] 5.3 D9 form vật tư (Sheet): mã chỉ nhập khi tạo, đơn vị chỉ chọn khi tạo, trọng lượng `QuantityInput` kg, giá ngày + giá tháng hiện ngay, giá đền bù; ngừng dùng / dùng lại / xóa có xác nhận — kiểm tra: component test validate phía client khớp thông báo server; E2E Kinh doanh tạo `GG-K17` rồi thấy trên bảng
-- [ ] 5.4 D9 khung "Thuộc bộ" khi chọn vật tư (`?item=`), tab Bộ và trình sửa bộ (chọn vật tư + `Stepper`, tổng trọng lượng/giá hiện ngay), tab Nhóm hàng — kiểm tra: component test khung "Thuộc bộ" hiện đúng 43,6 kg, 3.900 ₫/ngày; E2E tạo bộ 3 dòng
-- [ ] 5.5 D16 `/catalog/partners`: 4 tab kèm số, danh sách + chi tiết, tìm trên URL, form nhà thầu / nhà cung cấp (Sheet, CCCD đầy đủ lấy từ `/edit` chỉ khi mở form; danh sách và chi tiết hiện số đã che), "Thêm công trình" từ nhà thầu, tab Kho bãi xưởng (nút ghi chỉ Giám đốc) — kiểm tra: component test chi tiết nhà thầu (hạn "30 ngày", điện thoại `0912 345 678`, danh sách công trình); E2E Kế toán sửa hạn thanh toán, Kinh doanh thêm công trình
+- [x] 5.1 `/catalog` chuyển `/catalog/items`; khung D9 với tab Vật tư / Bộ / Nhóm hàng (kèm số), liên kết sang D16; mọi trang `requirePermission("catalog.view")` — kiểm tra: `route-guards.test.ts` xanh; Kế toán mở được, không thấy nút ghi
+- [x] 5.2 D9 bảng vật tư: cột theo thiết kế, tìm và lọc nhóm/trạng thái trên URL, đếm đầu trang, giá tháng = ngày × 30, "Không cho thuê" cho hàng kg — kiểm tra: component test với 8 vật tư mẫu của thiết kế (đếm, lọc, hiển thị giá, trọng lượng "–")
+- [x] 5.3 D9 form vật tư (Sheet): mã chỉ nhập khi tạo, đơn vị chỉ chọn khi tạo, trọng lượng `QuantityInput` kg, giá ngày + giá tháng hiện ngay, giá đền bù; ngừng dùng / dùng lại / xóa có xác nhận — kiểm tra: component test validate phía client khớp thông báo server; E2E Kinh doanh tạo `GG-K17` rồi thấy trên bảng
+- [x] 5.4 D9 khung "Thuộc bộ" khi chọn vật tư (`?item=`), tab Bộ và trình sửa bộ (chọn vật tư + `Stepper`, tổng trọng lượng/giá hiện ngay), tab Nhóm hàng — kiểm tra: component test khung "Thuộc bộ" hiện đúng 43,6 kg, 3.900 ₫/ngày; E2E tạo bộ 3 dòng
+- [x] 5.5 D16 `/catalog/partners`: 4 tab kèm số, danh sách + chi tiết, tìm trên URL, form nhà thầu / nhà cung cấp (Sheet, CCCD đầy đủ lấy từ `/edit` chỉ khi mở form; danh sách và chi tiết hiện số đã che), "Thêm công trình" từ nhà thầu, tab Kho bãi xưởng (nút ghi chỉ Giám đốc) — kiểm tra: component test chi tiết nhà thầu (hạn "30 ngày", điện thoại `0912 345 678`, danh sách công trình); E2E Kế toán sửa hạn thanh toán, Kinh doanh thêm công trình
 
 ## 6. Dữ liệu mẫu, E2E, tài liệu, kiểm tra cuối
 
-- [ ] 6.1 Mở rộng `npm run db:seed:dev` (và seed E2E nếu cần) với danh mục mẫu theo thiết kế: 4 nhóm, 8 vật tư, bộ `BO-17`, 2 nhà thầu, 2 nhà cung cấp, 2 công trình; chạy lại không tạo trùng — kiểm tra: chạy 2 lần liên tiếp số dòng không đổi
+- [x] 6.1 Mở rộng `npm run db:seed:dev` (và seed E2E nếu cần) với danh mục mẫu theo thiết kế: 4 nhóm, 8 vật tư, bộ `BO-17`, 2 nhà thầu, 2 nhà cung cấp, 2 công trình; chạy lại không tạo trùng — kiểm tra: chạy 2 lần liên tiếp số dòng không đổi
 - [ ] 6.2 E2E `tests/e2e/catalog.spec.ts` (luồng chính 5.3–5.5), thêm `/catalog/items`, `/catalog/partners` vào `responsive.spec.ts` (6 cỡ, không cuộn ngang) và `a11y.spec.ts`; thêm D9, D16 vào `visual.spec.ts` — kiểm tra: `npm run test:e2e` xanh ở local; CI xanh sau workflow Update Playwright snapshots
-- [ ] 6.3 Cập nhật `CLAUDE.md` nếu có quy ước mới (mã danh mục, `catalog.*` quyền) — kiểm tra: đọc lại khớp design
-- [ ] 6.4 Chạy `npm run lint`, `typecheck`, `format:check`, `test`, `test:coverage`, `build`, `openspec validate master-data --strict` — kiểm tra: tất cả xanh
+- [x] 6.3 Cập nhật `CLAUDE.md` nếu có quy ước mới (mã danh mục, `catalog.*` quyền) — kiểm tra: đọc lại khớp design
+- [x] 6.4 Chạy `npm run lint`, `typecheck`, `format:check`, `test`, `test:coverage`, `build`, `openspec validate master-data --strict` — kiểm tra: tất cả xanh
 - [ ] 6.5 Kiểm tra tay trên Edge 1366px: D9, D16 so với file thiết kế; Kế toán và Kinh doanh thấy đúng nút — kiểm tra: ghi kết quả vào PR
 
 ## Workflow follow-up
