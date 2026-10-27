@@ -17,6 +17,7 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+tests/e2e/.auth/
 
 # env files (.env.example is committed)
 .env
