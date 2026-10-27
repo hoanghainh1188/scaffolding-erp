@@ -29,6 +29,7 @@ import {
   type CatalogStatus,
   type ServiceResult,
 } from "./common";
+import { describeStock, isEmpty, itemStock } from "@/lib/inventory/totals";
 
 export const ITEM_MESSAGES = {
   codeFixed: "Không đổi được mã hàng sau khi tạo",
@@ -43,6 +44,8 @@ export const ITEM_MESSAGES = {
   inUse: "Vật tư đã được dùng nên chỉ ngừng dùng được",
   inActiveKit: (kitCode: string) =>
     `Bỏ vật tư này khỏi bộ ${kitCode} hoặc ngừng dùng bộ trước`,
+  hasStock: (code: string, stock: string) =>
+    `${code} còn tồn ${stock}, chỉ ngừng dùng được khi tồn về 0`,
 } as const;
 
 /** numeric(10,3): below 10.000.000 kg. */
@@ -312,6 +315,16 @@ export function updateItem(
         if (inKit) {
           throw new ServiceFailure(
             conflict(ITEM_MESSAGES.inActiveKit(inKit.code)),
+          );
+        }
+        // Stock still somewhere, sites included (inventory-ledger). Postings
+        // hold this row FOR SHARE, so the total is final while we hold it.
+        const stock = await itemStock(tx, id);
+        if (!isEmpty(stock)) {
+          throw new ServiceFailure(
+            conflict(
+              ITEM_MESSAGES.hasStock(current.code, describeStock(stock)),
+            ),
           );
         }
       }

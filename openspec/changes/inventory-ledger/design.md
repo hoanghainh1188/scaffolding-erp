@@ -130,7 +130,7 @@ Không ghi lùi so với dòng gần nhất cùng (mã + tình trạng), không 
 
 ### D11. Ví dụ tính tay cho thẻ kho (`GG-K17`, tình trạng Tốt)
 
-Giả định: ngày 01/10/2026 `GG-K17` Tốt có **1.220 cái tại `BAI-01`** và **2.000 cái đang ở công trình** (`CT-0001` Nhà phố Lê Văn Lương 1.200, `CT-0002` Cầu vượt Mai Dịch 800), giá BQ 195.000 ₫ → pool 3.220 cái. Chờ sửa `GG-K17` có giá BQ 160.000 ₫. Công trình `CT-0007` Nhà xưởng KCN Quang Minh chưa có hàng.
+Giả định: phiếu tồn đầu kỳ ghi ngày **30/09/2026** (để là "Tồn đầu kỳ" của tháng 10 trên thẻ kho, không bị tính vào "Nhập trong kỳ"); lúc đó `GG-K17` Tốt có **1.220 cái tại `BAI-01`** và **2.000 cái đang ở công trình** (`CT-0001` Nhà phố Lê Văn Lương 1.200, `CT-0002` Cầu vượt Mai Dịch 800), giá BQ 195.000 ₫ → pool 3.220 cái. Chờ sửa `GG-K17` có giá BQ 160.000 ₫. Công trình `CT-0007` Nhà xưởng KCN Quang Minh chưa có hàng.
 
 | Ngày | Chứng từ | Dòng sổ (vị trí) | Đơn giá ghi sổ | Tồn Tốt tại bãi | Pool Tốt (mọi vị trí) | Giá BQ Tốt sau |
 |---|---|---|---|---|---|---|
