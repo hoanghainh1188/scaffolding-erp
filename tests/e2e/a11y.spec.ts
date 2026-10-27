@@ -35,6 +35,9 @@ test.describe("accessibility", () => {
       "/inventory",
       "/inventory/items/GG-K17?from=2026-10-01&to=2026-10-31",
       "/inventory/adjustments",
+      "/purchasing",
+      "/purchasing/orders/new",
+      `/purchasing/orders/PO-${new Date().getFullYear()}-001`,
       "/change-password",
       "/dev/components",
     ]) {
