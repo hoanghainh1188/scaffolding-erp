@@ -7,7 +7,12 @@ import { OrderActions } from "@/components/purchasing/order-actions";
 import { OrderHistory } from "@/components/purchasing/order-history";
 import { OrderStatusBadge } from "@/components/purchasing/order-status-badge";
 import { OrderTotal } from "@/components/purchasing/order-total";
-import { ReceivingPlaceholder } from "@/components/purchasing/receiving-placeholder";
+import {
+  ReceivedCell,
+  ReceivingTrips,
+  receivingOf,
+  waitingOf,
+} from "@/components/purchasing/order-receiving";
 import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
 import { formatBusinessDate, formatDateTime } from "@/domain/business-date";
@@ -25,6 +30,7 @@ import {
 } from "@/domain/quantity";
 import { requirePermission } from "@/lib/auth/guard";
 import { getOrderByCode } from "@/lib/purchasing/queries";
+import { receiptsOfOrder } from "@/lib/receiving/queries";
 import { ORDER_CODE } from "@/lib/purchasing/respond";
 
 type Params = Promise<{ code: string }>;
@@ -58,6 +64,16 @@ export default async function Page({
     ? await getOrderByCode(getDatabase(), code)
     : null;
   if (!order) notFound();
+  const trips = order.hasReceipts
+    ? await receiptsOfOrder(getDatabase(), order.id)
+    : [];
+  const receiving = receivingOf(order.lines, trips, order.totals.costs);
+  const byItem = new Map(
+    receiving.lines.map((line) => [line.orderLineId, line]),
+  );
+  const open = order.status === "IN_PROGRESS";
+  const waiting = open ? waitingOf(receiving, order.lines) || null : null;
+  const received = order.hasReceipts;
 
   const quantity = (milli: number, unit: "PIECE" | "KG") =>
     `${formatQuantity(toQuantity(milli, "KG"))} ${QUANTITY_UNIT_LABELS[unit]}`;
@@ -102,6 +118,19 @@ export default async function Page({
           Lưu xong, đơn hiện ở mục &quot;Xe sắp về&quot; trên điện thoại của thủ
           kho.
         </p>
+      ) : null}
+      {waiting ? (
+        <section
+          aria-label="Còn chờ giao bù"
+          className="flex flex-col gap-1 rounded-lg border-2 border-warning bg-card px-4 py-3 text-sm"
+        >
+          <p className="font-semibold">Còn chờ giao bù {waiting}</p>
+          <p className="text-muted-foreground">
+            Thủ kho đánh dấu &quot;Chờ giao bù&quot; khi nhập hàng. Không chờ
+            nữa thì bấm &quot;Đóng đơn, không chờ nữa&quot;: tiền trả người bán
+            chốt theo số đã nhận.
+          </p>
+        </section>
       ) : null}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="flex min-w-0 flex-col gap-6">
@@ -195,9 +224,10 @@ export default async function Page({
                         <td
                           className={`${cell} text-right whitespace-nowrap tabular-nums`}
                         >
-                          {line.received === null
-                            ? "–"
-                            : quantity(line.received, line.unit)}
+                          <ReceivedCell
+                            line={line}
+                            summary={byItem.get(line.itemCode)}
+                          />
                         </td>
                         <td
                           className={`${cell} text-right whitespace-nowrap tabular-nums`}
@@ -208,7 +238,12 @@ export default async function Page({
                         <td
                           className={`${cell} text-right font-semibold whitespace-nowrap tabular-nums`}
                         >
-                          {formatMoney(line.amount)}
+                          {formatMoney(
+                            received
+                              ? (byItem.get(line.itemCode)?.amount ??
+                                  toMoney(0))
+                              : line.amount,
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -220,10 +255,14 @@ export default async function Page({
                         colSpan={4}
                         className="px-3 py-2.5 text-left font-semibold"
                       >
-                        Cộng tiền hàng dự kiến
+                        {received
+                          ? "Cộng tiền hàng thực nhận"
+                          : "Cộng tiền hàng dự kiến"}
                       </th>
                       <td className="px-3 py-2.5 text-right font-bold whitespace-nowrap tabular-nums">
-                        {formatMoney(order.totals.goods)}
+                        {formatMoney(
+                          received ? receiving.payable : order.totals.goods,
+                        )}
                       </td>
                     </tr>
                   </tfoot>
@@ -235,17 +274,19 @@ export default async function Page({
               không theo số trên đơn (quyết định #13).
             </p>
           </section>
-          <ReceivingPlaceholder />
+          <ReceivingTrips trips={trips} waiting={waiting} />
         </div>
         <aside className="flex flex-col gap-4" aria-label="Tiền và lịch sử">
           <OrderTotal
             title="Phải trả người bán"
-            total={toMoney(0)}
+            total={receiving.payable}
             rows={[]}
             note={
-              order.hasReceipts
-                ? "Theo số thực nhận"
-                : "Theo số thực nhận · chưa có chuyến nhập"
+              !received
+                ? "Theo số thực nhận · chưa có chuyến nhập"
+                : open
+                  ? "Theo số thực nhận · chưa chốt vì còn chờ giao bù"
+                  : "Theo số thực nhận"
             }
           />
           <section
@@ -257,7 +298,27 @@ export default async function Page({
             </h2>
             <dl className="flex flex-col gap-1.5">
               <Row label="Tiền hàng dự kiến" value={order.totals.goods} />
-              <Row label="Tiền hàng thực nhận" value={toMoney(0)} strong />
+              <Row
+                label="Tiền hàng thực nhận"
+                value={receiving.payable}
+                strong
+              />
+              {order.lines.map((line) => {
+                const summary = byItem.get(line.itemCode);
+                if (!summary || summary.difference === 0) return null;
+                const gap = quantity(summary.gapMilli, line.unit);
+                const label =
+                  summary.state === "OVER"
+                    ? `${line.itemName} ${line.unit === "KG" ? "cân dư" : "dư"} ${gap}`
+                    : `Thiếu ${gap.replace(/ cái$/, "")} ${line.itemName.charAt(0).toLowerCase()}${line.itemName.slice(1)}`;
+                return (
+                  <Row
+                    key={line.itemCode}
+                    label={label}
+                    value={summary.difference}
+                  />
+                );
+              })}
             </dl>
             <div className="flex flex-col gap-1.5 border-t pt-3">
               <p className="font-semibold">Chi phí mua hàng dự kiến</p>
@@ -271,6 +332,15 @@ export default async function Page({
                   <Row label="Cộng" value={order.totals.costs} strong />
                 </dl>
               )}
+              {received ? (
+                <dl className="flex flex-col gap-1">
+                  <Row
+                    label={`Chi phí thực tế (${receiving.trips} chuyến)`}
+                    value={receiving.actualCosts}
+                    strong
+                  />
+                </dl>
+              ) : null}
               <p className="text-muted-foreground">
                 Chia{" "}
                 {ALLOCATION_METHOD_LABELS[order.allocationMethod].toLowerCase()}

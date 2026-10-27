@@ -56,8 +56,8 @@
 
 ## 9. Giao diện Desktop
 
-- [ ] 9.1 `/settings/scrap-price` và thẻ "Giá sắt vụn tham khảo" ở `/settings` theo spec `scrap-price` (giá hiện hành, chưa có giá, form, 20 lần đổi, 403 cho vai trò khác). Component test — kiểm tra: `npm run test:unit` xanh
-- [ ] 9.2 D3b: thay `receiving-placeholder` bằng phần nhận hàng theo spec `purchase-orders` "Phần nhận hàng trên D3b" và "Chi tiết đơn thu mua D3b" (cột "Đã nhận" kèm nhãn, nhãn "Nhận dư", "Các chuyến nhập", "Chuyến tiếp theo", "Phải trả người bán", "So với đơn", thanh "Còn chờ giao bù…"), lịch sử có ghi sổ phiếu (kèm phần đã xác nhận bất thường), chờ giao bù, đóng do nhận thiếu. Component test bằng số D3b — kiểm tra: `npm run test:unit` xanh
+- [x] 9.1 `/settings/scrap-price` và thẻ "Giá sắt vụn tham khảo" ở `/settings` theo spec `scrap-price` (giá hiện hành, chưa có giá, form, 20 lần đổi, 403 cho vai trò khác). Component test — kiểm tra: `npm run test:unit` xanh
+- [x] 9.2 D3b: thay `receiving-placeholder` bằng phần nhận hàng theo spec `purchase-orders` "Phần nhận hàng trên D3b" và "Chi tiết đơn thu mua D3b" (cột "Đã nhận" kèm nhãn, nhãn "Nhận dư", "Các chuyến nhập", "Chuyến tiếp theo", "Phải trả người bán", "So với đơn", thanh "Còn chờ giao bù…"), lịch sử có ghi sổ phiếu (kèm phần đã xác nhận bất thường), chờ giao bù, đóng do nhận thiếu. Component test bằng số D3b — kiểm tra: `npm run test:unit` xanh
 
 ## 10. Dữ liệu mẫu và E2E
 
