@@ -21,6 +21,7 @@ import {
   ok,
   requireName,
   runService,
+  ServiceFailure,
   type Actor,
   type CatalogStatus,
   type ServiceResult,
@@ -152,14 +153,19 @@ export interface KitInput {
   status?: CatalogStatus;
 }
 
-/** Checks the lines against current items (design D2). */
+/**
+ * Checks the lines against current items (design D2), holding the item rows
+ * FOR SHARE until the transaction ends: an archive of one of them waits and
+ * then sees this kit (review of PR #28, point 4).
+ */
 async function checkComponents(
-  db: Pick<Database, "select">,
+  tx: Pick<Database, "select">,
   components: readonly KitComponentInput[],
 ): Promise<void> {
   const found = await itemsByIds(
-    db,
+    tx,
     components.map((line) => line.itemId),
+    "share",
   );
   const byId = new Map(found.map((row) => [row.id, row]));
   const error = validateKitComponents(
@@ -187,9 +193,9 @@ export function createKit(
     const code = parseCatalogCode(input.code ?? "");
     const name = requireName(input.name);
     const components = input.components ?? [];
-    await checkComponents(db, components);
 
     const id = await db.transaction(async (tx) => {
+      await checkComponents(tx, components);
       await claimItemOrKitCode(tx, code);
       const [row] = await tx
         .insert(kit)
@@ -219,25 +225,34 @@ export function updateKit(
   input: KitInput,
 ): Promise<ServiceResult<KitRow>> {
   return runService(async () => {
-    const current = await getKit(db, id);
-    if (!current) return notFound();
-    if (
-      input.code !== undefined &&
-      input.code.trim().toUpperCase() !== current.code
-    ) {
-      return badRequest(KIT_SERVICE_MESSAGES.codeFixed);
-    }
-    const name =
-      input.name === undefined ? current.name : requireName(input.name);
-    const components =
-      input.components ??
-      current.components.map(({ itemId, quantity }) => ({ itemId, quantity }));
-    // Coming back into use re-checks the parts: one may have been archived.
-    if (input.components !== undefined || input.status === "ACTIVE") {
-      await checkComponents(db, components);
-    }
-
-    await db.transaction(async (tx) => {
+    const found = await db.transaction(async (tx) => {
+      const [current] = await tx
+        .select()
+        .from(kit)
+        .where(eq(kit.id, id))
+        .for("update");
+      if (!current) return false;
+      if (
+        input.code !== undefined &&
+        input.code.trim().toUpperCase() !== current.code
+      ) {
+        throw new ServiceFailure(badRequest(KIT_SERVICE_MESSAGES.codeFixed));
+      }
+      const name =
+        input.name === undefined ? current.name : requireName(input.name);
+      const components =
+        input.components ??
+        (await tx
+          .select({
+            itemId: kitComponent.itemId,
+            quantity: kitComponent.quantity,
+          })
+          .from(kitComponent)
+          .where(eq(kitComponent.kitId, id)));
+      // Coming back into use re-checks the parts: one may have been archived.
+      if (input.components !== undefined || input.status === "ACTIVE") {
+        await checkComponents(tx, components);
+      }
       await tx
         .update(kit)
         .set({
@@ -256,7 +271,9 @@ export function updateKit(
           .insert(kitComponent)
           .values(components.map((line) => ({ kitId: id, ...line })));
       }
+      return true;
     });
+    if (!found) return notFound();
     const updated = await getKit(db, id);
     return updated ? ok(updated) : notFound();
   });
