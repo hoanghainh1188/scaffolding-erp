@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { ROLES } from "@/domain/role";
-
 /** Wrong or missing configuration. Server-only; never shown to end users. */
 export class ConfigError extends Error {
   override readonly name = "ConfigError";
@@ -9,6 +7,10 @@ export class ConfigError extends Error {
 
 const NODE_ENVS = ["development", "test", "production"] as const;
 const POSTGRES_URL = /^postgres(ql)?:\/\/\S+$/;
+const HTTP_URL = /^https?:\/\/\S+$/;
+const MIN_SECRET_LENGTH = 32;
+const MIN_SEED_PASSWORD_LENGTH = 8;
+const DEFAULT_AUTH_URL = "http://localhost:3000";
 
 // Empty values (`DATABASE_URL=` in a .env file) count as missing.
 const optional = <T extends z.ZodType>(schema: T) =>
@@ -21,30 +23,58 @@ const envSchema = z.object({
       .string()
       .refine((value) => POSTGRES_URL.test(value) && URL.canParse(value)),
   ),
-  DEV_ROLE: optional(z.enum(ROLES).default("DIRECTOR")),
+  BETTER_AUTH_SECRET: optional(z.string().min(MIN_SECRET_LENGTH)),
+  BETTER_AUTH_URL: optional(
+    z
+      .string()
+      .refine((value) => HTTP_URL.test(value) && URL.canParse(value))
+      .optional(),
+  ),
+  DEV_SEED_PASSWORD: optional(
+    z.string().min(MIN_SEED_PASSWORD_LENGTH).optional(),
+  ),
+  E2E_PASSWORD: optional(z.string().min(MIN_SEED_PASSWORD_LENGTH).optional()),
+  // Sign-in attempts per IP per minute (design D3). Only the E2E server,
+  // where every browser shares localhost, raises it.
+  AUTH_SIGN_IN_LIMIT_PER_MINUTE: optional(
+    z.coerce.number().int().positive().default(20),
+  ),
 });
 
-export type Env = z.infer<typeof envSchema>;
-type EnvKey = keyof Env;
+type ParsedEnv = z.infer<typeof envSchema>;
+export type Env = Omit<ParsedEnv, "BETTER_AUTH_URL"> & {
+  BETTER_AUTH_URL: string;
+};
 
 // Messages name the variable and the rule, never the configured value:
 // DATABASE_URL may carry a password.
 const RULES: Readonly<Record<EnvKey, string>> = {
   NODE_ENV: `phải là một trong ${NODE_ENVS.join(", ")}`,
   DATABASE_URL: "phải là URL dạng postgres://user:password@host:port/database",
-  DEV_ROLE: `phải là một trong ${ROLES.join(", ")}`,
+  BETTER_AUTH_SECRET: `phải dài ít nhất ${MIN_SECRET_LENGTH} ký tự (tạo bằng: openssl rand -base64 32)`,
+  BETTER_AUTH_URL: "phải là URL dạng https://ten-mien (bắt buộc ở production)",
+  DEV_SEED_PASSWORD: `phải dài ít nhất ${MIN_SEED_PASSWORD_LENGTH} ký tự`,
+  E2E_PASSWORD: `phải dài ít nhất ${MIN_SEED_PASSWORD_LENGTH} ký tự`,
+  AUTH_SIGN_IN_LIMIT_PER_MINUTE: "phải là số nguyên dương",
 };
+
+type EnvKey = keyof ParsedEnv;
 
 export function parseEnv(
   source: Readonly<Record<string, string | undefined>>,
 ): Env {
   const result = envSchema.safeParse(source);
-  if (result.success) {
-    return result.data;
+  const keys = result.success
+    ? []
+    : [...new Set(result.error.issues.map((issue) => issue.path[0] as EnvKey))];
+  // The auth URL has a local default, but production must name its own.
+  const authUrl = result.success ? result.data.BETTER_AUTH_URL : undefined;
+  if (result.success && !authUrl && result.data.NODE_ENV === "production") {
+    keys.push("BETTER_AUTH_URL");
   }
-  const keys = [
-    ...new Set(result.error.issues.map((issue) => issue.path[0] as EnvKey)),
-  ];
+  if (result.success && keys.length === 0) {
+    return { ...result.data, BETTER_AUTH_URL: authUrl ?? DEFAULT_AUTH_URL };
+  }
   const lines = keys.map((key) => {
     const missing = source[key] === undefined || source[key] === "";
     return `- ${key}: ${missing ? "thiếu biến này" : RULES[key]}`;
