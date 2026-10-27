@@ -27,7 +27,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 8 | Phạm vi kế toán | Chỉ **quản lý công nợ** nội bộ. Không xuất hóa đơn VAT. Có **xuất Excel** cho kế toán |
 | 9 | Kỹ thuật | **Next.js** (giao diện + API) + **PostgreSQL** |
 | 10 | Làm tròn giá vốn | Giá vốn bình quân **làm tròn đến 1 ₫** sau mỗi lần nhập làm đổi giá bình quân (chốt 26/10/2026) |
-| 11 | Giá ghi sổ khi xuất/thu hồi | Hàng **xuất** và hàng **thu hồi** từ công trình ghi theo **giá vốn bình quân hiện tại** của (mã hàng + tình trạng), nên không làm đổi giá bình quân. Chỉ nhập mua và nhập sau sửa chữa mới làm đổi giá bình quân (chốt 26/10/2026) |
+| 11 | Giá ghi sổ khi xuất/thu hồi | Hàng **xuất** cho công trình, hàng **thu hồi** và hàng chuyển bãi ↔ xưởng chỉ là chuyển chỗ trong công ty (#24): ghi theo **giá vốn bình quân hiện tại** của (mã hàng + tình trạng), không làm đổi giá bình quân. Chỉ hàng vào từ ngoài (tồn đầu kỳ, nhập mua, nhập sau sửa chữa) mới làm đổi giá bình quân (chốt 26/10/2026, sửa 27/10/2026) |
 | 12 | Nhận thiếu so với đơn mua | **Mặc định đóng đơn** theo số thực nhận. Thủ kho tích **"Chờ giao bù phần thiếu"** nếu người bán sẽ giao tiếp (chốt 26/10/2026) |
 | 13 | Tiền trả người bán | Tính theo **số thực nhận** và **số kg cân thực tế**, không theo số trên đơn. Chi phí mua hàng (landed cost) chia theo hàng thực nhận. Đơn mua chỉ là dự kiến (chốt 26/10/2026) |
 | 14 | Nhập nhiều chuyến | **1 đơn mua – nhiều phiếu nhập**, mỗi chuyến xe một phiếu. Trong một phiếu, mã nào chuyến đó không có thì đánh dấu **"Chuyến này không có"** (ghi 0). Chỉ xác nhận được khi mọi dòng đã đếm hoặc đã đánh dấu. Đơn ở trạng thái **Đang nhận** cho tới khi đủ hoặc bị đóng (chốt 26/10/2026) |
@@ -40,6 +40,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 21 | Tiền thuê hàng mất | Hàng mất coi như **trả vào ngày lập phiếu thu hồi**: thôi tính thuê từ ngày đó, chỉ tính đền bù (chốt 27/10/2026) |
 | 22 | Kỳ tính tiền thuê đã chốt | **Khóa sau khi chốt.** Sai sót phát hiện sau đó ghi bằng **dòng điều chỉnh ở kỳ sau**, không sửa kỳ cũ (chốt 27/10/2026) |
 | 23 | Chi phí sửa chữa | Nhập **riêng cho từng mã hàng** trên phiếu sửa. Chi phí chỉ chia cho **hàng sửa xong** (về Tốt). Hàng hỏng hẳn sang Phế liệu giữ **giá vốn Chờ sửa**, không gánh chi phí sửa (chốt 27/10/2026) |
+| 24 | Phạm vi tính giá vốn bình quân | Giá BQ của (mã hàng + tình trạng) tính trên **toàn bộ hàng của công ty**: bãi + xưởng + công trình. Hàng ở công trình vẫn là tài sản công ty. Tổng giá trị trong sổ luôn bằng tồn × giá BQ (chốt 27/10/2026) |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 

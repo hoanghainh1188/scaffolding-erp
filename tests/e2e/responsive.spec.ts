@@ -13,6 +13,11 @@ const WIDTHS = [360, 375, 768, 1024, 1280, 1366] as const;
 const PAGES = [
   { path: "/dashboard", ready: DESKTOP_READY },
   { path: "/inventory", ready: DESKTOP_READY },
+  {
+    path: "/inventory/items/GG-K17?from=2026-10-01&to=2026-10-31",
+    ready: DESKTOP_READY,
+  },
+  { path: "/inventory/adjustments", ready: DESKTOP_READY },
   { path: "/settings/users", ready: DESKTOP_READY },
   { path: "/catalog/items?item=GG-K17", ready: DESKTOP_READY },
   { path: "/catalog/partners?tab=customers", ready: DESKTOP_READY },

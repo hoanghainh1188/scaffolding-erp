@@ -78,7 +78,11 @@ export function withAuth<P = Record<string, never>>(
     if (!SAFE_METHODS.has(request.method) && !isSameOrigin(request)) {
       return fail(GUARD_MESSAGES.badOrigin, 403);
     }
-    const user = await resolveCurrentUser(getAuth(), request.headers);
+    // Headers first: a GET-only route is prerendered at build time, and
+    // reading the request is what tells Next.js it is dynamic. Only then
+    // may the auth configuration (environment variables) be needed.
+    const headers = request.headers;
+    const user = await resolveCurrentUser(getAuth(), headers);
     if (!user) return fail(GUARD_MESSAGES.signedOut, 401);
     if (user.mustChangePassword && !options.allowPendingPasswordChange) {
       return fail(GUARD_MESSAGES.mustChangePassword, 403);

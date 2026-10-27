@@ -32,6 +32,9 @@ test.describe("accessibility", () => {
       "/catalog/items?item=GG-K17",
       "/catalog/kits",
       "/catalog/partners?tab=customers",
+      "/inventory",
+      "/inventory/items/GG-K17?from=2026-10-01&to=2026-10-31",
+      "/inventory/adjustments",
       "/change-password",
       "/dev/components",
     ]) {

@@ -3,6 +3,8 @@ import { sql } from "drizzle-orm";
 
 import type { DatabaseHandle } from "@/db/client";
 
+import { truncateWithLedger } from "./inventory";
+
 /**
  * Empties every catalog table, restarts the code sequences and puts back
  * the default yard and workshop the migration seeds. Call in beforeEach.
@@ -10,7 +12,9 @@ import type { DatabaseHandle } from "@/db/client";
 export async function resetCatalogTables({
   db,
 }: Pick<DatabaseHandle, "db">): Promise<void> {
-  await db.execute(
+  // CASCADE reaches the inventory ledger, which only a test may empty.
+  await truncateWithLedger(
+    db,
     sql`truncate table "kit_component", "kit", "item", "item_group", "site", "location", "customer", "supplier" cascade`,
   );
   await db.execute(
