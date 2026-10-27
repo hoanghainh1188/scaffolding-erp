@@ -62,11 +62,17 @@ const notInTrip = (id: string): ReceiptLineBody => ({
   awaitsRest: true,
 });
 
+/**
+ * When the sample trips are posted: a fixed day, so D11 and D3b show the
+ * same dates whatever day the seed runs (the sample ledger ends 22/10).
+ */
+export const SAMPLE_RECEIVING_AT = new Date("2026-10-24T03:00:00Z");
+
 /** Number of receipts created (0 when some already exist). */
 export async function seedReceiving(
   db: Database,
   actors: { director: Actor; warehouse: Actor },
-  now = new Date(),
+  now = SAMPLE_RECEIVING_AT,
 ): Promise<number> {
   const [any] = await db
     .select({ id: goodsReceipt.id })
