@@ -11,6 +11,7 @@
 - Vật tư `PIECE` luôn có trọng lượng chuẩn > 0 (CHECK `item_weight_check`). Vật tư `KG` không có trọng lượng chuẩn.
 - Quyết định 0.2 dùng ở đây:
   - Đơn chỉ là dự kiến; tiền trả và giá vốn tính theo số thực nhận (#13).
+  - Lô hàng cũ: Phế liệu theo giá sắt vụn tham khảo, phần còn lại chia cho Tốt và Chờ sửa theo số cái (#27).
   - Một đơn có nhiều phiếu nhập (#14); nhận thiếu thì mặc định đóng đơn (#12).
   - Chi phí chuyến nào chia vào hàng của chuyến đó, theo cách chia ghi trên đơn (#25).
   - Chi phí mua hàng không cộng vào tiền trả người bán (#26).
@@ -103,7 +104,7 @@ Các cơ sở chia:
   - Dòng đặt theo cái: số cái × trọng lượng chuẩn.
   - Dòng đặt theo kg: số kg.
   - Mọi số tính bằng phần nghìn kg, kiểu `bigint`.
-- `QUANTITY`: chia theo số lượng. Không phải cách người dùng chọn. Dùng để chia giá một dòng ra các tình trạng (D5).
+- `QUANTITY`: chia theo số lượng. Không phải cách người dùng chọn. Dùng để chia phần giá của Tốt và Chờ sửa trong một dòng (D5).
 
 Làm tròn khớp tổng:
 1. Tính phần chính xác của mỗi dòng: `total × basis_i / Σbasis`, bằng `bigint`.
@@ -160,24 +161,65 @@ Lựa chọn đã cân nhắc:
 - **Quy kg ra cái ngay khi đặt** (lưu số cái). Không chọn. Mua theo cân thì người bán tính tiền theo kg (#13); lưu số cái sẽ mất số kg đã thỏa thuận.
 - **Cho đổi đơn vị của mã theo đơn.** Không chọn. Tồn kho phải cùng một đơn vị thì giá BQ mới đúng.
 
-### D5. Lô hàng cũ chưa phân loại: cùng giá một cái cho mọi tình trạng
+### D5. Lô hàng cũ chưa phân loại: Phế liệu theo giá sắt vụn, phần còn lại chia đều theo cái
+
+Quyết định của người dùng khi review PR #36, chốt 27/10/2026 (ghi thành 0.2 #27).
 
 - Đơn `USED` ghi một dòng cho mỗi mã, **không ghi tình trạng**. Thủ kho tách Tốt / Chờ sửa / Phế liệu khi xe về.
-- Giá chia như sau:
-  - Tổng tiền dòng của chuyến (tiền hàng thực nhận + chi phí phân bổ) chia cho các tình trạng **theo số cái**, bằng `allocate(…, "QUANTITY")`, để tổng khớp đến từng đồng.
-  - Ví dụ: 39.231.098 ₫ cho 150 Tốt / 38 Chờ sửa / 12 Phế liệu → 29.423.323 / 7.453.909 / 2.353.866 ₫.
-  - Mỗi tình trạng thành một dòng `PURCHASE_IN` với `amount` đúng số đó. Sổ kho nhận tổng tiền, không nhận đơn giá nhân lại (spec `landed-cost`).
+- Giá chia trên **tổng tiền dòng của chuyến** T = tiền hàng thực nhận + chi phí phân bổ:
+  1. **Phế liệu** lấy giá trị S = kg quy đổi × giá sắt vụn tham khảo (₫/kg).
+     - Kg quy đổi = `piecesToKg` (số cái × trọng lượng chuẩn). Mã tính theo kg thì lấy số kg.
+     - S làm tròn đến 1 ₫, 0,5 làm tròn lên (`lineAmount`).
+  2. **Tốt và Chờ sửa** chia phần còn lại T − S theo số cái, bằng `allocate(…, "QUANTITY")`, để tổng khớp đến từng đồng. Hai tình trạng này có cùng giá một cái.
+  3. **Trường hợp biên:**
+     - S > T: Phế liệu nhận đúng T, Tốt và Chờ sửa nhận 0 ₫.
+     - Cả lô là phế liệu (Tốt + Chờ sửa = 0): Phế liệu nhận toàn bộ T, kể cả khi S < T.
+     - Không có phế liệu: không cần giá sắt vụn, cả T chia cho Tốt và Chờ sửa.
+  - Mỗi tình trạng thành một dòng `PURCHASE_IN` với `amount` đúng số đã chia. Sổ kho nhận tổng tiền, không nhận đơn giá nhân lại (spec `landed-cost`).
 - Đơn `NEW` nhập thẳng vào tình trạng Mới, không chia.
 
+Hàm thuần trong `src/domain/landed-cost.ts`:
+
+```ts
+splitLotByCondition(input: {
+  total: Money;                 // T
+  unit: "PIECE" | "KG";         // đơn vị của mã
+  standardWeightKg: string | null;
+  goodMilli: number; repairMilli: number; scrapMilli: number;
+  scrapPricePerKg: Money | null; // bắt buộc khi scrapMilli > 0 và còn Tốt/Chờ sửa
+}): { GOOD: Money; NEEDS_REPAIR: Money; SCRAP: Money }
+```
+
+Thiếu giá sắt vụn khi cần dùng thì báo "Chưa có giá sắt vụn tham khảo, nhờ Giám đốc nhập ở Cài đặt".
+
+**Ví dụ tính tay** (là bảng mong đợi của unit test). Dòng Khung 1,7m của D3: T = 39.231.098 ₫ cho 200 cái, trọng lượng chuẩn 13,5 kg, giá sắt vụn 7.500 ₫/kg.
+
+| Tình trạng | Số cái | Cách tính | Giá trị | Giá một cái |
+|---|---|---|---|---|
+| Phế liệu | 12 | 12 × 13,5 = 162 kg × 7.500 | **1.215.000** | 101.250 |
+| Tốt | 150 | (39.231.098 − 1.215.000) × 150 / 188 = 30.331.993,09 | **30.331.993** | 202.213 |
+| Chờ sửa | 38 | 38.016.098 × 38 / 188 = 7.684.104,91 → nhận 1 ₫ dư | **7.684.105** | 202.213 |
+| **Cộng** | 200 | | **39.231.098** | |
+
+Các ca biên (cũng là unit test):
+- 10 khung, T = 800.000 ₫, tách 2 Tốt / 8 Phế liệu: S = 8 × 13,5 × 7.500 = 810.000 > T, nên Phế liệu 800.000 ₫ và Tốt 0 ₫.
+- 12 khung, T = 2.000.000 ₫, cả 12 là Phế liệu (S = 1.215.000 < T): Phế liệu nhận 2.000.000 ₫.
+- 200 khung, không có Phế liệu, không có giá sắt vụn: 150 Tốt / 50 Chờ sửa chia T theo cái.
+- Giá có 0,5 ₫: 1 khung × 13,5 kg × 7.333 ₫/kg = 98.995,5 → S = 98.996 ₫.
+
 Lý do:
-- Người bán định giá **cả lô**. Không có căn cứ khách quan để nói khung Chờ sửa đáng bao nhiêu phần của khung Tốt.
-- Hệ số chọn tay sẽ khác nhau giữa người làm, và làm phiếu nhập trên điện thoại khó hơn.
-- Phần chênh được xử lý ở các bước sau:
-  - Hàng Chờ sửa được cộng chi phí sửa khi về Tốt (#23).
-  - Phế liệu giữ giá đã chia và ra khỏi kho khi bán theo kg.
+- Phế liệu chỉ bán được theo giá sắt vụn. Cho nó gánh giá như hàng Tốt thì giá trị kho bị thổi lên, và lỗ chỉ lộ ra lúc bán.
+- Tốt và Chờ sửa vẫn chia đều theo cái: người bán định giá cả lô, không có căn cứ khách quan để nói khung Chờ sửa đáng bao nhiêu phần của khung Tốt. Hàng Chờ sửa được cộng chi phí sửa khi về Tốt (#23).
+
+**Ràng buộc cho `goods-receipt` (#8):**
+- Thêm chỗ lưu **giá sắt vụn tham khảo** (₫/kg) và màn để Giám đốc nhập.
+- Giá dùng là giá có hiệu lực lúc ghi sổ phiếu nhập. Giá này không làm đổi giá của phiếu đã ghi sổ trước đó.
+- Change này **không** làm bảng và màn đó. Change này chỉ làm hàm thuần, nhận giá làm tham số.
 
 Lựa chọn đã cân nhắc:
-- **Hệ số theo tình trạng** (VD Tốt 100 %, Chờ sửa 60 %, Phế liệu = giá sắt vụn). Không làm ở MVP. Nếu cần, thêm bảng hệ số sau mà không đổi bảng đơn.
+- **Cùng giá một cái cho cả 3 tình trạng** (bản đầu của proposal này). Không chọn nữa: giá trị phế liệu trong kho cao hơn hẳn giá bán sắt vụn.
+- **Hệ số theo tình trạng** (VD Tốt 100 %, Chờ sửa 60 %). Không làm ở MVP. Hệ số chọn tay khác nhau giữa người làm; nếu cần, thêm sau mà không đổi bảng đơn.
+- **Phế liệu luôn lấy giá sắt vụn, kể cả khi S > T** (phần dư âm trừ vào Tốt). Không chọn. Giá trị ghi sổ sẽ lớn hơn tiền thật bỏ ra, và Tốt có thể ra giá âm.
 - **Cho đặt nhiều dòng cùng một mã, mỗi dòng một tình trạng.** Không chọn. Khi xe về, thủ kho không biết cái khung nào thuộc dòng nào. Người bán định giá riêng thì ghi giá trung bình, hoặc tách đơn.
 
 ### D6. Sửa, hủy, đóng khi đã có phiếu nhập
@@ -250,6 +292,7 @@ Mỗi lệnh ghi là **một transaction**:
   - ghi sự kiện `CREATED` (và `PLACED` nếu "Lưu đơn").
 - `update(id, input)`:
   - `FOR UPDATE` đơn;
+  - so `input.updatedAt` với `updated_at` vừa đọc; khác nhau thì từ chối với 409 "Đơn vừa được người khác sửa, tải lại trang" và không ghi gì;
   - đọc tóm tắt phiếu nhập (D9) để biết phần nào được sửa;
   - khóa nhà cung cấp/vật tư như trên;
   - thay toàn bộ dòng và chi phí (xóa rồi ghi lại, vì chưa có gì tham chiếu dòng khi chưa có phiếu nhập);
@@ -281,7 +324,8 @@ Chặn ngừng dùng (sửa `src/lib/catalog/partners.ts`, `items.ts`):
 `goods-receipt` sẽ:
 - thêm quyền đọc đơn cho Thủ kho;
 - gọi `transition()` với lệnh `RECEIVE_*` trong transaction ghi phiếu nhập;
-- chia chi phí từng chuyến bằng `allocate(…, order.allocation_method)` rồi chia theo tình trạng (D5);
+- chia chi phí từng chuyến bằng `allocate(…, order.allocation_method)` rồi chia theo tình trạng bằng `splitLotByCondition` (D5);
+- thêm giá sắt vụn tham khảo và màn nhập giá (D5);
 - ghi sự kiện vào `purchase_order_event`;
 - điền phần nhận hàng của D3b.
 
@@ -296,7 +340,7 @@ Lựa chọn đã cân nhắc: **Thêm cột `receipt_count` vào đơn.** Khôn
 | `GET /api/purchasing/orders` | `purchasing.view` | `tab`, `q`, `kind`, `page` | dòng D2, `counts`, `arrivingToday`, `total` |
 | `POST /api/purchasing/orders` | `purchasing.manage` | đơn đầy đủ + `place: boolean` | `{ id, code }` 201 |
 | `GET /api/purchasing/orders/[code]` | `purchasing.view` | – | đơn chi tiết (D8), 404 "Không tìm thấy đơn thu mua" |
-| `PATCH /api/purchasing/orders/[code]` | `purchasing.manage` | đơn đầy đủ | đơn chi tiết |
+| `PATCH /api/purchasing/orders/[code]` | `purchasing.manage` | đơn đầy đủ + `updatedAt` | đơn chi tiết; 409 khi `updatedAt` lệch |
 | `DELETE /api/purchasing/orders/[code]` | `purchasing.manage` | – | 204 |
 | `POST /api/purchasing/orders/[code]/place` | `purchasing.manage` | – | đơn chi tiết |
 | `POST /api/purchasing/orders/[code]/cancel` | `purchasing.manage` | `{ reason }` | đơn chi tiết |
@@ -354,9 +398,10 @@ Thêm vào `src/domain/permissions.ts`:
 
 ## Risks / Trade-offs
 
-- **[Hai người cùng sửa một đơn]** Người lưu sau ghi đè người lưu trước (`FOR UPDATE` chỉ xếp hàng, không phát hiện xung đột). → Chấp nhận cho MVP (1–2 người làm Kinh doanh). Lịch sử ghi đủ hai lần sửa. Nếu cần, thêm kiểm `updated_at` gửi kèm form.
+- **[Hai người cùng sửa một đơn]** `FOR UPDATE` chỉ xếp hàng, không phát hiện xung đột. → Form gửi kèm `updatedAt` đã đọc; lệch thì 409 "Đơn vừa được người khác sửa, tải lại trang" (D8).
 - **[Số mẫu D3 lệch 1 ₫]** Người kiểm tay so với bản vẽ sẽ thấy khác. → Ghi rõ ở proposal và D3; kiểm tay so với bảng D3 của design, không so với bản vẽ.
-- **[Cùng giá cho mọi tình trạng]** Phế liệu tách từ lô hàng cũ mang giá như hàng Tốt, giá trị phế liệu trong kho cao hơn giá bán sắt vụn. → Chấp nhận theo D5; báo cáo lợi nhuận (Bản 2) sẽ thấy lỗ khi bán phế liệu. Muốn chính xác hơn thì thêm hệ số sau.
+- **[Giá sắt vụn tham khảo cũ]** Giá thị trường đổi mà chưa ai cập nhật thì Phế liệu bị định giá sai, và phần chênh dồn sang Tốt / Chờ sửa. → `goods-receipt` hiện ngày cập nhật giá trên phiếu nhập; tổng giá trị lô vẫn đúng bằng tiền thật bỏ ra.
+- **[Tốt và Chờ sửa cùng giá một cái]** Hàng Chờ sửa có thể mang giá cao hơn giá trị thật cho tới khi sửa xong. → Chấp nhận (D5); chi phí sửa cộng vào khi về Tốt (#23).
 - **[Hàm `receiptSummary` trả rỗng]** Các nhánh "đã có phiếu nhập" ở service chưa chạy được bằng dữ liệu thật trong change này. → Luật nằm trong `transition()` thuần, test đủ bằng unit test với `hasReceipts: true`. `goods-receipt` thêm integration test cho các nhánh đó.
 - **[Hụt số mã khi xóa nháp]** → Chấp nhận (D7).
 

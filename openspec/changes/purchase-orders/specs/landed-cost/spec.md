@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Luật chia chi phí mua hàng (cước xe, bốc xếp, cầu đường...) vào giá nhập từng dòng hàng, và chia giá một dòng ra nhiều tình trạng. Đơn thu mua dùng để xem trước, phiếu nhập dùng để tính giá vốn thật.
+Luật chia chi phí mua hàng (cước xe, bốc xếp, cầu đường...) vào giá nhập từng dòng hàng, và chia giá một dòng hàng cũ ra các tình trạng. Đơn thu mua dùng để xem trước, phiếu nhập dùng để tính giá vốn thật.
 
 ## ADDED Requirements
 
@@ -74,12 +74,34 @@ Giá nhập một đơn vị của dòng SHALL bằng (thành tiền + chi phí 
 - **THEN** giá nhập hiện 152.988 ₫ / cái
 
 ### Requirement: Chia giá một dòng ra nhiều tình trạng
-Hàng đã qua sử dụng mua theo lô chưa phân loại SHALL có **cùng giá nhập một cái** ở mọi tình trạng tách ra. Tổng tiền của dòng (thành tiền + chi phí phân bổ) SHALL được chia cho các tình trạng theo số cái, dùng cùng cách làm tròn khớp tổng. Mã tính theo kg chia theo số kg.
+Hàng đã qua sử dụng mua theo lô chưa phân loại SHALL được chia giá từ tổng tiền dòng T (tiền hàng thực nhận + chi phí phân bổ):
+- Phế liệu nhận S = kg quy đổi (số cái × trọng lượng chuẩn; mã kg lấy số kg) × giá sắt vụn tham khảo, làm tròn đến 1 ₫ (0,5 lên);
+- Tốt và Chờ sửa chia T − S theo số cái, cùng cách làm tròn khớp tổng;
+- S > T: Phế liệu nhận T, Tốt và Chờ sửa nhận 0 ₫;
+- cả lô là phế liệu: Phế liệu nhận toàn bộ T.
+
+Tổng ba phần SHALL bằng đúng T.
 
 #### Scenario: Lô khung tách 3 tình trạng
-- **WHEN** dòng Khung 1,7m có tổng 39.231.098 ₫ cho 200 cái, tách ra 150 Tốt, 38 Chờ sửa, 12 Phế liệu
-- **THEN** giá trị từng tình trạng là 29.423.323 ₫, 7.453.909 ₫, 2.353.866 ₫ **AND** tổng là đúng 39.231.098 ₫
+- **WHEN** dòng Khung 1,7m (13,5 kg/cái) có T = 39.231.098 ₫ cho 200 cái, tách 150 Tốt / 38 Chờ sửa / 12 Phế liệu, giá sắt vụn 7.500 ₫/kg
+- **THEN** Phế liệu nhận 1.215.000 ₫ (162 kg) **AND** Tốt nhận 30.331.993 ₫, Chờ sửa nhận 7.684.105 ₫ **AND** tổng là đúng 39.231.098 ₫
 
-#### Scenario: Cả lô một tình trạng
-- **WHEN** dòng Khung 1,7m tổng 39.231.098 ₫ được tách ra 200 Tốt, 0 Chờ sửa, 0 Phế liệu
+#### Scenario: Giá trị phế liệu lớn hơn tiền dòng
+- **WHEN** 10 khung có T = 800.000 ₫, tách 2 Tốt / 8 Phế liệu, giá sắt vụn 7.500 ₫/kg (S = 810.000 ₫)
+- **THEN** Phế liệu nhận 800.000 ₫ **AND** Tốt nhận 0 ₫
+
+#### Scenario: Cả lô là phế liệu
+- **WHEN** 12 khung có T = 2.000.000 ₫, cả 12 cái là Phế liệu, giá sắt vụn 7.500 ₫/kg (S = 1.215.000 ₫)
+- **THEN** Phế liệu nhận 2.000.000 ₫
+
+#### Scenario: Không có phế liệu
+- **WHEN** dòng Khung 1,7m T = 39.231.098 ₫ tách 200 Tốt, 0 Chờ sửa, 0 Phế liệu, chưa có giá sắt vụn
 - **THEN** Tốt nhận 39.231.098 ₫ **AND** hai tình trạng còn lại nhận 0 ₫
+
+#### Scenario: Giá trị phế liệu có nửa đồng
+- **WHEN** 1 khung 13,5 kg là Phế liệu trong lô còn hàng Tốt, giá sắt vụn 7.333 ₫/kg (chính xác 98.995,5 ₫)
+- **THEN** Phế liệu nhận 98.996 ₫
+
+#### Scenario: Thiếu giá sắt vụn
+- **WHEN** lô có 12 cái Phế liệu và 188 cái Tốt/Chờ sửa nhưng chưa có giá sắt vụn tham khảo
+- **THEN** hệ thống báo "Chưa có giá sắt vụn tham khảo, nhờ Giám đốc nhập ở Cài đặt"

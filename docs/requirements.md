@@ -43,6 +43,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 24 | Phạm vi tính giá vốn bình quân | Giá BQ của (mã hàng + tình trạng) tính trên **toàn bộ hàng của công ty**: bãi + xưởng + công trình. Hàng ở công trình vẫn là tài sản công ty. Tổng giá trị trong sổ luôn bằng tồn × giá BQ (chốt 27/10/2026) |
 | 25 | Chia chi phí mua hàng theo chuyến | Chi phí của **chuyến nào** (cước xe, bốc xếp...) chia vào giá nhập hàng của **chính chuyến đó**, theo cách chia đã chọn trên đơn (theo giá trị hoặc theo trọng lượng). Mỗi phiếu nhập ghi sổ kho một lần với giá đã gồm chi phí của nó (chốt 27/10/2026) |
 | 26 | Chi phí mua hàng và tiền trả người bán | Chi phí mua hàng trả cho **nhà xe, bốc xếp**, chỉ tính vào giá vốn; **không cộng** vào tiền phải trả người bán. Tiền trả người bán = tiền hàng thực nhận (#13) (chốt 27/10/2026) |
+| 27 | Giá lô hàng cũ theo tình trạng | Lô hàng cũ mua chưa phân loại, khi tách tình trạng: **Phế liệu** lấy giá = kg quy đổi (theo trọng lượng chuẩn) × **giá sắt vụn tham khảo** (₫/kg). Phần còn lại của tiền dòng (tiền hàng thực nhận + chi phí mua hàng phân bổ) **chia cho Tốt và Chờ sửa theo số cái**. Giá trị phế liệu lớn hơn tiền dòng, hoặc cả lô là phế liệu, thì phế liệu nhận đúng tiền dòng (chốt 27/10/2026) |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 
