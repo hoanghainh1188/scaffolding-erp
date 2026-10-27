@@ -28,9 +28,9 @@
 
 ## 4. API (mọi route bọc `withAuth`)
 
-- [ ] 4.1 Route `src/app/api/inventory/stock`, `items/[code]/sites`, `items/[code]/card` (`inventory.view`; zod cho `condition`, `place`, `site`, `from`, `to`; 404 "Không tìm thấy mã hàng") — kiểm tra: `route-guards.test.ts` xanh
-- [ ] 4.2 Route `adjustments`, `adjustments/[id]`, `adjustments/[id]/submit`, `approve`, `return` (đọc `inventory.view`, ghi `inventory.adjust`, duyệt/trả lại `inventory.approve`) — kiểm tra: như trên
-- [ ] 4.3 **Integration test quyền** `src/app/api/inventory/inventory-api.int.test.ts`: mỗi route, lần lượt 5 vai trò → đúng vai trò được phép 2xx, còn lại 403 "Bạn không có quyền thực hiện thao tác này" và sổ kho, phiếu không đổi; Kế toán tạo được nhưng duyệt 403; Thủ kho, Xưởng `GET /api/inventory/stock` 403; không đăng nhập 401 — kiểm tra: `npm run test:int` xanh
+- [x] 4.1 Route `src/app/api/inventory/stock`, `items/[code]/sites`, `items/[code]/card` (`inventory.view`; zod cho `condition`, `place`, `site`, `from`, `to`; 404 "Không tìm thấy mã hàng") — kiểm tra: `route-guards.test.ts` xanh
+- [x] 4.2 Route `adjustments`, `adjustments/[id]`, `adjustments/[id]/submit`, `approve`, `return` (đọc `inventory.view`, ghi `inventory.adjust`, duyệt/trả lại `inventory.approve`) — kiểm tra: như trên
+- [x] 4.3 **Integration test quyền** `src/app/api/inventory/inventory-api.int.test.ts`: mỗi route, lần lượt 5 vai trò → đúng vai trò được phép 2xx, còn lại 403 "Bạn không có quyền thực hiện thao tác này" và sổ kho, phiếu không đổi; Kế toán tạo được nhưng duyệt 403; Thủ kho, Xưởng `GET /api/inventory/stock` 403; không đăng nhập 401 — kiểm tra: `npm run test:int` xanh
 
 ## 5. Giao diện
 

@@ -66,3 +66,17 @@ export function formatDateTime(instant: Date): string {
   );
   return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
 }
+
+/** First and last day of the month a business date falls in. */
+export function monthRange(date: BusinessDate): {
+  from: BusinessDate;
+  to: BusinessDate;
+} {
+  const [year, month] = date.split("-").map(Number) as [number, number];
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return {
+    from: `${year}-${pad(month)}-01` as BusinessDate,
+    to: `${year}-${pad(month)}-${pad(last)}` as BusinessDate,
+  };
+}
