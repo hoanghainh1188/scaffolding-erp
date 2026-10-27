@@ -95,8 +95,8 @@
 
 ## 4. API (mọi route bọc `withAuth`)
 
-- [ ] 4.1 Route `src/app/api/purchasing/orders/route.ts`, `orders/[code]/route.ts`, `orders/[code]/place|cancel|close/route.ts`, `form-options/route.ts` theo design D10: zod cho input, tiền và số lượng đọc bằng `parseMoney`/`parseQuantity`, lỗi kèm `field`, 404 "Không tìm thấy đơn thu mua" — kiểm tra: `route-guards.test.ts` xanh (không route nào quên `withAuth`)
-- [ ] 4.2 **Integration test quyền** `src/app/api/purchasing/purchasing-api.int.test.ts`:
+- [x] 4.1 Route `src/app/api/purchasing/orders/route.ts`, `orders/[code]/route.ts`, `orders/[code]/place|cancel|close/route.ts`, `form-options/route.ts` theo design D10: zod cho input, tiền và số lượng đọc bằng `parseMoney`/`parseQuantity`, lỗi kèm `field`, 404 "Không tìm thấy đơn thu mua" — kiểm tra: `route-guards.test.ts` xanh (không route nào quên `withAuth`)
+- [x] 4.2 **Integration test quyền** `src/app/api/purchasing/purchasing-api.int.test.ts`:
   - mỗi route, lần lượt 5 vai trò: Giám đốc, Kinh doanh 2xx với mọi lệnh;
   - Kế toán 2xx khi đọc, 403 "Bạn không có quyền thực hiện thao tác này" khi ghi, và đơn không đổi;
   - Thủ kho, Xưởng 403 cả đọc lẫn ghi;
@@ -107,14 +107,14 @@
 
 ## 5. Giao diện
 
-- [ ] 5.1 D2 `src/app/(desktop)/purchasing/page.tsx` + `src/components/purchasing/order-table.tsx`, `order-status-badge.tsx` theo `D2-PurchaseOrders.dc.html`, thay trang giữ chỗ "Thu mua":
+- [x] 5.1 D2 `src/app/(desktop)/purchasing/page.tsx` + `src/components/purchasing/order-table.tsx`, `order-status-badge.tsx` theo `D2-PurchaseOrders.dc.html`, thay trang giữ chỗ "Thu mua":
   - tab có số đơn, tìm, lọc loại, phân trang trên URL;
   - lời nhắc xe về hôm nay; dòng bấm mở D3b;
   - nút "Tạo đơn thu mua" theo quyền; trạng thái rỗng;
   - token thay hex.
 
   Component test: tab "Chờ xe về · 2"; URL `?tab=waiting`; nhãn "Hoàn thành · Đã hủy"; Kế toán không thấy nút tạo; "Chưa có đơn thu mua" — kiểm tra: `npm run test` xanh
-- [ ] 5.2 D3 form `src/app/(desktop)/purchasing/orders/new/page.tsx`, `[code]/edit/page.tsx` + `order-form.tsx`, `order-lines.tsx`, `order-costs.tsx`, `allocation-choice.tsx`, `order-total.tsx` theo `D3-PurchaseOrder.dc.html`:
+- [x] 5.2 D3 form `src/app/(desktop)/purchasing/orders/new/page.tsx`, `[code]/edit/page.tsx` + `order-form.tsx`, `order-lines.tsx`, `order-costs.tsx`, `allocation-choice.tsx`, `order-total.tsx` theo `D3-PurchaseOrder.dc.html`:
   - xem trước bằng `landed-cost`, nút đổi cái/kg, "≈ N cái";
   - gợi ý tên chi phí; lỗi dưới ô;
   - khóa ô theo `editableFields`; gửi kèm `updatedAt` khi sửa, nhận 409 thì hiện thông báo và nút tải lại;
@@ -129,7 +129,7 @@
   - 409 hiện "Đơn vừa được người khác sửa, tải lại trang".
 
   Kiểm tra: `npm run test` xanh
-- [ ] 5.3 D3b `src/app/(desktop)/purchasing/orders/[code]/page.tsx` + `order-detail.tsx`, `order-history.tsx`, `receiving-placeholder.tsx`, `cancel-dialog.tsx`, `close-dialog.tsx` theo `D3b-PurchaseOrderDetail.dc.html` (phần đơn):
+- [x] 5.3 D3b `src/app/(desktop)/purchasing/orders/[code]/page.tsx` + `order-detail.tsx`, `order-history.tsx`, `receiving-placeholder.tsx`, `cancel-dialog.tsx`, `close-dialog.tsx` theo `D3b-PurchaseOrderDetail.dc.html` (phần đơn):
   - thông tin chung, bảng Đặt và thực nhận (cột "Đã nhận" là "–"), chi phí dự kiến, lịch sử;
   - khối "Chưa có chuyến nhập…", Phải trả người bán 0 ₫;
   - nút theo quyền và trạng thái; hỏi lại khi hủy/đóng/xóa; 404.
@@ -141,12 +141,12 @@
   - lịch sử mới nhất trên cùng.
 
   Kiểm tra: `npm run test` xanh
-- [ ] 5.4 Sidebar mục "Thu mua" mở D2; trang dùng giờ gọi `await connection()` — kiểm tra: `npm run lint && npm run typecheck && npm test` xanh; `npm run build` không lỗi prerender
+- [x] 5.4 Sidebar mục "Thu mua" mở D2; trang dùng giờ gọi `await connection()` — kiểm tra: `npm run lint && npm run typecheck && npm test` xanh; `npm run build` không lỗi prerender
 
 ## 6. E2E, ảnh mốc, tài liệu
 
-- [ ] 6.1 Dữ liệu E2E theo design D13: nhà cung cấp cố định `E2E NCC`; `global-setup.ts` xóa đơn của nhà cung cấp này trước mỗi lần chạy — kiểm tra: chạy `npm run test:e2e` hai lần liền đều xanh
-- [ ] 6.2 E2E `tests/e2e/purchasing.spec.ts`:
+- [x] 6.1 Dữ liệu E2E theo design D13: nhà cung cấp cố định `E2E NCC`; `global-setup.ts` xóa đơn của nhà cung cấp này trước mỗi lần chạy — kiểm tra: chạy `npm run test:e2e` hai lần liền đều xanh
+- [x] 6.2 E2E `tests/e2e/purchasing.spec.ts`:
   - Kinh doanh tạo đơn 2 dòng (một dòng theo kg) + 2 khoản chi phí; thấy giá nhập xem trước;
   - "Lưu đơn" mở D3b "Chờ xe về"; D2 tab "Chờ xe về" có đơn;
   - sửa đơn giá; lịch sử có "sửa đơn";
@@ -156,8 +156,8 @@
   - D2, D3 ở 1366px không cuộn ngang.
 
   Kiểm tra: `npm run test:e2e` xanh ở local
-- [ ] 6.3 Thêm `/purchasing`, `/purchasing/orders/new`, `/purchasing/orders/<mã mẫu>` vào `responsive.spec.ts` và `a11y.spec.ts`; thêm D2, D3, D3b vào `visual.spec.ts` (D2 lọc theo nhà cung cấp mẫu, che mã đơn và lời nhắc xe về) — kiểm tra: CI xanh sau workflow Update Playwright snapshots
-- [ ] 6.4 Cập nhật `CLAUDE.md`:
+- [ ] 6.3 Thêm `/purchasing`, `/purchasing/orders/new`, `/purchasing/orders/<mã mẫu>` vào `responsive.spec.ts` và `a11y.spec.ts`; thêm D2, D3, D3b vào `visual.spec.ts` (D2 lọc theo nhà cung cấp mẫu; che lời nhắc xe về, ngày lập và lịch sử bằng `[data-mask]`) — kiểm tra: CI xanh sau workflow Update Playwright snapshots
+- [x] 6.4 Cập nhật `CLAUDE.md`:
   - Đơn thu mua không ghi sổ kho.
   - Chia chi phí dùng `src/domain/landed-cost.ts` (phần dư lớn nhất, tổng khớp từng đồng).
   - Trạng thái đơn dùng `transition()`.
