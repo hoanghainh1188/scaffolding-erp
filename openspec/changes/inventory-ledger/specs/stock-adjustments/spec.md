@@ -9,8 +9,8 @@ Phiếu điều chỉnh sửa sai số lượng, tình trạng hoặc vị trí 
 Phiếu điều chỉnh (mã `ĐC-<năm>-<số 3 chữ số>`, VD `ĐC-2026-004`) SHALL gồm một hoặc nhiều dòng, mỗi dòng thuộc một kiểu: **số lượng** (tăng/giảm tại một vị trí, ghi 1 dòng sổ), **tình trạng** (chuyển sang tình trạng khác tại cùng vị trí, ghi đúng 2 dòng sổ), **vị trí** (chuyển sang vị trí khác, cùng tình trạng, ghi đúng 2 dòng sổ). Mọi dòng sổ của phiếu điều chỉnh SHALL ghi theo giá vốn BQ hiện tại.
 
 #### Scenario: Sửa sai tình trạng ra đúng 2 dòng
-- **WHEN** `ĐC-2026-004` lý do "Sửa PTH-2026-064: 10 cái thực tế là Chờ sửa" có 1 dòng chuyển 10 cái `GG-K17` tại `BAI-01` từ Tốt (giá BQ 195.861 ₫) sang Chờ sửa (giá BQ 160.000 ₫) và được duyệt
-- **THEN** sổ có đúng 2 dòng mới: `ADJUST_OUT` −10 Tốt ghi 195.861 ₫ và `ADJUST_IN` +10 Chờ sửa ghi 160.000 ₫, cùng chứng từ `ĐC-2026-004` **AND** tồn Tốt tại bãi từ 1.330 về 1.320 **AND** giá BQ hai tình trạng không đổi
+- **WHEN** `ĐC-2026-004` lý do "Sửa PTH-2026-064: 10 cái thực tế là Chờ sửa" có 1 dòng chuyển 10 cái `GG-K17` tại `BAI-01` từ Tốt (giá BQ 195.282 ₫) sang Chờ sửa (giá BQ 160.000 ₫) và được duyệt
+- **THEN** sổ có đúng 2 dòng mới: `ADJUST_OUT` −10 Tốt ghi 195.282 ₫ và `ADJUST_IN` +10 Chờ sửa ghi 160.000 ₫, cùng chứng từ `ĐC-2026-004` **AND** tồn Tốt tại bãi từ 1.330 về 1.320 **AND** giá BQ hai tình trạng không đổi
 
 #### Scenario: Giảm số lượng vì đếm thiếu
 - **WHEN** phiếu điều chỉnh giảm 5 cái `GG-CH` Tốt tại `BAI-01` (giá BQ 31.000 ₫) lý do "Đếm lại bãi thiếu 5 cái" được duyệt
@@ -58,7 +58,7 @@ Giám đốc duyệt SHALL ghi mọi dòng sổ của phiếu trong cùng transa
 - **THEN** sổ chỉ có một bộ 2 dòng của phiếu **AND** lần sau nhận "Phiếu đã được ghi sổ"
 
 ### Requirement: Phiếu tồn đầu kỳ
-Phiếu tồn đầu kỳ (mã `TĐK-<năm>-<số 3 chữ số>`) SHALL gồm ngày tồn đầu (không sau hôm nay) và các dòng (mã hàng, tình trạng, vị trí, số lượng > 0, đơn giá vốn ≥ 0), đi cùng luồng lập/duyệt như phiếu điều chỉnh. Duyệt SHALL ghi mỗi dòng thành một dòng sổ `OPENING` (giá trị = số lượng × đơn giá); dòng tại bãi, xưởng tính giá BQ như nhập mua. (Mã hàng + tình trạng) đã có dòng sổ khác `OPENING` SHALL không nhận tồn đầu kỳ nữa.
+Phiếu tồn đầu kỳ (mã `TĐK-<năm>-<số 3 chữ số>`) SHALL gồm ngày tồn đầu (không sau hôm nay) và các dòng (mã hàng, tình trạng, vị trí, số lượng > 0, đơn giá vốn ≥ 0), đi cùng luồng lập/duyệt như phiếu điều chỉnh. Duyệt SHALL ghi mỗi dòng thành một dòng sổ `OPENING` (giá trị = số lượng × đơn giá); mọi dòng (kể cả tại công trình) tính giá BQ như nhập mua. (Mã hàng + tình trạng) đã có dòng sổ khác `OPENING` SHALL không nhận tồn đầu kỳ nữa.
 
 #### Scenario: Tồn đầu ở bãi và công trình
 - **WHEN** `TĐK-2026-001` ngày 01/10/2026 có `GG-K17` Tốt 1.000 cái tại `BAI-01` đơn giá 195.000 ₫ và 220 cái tại `CT-0003` đơn giá 195.000 ₫ được duyệt

@@ -42,6 +42,8 @@ Giai đoạn: **[MVP]** — change số 4 trong `docs/roadmap.md`, issue #6. Mà
 - **Code**: `src/domain/` (tính giá BQ, quy tắc loại biến động, kiểm phiếu điều chỉnh), `src/lib/inventory/` (ghi sổ, đọc tồn, thẻ kho, phiếu điều chỉnh, đối chiếu), route `src/app/api/inventory/*`, trang `src/app/(desktop)/inventory/*`; sửa `src/lib/catalog/items.ts`, `places.ts` (chặn ngừng dùng khi còn tồn); thêm quyền ở `src/domain/permissions.ts`; `npm run db:seed:dev` thêm số liệu mẫu khớp D10/D11.
 - **Test**: unit (giá BQ nhiều ca, làm tròn, loại biến động), integration (không sửa/xóa được dòng sổ, ghi đồng thời, tồn và thẻ kho khớp sổ, điều chỉnh sai tình trạng ra 2 dòng, quyền 403 từng vai trò, chặn ngừng dùng), component (D10, D11, form điều chỉnh), E2E (luồng chính), ảnh mốc mới cho D10, D11.
 - Không thêm thư viện.
+- **Tài liệu**: `docs/requirements.md` 0.2 thêm #24 (giá BQ gộp mọi vị trí, chốt 27/10/2026) và sửa #11 cho khớp. Số mẫu trên bản vẽ D11 (195.171, 195.861) khác số mới (195.055, 195.282, design D11); spec thắng.
+- **Ràng buộc cho change sau** (design D12): tiền thuê tính theo ngày giao/trả thực tế của phiếu, không theo ngày ghi sổ.
 
 ## Ngoài phạm vi
 

@@ -35,7 +35,7 @@
 | `unit_cost` | `bigint` CHECK `>= 0` | Đơn giá ghi sổ (VND, mỗi cái hoặc mỗi kg) |
 | `amount` | `bigint` | Giá trị có dấu = số lượng × đơn giá, làm tròn 1 ₫; dòng làm đổi giá lưu đúng giá trị người ghi đưa vào |
 | `avg_cost_after` | `bigint` CHECK `>= 0` | Giá BQ của (mã + tình trạng) sau dòng |
-| `pool_quantity_after` | `numeric(14,3)` | Tồn tính giá (bãi + xưởng, D3) sau dòng — để đối chiếu nhanh |
+| `pool_quantity_after` | `numeric(14,3)` | Tổng tồn của (mã + tình trạng) ở mọi vị trí sau dòng (D3) — để đối chiếu nhanh |
 | `weighed_kg` | `numeric(14,3)` null | Kg cân thực tế (bán phế liệu) |
 | `document_type` | `text` not null | `OPENING`, `ADJUSTMENT`, sau này `GOODS_RECEIPT`, `DELIVERY`... |
 | `document_id` | `uuid` null | |
@@ -46,7 +46,7 @@
 
 Index: `(item_id, condition, location_id)`, `(location_id)`, `(item_id, business_date, id)`, `(document_type, document_id)`.
 
-**Chặn sửa/xóa**: trigger `BEFORE UPDATE OR DELETE ... FOR EACH ROW` và `BEFORE TRUNCATE ... FOR EACH STATEMENT` gọi hàm `inventory_ledger_append_only()` `raise exception 'Sổ kho chỉ ghi thêm, sai thì lập phiếu điều chỉnh'`. Riêng TRUNCATE cho qua khi `current_setting('inventory.allow_truncate', true) = 'on'`: chỉ helper test (`src/test/inventory.ts`) đặt `SET LOCAL` này để dọn DB test; một test quét mã nguồn bảo đảm chuỗi `inventory.allow_truncate` chỉ xuất hiện trong `src/test/` và migration.
+**Chặn sửa/xóa**: trigger `BEFORE UPDATE OR DELETE ... FOR EACH ROW` và `BEFORE TRUNCATE ... FOR EACH STATEMENT` gọi hàm `inventory_ledger_append_only()` `raise exception 'Sổ kho chỉ ghi thêm, sai thì lập phiếu điều chỉnh'`. Riêng TRUNCATE cho qua khi hàm `inventory_truncate_allowed(current_database(), current_setting('inventory.allow_truncate', true))` trả `true`, tức **cả hai**: cờ `inventory.allow_truncate = 'on'` (đặt bằng `SET LOCAL`) **và** tên DB kết thúc bằng `_test` (`scaffolding_erp_test` ở local và CI). Như vậy cờ này vô dụng trên DB dev (`scaffolding_erp`) hay production. Chỉ helper test (`src/test/inventory.ts`) đặt cờ để dọn DB test; một test quét mã nguồn bảo đảm chuỗi `inventory.allow_truncate` chỉ xuất hiện trong `src/test/` và migration. Kiểm tên DB là hàm riêng để test được trực tiếp với tên khác.
 
 - *Đã cân nhắc*: `REVOKE UPDATE, DELETE` cho vai trò DB của ứng dụng. Không chọn vì app đang kết nối bằng chủ bảng (chủ bảng luôn sửa được), còn trigger chặn mọi người trừ superuser cố ý tắt trigger.
 - *Đã cân nhắc*: bảng sự kiện kiểu JSON. Không chọn: cột rõ ràng dễ CHECK, dễ index, dễ đọc thẻ kho.
@@ -55,18 +55,23 @@ Index: `(item_id, condition, location_id)`, `(location_id)`, `(item_id, business
 
 Logic thuần ở `src/domain/average-cost.ts`, dùng `bigint` cho mọi phép nhân chia (số lượng phần nghìn × giá có thể vượt `2^53`).
 
-- Dòng làm đổi giá (`OPENING`, `PURCHASE_IN`, `REPAIR_IN`) vào bãi/xưởng: `avg_mới = roundHalfUp((q_trước × avg_trước + amount × 1000) / (q_trước + q_vào))` với `q` tính bằng phần nghìn. `q_trước = 0` → `avg_mới = roundHalfUp(amount × 1000 / q_vào)`.
+- Dòng làm đổi giá (`OPENING`, `PURCHASE_IN`, `REPAIR_IN`): `avg_mới = roundHalfUp((q_trước × avg_trước + amount × 1000) / (q_trước + q_vào))` với `q` tính bằng phần nghìn. `q_trước = 0` → `avg_mới = roundHalfUp(amount × 1000 / q_vào)`.
 - `unit_cost` hiện ở D11 của dòng này = `roundHalfUp(amount × 1000 / q_vào)` (196.155 ₫ của `PN-2026-087`).
 - Mọi dòng khác: `unit_cost = avg hiện tại`, `amount = roundHalfUp(quantity × unit_cost / 1000)`, giá BQ không đổi (vào hay ra theo đúng giá BQ thì công thức trên cũng ra đúng giá cũ).
 - Giá trị tồn mang sang luôn là **số lượng × giá BQ đã làm tròn**; phần lẻ do làm tròn (dưới 0,5 ₫ × số lượng) không cộng dồn. Đây là hệ quả trực tiếp của 0.2 #10. *Đã cân nhắc* giữ tổng giá trị chính xác rồi chia ra giá BQ để hiển thị: chính xác hơn vài trăm đồng nhưng giá BQ trên màn hình không còn nhân ra được giá trị, khó đối chiếu tay bằng Excel.
 - `REPAIR_IN`: change `simple-repair` truyền `amount = số lượng × giá BQ Chờ sửa + chi phí sửa` (0.2 #23). Change này chỉ cần nhận `amount`.
 - Tình trạng chưa từng có dòng sổ nhận dòng không đổi giá: lấy `unit_cost` của dòng `_OUT` đi cặp trong cùng lần ghi; không có thì bắt buộc người ghi đưa đơn giá (spec).
 
-### D3. Hàng ở công trình không tham gia tính giá BQ
+### D3. Giá BQ tính trên toàn bộ hàng của công ty (người dùng chốt khi review PR #30)
 
-Giá BQ của (mã + tình trạng) tính trên **tồn tại bãi và xưởng** ("pool"). Hàng ra công trình rời pool theo giá BQ lúc xuất; khi thu hồi vào lại pool theo giá BQ lúc thu hồi (0.2 #11). Giá trị hàng ở công trình trên D10 = số lượng × giá BQ hiện tại.
+Giá BQ của (mã + tình trạng) tính trên **tổng tồn ở mọi vị trí**: bãi, xưởng và công trình ("pool" = toàn bộ hàng của công ty). `inventory_cost.pool_quantity` và `inventory_ledger.pool_quantity_after` mang nghĩa này. Ghi vào `docs/requirements.md` 0.2 #24 (chốt 27/10/2026), sửa câu #11 cho khớp.
 
-Lý do: số liệu D11 chỉ đúng với cách này (xem D11 bên dưới). Gộp cả công trình thì ngày 08/10 có 1.220 cái (920 bãi + 300 công trình) và giá BQ ra (1.220 × 195.000 + 31.384.800) ÷ 1.380 = 195.134 ₫, không khớp 195.171 ₫ trên thiết kế. Cách này cũng khớp ý của 0.2 #11: thu hồi "ghi theo giá BQ hiện tại" chỉ có nghĩa khi hàng ở công trình nằm ngoài pool.
+- **Chuyển chỗ trong công ty** (xuất cho công trình, thu hồi cùng tình trạng, chuyển bãi ↔ xưởng, điều chỉnh vị trí): 2 dòng cùng giá BQ, không đổi giá BQ, không đổi tổng tồn, không đổi tổng giá trị.
+- **Hàng vào từ ngoài** (tồn đầu, nhập mua, nhập sau sửa): làm đổi giá BQ.
+- **Hàng ra khỏi công ty** (bán, mất, điều chỉnh giảm) và chuyển tình trạng: ghi theo giá BQ hiện tại; giá BQ không đổi, tổng giá trị giảm đúng số lượng × giá BQ.
+- Bất biến: với mỗi (mã + tình trạng), **tổng giá trị trong sổ = tổng tồn × giá BQ** (chênh tối đa phần lẻ làm tròn, D2).
+- *Đã cân nhắc* (bản propose đầu): chỉ tính trên bãi + xưởng để khớp đúng số mẫu 195.171 ₫ của bản vẽ D11. Không chọn: số trên bản vẽ chỉ là dữ liệu mẫu; hàng ở công trình vẫn là tài sản công ty, và tách pool làm giá trị hàng ở công trình phụ thuộc lúc thu hồi.
+- Số mẫu trong `docs/design/screens/D11-StockCard.dc.html` (195.171, 195.861) **khác** số mới ở D11 bên dưới (195.055, 195.282). Spec thắng; seed dev và ảnh mốc theo bộ số mới.
 
 ### D4. Chống ghi đồng thời (câu hỏi 3)
 
@@ -85,7 +90,7 @@ Bảng `inventory_cost` (PK `item_id, condition`): `avg_cost bigint`, `pool_quan
 
 ### D5. Tồn theo vị trí (câu hỏi 4)
 
-Tồn = `SUM(quantity)` theo (mã, tình trạng, `location_id`). "Tại bãi" = mọi vị trí `YARD`, "Tại xưởng" = `WORKSHOP`, "Tại công trình" = `SITE` (mỗi công trình một vị trí đi kèm từ `master-data`). Xuất cho công trình = 2 dòng (`DELIVERY_OUT` ở bãi, `DELIVERY_IN` ở vị trí công trình); thu hồi = 2 dòng ngược lại, có thể khác tình trạng. Chuyển bãi ↔ xưởng là `TRANSFER_*`.
+Tồn = `SUM(quantity)` theo (mã, tình trạng, `location_id`); giá BQ thì gộp mọi vị trí (D3). "Tại bãi" = mọi vị trí `YARD`, "Tại xưởng" = `WORKSHOP`, "Tại công trình" = `SITE` (mỗi công trình một vị trí đi kèm từ `master-data`). Xuất cho công trình = 2 dòng (`DELIVERY_OUT` ở bãi, `DELIVERY_IN` ở vị trí công trình); thu hồi = 2 dòng ngược lại, có thể khác tình trạng. Chuyển bãi ↔ xưởng là `TRANSFER_*`.
 
 ### D6. Đọc tồn nhanh (câu hỏi 5)
 
@@ -121,32 +126,43 @@ Bảng:
 
 ### D10. Ngày nghiệp vụ
 
-Không ghi lùi so với dòng gần nhất cùng (mã + tình trạng), không ghi sau hôm nay. Nhờ vậy thứ tự `(business_date, id)` trên D11 trùng thứ tự tính giá. Giấy tờ về muộn ghi theo ngày nhập phần mềm, ghi ngày thật ở diễn giải.
+Không ghi lùi so với dòng gần nhất cùng (mã + tình trạng), không ghi sau hôm nay. Nhờ vậy thứ tự `(business_date, id)` trên D11 trùng thứ tự tính giá. Giấy tờ về muộn ghi theo ngày nhập phần mềm; ngày giao/trả thật nằm trên phiếu và là ngày tính thuê (D12).
 
-### D11. Ví dụ tính tay khớp D11 (`GG-K17`, tình trạng Tốt)
+### D11. Ví dụ tính tay cho thẻ kho (`GG-K17`, tình trạng Tốt)
 
-Giả định: Chờ sửa `GG-K17` có giá BQ 160.000 ₫; pool Tốt = bãi + xưởng (D3).
+Giả định: ngày 01/10/2026 `GG-K17` Tốt có **1.220 cái tại `BAI-01`** và **2.000 cái đang ở công trình** (`CT-0001` Nhà phố Lê Văn Lương 1.200, `CT-0002` Cầu vượt Mai Dịch 800), giá BQ 195.000 ₫ → pool 3.220 cái. Chờ sửa `GG-K17` có giá BQ 160.000 ₫. Công trình `CT-0007` Nhà xưởng KCN Quang Minh chưa có hàng.
 
-| Ngày | Chứng từ | Dòng sổ (vị trí) | Đơn giá ghi sổ | Tồn Tốt tại bãi | Pool Tốt | Giá BQ Tốt sau |
+| Ngày | Chứng từ | Dòng sổ (vị trí) | Đơn giá ghi sổ | Tồn Tốt tại bãi | Pool Tốt (mọi vị trí) | Giá BQ Tốt sau |
 |---|---|---|---|---|---|---|
-| 01/10 | Tồn đầu kỳ | – | – | 1.220 | 1.220 | 195.000 |
-| 03/10 | `PX-2026-118` | `DELIVERY_OUT` −300 (bãi); `DELIVERY_IN` +300 (công trình Cầu vượt Mai Dịch) | 195.000 | 920 | 920 | 195.000 |
-| 08/10 | `PN-2026-087` | `PURCHASE_IN` +160, giá trị 31.384.800 | 196.155 | 1.080 | 1.080 | **195.171** |
-| 12/10 | `PSC-2026-021` | `REPAIR_OUT` −40 Chờ sửa (xưởng, 160.000); `REPAIR_IN` +40 Tốt (bãi), giá trị 40 × 160.000 + 40 × 54.500 = 8.580.000 | 214.500 | 1.120 | 1.120 | **195.861** |
-| 15/10 | `PTH-2026-064` | `RETURN_OUT` −210 (công trình Lê Văn Lương); `RETURN_IN` +210 (bãi) | 195.861 | 1.330 | 1.330 | 195.861 |
-| 16/10 | `ĐC-2026-004` | `ADJUST_OUT` −10 Tốt (bãi, 195.861); `ADJUST_IN` +10 Chờ sửa (bãi, 160.000) | 195.861 | 1.320 | 1.320 | 195.861 |
-| 20/10 | `PX-2026-131` | `DELIVERY_OUT` −120 (bãi); `DELIVERY_IN` +120 (KCN Quang Minh) | 195.861 | 1.200 | 1.200 | 195.861 |
-| 22/10 | `PTH-2026-069` | `RETURN_OUT` −40 (KCN Quang Minh); `RETURN_IN` +40 (bãi) | 195.861 | 1.240 | 1.240 | 195.861 |
+| 01/10 | Tồn đầu kỳ | – | – | 1.220 | 3.220 | 195.000 |
+| 03/10 | `PX-2026-118` | `DELIVERY_OUT` −300 (bãi); `DELIVERY_IN` +300 (`CT-0002`) | 195.000 | 920 | 3.220 | 195.000 |
+| 08/10 | `PN-2026-087` | `PURCHASE_IN` +160 (bãi), giá trị 31.384.800 | 196.155 | 1.080 | 3.380 | **195.055** |
+| 12/10 | `PSC-2026-021` | `REPAIR_OUT` −40 Chờ sửa (xưởng, 160.000); `REPAIR_IN` +40 Tốt (bãi), giá trị 40 × 160.000 + 40 × 54.500 = 8.580.000 | 214.500 | 1.120 | 3.420 | **195.282** |
+| 15/10 | `PTH-2026-064` | `RETURN_OUT` −210 (`CT-0001`); `RETURN_IN` +210 (bãi) | 195.282 | 1.330 | 3.420 | 195.282 |
+| 16/10 | `ĐC-2026-004` | `ADJUST_OUT` −10 Tốt (bãi, 195.282); `ADJUST_IN` +10 Chờ sửa (bãi, 160.000) | 195.282 | 1.320 | 3.410 | 195.282 |
+| 20/10 | `PX-2026-131` | `DELIVERY_OUT` −120 (bãi); `DELIVERY_IN` +120 (`CT-0007`) | 195.282 | 1.200 | 3.410 | 195.282 |
+| 22/10 | `PTH-2026-069` | `RETURN_OUT` −40 (`CT-0007`); `RETURN_IN` +40 (bãi) | 195.282 | 1.240 | 3.410 | 195.282 |
 
 Tính:
-- 08/10: (920 × 195.000 + 31.384.800) ÷ (920 + 160) = (179.400.000 + 31.384.800) ÷ 1.080 = 210.784.800 ÷ 1.080 = 195.171,11 → **195.171 ₫**. Đơn giá ghi sổ 31.384.800 ÷ 160 = 196.155 ₫.
-- 12/10: (1.080 × 195.171 + 8.580.000) ÷ 1.120 = (210.784.680 + 8.580.000) ÷ 1.120 = 219.364.680 ÷ 1.120 = 195.861,32 → **195.861 ₫**. Giá BQ Chờ sửa vẫn 160.000 ₫.
-- Thẻ kho Tốt, Tại bãi, tháng 10: Tồn đầu 1.220; Nhập 160 + 40 + 210 + 40 = **450**; Xuất 300 + 10 + 120 = **430**; Tồn cuối **1.240**. Khớp D11.
-- 16/10: giá trị Tốt giảm 10 × 195.861 = 1.958.610 ₫, Chờ sửa tăng 10 × 160.000 = 1.600.000 ₫; giá BQ cả hai không đổi.
+- 08/10: (3.220 × 195.000 + 31.384.800) ÷ (3.220 + 160) = (627.900.000 + 31.384.800) ÷ 3.380 = 659.284.800 ÷ 3.380 = 195.054,67 → **195.055 ₫**. Đơn giá ghi sổ 31.384.800 ÷ 160 = 196.155 ₫.
+- 12/10: (3.380 × 195.055 + 8.580.000) ÷ 3.420 = (659.285.900 + 8.580.000) ÷ 3.420 = 667.865.900 ÷ 3.420 = 195.282,43 → **195.282 ₫**. Giá BQ Chờ sửa vẫn 160.000 ₫.
+- 03/10, 15/10, 20/10, 22/10 là chuyển chỗ: pool và giá BQ không đổi; tổng giá trị Tốt sau 12/10 là 3.420 × 195.282 = 667.864.440 ₫ cho tới 15/10.
+- 16/10: hàng chuyển tình trạng: giá trị Tốt giảm 10 × 195.282 = 1.952.820 ₫ (còn 3.410 × 195.282 = 665.911.620 ₫), Chờ sửa tăng 10 × 160.000 = 1.600.000 ₫; giá BQ cả hai không đổi.
+- Thẻ kho Tốt, Tại bãi, tháng 10: Tồn đầu **1.220**; Nhập 160 + 40 + 210 + 40 = **450**; Xuất 300 + 10 + 120 = **430**; Tồn cuối **1.240**; giá BQ hiện tại **195.282 ₫**.
+- Nếu (sai) chỉ tính trên bãi + xưởng thì ra 195.171 / 195.861 như bản vẽ — dùng làm ca test phản chứng: kết quả phải **khác** hai số này.
 
-Bộ số này là dữ liệu mẫu của `npm run db:seed:dev` (ghi bằng `postMovements` với các loại biến động của change sau) và là test integration "thẻ kho khớp tính tay".
+Bộ số này là dữ liệu mẫu của `npm run db:seed:dev` (ghi bằng `postMovements` với các loại biến động của change sau), là test integration "thẻ kho khớp tính tay" và là số trên ảnh mốc D11.
 
-### D12. Service, API, giao diện
+### D12. Ràng buộc cho change sau: ngày tính tiền thuê không lấy từ ngày ghi sổ
+
+`business_date` của sổ kho là ngày ghi sổ và không lùi (D10) để đúng thứ tự giá vốn. Nhưng thủ kho có thể lưu nháp khi mất sóng (0.2 #7) và gửi muộn, nên ngày ghi sổ có thể trễ hơn ngày giao/trả thật; nếu tính thuê theo ngày ghi sổ thì thiếu tiền. Vì vậy:
+
+- `deliveries` và `returns-and-compensation`: phiếu xuất và phiếu thu hồi **lưu ngày giao / ngày trả thực tế** của riêng phiếu (cột trên phiếu, không trên sổ kho).
+- `rental-billing`: tính số ngày thuê theo **ngày thực tế của phiếu**, không theo `business_date` của sổ kho.
+- Ngày thực tế **không được sau** ngày ghi sổ, và chỉ được **lùi tối đa 3 ngày** so với ngày ghi sổ; lùi thì **bắt buộc ghi lý do** (lưu cùng phiếu). Con số 3 ngày là đề xuất, change `deliveries` chốt lại.
+- Change này không thêm cột ngày thực tế vào sổ kho; `document_id` trên dòng sổ đủ để `rental-billing` nối về phiếu.
+
+### D13. Service, API, giao diện
 
 - `src/lib/inventory/`: `post.ts` (`postMovements`), `stock.ts` (bảng D10, thẻ số, từng công trình), `card.ts` (thẻ kho D11: tồn đầu kỳ = tổng trước `from`, dòng trong kỳ, cộng dồn bằng window function), `adjustments.ts` (list, get, create, update, delete, submit, approve, return), `reconcile.ts`. Sửa `src/lib/catalog/items.ts` (`archiveItem` kiểm tổng tồn), `places.ts` (`archiveSite`, `archiveLocation` kiểm tồn tại vị trí) trong cùng transaction đang khóa bản ghi `FOR UPDATE`.
 - API (bọc `withAuth`, zod, thông báo tiếng Việt):
@@ -160,17 +176,17 @@ Bộ số này là dữ liệu mẫu của `npm run db:seed:dev` (ghi bằng `po
 - **Phiếu điều chỉnh chưa có bản vẽ** trên canvas: làm theo bố cục D10 (bảng + Sheet), dùng component sẵn có; ghi vào PR để duyệt khi review giao diện.
 - D10 ở 1366px: 9 cột số + cột tên. Cột tên được xuống dòng, cột số `tabular-nums`, kiểm bằng E2E như D9 (bảng hẹp nhất còn dư ≥ 24px).
 
-### D13. Test
+### D14. Test
 
-- Unit (`src/domain/average-cost.test.ts`, `stock-adjustment.test.ts`, `movement.test.ts`): chuỗi D11, làm tròn đúng nửa/dưới nửa, tồn 0, giữ giá cuối, hàng kg, số lớn, dòng sai dấu, số lẻ hàng cái, dựng dòng sổ từ 3 kiểu điều chỉnh.
-- Integration (`src/lib/inventory/*.int.test.ts`): UPDATE/DELETE/TRUNCATE bị từ chối; chuỗi D11 qua `postMovements` + thẻ kho khớp bảng D11; D10 khớp `SUM` sổ; ghi đồng thời (2 nhập cùng mã ra đúng giá BQ của thứ tự hoàn tất; 2 xuất vượt tồn chỉ 1 thành công; 2 phiếu chạm 2 mã ngược thứ tự không kẹt) × 8 vòng; điều chỉnh tình trạng ra đúng 2 dòng; duyệt hai lần; tồn đổi trước lúc duyệt; ngừng dùng vật tư/công trình/xưởng còn tồn bị chặn; đối chiếu sau mỗi kịch bản; quyền 403 từng vai trò cho mọi route ghi.
+- Unit (`src/domain/average-cost.test.ts`, `stock-adjustment.test.ts`, `movement.test.ts`): chuỗi D11 (195.055, 195.282) và ca phản chứng (không ra 195.171 / 195.861), chuỗi chuyển chỗ giữ giá BQ và tổng giá trị, làm tròn đúng nửa/dưới nửa, tồn 0, giữ giá cuối, hàng kg, số lớn, dòng sai dấu, số lẻ hàng cái, dựng dòng sổ từ 3 kiểu điều chỉnh.
+- Integration (`src/lib/inventory/*.int.test.ts`): UPDATE/DELETE/TRUNCATE bị từ chối, `inventory_truncate_allowed` chỉ đúng với DB `_test` + cờ; chuỗi D11 qua `postMovements` + thẻ kho khớp bảng D11; D10 khớp `SUM` sổ; ghi đồng thời (2 nhập cùng mã ra đúng giá BQ của thứ tự hoàn tất; 2 xuất vượt tồn chỉ 1 thành công; 2 phiếu chạm 2 mã ngược thứ tự không kẹt) × 8 vòng; điều chỉnh tình trạng ra đúng 2 dòng; duyệt hai lần; tồn đổi trước lúc duyệt; ngừng dùng vật tư/công trình/xưởng còn tồn bị chặn; đối chiếu sau mỗi kịch bản; quyền 403 từng vai trò cho mọi route ghi.
 - Component: D10 (dòng, thẻ số, phế liệu), D11 (tóm tắt, ẩn cột giá khi "Tất cả"), form điều chỉnh.
 - E2E: Kế toán lập tồn đầu → Giám đốc duyệt → D10 hiện số → mở D11; Kế toán lập điều chỉnh tình trạng → Giám đốc trả lại → sửa → duyệt; D10 1366px không cuộn ngang; responsive, a11y, ảnh mốc D10, D11.
 - **Dữ liệu E2E**: sổ kho ở DB dev không xóa được, nên E2E dùng mã cố định `E2E-KHO-01`… tạo một lần, không xóa, và kiểm theo **chênh lệch** trước/sau. `tests/e2e/global-setup.ts` bỏ qua mã `E2E-%` đã có dòng sổ khi dọn danh mục.
 
 ## Risks / Trade-offs
 
-- **Hàng ở công trình ngoài pool (D3)**: giá trị hàng ở công trình trên D10 theo giá BQ hiện tại, không theo giá lúc xuất. Chấp nhận: đây là số quản trị, và là cách duy nhất khớp D11 + 0.2 #11. Cần người dùng xác nhận khi duyệt.
+- **Số mẫu D11 khác bản vẽ** (D3): ảnh mốc và kiểm tra tay theo bộ số D11 mới; bản vẽ không sửa (chỉ là mẫu).
 - **Mất phần lẻ làm tròn**: mỗi lần đổi giá có thể lệch tới 0,5 ₫ × số lượng (VD 120 ₫ ngày 12/10). Chấp nhận theo 0.2 #10.
 - **Không ghi lùi ngày**: giấy tờ về muộn phải ghi theo ngày nhập máy. Nếu sau này cần lùi ngày thì phải tính lại giá BQ các dòng sau — không làm.
 - **Superuser tắt trigger** vẫn sửa được sổ: chỉ chặn được người dùng ứng dụng; backup + `inventory:check` phát hiện lệch.
@@ -185,5 +201,5 @@ Bộ số này là dữ liệu mẫu của `npm run db:seed:dev` (ghi bằng `po
 
 ## Open Questions
 
-- Xác nhận D3: **giá BQ chỉ tính trên hàng ở bãi và xưởng** (cần để khớp D11). Nếu muốn gộp cả hàng ở công trình thì số trên D11 phải vẽ lại (08/10 ra 195.134 ₫).
-- Thủ kho có cần lập phiếu điều chỉnh trên mobile ở MVP không? Đề xuất: không, chờ `stocktake`.
+- Đã chốt khi review PR #30: giá BQ gộp mọi vị trí (D3, 0.2 #24); thủ kho **không** lập phiếu điều chỉnh trên mobile ở MVP (chờ `stocktake`).
+- Còn mở cho change `deliveries`: số ngày tối đa được lùi ngày giao/trả thực tế (đề xuất 3, D12).
