@@ -97,12 +97,12 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       />
       <section
         aria-label="Danh sách phiếu"
-        className="rounded-lg border bg-card p-5"
+        className="min-w-0 rounded-lg border bg-card p-5"
       >
         {rows.length === 0 ? (
           <p className="text-muted-foreground">Chưa có phiếu nào.</p>
         ) : (
-          <div className="overflow-x-auto rounded-md border">
+          <div className="relative overflow-x-auto rounded-md border">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-muted text-left">
                 <tr>

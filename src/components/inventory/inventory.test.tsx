@@ -235,18 +235,16 @@ describe("adjustment form and actions", () => {
   });
 
   it("shows the server's message", async () => {
-    const fetch = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            success: false,
-            data: null,
-            error: "Nhập lý do điều chỉnh",
-          }),
-          { status: 400, headers: { "content-type": "application/json" } },
-        ),
-      );
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: false,
+          data: null,
+          error: "Nhập lý do điều chỉnh",
+        }),
+        { status: 400, headers: { "content-type": "application/json" } },
+      ),
+    );
     const user = await openForm();
     await user.type(screen.getByLabelText("Số lượng (cái)"), "5");
     await user.click(screen.getByRole("button", { name: "Lưu nháp" }));

@@ -25,6 +25,14 @@ const PAGES = [
     name: "d16-partners",
     ready: DESKTOP_READY,
   },
+  // D10: the clock and the E2E-KHO rows (inventory.spec.ts posts to them)
+  // change from run to run, so they are masked.
+  { path: "/inventory", name: "d10-stock", ready: DESKTOP_READY },
+  {
+    path: "/inventory/items/GG-K17?from=2026-10-01&to=2026-10-31",
+    name: "d11-stock-card",
+    ready: DESKTOP_READY,
+  },
 ] as const;
 
 test.describe("visual baselines @visual", () => {
@@ -41,6 +49,10 @@ test.describe("visual baselines @visual", () => {
         await page.evaluate(() => document.fonts.ready);
         await expect(page).toHaveScreenshot(`${name}-${width}.png`, {
           fullPage: true,
+          mask: [
+            page.getByText(/^Tính từ sổ kho · cập nhật/),
+            page.getByRole("row").filter({ hasText: "E2E-KHO" }),
+          ],
           animations: "disabled",
           caret: "hide",
         });
