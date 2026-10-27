@@ -93,10 +93,18 @@ async function openHome(page: Page) {
 const card = (page: Page, name: string) =>
   page.getByRole("region", { name }).filter({ visible: true });
 
-async function count(page: Page, name: string, total: string, split: string[]) {
+/** Counts a line; `recount` when it is already in "Đã đếm". */
+async function count(
+  page: Page,
+  name: string,
+  total: string,
+  split: string[],
+  recount = false,
+) {
   const box = card(page, name);
-  const start = box.getByRole("button", { name: "Đếm", exact: true });
-  if (await start.isVisible()) await start.click();
+  if (!recount) {
+    await box.getByRole("button", { name: "Đếm", exact: true }).click();
+  }
   const field = box.getByLabel(`Thực nhận ${name}`);
   await field.fill(total);
   await field.press("Enter");
@@ -134,7 +142,7 @@ test("receives an order in two trips; the office sees both on D3b", async ({
     "Nhận 100 cái, đơn chỉ còn 12. Đúng không?",
   );
   await dialog.getByRole("button", { name: "Sửa lại" }).click();
-  await count(page, "Vật tư kho thử 1", "10", ["0", "8", "2"]);
+  await count(page, "Vật tư kho thử 1", "10", ["0", "8", "2"], true);
   await page.getByRole("button", { name: "Xác nhận nhập kho" }).click();
 
   await expect(page).toHaveURL(/\/m\/receipts\/PN-\d{4}-\d+\?posted=1/);

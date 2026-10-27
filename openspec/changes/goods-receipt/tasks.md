@@ -43,7 +43,7 @@
 
 ## 7. Quét mã QR
 
-- [ ] 7.1 Cài `barcode-detector` (đã duyệt, design D2): bản cố định, chép file `.wasm` vào `public/` bằng script (`postinstall` hoặc `scripts/`), cấu hình `locateFile` tự phục vụ. Chạy lại `npm install` bằng npm 11.19 để lock không lỗi `@emnapi` — kiểm tra: `npm ci` xanh, `npm run build` xanh, bundle chung không chứa wasm
+- [x] 7.1 Cài `barcode-detector` (đã duyệt, design D2): bản cố định, chép file `.wasm` vào `public/` bằng script (`postinstall` hoặc `scripts/`), cấu hình `locateFile` tự phục vụ. Chạy lại `npm install` bằng npm 11.19 để lock không lỗi `@emnapi` — kiểm tra: `npm ci` xanh, `npm run build` xanh, bundle chung không chứa wasm
 - [x] 7.2 Component `src/components/scan/qr-scanner.tsx` (camera sau, `import()` động, 5 lần/giây, chỉ QR, đọc qua `qr-payload`), ô "Không quét được? Nhập mã", báo chưa cho camera. Component test với bộ dò giả: đọc ra mã gọi callback; nội dung không phải mã hàng hiện "Mã QR này không phải mã hàng"; từ chối camera hiện đúng chữ và ô nhập vẫn dùng được — kiểm tra: `npm run test:unit` xanh
 
 ## 8. Giao diện Mobile
@@ -62,13 +62,13 @@
 ## 10. Dữ liệu mẫu và E2E
 
 - [x] 10.1 `npm run db:seed:dev` theo design D14: giá sắt vụn 7.500 ₫/kg, bộ đếm `PN` 2026 lên 089, `PO-2026-051` có `PN-2026-090` và `PN-2026-093` (qua `postReceipt`), Mâm chờ giao bù 40 — kiểm tra: integration test seed: D3b của `PO-2026-051` ra 54.942.500 ₫ và "Đang nhận"; chạy seed 2 lần không nhân đôi; `npm run inventory:check` không lệch
-- [ ] 10.2 `tests/e2e/global-setup.ts`: chỉ xóa đơn `E2E thử` chưa có phiếu nhập; đơn E2E nhập hàng dùng `E2E-KHO-01/02`. Cập nhật CLAUDE.md mục "Lưu ý" — kiểm tra: chạy `npm run test:e2e` 2 lần liền xanh
-- [ ] 10.3 E2E `tests/e2e/receiving.spec.ts` (Thủ kho, `statePath("WAREHOUSE")`): M1 → M3 chuyến 1 (gõ mã thay quét, một dòng "Chuyến này không có", chia tình trạng, chi phí) → xác nhận → phiếu chỉ xem → tồn tăng đúng chênh lệch; chuyến 2 → đơn đóng; Kinh doanh mở D3b thấy 2 chuyến và "Phải trả người bán". Mất mạng: `context.setOffline(true)` rồi bấm xác nhận → "Mất kết nối – đã lưu nháp", M7 "Chờ gửi" → bật mạng → tự gửi, đúng **một** phiếu (đếm theo `client_draft_id`). Hộp thoại hỏi lại: nhập 2.000 cái cho dòng còn 200 → hộp thoại "Nhận 2.000 cái, đơn chỉ còn 200. Đúng không?" → "Sửa lại" về 200 → ghi sổ được; lần khác bấm "Đúng…" → D3b có nhãn "Nhận dư" và lịch sử ghi phần đã xác nhận. Thêm kiểm `axe` cho M1, M2, M3, M7 — kiểm tra: `npm run test:e2e` xanh
+- [x] 10.2 `tests/e2e/global-setup.ts`: chỉ xóa đơn `E2E thử` chưa có phiếu nhập; đơn E2E nhập hàng dùng `E2E-KHO-01/02`. Cập nhật CLAUDE.md mục "Lưu ý" — kiểm tra: chạy `npm run test:e2e` 2 lần liền xanh
+- [x] 10.3 E2E `tests/e2e/receiving.spec.ts` (Thủ kho, `statePath("WAREHOUSE")`): M1 → M3 chuyến 1 (gõ mã thay quét, một dòng "Chuyến này không có", chia tình trạng, chi phí) → xác nhận → phiếu chỉ xem → tồn tăng đúng chênh lệch; chuyến 2 → đơn đóng; Kinh doanh mở D3b thấy 2 chuyến và "Phải trả người bán". Mất mạng: `context.setOffline(true)` rồi bấm xác nhận → "Mất kết nối – đã lưu nháp", M7 "Chờ gửi" → bật mạng → tự gửi, đúng **một** phiếu (đếm theo `client_draft_id`). Hộp thoại hỏi lại: nhập 2.000 cái cho dòng còn 200 → hộp thoại "Nhận 2.000 cái, đơn chỉ còn 200. Đúng không?" → "Sửa lại" về 200 → ghi sổ được; lần khác bấm "Đúng…" → D3b có nhãn "Nhận dư" và lịch sử ghi phần đã xác nhận. Thêm kiểm `axe` cho M1, M2, M3, M7 — kiểm tra: `npm run test:e2e` xanh
 - [ ] 10.4 Ảnh mốc `@visual` mới: M1, M2 (không camera, sau khi gõ mã), M3, M7, D3b có chuyến nhập, `/settings/scrap-price` ở 375 px và 1366 px; che giờ và mã chứng từ — kiểm tra: chạy workflow **Update Playwright snapshots** trên nhánh `goods-receipt`, CI xanh
 
 ## 11. Kiểm tra tổng
 
-- [ ] 11.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate goods-receipt --strict` đều xanh; coverage `src/domain`, `src/lib` ≥ 80%
+- [x] 11.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate goods-receipt --strict` đều xanh; coverage `src/domain`, `src/lib` ≥ 80%
 - [ ] 11.2 Kiểm tra tay trên điện thoại thật (Android Chrome và iPhone Safari nếu có): nhập một đơn 2 chuyến, quét nhãn QR in thử nội dung `GG-K17`, tắt mạng giữa chừng rồi bật lại, so số trên D3b với bảng design D4 — làm sau nếu chưa có máy, theo dõi ở #33
 
 ## Workflow follow-up
