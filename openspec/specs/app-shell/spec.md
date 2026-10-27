@@ -112,11 +112,19 @@ Nền tảng chính là Windows 10/11 + Microsoft Edge. Hệ thống SHALL hỗ 
 - **THEN** bề rộng cuộn của trang không lớn hơn 360px
 
 ### Requirement: Header Desktop
-Layout Desktop SHALL có header gồm ô tìm kiếm, nút tạo nhanh, nút thông báo và khu thông tin người dùng (tên, vai trò bằng tiếng Việt). Ô tìm kiếm, nút tạo nhanh và thông báo ở change này chỉ là chỗ hiển thị, chưa có chức năng.
+Layout Desktop SHALL có header gồm ô tìm kiếm, nút tạo nhanh, nút thông báo và khu thông tin người dùng (họ tên, vai trò bằng tiếng Việt). Ô tìm kiếm, nút tạo nhanh và thông báo chỉ là chỗ hiển thị, chưa có chức năng. Bấm khu người dùng SHALL mở menu gồm "Đổi mật khẩu" và "Đăng xuất".
 
 #### Scenario: Hiện vai trò bằng tiếng Việt
 - **WHEN** người dùng có vai trò `ACCOUNTANT` mở layout Desktop
 - **THEN** khu thông tin người dùng hiện chữ "Kế toán"
+
+#### Scenario: Hiện họ tên người đang đăng nhập
+- **WHEN** `thuha` (họ tên "Thu Hà", Kế toán) đang đăng nhập và mở `/dashboard`
+- **THEN** khu người dùng hiện "Thu Hà" và "Kế toán"
+
+#### Scenario: Mở menu người dùng
+- **WHEN** người dùng bấm khu người dùng trên header
+- **THEN** menu hiện hai mục "Đổi mật khẩu" và "Đăng xuất", mở và chọn được bằng bàn phím
 
 ### Requirement: Header gọn trên màn hẹp
 Dưới 768px, ô tìm kiếm trên header SHALL thu thành một nút biểu tượng kính lúp có nhãn cho trình đọc màn hình. Ở mọi bề rộng, các phần của header SHALL không tràn ra ngoài cửa sổ.
@@ -190,19 +198,12 @@ Hệ thống SHALL cung cấp web app manifest để cài khu Mobile lên màn h
 - **THEN** nhận được manifest có `start_url` là `/m`, `display` là `standalone`, `theme_color` là `#1D5BFF` và hai biểu tượng 192×192, 512×512
 
 ### Requirement: Trang giữ chỗ cho mục chưa làm
-Mỗi mục menu Desktop và mỗi tab Mobile SHALL mở được một trang có tiêu đề đúng tên mục và dòng chữ "Đang xây dựng", thay vì lỗi 404. Tiêu đề trang SHALL dùng họ chữ `display` của Bright Blue Base.
+Mỗi mục menu Desktop và mỗi tab Mobile chưa có chức năng SHALL mở được một trang có tiêu đề đúng tên mục và dòng chữ "Đang xây dựng", thay vì lỗi 404. Tab Cá nhân (`/m/profile`) không còn là trang giữ chỗ. Tiêu đề trang SHALL dùng họ chữ `display` của Bright Blue Base.
 
 #### Scenario: Mở mục chưa làm
 - **WHEN** Giám đốc bấm mục "Báo cáo" trên sidebar
 - **THEN** trang hiện tiêu đề "Báo cáo" và chữ "Đang xây dựng"
 
-### Requirement: Người dùng giả lập trước khi có đăng nhập
-Cho tới khi có chức năng đăng nhập, hệ thống SHALL lấy người dùng hiện tại từ cấu hình giả lập chỉ ở môi trường phát triển (mặc định vai trò `DIRECTOR`). Ở môi trường production, hệ thống SHALL từ chối dùng người dùng giả lập.
-
-#### Scenario: Đổi vai trò giả lập
-- **WHEN** môi trường dev cấu hình vai trò giả lập là `SALES`
-- **THEN** layout Desktop hiện "Kinh doanh" ở khu người dùng và menu lọc theo vai trò `SALES`
-
-#### Scenario: Production không có người dùng giả lập
-- **WHEN** ứng dụng chạy ở chế độ production mà chưa có chức năng đăng nhập
-- **THEN** hệ thống không dùng người dùng giả lập và báo lỗi cấu hình thay vì cho vào với vai trò `DIRECTOR`
+#### Scenario: Tab Cá nhân có nội dung thật
+- **WHEN** thủ kho mở tab "Cá nhân"
+- **THEN** trang không hiện chữ "Đang xây dựng" mà hiện thông tin tài khoản và nút "Đăng xuất"
