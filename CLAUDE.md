@@ -73,6 +73,17 @@ Mọi tính năng mới đi qua OpenSpec. **Không code thẳng khi chưa có ch
 
 Sửa lỗi nhỏ, đổi chữ, chỉnh style: không cần change.
 
+### Quy tắc khi làm change
+
+- Mỗi change có một GitHub issue (danh sách ở issue #21). Câu lệnh propose và checklist nằm trong issue.
+- **Propose chỉ tạo tài liệu.** Chỉ sửa `openspec/changes/<change>/` (và `docs/` nếu chốt quyết định mới). Không sửa `src/`, `drizzle/`, `package.json`, test. Không tự chạy apply. Mở PR rồi dừng, chờ người dùng ghi "Duyệt".
+- Mỗi change một nhánh trùng tên change, một PR. PR propose/apply ghi `Refs #<issue>`; PR archive ghi `Closes #<issue>`.
+- `design.md` trả lời từng điểm "cần chốt" trong issue, mỗi điểm có lý do và phương án đã cân nhắc.
+- Quyết định nghiệp vụ mới (người dùng chốt khi review) ghi vào `docs/requirements.md` mục 0.2, kèm ngày, trong cùng PR.
+- **Review nằm trong comment PR.** Khi được bảo "đọc review", đọc comment mới nhất, sửa hết mục "Cần sửa", kèm test cho từng điểm.
+- Trước khi báo apply xong: `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate <change> --strict` đều xanh. Giao diện đổi thì chạy workflow Update Playwright snapshots.
+- Archive: không tự tick task chưa làm. Task kiểm tra tay chưa làm thì ghi "làm sau, theo dõi ở #<issue>" và báo người dùng.
+
 ## Quy tắc nghiệp vụ không được phá
 
 Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
