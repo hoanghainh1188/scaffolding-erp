@@ -170,6 +170,7 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | D10 Tồn kho tổng hợp | `D10-Stock.dc.html` | `inventory-ledger` | Đã duyệt |
 | D11 Thẻ kho | `D11-StockCard.dc.html` | `inventory-ledger` | Đã duyệt |
 | D2 Danh sách đơn thu mua | `D2-PurchaseOrders.dc.html` | `purchase-orders` | Đã duyệt |
+| D3b Chi tiết đơn thu mua | `D3b-PurchaseOrderDetail.dc.html` | `purchase-orders`, `goods-receipt` | Đã duyệt |
 | M1 Việc hôm nay | `M1-Today.dc.html` | `goods-receipt` | Đã duyệt |
 | M2 Quét mã | `M2-Scan.dc.html` | `goods-receipt` | Đã duyệt |
 | M3 Nhập thực tế từ đơn mua | `M3-GoodsReceipt.dc.html` | `goods-receipt` | Đã duyệt |
