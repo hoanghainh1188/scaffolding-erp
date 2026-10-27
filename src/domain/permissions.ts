@@ -36,6 +36,9 @@ export const PERMISSIONS = {
   // Viewing stock uses inventory.view above.
   "inventory.adjust": ["DIRECTOR", "ACCOUNTANT"],
   "inventory.approve": ["DIRECTOR"],
+  // purchase-orders design D12: sales buys, the director oversees; the
+  // accountant pays sellers and reads orders through purchasing.view.
+  "purchasing.manage": ["DIRECTOR", "SALES"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;
