@@ -2,3 +2,4 @@
 // (master-data, inventory-ledger, ...).
 export * from "./auth";
 export * from "./catalog";
+export * from "./inventory";

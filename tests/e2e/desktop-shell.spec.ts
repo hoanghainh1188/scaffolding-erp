@@ -28,10 +28,9 @@ test.describe("desktop shell", () => {
     const current = page.locator("[data-slot=sidebar] [aria-current=page]");
     await expect(current).toHaveCount(1);
     await expect(current).toHaveText("Kho");
-    await expect(page.getByRole("link", { name: "Kho" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    await expect(
+      page.getByRole("link", { name: "Kho", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
   });
 
   test("shows all nine items to the director", async ({ page }) => {
@@ -84,7 +83,7 @@ test.describe("desktop shell when printing", () => {
     await expect(page.locator("[data-slot=sidebar]")).toBeHidden();
     await expect(page.locator("header")).toBeHidden();
     await expect(
-      page.getByRole("heading", { level: 1, name: "Kho" }),
+      page.getByRole("heading", { level: 1, name: "Tồn kho" }),
     ).toBeVisible();
   });
 });

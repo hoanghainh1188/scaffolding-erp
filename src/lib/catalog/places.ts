@@ -31,6 +31,8 @@ import {
   type CatalogStatus,
   type ServiceResult,
 } from "./common";
+import { describeStock, isEmpty, locationStock } from "@/lib/inventory/totals";
+
 import { escapeLike } from "./items";
 
 export const PLACE_MESSAGES = {
@@ -44,6 +46,10 @@ export const PLACE_MESSAGES = {
   type: "Chọn loại bãi hoặc xưởng",
   lastYard: "Phải còn ít nhất một bãi đang dùng",
   locationInUse: "Vị trí đã được dùng nên chỉ ngừng dùng được",
+  siteHasStock: (code: string, stock: string) =>
+    `Công trình ${code} còn ${stock} hàng, thu hồi hết trước khi ngừng dùng`,
+  locationHasStock: (code: string, stock: string) =>
+    `${code} còn ${stock} hàng, chuyển hết đi trước khi ngừng dùng`,
 } as const;
 
 // -------------------------------------------------------------------- sites
@@ -231,6 +237,11 @@ export function updateSite(
           PLACE_MESSAGES.restoreCustomerFirst,
         );
       }
+      if (input.status === "ARCHIVED" && current.status === "ACTIVE") {
+        await requireEmptyLocation(tx, current.locationId, (stock) =>
+          PLACE_MESSAGES.siteHasStock(current.code, stock),
+        );
+      }
       const status =
         input.status === undefined
           ? {}
@@ -368,6 +379,27 @@ async function keepOneYard(tx: Executor, id: string): Promise<void> {
   }
 }
 
+/**
+ * Refuses to archive a location that still holds stock. Locks the location
+ * FOR UPDATE first: postings hold it FOR SHARE, so they finish before the
+ * total is read, and later ones see it archived.
+ */
+async function requireEmptyLocation(
+  tx: Executor,
+  locationId: string,
+  message: (stock: string) => string,
+): Promise<void> {
+  await tx
+    .select({ id: location.id })
+    .from(location)
+    .where(eq(location.id, locationId))
+    .for("update");
+  const stock = await locationStock(tx, locationId);
+  if (!isEmpty(stock)) {
+    throw new ServiceFailure(conflict(message(describeStock(stock))));
+  }
+}
+
 async function getLocation(db: Database, id: string) {
   const [row] = await db.select().from(location).where(eq(location.id, id));
   return row ?? null;
@@ -396,6 +428,9 @@ export function updateLocation(
     await db.transaction(async (tx) => {
       if (input.status === "ARCHIVED" && current.status === "ACTIVE") {
         await keepOneYard(tx, id);
+        await requireEmptyLocation(tx, id, (stock) =>
+          PLACE_MESSAGES.locationHasStock(current.code, stock),
+        );
       }
       await tx
         .update(location)

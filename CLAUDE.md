@@ -50,13 +50,15 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 | `npm run tokens` | Sinh `src/styles/tokens.css` từ `docs/design-system/tokens.json` |
 | `npm run db:up` / `db:down` | Bật / tắt PostgreSQL trong Docker |
 | `npm run db:generate` / `db:migrate` / `db:studio` | Sinh migration SQL / chạy migration / xem dữ liệu |
-| `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD`, và danh mục mẫu như thiết kế D9/D16 |
+| `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD`, danh mục mẫu như thiết kế D9/D16 và sổ kho mẫu (ví dụ tính tay design D11 của `inventory-ledger`) |
+| `npm run inventory:check` | Đối chiếu giá vốn lưu riêng với sổ kho; lệch thì thoát mã 1 |
 | `npm run auth:create-director -- --username <tên> --name "<Họ tên>"` | Tạo tài khoản Giám đốc đầu tiên, in mật khẩu tạm một lần |
 
 Lưu ý:
 
 - Sửa `tokens.json` thì chạy `npm run tokens`; test chống lệch sẽ đỏ nếu quên.
 - Không chạy hai `next dev` cùng lúc trên repo (trang sẽ tự tải lại liên tục). Muốn Playwright dùng lại dev server đang chạy: `PW_PORT=<cổng> npm run test:e2e` — server đó phải chạy với `AUTH_SIGN_IN_LIMIT_PER_MINUTE=1000`, không thì E2E bị giới hạn 20 lần đăng nhập/phút.
+- Sổ kho ở DB dev không xóa được: E2E ghi vào mã cố định `E2E-KHO-01/02` và kiểm theo chênh lệch.
 - E2E đăng nhập bằng tài khoản `e2e.*` (global setup tạo lại mỗi lần chạy) và chạy với vai trò Giám đốc mặc định; test cần vai trò khác dùng `test.use({ storageState: statePath("ACCOUNTANT") })`.
 - Ảnh mốc Playwright chỉ tạo trên CI: tab Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow.
 - Trong E2E, Next 16 giữ trang cũ ẩn trong DOM sau khi điều hướng: tìm theo chữ thì thêm `.filter({ visible: true })`.
@@ -106,6 +108,8 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 - **Danh mục** (`src/lib/catalog/`): mã vật tư, bộ, bãi gõ tay theo `src/domain/item-code.ts` và **không đổi được**; mã đối tác, công trình tự sinh (`NT-0001`, `NCC-0001`, `CT-0001`). Bảng nào tham chiếu danh mục thì khóa ngoại `ON DELETE RESTRICT` (bản ghi đã dùng chỉ ngừng dùng, không xóa). Quyền: đọc `catalog.read`, ghi `items.manage` / `partners.manage` / `locations.manage`.
 - **CCCD và số tài khoản** của nhà cung cấp là dữ liệu cá nhân: chỉ trả số đã che, trừ dữ liệu form sửa (`partners.manage`).
 - Lệnh sửa trong service đọc lại bản ghi **trong** transaction bằng `FOR UPDATE` trước khi kiểm tra và ghi; bản ghi được tham chiếu (vật tư trong bộ, nhà thầu của công trình) giữ `FOR SHARE`.
+- **Sổ kho** (`src/lib/inventory/`): mọi biến động ghi qua `postMovements` trong transaction của chứng từ; không INSERT thẳng vào `inventory_ledger` (DB chặn UPDATE/DELETE/TRUNCATE). Giá BQ theo (mã + tình trạng) gộp **mọi vị trí** kể cả công trình (0.2 #24); chỉ `OPENING`, `PURCHASE_IN`, `REPAIR_IN` đổi giá. Không ghi lùi ngày nghiệp vụ; ngày tính thuê lấy ngày giao/trả thực tế trên phiếu, không lấy ngày ghi sổ. Đối chiếu bằng `npm run inventory:check`.
+- Trang dùng giờ hiện tại (`new Date()`) phải `await connection()` trước (Cache Components).
 
 ## Từ điển (tiếng Việt ↔ tên trong code)
 

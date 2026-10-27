@@ -36,7 +36,7 @@ test.describe("basic support @basic", () => {
     await expect(page).toHaveURL(/\/inventory$/);
     await expect(
       page
-        .getByRole("heading", { level: 1, name: "Kho" })
+        .getByRole("heading", { level: 1, name: "Tồn kho" })
         .filter({ visible: true }),
     ).toHaveCount(1);
     expect(errors).toEqual([]);
