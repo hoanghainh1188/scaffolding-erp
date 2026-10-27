@@ -42,7 +42,7 @@
 
 ## 7. Quét mã QR
 
-- [ ] 7.1 **Chỉ làm sau khi người dùng duyệt thư viện ở PR propose** (design D2). Đồng ý `barcode-detector`: cài bản cố định, chép file `.wasm` vào `public/` bằng script (`postinstall` hoặc `scripts/`), cấu hình `locateFile` tự phục vụ. Không đồng ý: dùng `BarcodeDetector` có sẵn, iPhone chỉ có ô nhập mã. Chạy lại `npm install` bằng npm 11.19 để lock không lỗi `@emnapi` — kiểm tra: `npm ci` xanh, `npm run build` xanh, bundle chung không chứa wasm
+- [ ] 7.1 Cài `barcode-detector` (đã duyệt, design D2): bản cố định, chép file `.wasm` vào `public/` bằng script (`postinstall` hoặc `scripts/`), cấu hình `locateFile` tự phục vụ. Chạy lại `npm install` bằng npm 11.19 để lock không lỗi `@emnapi` — kiểm tra: `npm ci` xanh, `npm run build` xanh, bundle chung không chứa wasm
 - [ ] 7.2 Component `src/components/scan/qr-scanner.tsx` (camera sau, `import()` động, 5 lần/giây, chỉ QR, đọc qua `qr-payload`), ô "Không quét được? Nhập mã", báo chưa cho camera. Component test với bộ dò giả: đọc ra mã gọi callback; nội dung không phải mã hàng hiện "Mã QR này không phải mã hàng"; từ chối camera hiện đúng chữ và ô nhập vẫn dùng được — kiểm tra: `npm run test:unit` xanh
 
 ## 8. Giao diện Mobile
@@ -72,5 +72,5 @@
 
 ## Workflow follow-up
 
-- Người dùng duyệt PR propose, trả lời 2 điểm "Cần chốt khi duyệt PR" trong design.md (thư viện QR, mặc định "Chờ chuyến sau"); ghi quyết định đã chốt vào `docs/requirements.md` 0.2 trong PR apply.
+- Người dùng duyệt PR propose, trả lời điểm còn lại trong "Cần chốt khi duyệt PR" của design.md (mặc định "Chờ chuyến sau"); ghi quyết định đã chốt vào `docs/requirements.md` 0.2 trong PR apply.
 - Sau khi merge PR apply: `/opsx:archive goods-receipt`, PR archive ghi `Closes #8`.
