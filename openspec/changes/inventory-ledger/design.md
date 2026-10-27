@@ -30,7 +30,7 @@
 | `item_id` | `uuid` FK `item` RESTRICT | |
 | `condition` | `text` CHECK 4 giá trị | |
 | `location_id` | `uuid` FK `location` RESTRICT | |
-| `movement` | `text` CHECK 14 loại (spec `inventory-ledger`) | |
+| `movement` | `text` CHECK 13 loại (spec `inventory-ledger`) | |
 | `quantity` | `numeric(14,3)` CHECK `<> 0` | Có dấu; CHECK dấu theo `movement` (`_IN`, `OPENING` > 0; `_OUT` < 0) |
 | `unit_cost` | `bigint` CHECK `>= 0` | Đơn giá ghi sổ (VND, mỗi cái hoặc mỗi kg) |
 | `amount` | `bigint` | Giá trị có dấu = số lượng × đơn giá, làm tròn 1 ₫; dòng làm đổi giá lưu đúng giá trị người ghi đưa vào |

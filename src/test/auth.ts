@@ -6,6 +6,8 @@ import type { Role } from "@/domain/role";
 import { createAuth, type Auth } from "@/lib/auth/auth";
 import { insertUser, type UserStatus } from "@/lib/auth/credentials";
 
+import { truncateWithLedger } from "./inventory";
+
 export const TEST_SECRET = "integration-test-secret-0123456789abcdef";
 export const TEST_BASE_URL = "http://localhost:3000";
 export const TEST_PASSWORD = "test-pass-1234";
@@ -63,7 +65,10 @@ export function appRequest(
 
 /** Empties every auth table; call in beforeEach. */
 export async function resetAuthTables({ db }: TestContext): Promise<void> {
-  await db.execute(
+  // CASCADE reaches the inventory ledger (created_by), which only a test may
+  // empty.
+  await truncateWithLedger(
+    db,
     sql`truncate table "user", "session", "account", "verification", "rate_limit", "login_throttle", "auth_rate_limit" cascade`,
   );
 }

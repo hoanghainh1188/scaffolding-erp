@@ -31,6 +31,11 @@ export const PERMISSIONS = {
   "items.manage": ["DIRECTOR", "SALES"],
   "partners.manage": ["DIRECTOR", "SALES", "ACCOUNTANT"],
   "locations.manage": ["DIRECTOR"],
+  // inventory-ledger design D8: the accountant keeps the books and drafts
+  // adjustments and opening balances; only the director approves them.
+  // Viewing stock uses inventory.view above.
+  "inventory.adjust": ["DIRECTOR", "ACCOUNTANT"],
+  "inventory.approve": ["DIRECTOR"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;

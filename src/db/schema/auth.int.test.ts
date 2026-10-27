@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase } from "@/db/client";
+import { truncateWithLedger } from "@/test/inventory";
 
 import { user } from "./auth";
 
@@ -15,7 +16,7 @@ const { db, close } = createDatabase(url);
 afterAll(close);
 
 beforeEach(async () => {
-  await db.execute(sql`truncate table "user" cascade`);
+  await truncateWithLedger(db, sql`truncate table "user" cascade`);
 });
 
 const row = (overrides: Partial<typeof user.$inferInsert> = {}) => ({
