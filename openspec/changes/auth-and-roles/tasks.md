@@ -56,7 +56,7 @@
 
 ## 8. E2E, tài liệu, kiểm tra cuối
 
-- [ ] 8.1 `tests/e2e/global-setup.ts`: migrate DB E2E, seed tài khoản với `E2E_PASSWORD`, đăng nhập qua `/login` lưu `tests/e2e/.auth/<role>.json` (thêm vào `.gitignore`); các spec cũ dùng `storageState` Giám đốc, chỗ ghi chú `DEV_ROLE` đổi sang file vai trò; CI có bước migrate trước E2E — kiểm tra: `npm run test:e2e` xanh ở local; CI xanh; nếu ảnh mốc đổi thì chạy workflow Update Playwright snapshots
+- [x] 8.1 `tests/e2e/global-setup.ts`: migrate DB E2E, seed tài khoản với `E2E_PASSWORD`, đăng nhập qua `/login` lưu `tests/e2e/.auth/<role>.json` (thêm vào `.gitignore`); các spec cũ dùng `storageState` Giám đốc, chỗ ghi chú `DEV_ROLE` đổi sang file vai trò; CI có bước migrate trước E2E — kiểm tra: `npm run test:e2e` xanh ở local; CI xanh; nếu ảnh mốc đổi thì chạy workflow Update Playwright snapshots
 - [x] 8.2 Cập nhật `CLAUDE.md` (lệnh `auth:create-director`, `db:seed:dev`, bỏ `DEV_ROLE`), `README.md` (tạo Giám đốc đầu tiên, cách cứu hộ khi mọi Giám đốc bị khóa), sửa chú thích `next.config.ts` về CSP trỏ sang change `security-headers` — kiểm tra: làm theo README trên DB sạch đăng nhập được
 - [x] 8.3 Chạy `npm run lint`, `typecheck`, `test`, `test:coverage` (≥ 80% `src/domain`, `src/lib`), `build`, `openspec validate auth-and-roles --strict` — kiểm tra: tất cả xanh
 - [ ] 8.4 Kiểm tra tay: Edge Windows (Giám đốc tạo người, khóa, đặt lại), Chrome Android (thủ kho tick giữ đăng nhập, đóng mở lại trình duyệt vẫn vào; không tick thì phải đăng nhập lại), Safari iPhone mở `/login` không cuộn ngang — kiểm tra: ghi kết quả vào PR
