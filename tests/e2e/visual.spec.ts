@@ -15,6 +15,16 @@ const PAGES = [
   { path: "/dashboard", name: "dashboard", ready: DESKTOP_READY },
   { path: "/m", name: "mobile-home", ready: MOBILE_READY },
   { path: "/dev/components", name: "components", ready: "main" },
+  {
+    path: "/catalog/items?item=GG-K17",
+    name: "d9-items",
+    ready: DESKTOP_READY,
+  },
+  {
+    path: "/catalog/partners?tab=customers",
+    name: "d16-partners",
+    ready: DESKTOP_READY,
+  },
 ] as const;
 
 test.describe("visual baselines @visual", () => {

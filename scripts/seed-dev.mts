@@ -4,6 +4,7 @@
 import { createDatabase } from "@/db/client";
 import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
+import { seedCatalog } from "@/lib/catalog/seed";
 import { DEV_ACCOUNTS, seedAccounts } from "@/lib/users/seed";
 
 async function main(): Promise<number> {
@@ -30,6 +31,12 @@ async function main(): Promise<number> {
       password: env.DEV_SEED_PASSWORD,
     });
     const names = DEV_ACCOUNTS.map((entry) => entry.username).join(", ");
+    const director = await handle.db.query.user.findFirst({
+      where: (row, { eq }) => eq(row.username, "giamdoc"),
+      columns: { id: true },
+    });
+    const catalogRows = director ? await seedCatalog(handle.db, director) : 0;
+    process.stdout.write(`Danh mục mẫu: thêm ${catalogRows} bản ghi.\n`);
     process.stdout.write(
       created.length > 0
         ? `Đã tạo ${created.length} tài khoản: ${created.join(", ")}.\n`

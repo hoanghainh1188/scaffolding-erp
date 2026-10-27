@@ -50,7 +50,7 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 | `npm run tokens` | Sinh `src/styles/tokens.css` từ `docs/design-system/tokens.json` |
 | `npm run db:up` / `db:down` | Bật / tắt PostgreSQL trong Docker |
 | `npm run db:generate` / `db:migrate` / `db:studio` | Sinh migration SQL / chạy migration / xem dữ liệu |
-| `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD` |
+| `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD`, và danh mục mẫu như thiết kế D9/D16 |
 | `npm run auth:create-director -- --username <tên> --name "<Họ tên>"` | Tạo tài khoản Giám đốc đầu tiên, in mật khẩu tạm một lần |
 
 Lưu ý:
@@ -92,6 +92,8 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 - Logic nghiệp vụ (giá vốn, tiền thuê, đền bù, phân bổ landed cost) đặt trong module riêng, **không** viết trong component hay route handler. Phải có unit test.
 - Mọi thao tác ghi nhiều bảng (VD: lưu phiếu + ghi sổ kho) chạy trong **một transaction**.
 - Phân quyền kiểm tra ở **server**, không chỉ ẩn nút trên giao diện.
+- **Danh mục** (`src/lib/catalog/`): mã vật tư, bộ, bãi gõ tay theo `src/domain/item-code.ts` và **không đổi được**; mã đối tác, công trình tự sinh (`NT-0001`, `NCC-0001`, `CT-0001`). Bảng nào tham chiếu danh mục thì khóa ngoại `ON DELETE RESTRICT` (bản ghi đã dùng chỉ ngừng dùng, không xóa). Quyền: đọc `catalog.read`, ghi `items.manage` / `partners.manage` / `locations.manage`.
+- **CCCD** của nhà cung cấp là dữ liệu cá nhân: chỉ trả số đã che, trừ dữ liệu form sửa (`partners.manage`).
 
 ## Từ điển (tiếng Việt ↔ tên trong code)
 
