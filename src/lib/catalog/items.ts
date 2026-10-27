@@ -264,37 +264,44 @@ export function updateItem(
   input: ItemInput,
 ): Promise<ServiceResult<ItemRow>> {
   return runService(async () => {
-    const current = await getItem(db, id);
-    if (!current) return notFound();
-    if (
-      input.code !== undefined &&
-      input.code.trim().toUpperCase() !== current.code
-    ) {
-      return badRequest(ITEM_MESSAGES.codeFixed);
-    }
-    if (input.unit !== undefined && input.unit !== current.unit) {
-      return badRequest(ITEM_MESSAGES.unitFixed);
-    }
-    const name =
-      input.name === undefined ? current.name : requireName(input.name);
-    const rent =
-      input.dailyRentalPrice === undefined
-        ? (current.dailyRentalPrice as Money | null)
-        : price(input.dailyRentalPrice);
-    const weight = checkUnitRules(
-      current.unit,
-      input.standardWeightKg === undefined
-        ? current.standardWeightKg
-        : input.standardWeightKg,
-      rent,
-    );
-    if (input.groupId !== undefined && input.groupId !== current.groupId) {
-      await requireActiveGroup(db, input.groupId);
-    }
-
-    await db.transaction(async (tx) => {
+    const found = await db.transaction(async (tx) => {
+      // Read under the row lock: a second editor waits here and then works
+      // on this change, never on a stale copy (review of PR #28, point 4).
+      const [current] = await tx
+        .select()
+        .from(item)
+        .where(eq(item.id, id))
+        .for("update");
+      if (!current) return false;
+      if (
+        input.code !== undefined &&
+        input.code.trim().toUpperCase() !== current.code
+      ) {
+        throw new ServiceFailure(badRequest(ITEM_MESSAGES.codeFixed));
+      }
+      if (input.unit !== undefined && input.unit !== current.unit) {
+        throw new ServiceFailure(badRequest(ITEM_MESSAGES.unitFixed));
+      }
+      const unit = current.unit as QuantityUnit;
+      const name =
+        input.name === undefined ? current.name : requireName(input.name);
+      const rent =
+        input.dailyRentalPrice === undefined
+          ? (current.dailyRentalPrice as Money | null)
+          : price(input.dailyRentalPrice);
+      const weight = checkUnitRules(
+        unit,
+        input.standardWeightKg === undefined
+          ? current.standardWeightKg
+          : input.standardWeightKg,
+        rent,
+      );
+      if (input.groupId !== undefined && input.groupId !== current.groupId) {
+        await requireActiveGroup(tx, input.groupId);
+      }
       if (input.status === "ARCHIVED" && current.status === "ACTIVE") {
         // A kit in use would quote a part nobody can pick any more (D7).
+        // Kit writers hold this row FOR SHARE, so none can slip in now.
         const [inKit] = await tx
           .select({ code: kit.code })
           .from(kitComponent)
@@ -331,7 +338,9 @@ export function updateItem(
           updatedAt: new Date(),
         })
         .where(eq(item.id, id));
+      return true;
     });
+    if (!found) return notFound();
     const updated = await getItem(db, id);
     return updated ? ok(updated) : notFound();
   });
@@ -359,9 +368,10 @@ export function deleteItem(
 export async function itemsByIds(
   db: Pick<Database, "select">,
   ids: readonly string[],
+  lock: "share" | null = null,
 ) {
   if (ids.length === 0) return [];
-  return db
+  const query = db
     .select({
       id: item.id,
       code: item.code,
@@ -373,6 +383,8 @@ export async function itemsByIds(
     })
     .from(item)
     .where(inArray(item.id, [...ids]));
+  // A kit writer holds its parts FOR SHARE: archiving one waits (point 4).
+  return lock ? query.for(lock) : query;
 }
 
 /** "%" and "_" typed by the user are literal characters, not wildcards. */

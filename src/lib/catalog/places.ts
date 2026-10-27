@@ -124,10 +124,13 @@ async function requireActiveCustomer(
   customerId: string,
   message: string,
 ): Promise<void> {
+  // FOR SHARE: an archive of this customer waits for us, or we wait for it
+  // and see ARCHIVED (review of PR #28, point 4).
   const [row] = await tx
     .select({ status: customer.status })
     .from(customer)
-    .where(eq(customer.id, customerId));
+    .where(eq(customer.id, customerId))
+    .for("share");
   if (!row) throw new DomainValueError(PLACE_MESSAGES.customerMissing);
   if (row.status !== "ACTIVE") {
     throw new ServiceFailure(conflict(message));
@@ -201,21 +204,26 @@ export function updateSite(
   input: SiteInput,
 ): Promise<ServiceResult<SiteRow>> {
   return runService(async () => {
-    const current = await getSite(db, id);
-    if (!current) return notFound();
-    if (
-      input.customerId !== undefined &&
-      input.customerId !== current.customerId
-    ) {
-      return badRequest(PLACE_MESSAGES.customerFixed);
-    }
-    const name =
-      input.name === undefined ? current.name : requireName(input.name);
-    const address =
-      input.address === undefined
-        ? current.address
-        : optionalText(input.address);
-    await db.transaction(async (tx) => {
+    const found = await db.transaction(async (tx) => {
+      // Read under the row lock so two editors never overwrite each other.
+      const [current] = await tx
+        .select()
+        .from(site)
+        .where(eq(site.id, id))
+        .for("update");
+      if (!current) return false;
+      if (
+        input.customerId !== undefined &&
+        input.customerId !== current.customerId
+      ) {
+        throw new ServiceFailure(badRequest(PLACE_MESSAGES.customerFixed));
+      }
+      const name =
+        input.name === undefined ? current.name : requireName(input.name);
+      const address =
+        input.address === undefined
+          ? current.address
+          : optionalText(input.address);
       if (input.status === "ACTIVE" && current.status === "ARCHIVED") {
         await requireActiveCustomer(
           tx,
@@ -243,7 +251,9 @@ export function updateSite(
         .update(location)
         .set({ name, ...status, ...stamp })
         .where(eq(location.id, current.locationId));
+      return true;
     });
+    if (!found) return notFound();
     const updated = await getSite(db, id);
     return updated ? ok(updated) : notFound();
   });
