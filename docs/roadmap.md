@@ -31,6 +31,17 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | 16 | `payables` | Công nợ phải trả | D14 |
 | 17 | `management-reports` | Lợi nhuận gộp, tỷ lệ khai thác, biểu đồ dashboard | D1, D15 |
 
+## Change kỹ thuật (làm trước khi lên production)
+
+Không có màn hình mới. Phát sinh khi làm các change trên; lý do chi tiết ở `design.md` của change ghi trong cột "Nguồn".
+
+| # | Tên change | Nội dung | Nguồn | Phụ thuộc |
+|---|---|---|---|---|
+| K1 | `security-headers` | CSP theo nonce (mỗi request một mã). Thử cùng Cache Components | `setup-project`, `auth-and-roles` | 2 |
+| K2 | `e2e-production-build` | Chạy E2E trên `next build && next start` thay cho `next dev` | `setup-project` D15, `auth-and-roles` | 2 |
+| K3 | `login-lockout-hardening` | Chống cố tình nhập sai để chặn người khác (kể cả Giám đốc duy nhất): khóa theo tên + IP hoặc chờ tăng dần | `auth-and-roles` (security review) | 2 |
+| K4 | `temp-password-expiry` | Mật khẩu tạm hết hạn sau 48 giờ nếu chưa dùng | `auth-and-roles` (security review) | 2 |
+
 ## Ghi chú
 
 - Change 4 (`inventory-ledger`) là lõi của hệ thống. Làm kỹ và test kỹ trước khi đi tiếp.
