@@ -59,6 +59,7 @@ Lý do:
 - Bảng `supplier`: `kind` (`COMPANY`/`PERSON`), `name` (bắt buộc), `phone`, `address`, `tax_code` (công ty), `id_number` (CCCD, 12 chữ số, cá nhân), `bank_account`, `bank_name`, `note`.
 - Người bán sắt vụn chỉ cần **tên** là tạo được (thường mua tại chỗ, không có giấy tờ). CCCD, tài khoản để tùy chọn: dùng khi trả tiền chuyển khoản hoặc cần đối chiếu sau này (`payables` Bản 2).
 - Đã cân nhắc: bắt buộc CCCD cho cá nhân — làm chậm việc mua tại bãi, nhiều người không mang theo.
+- **CCCD là dữ liệu cá nhân** (bổ sung sau review PR #28): danh sách và màn chi tiết D16 chỉ hiện **4 số cuối** dạng `•••• •••• 0123` (hàm `maskIdNumber`). `GET /api/catalog/suppliers` (quyền `catalog.read`, cả 5 vai trò) chỉ trả `idNumberMasked`, **không bao giờ** trả số đầy đủ. Số đầy đủ chỉ có ở `GET /api/catalog/suppliers/[id]/edit` (quyền `partners.manage`), dùng để điền form sửa. Không ghi CCCD vào log.
 
 ### D6. Công trình và vị trí SITE (câu hỏi 6)
 
@@ -121,8 +122,9 @@ Lý do: Kinh doanh lập đơn mua, báo giá, hợp đồng nên giữ danh m�
 
 - `item-code.ts`: `normalizeCatalogCode`, `isValidCatalogCode`.
 - `weight-conversion.ts`: `piecesToKg(pieces: Quantity /*PIECE*/, weightKg: Quantity /*KG*/): Quantity /*KG*/` = `pieces.milli/1000 × weight.milli` (số nguyên phần nghìn kg, chính xác); `kgToPieces(kg, weightKg): Quantity /*PIECE*/` = làm tròn `kg.milli / weight.milli` tới số nguyên gần nhất, 0,5 lên (tính bằng số nguyên: `(2·kg + w) div (2·w)`). Lỗi rõ khi trọng lượng ≤ 0 hoặc sai đơn vị.
+  - **Phế liệu theo cái** (chốt 27/10/2026, 0.2 #3): hàng tình trạng `SCRAP` của mã tính theo cái vẫn đếm theo cái trong chính mã đó; màn hình hiện thêm số kg = `piecesToKg(số cái, trọng lượng chuẩn)`. Mã tính theo kg (như `PL-SAT`) chỉ dùng cho sắt vụn mua về. **Bán phế liệu theo kg** (quy đổi khi xuất bán, giá vốn theo kg) sẽ chốt ở `inventory-ledger`.
 - `kit.ts`: `validateKitComponents`, `kitTotals`.
-- `partner-fields.ts`: `normalizePhone`, `formatPhone`, `isValidTaxCode`, `isValidIdNumber`.
+- `partner-fields.ts`: `normalizePhone`, `formatPhone`, `isValidTaxCode`, `isValidIdNumber`, `maskIdNumber`.
 - `search-text.ts`: `toSearchText`.
 - `catalog-code-sequence.ts`: `formatSequenceCode(prefix, n)` → `NT-0001`.
 
@@ -137,7 +139,8 @@ Logic ghi ở `src/lib/catalog/*.ts` (nhận `db`, `actor`), mỗi lệnh một 
 | `GET/POST /api/catalog/kits` · `PATCH/DELETE …/[id]` | đọc `catalog.read`, ghi `items.manage` | PATCH thay toàn bộ `components` |
 | `GET/POST /api/catalog/item-groups` · `PATCH/DELETE …/[id]` | như trên | |
 | `GET/POST /api/catalog/customers` · `PATCH/DELETE …/[id]` | đọc `catalog.read`, ghi `partners.manage` | GET kèm số công trình đang dùng |
-| `GET/POST /api/catalog/suppliers` · `PATCH/DELETE …/[id]` | như trên | |
+| `GET/POST /api/catalog/suppliers` · `PATCH/DELETE …/[id]` | như trên | GET chỉ có CCCD đã che (D5) |
+| `GET /api/catalog/suppliers/[id]/edit` | `partners.manage` | Dữ liệu form sửa, kèm CCCD đầy đủ (D5) |
 | `GET/POST /api/catalog/sites` · `PATCH/DELETE …/[id]` | như trên | POST tạo cả vị trí `SITE` |
 | `GET/POST /api/catalog/locations` · `PATCH/DELETE …/[id]` | đọc `catalog.read`, ghi `locations.manage` | Không tạo/sửa loại `SITE` ở đây |
 

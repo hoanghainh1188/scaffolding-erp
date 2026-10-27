@@ -11,9 +11,9 @@ Giai đoạn: **[MVP]** — change số 3 trong `docs/roadmap.md`, issue #5. Mà
 - **Vật tư (mã hàng)**: mã do người dùng gõ (VD `GG-K17`), không đổi sau khi tạo; tên; nhóm hàng; đơn vị **cái** hoặc **kg**; **trọng lượng chuẩn** (kg/cái, bắt buộc với hàng tính theo cái); **giá thuê mặc định theo ngày** (giá tháng = ngày × 30, chỉ hiển thị); **giá đền bù mặc định** khi mất và khi hỏng sửa được (để hợp đồng lấy làm gợi ý). Hàng tính theo kg (phế liệu) không cho thuê.
 - **Nhóm hàng**: danh sách nhóm (Giàn giáo, Phụ kiện, Ống thép, Phế liệu...) để lọc và sắp xếp.
 - **Bộ (kit)**: gồm nhiều linh kiện với số lượng; không lồng bộ trong bộ. Trọng lượng và giá thuê 1 bộ **tính ra** từ linh kiện, không lưu (quyết định 0.2 #4b). Chỉ dùng để báo giá.
-- **Quy đổi kg ↔ cái** theo trọng lượng chuẩn (hàm dùng chung cho đơn mua, phiếu nhập sau này).
+- **Quy đổi kg ↔ cái** theo trọng lượng chuẩn (hàm dùng chung cho đơn mua, phiếu nhập sau này). **Phế liệu của mã tính theo cái vẫn đếm theo cái**, hiện kèm kg quy đổi (chốt 27/10/2026, sửa `docs/requirements.md` 0.2 #3); mã tính theo kg dùng cho sắt vụn mua về.
 - **Nhà thầu (khách hàng)**: mã tự sinh `NT-0001`, công ty hoặc cá nhân, mã số thuế, người liên hệ, điện thoại, địa chỉ, **hạn thanh toán mặc định** (số ngày, quyết định 0.2 #18).
-- **Nhà cung cấp**: mã tự sinh `NCC-0001`, công ty hoặc **cá nhân** (người bán sắt vụn, cai thầu thanh lý): tên, điện thoại, CCCD, tài khoản ngân hàng (tùy chọn).
+- **Nhà cung cấp**: mã tự sinh `NCC-0001`, công ty hoặc **cá nhân** (người bán sắt vụn, cai thầu thanh lý): tên, điện thoại, CCCD, tài khoản ngân hàng (tùy chọn). **CCCD chỉ hiện 4 số cuối**; số đầy đủ chỉ trong form sửa cho người có quyền sửa đối tác, API đọc chung không trả.
 - **Công trình**: mã tự sinh `CT-0001`, tên, địa chỉ, **1 nhà thầu**. Tạo công trình thì tự tạo vị trí kho loại `SITE` đi kèm.
 - **Kho, bãi, xưởng** (`location`): loại `YARD`, `WORKSHOP`, `SITE`. Migration tạo sẵn **1 bãi + 1 xưởng** (quy mô hiện tại, mục 0.1).
 - **Ngừng dùng thay vì xóa**: bản ghi đã được tham chiếu thì không xóa được, chỉ ngừng dùng; ngừng dùng thì không chọn được ở chứng từ mới, vẫn hiện ở chứng từ cũ. Bản ghi chưa dùng thì xóa được.
@@ -38,6 +38,7 @@ Giai đoạn: **[MVP]** — change số 3 trong `docs/roadmap.md`, issue #5. Mà
 - **Code**: `src/domain/` (mã hàng, quy đổi kg ↔ cái, giá bộ), `src/lib/catalog/` (service + transaction), route `src/app/api/catalog/*`, trang `src/app/(desktop)/catalog/*`, thêm quyền ở `src/domain/permissions.ts`.
 - **Test**: unit (quy đổi, mã, giá bộ), integration (tạo/sửa/ngừng dùng/xóa, quyền 403 từng vai trò), component (D9, D16), E2E (luồng chính), ảnh mốc mới cho D9, D16.
 - Không thêm thư viện.
+- **Tài liệu**: `docs/requirements.md` mục 0.2 #3 và bảng 0.3 (dòng Phế liệu) ghi quyết định phế liệu đếm theo cái.
 
 ## Ngoài phạm vi
 
@@ -47,3 +48,4 @@ Giai đoạn: **[MVP]** — change số 3 trong `docs/roadmap.md`, issue #5. Mà
 - Giá bán đứt mặc định: đặt trong hợp đồng (`contracts`), không ở danh mục.
 - Nhập danh mục từ Excel; ảnh vật tư; nhiều đơn vị tính cho một mã (chỉ cái **hoặc** kg).
 - Màn danh mục trên Mobile.
+- Bán phế liệu theo kg (quy đổi khi xuất bán, giá vốn theo kg): chốt ở `inventory-ledger`.
