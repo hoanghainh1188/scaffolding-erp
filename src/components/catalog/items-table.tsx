@@ -48,7 +48,10 @@ export function ItemsTable({
           href={linkFor(row.original.code)}
           scroll={false}
           aria-current={row.original.code === selectedCode ? "true" : undefined}
-          className="flex flex-col rounded-sm hover:underline aria-[current=true]:font-semibold"
+          // The only column allowed to wrap: long names take two lines so
+          // the rent columns keep fitting at 1366px whatever the font
+          // metrics (CI on Linux renders ~1px wider than macOS).
+          className="flex min-w-36 flex-col rounded-sm whitespace-normal hover:underline aria-[current=true]:font-semibold"
         >
           <span>{row.original.name}</span>
           <span className="text-caption text-muted-foreground">

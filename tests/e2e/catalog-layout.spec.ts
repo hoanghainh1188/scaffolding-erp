@@ -24,6 +24,16 @@ test("D9 at 1366px shows both rent columns without scrolling", async ({
     const frame = table.parentElement as HTMLElement;
     return { content: frame.scrollWidth, shown: frame.clientWidth };
   });
+  // Real slack, not an exact fit: font metrics differ by a pixel or two
+  // between macOS and the Linux CI, so the narrowest the table can get
+  // must stay well inside the frame.
+  const narrowest = await page.getByRole("table").evaluate((table) => {
+    table.style.width = "min-content";
+    const width = table.scrollWidth;
+    table.style.width = "";
+    return width;
+  });
+  expect(narrowest).toBeLessThanOrEqual(scroll.shown - 24);
   expect(scroll.content).toBeLessThanOrEqual(scroll.shown);
   // The Thuộc bộ panel still shows, under the table.
   await expect(page.getByRole("region", { name: "Thuộc bộ" })).toContainText(
