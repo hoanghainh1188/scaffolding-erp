@@ -43,6 +43,6 @@
 
 - [x] 6.1 Dữ liệu E2E theo design D14: mã cố định `E2E-KHO-01`, `E2E-KHO-02` tạo một lần; `global-setup.ts` không xóa mã `E2E-%` đã có dòng sổ — kiểm tra: chạy `npm run test:e2e` hai lần liền đều xanh
 - [x] 6.2 E2E `tests/e2e/inventory.spec.ts`: Kế toán lập tồn đầu kỳ → Giám đốc duyệt → D10 tăng đúng số → bấm số mở D11; Kế toán lập điều chỉnh tình trạng → Giám đốc trả lại → Kế toán sửa, gửi lại → Giám đốc duyệt → D11 có 2 dòng mới; Kinh doanh mở D10 không thấy nút lập; D10 ở 1366px không cuộn ngang (bảng hẹp nhất dư ≥ 24px) — kiểm tra: `npm run test:e2e` xanh ở local
-- [ ] 6.3 Thêm `/inventory`, `/inventory/items/GG-K17`, `/inventory/adjustments` vào `responsive.spec.ts` và `a11y.spec.ts`; thêm D10, D11 vào `visual.spec.ts` — kiểm tra: CI xanh sau workflow Update Playwright snapshots
+- [x] 6.3 Thêm `/inventory`, `/inventory/items/GG-K17`, `/inventory/adjustments` vào `responsive.spec.ts` và `a11y.spec.ts`; thêm D10, D11 vào `visual.spec.ts` — kiểm tra: CI xanh sau workflow Update Playwright snapshots
 - [x] 6.4 Cập nhật `CLAUDE.md` (quy ước sổ kho: gọi `postMovements`, giá BQ gộp mọi vị trí, không ghi lùi ngày, ngày thuê theo ngày thực tế của phiếu, `inventory:check`) — kiểm tra: `npx openspec validate inventory-ledger --strict` xanh
 - [ ] 6.5 Kiểm tra tay trên Edge 1366px: so D10, D11 với bảng tính tay design D11 (Excel); Kế toán lập, Giám đốc duyệt điều chỉnh — kiểm tra: ghi kết quả vào PR
