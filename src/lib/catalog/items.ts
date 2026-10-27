@@ -30,6 +30,10 @@ import {
   type ServiceResult,
 } from "./common";
 import { describeStock, isEmpty, itemStock } from "@/lib/inventory/totals";
+import {
+  describeOrderCodes,
+  openOrderCodesForItem,
+} from "@/lib/purchasing/references";
 
 export const ITEM_MESSAGES = {
   codeFixed: "Không đổi được mã hàng sau khi tạo",
@@ -46,6 +50,8 @@ export const ITEM_MESSAGES = {
     `Bỏ vật tư này khỏi bộ ${kitCode} hoặc ngừng dùng bộ trước`,
   hasStock: (code: string, stock: string) =>
     `${code} còn tồn ${stock}, chỉ ngừng dùng được khi tồn về 0`,
+  inOpenOrder: (code: string, orders: string) =>
+    `${code} còn trong đơn thu mua đang xử lý: ${orders}`,
 } as const;
 
 /** numeric(10,3): below 10.000.000 kg. */
@@ -315,6 +321,19 @@ export function updateItem(
         if (inKit) {
           throw new ServiceFailure(
             conflict(ITEM_MESSAGES.inActiveKit(inKit.code)),
+          );
+        }
+        // An order on its way would bring in an item nobody can post
+        // (purchase-orders design D8). Order writers hold this row FOR SHARE.
+        const orders = await openOrderCodesForItem(tx, id);
+        if (orders.length > 0) {
+          throw new ServiceFailure(
+            conflict(
+              ITEM_MESSAGES.inOpenOrder(
+                current.code,
+                describeOrderCodes(orders),
+              ),
+            ),
           );
         }
         // Stock still somewhere, sites included (inventory-ledger). Postings

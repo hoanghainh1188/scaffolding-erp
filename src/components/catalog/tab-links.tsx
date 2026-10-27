@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 
 export interface TabLink {
   label: string;
+  /** Shown after the label; masked in screenshots (it counts live data). */
+  count?: number;
   href: string;
   active: boolean;
 }
@@ -25,6 +27,14 @@ export function TabLinks({ label, tabs }: { label: string; tabs: TabLink[] }) {
           )}
         >
           {tab.label}
+          {tab.count === undefined ? null : (
+            <>
+              {" · "}
+              <span data-mask className="tabular-nums">
+                {tab.count}
+              </span>
+            </>
+          )}
         </Link>
       ))}
     </nav>

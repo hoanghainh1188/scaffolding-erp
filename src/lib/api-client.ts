@@ -3,7 +3,14 @@ import type { ApiResponse } from "./api-response";
 export const NETWORK_ERROR_MESSAGE =
   "Không gửi được. Kiểm tra kết nối mạng rồi thử lại.";
 
-export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
+export type ApiResult<T> =
+  | { ok: true; data: T }
+  | {
+      ok: false;
+      error: string;
+      /** The form field the server named ("lines.0.quantity"), if any. */
+      field?: string;
+    };
 
 /**
  * Calls one of our JSON routes from the browser and unwraps the envelope.
@@ -34,5 +41,10 @@ export async function callApi<T>(
     body = null;
   }
   if (response.ok && body?.success) return { ok: true, data: body.data as T };
-  return { ok: false, error: body?.error ?? NETWORK_ERROR_MESSAGE };
+  const field = (body?.data as { field?: unknown } | null | undefined)?.field;
+  return {
+    ok: false,
+    error: body?.error ?? NETWORK_ERROR_MESSAGE,
+    ...(typeof field === "string" ? { field } : {}),
+  };
 }

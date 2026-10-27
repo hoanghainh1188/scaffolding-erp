@@ -47,6 +47,24 @@ test.describe("accessibility", () => {
     }
   });
 
+  // Own test: one loop over every desktop page outruns the 30s timeout on
+  // CI, where next dev compiles each page on its first visit.
+  test("purchasing pages have no serious or critical issues", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "desktop pages");
+    for (const path of [
+      "/purchasing",
+      "/purchasing/orders/new",
+      `/purchasing/orders/PO-${new Date().getFullYear()}-001`,
+    ]) {
+      await page.goto(path);
+      await waitForHydration(page, DESKTOP_READY);
+      await page.evaluate(() => document.fonts.ready);
+      expect(await seriousViolations(page), path).toEqual([]);
+    }
+  });
+
   test("mobile pages have no serious or critical issues", async ({
     page,
   }, testInfo) => {
