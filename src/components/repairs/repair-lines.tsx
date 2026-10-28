@@ -106,7 +106,7 @@ export function RepairLines({
               onChange={(event) => {
                 if (event.target.value) onAdd(event.target.value);
               }}
-              className="h-11 rounded-md border border-input bg-card px-3 text-sm font-semibold"
+              className="h-11 w-56 max-w-full rounded-md border border-input bg-card px-3 text-sm font-semibold"
             >
               <option value="">+ Thêm mã hàng</option>
               {choices.map((item) => (
