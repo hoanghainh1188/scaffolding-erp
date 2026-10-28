@@ -1,48 +1,57 @@
 # Lộ trình các change (OpenSpec)
 
-Làm theo thứ tự. Mỗi dòng là một change: `/opsx:propose <tên-change>`.
+Làm theo thứ tự. Mỗi dòng là một change: `/opsx:propose <tên-change>`. Câu lệnh propose và checklist nằm trong issue của change. Issue tổng: [#21](https://github.com/hoanghainh1188/scaffolding-erp/issues/21).
 
-Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude Design, rồi đưa link vào lúc `/opsx:explore`.
+Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude Design, chép file vào `docs/design/screens/`.
+
+**Sắp xếp lại 28/10/2026** sau khảo sát với chủ doanh nghiệp (`docs/discovery/2026-10-28-khao-sat.md`). 🔒 = đang chờ trả lời câu hỏi ở [#44](https://github.com/hoanghainh1188/scaffolding-erp/issues/44) (nhãn `blocked`).
 
 ## MVP
 
-| # | Tên change | Nội dung | Màn hình | Phụ thuộc |
-|---|---|---|---|---|
-| 1 | `setup-project` | Khung Next.js, DB, ORM, test runner, layout Desktop + Mobile, token Bright Blue Base, component nền (Badge, Stepper, DataTable, ConditionSplit) | Layout D, M | – |
-| 2 | `auth-and-roles` | Đăng nhập, 5 vai trò, phân quyền phía server, quản lý người dùng | D17 | 1 |
-| 3 | `master-data` | Danh mục vật tư (trọng lượng chuẩn, giá thuê mặc định), Bộ (tùy chọn), nhà cung cấp, nhà thầu, công trình, kho | D9, D16 | 2 |
-| 4 | `inventory-ledger` | **Sổ kho**, 4 tình trạng, giá vốn bình quân, tồn kho tổng hợp, thẻ kho | D10, D11 | 3 |
-| 5 | `purchase-orders` | Đơn thu mua, đa đơn vị tính, chi phí landed cost và cách phân bổ | D2, D3 | 4 |
-| 6 | `goods-receipt` | Nhập thực tế từ PO trên mobile, tách tình trạng, ghi sổ kho | M1, M2, M3, M7 | 5 |
-| 7 | `contracts` | Hợp đồng bán/thuê, giá theo bộ/linh kiện, bảng giá đền bù, Giám đốc duyệt | D4, D5 | 4 |
-| 8 | `deliveries` | Xuất kho theo đợt, rã bộ, cước vận chuyển, tiến độ công trình | D6, M5 | 7 |
-| 9 | `returns-and-compensation` | Thu hồi trên mobile (Tốt/Chờ sửa/Phế liệu/Mất, chụp ảnh), phiếu đền bù, Giám đốc duyệt | M4, D8 | 8 |
-| 10 | `simple-repair` | Chuyển Chờ sửa → Tốt/Phế liệu, cộng chi phí vào giá vốn | D12 | 4 |
-| 11 | `rental-billing` | Tính tiền thuê theo kỳ (tính ngày xuất, không tính ngày trả) | D7 | 9 |
-| 12 | `receivables` | Công nợ phải thu, ghi thanh toán, cảnh báo quá hạn, xuất Excel | D14 | 11 |
-| 13 | `dashboard-basic` | Việc chờ duyệt, tồn kho theo tình trạng, nợ quá hạn | D1 | 12 |
+| # | Tên change | Issue | Nội dung | Màn hình | Phụ thuộc | Trạng thái |
+|---|---|---|---|---|---|---|
+| 01 | `setup-project` | PR #1 | Khung Next.js, DB, test, layout, token, component nền | Layout D, M | – | ✅ |
+| 02 | `auth-and-roles` | #4 | Đăng nhập, 5 vai trò, phân quyền server, người dùng | Login, D17 | 01 | ✅ |
+| 03 | `master-data` | #5 | Vật tư, bộ, đối tác, công trình, kho | D9, D16 | 02 | ✅ |
+| 04 | `inventory-ledger` | #6 | Sổ kho, giá vốn BQ, tồn kho, thẻ kho, điều chỉnh, tồn đầu | D10, D11 | 03 | ✅ |
+| 05 | `purchase-orders` | #7 | Đơn thu mua, chia chi phí mua hàng | D2, D3, D3b | 04 | ✅ |
+| 06 | `goods-receipt` | #8 | Nhập hàng trên điện thoại, lưu nháp, quét QR, giá sắt vụn | M1, M2, M3, M7 | 05 | ✅ |
+| 07 | `simple-repair` | #12 | Chờ sửa → Tốt / Phế liệu, cộng chi phí sửa | D12 | 04 | **Làm tiếp** |
+| 08 | `stocktake` | #17 | Kiểm kê định kỳ, duyệt chênh lệch (**lên MVP**) | M6, D13 (cần vẽ) | 04 | |
+| 09 | `catalog-extensions` | #45 | Mã vật tư cũ, đơn vị mét/bó/sọt, cho thuê theo kg/mét, khu vực công trình, nhân viên phụ trách khách | D9, D16 (sửa) | 03 | 🔒 Q3, Q9, Q10 |
+| 10 | `contracts` | #9 | Hợp đồng bán/thuê, giá theo hợp đồng, **cọc + bảo lãnh**, VAT, phụ lục, báo giá = nháp in ra, tách quyền thuê/bán | D4, D5, D5a, D5b (cần vẽ) | 09 | 🔒 Q4–Q8 |
+| 11 | `deliveries` | #10 | Xuất kho theo đợt, rã bộ, cước vận chuyển | D6, M5 | 10 | |
+| 12 | `returns-and-compensation` | #11 | Thu hồi, đền bù; thêm mua lại, cấn trừ, đổi hàng, chuyển công trình | M4, D8 | 11 | |
+| 13 | `rental-billing` | #13 | Tính tiền thuê theo kỳ (cần file Excel tính tiền của từng công trình) | D7 | 12 | 🔒 Q1–Q3 |
+| 14 | `receivables` | #14 | Công nợ tách loại (thuê, bán, vận chuyển, đền bù, VAT), cọc, bảo lãnh, thanh toán | D14 | 13 | |
+| 15 | `dashboard-basic` | #15 | Việc chờ duyệt, **doanh số ngày/tháng**, công trình rủi ro, tra một công trình, hàng ở ngoài theo khu vực | D1 | 14 | |
+| 16 | `production-orders` | #46 | **Sản xuất** thành phẩm từ nguyên liệu (mới) | cần vẽ | 04 | 🔒 Q11 |
+| 17 | `activity-log` | #47 | Nhật ký thao tác cho Giám đốc (mới) | cần vẽ | 02 | |
+| 18 | `data-migration` | #48 | Chuyển dữ liệu từ Excel khi bắt đầu dùng (mới, **bắt buộc trước khi chạy thật**) | cần vẽ | 14 | |
 
 ## Bản 2
 
-| # | Tên change | Nội dung | Màn hình |
+| # | Tên change | Issue | Nội dung |
 |---|---|---|---|
-| 14 | `repair-work-orders` | Lệnh sửa chữa đầy đủ: vật tư phụ, công thợ, nghiệm thu; xưởng dùng mobile | D12, M8 |
-| 15 | `stocktake` | Kiểm kê trên mobile, duyệt chênh lệch, phiếu điều chỉnh | M6, D13 |
-| 16 | `payables` | Công nợ phải trả | D14 |
-| 17 | `management-reports` | Lợi nhuận gộp, tỷ lệ khai thác, biểu đồ dashboard | D1, D15 |
+| 19 | `repair-work-orders` | #16 | Lệnh sửa chữa đầy đủ: vật tư phụ, công thợ, nghiệm thu; xưởng dùng mobile |
+| 20 | `payables` | #18 | Công nợ phải trả |
+| 21 | `management-reports` | #19 | Lợi nhuận gộp, tỷ lệ khai thác, **khấu hao / hao hụt hàng cho thuê** (Q12), biểu đồ |
+| 22 | `truck-management` | #49 | Quản lý 3 xe tải (Q14) |
 
-## Change kỹ thuật (làm trước khi lên production)
+## Change kỹ thuật và nhỏ (làm trước khi lên production)
 
-Không có màn hình mới. Phát sinh khi làm các change trên; lý do chi tiết ở `design.md` của change ghi trong cột "Nguồn".
-
-| # | Tên change | Nội dung | Nguồn | Phụ thuộc |
+| # | Tên change | Issue | Nội dung | Phụ thuộc |
 |---|---|---|---|---|
-| K1 ([#23](https://github.com/hoanghainh1188/scaffolding-erp/issues/23)) | `security-headers` | CSP theo nonce (mỗi request một mã). Thử cùng Cache Components | `setup-project`, `auth-and-roles` | 2 |
-| K2 ([#24](https://github.com/hoanghainh1188/scaffolding-erp/issues/24)) | `e2e-production-build` | Chạy E2E trên `next build && next start` thay cho `next dev` | `setup-project` D15, `auth-and-roles` | 2 |
-| K3 ([#25](https://github.com/hoanghainh1188/scaffolding-erp/issues/25)) | `login-lockout-hardening` | Chống cố tình nhập sai để chặn người khác (kể cả Giám đốc duy nhất): khóa theo tên + IP hoặc chờ tăng dần | `auth-and-roles` (security review) | 2 |
-| K4 ([#26](https://github.com/hoanghainh1188/scaffolding-erp/issues/26)) | `temp-password-expiry` | Mật khẩu tạm hết hạn sau 48 giờ nếu chưa dùng | `auth-and-roles` (security review) | 2 |
+| K1 | `security-headers` | #23 | CSP theo nonce | 02 |
+| K2 | `e2e-production-build` | #24 | E2E trên `next build && next start` | 02 |
+| K3 | `login-lockout-hardening` | #25 | Chống cố tình nhập sai để chặn người khác | 02 |
+| K4 | `temp-password-expiry` | #26 | Mật khẩu tạm hết hạn sau 48 giờ | 02 |
+| K5 | `qr-labels` | #40 | In nhãn QR dán lên hàng | 06 |
+| K6 | `stock-value-adjustment` | #42 | Phiếu điều chỉnh giá trị kho | 04 |
+| K7 | ô nhập ngày | #37 | Ô ngày chung luôn hiện `dd/mm/yyyy` | – |
 
 ## Ghi chú
 
-- Change 4 (`inventory-ledger`) là lõi của hệ thống. Làm kỹ và test kỹ trước khi đi tiếp.
-- Change 7 và 10 chỉ cần change 4, có thể làm song song với 5–6 nếu muốn.
+- Khi chủ trả lời câu hỏi ở #44: ghi quyết định vào `docs/requirements.md` 0.2, gỡ dòng tương ứng ở 0.2b, gỡ nhãn `blocked` của issue.
+- Trong lúc chờ, làm 07 → 08 → 17 (không bị chặn). Song song: xin file Excel tính tiền của 2–3 công trình.
+- 18 `data-migration` làm cuối, nhưng nên xin sớm file mẫu dữ liệu để thiết kế mẫu nhập từ đầu.
