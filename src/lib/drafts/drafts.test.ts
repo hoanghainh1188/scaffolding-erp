@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createOutbox,
   nextRetryDelay,
+  draftSender,
   receiptSender,
+  stocktakeSender,
   type SendOutcome,
   type Sender,
 } from "./outbox";
@@ -247,6 +249,7 @@ describe("draft runtime", () => {
     await store.put(draft());
     await outboxFor("vantung").submit(draft().draftId);
     expect(postedNotices.current()).toEqual({
+      kind: "GOODS_RECEIPT",
       title: draft().title,
       code: "PN-2026-094",
     });
@@ -256,5 +259,67 @@ describe("draft runtime", () => {
     stop();
     vi.unstubAllGlobals();
     setDraftStore(null);
+  });
+});
+
+describe("stocktakeSender", () => {
+  const stocktakeDraft = () =>
+    draft({
+      draftId: "5a1e0000-0000-4000-8000-000000000003",
+      kind: "STOCKTAKE",
+      documentRef: "KK-2026-003",
+      title: "Kiểm kê KK-2026-003 · BAI-01",
+      payload: { round: 1, body: { items: [{ itemId: "x" }] } },
+    });
+
+  it("posts the count with the draft id as submission id and the phone clock", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      Response.json({ data: { code: "KK-2026-003" } }),
+    );
+    expect(await stocktakeSender(fetcher, () => NOW)(stocktakeDraft())).toEqual(
+      { kind: "POSTED", code: "KK-2026-003" },
+    );
+    const [url, init] = fetcher.mock.calls[0] ?? [];
+    expect(url).toBe("/api/stocktakes/KK-2026-003/submit");
+    expect(JSON.parse(String(init?.body))).toEqual({
+      items: [{ itemId: "x" }],
+      submissionId: stocktakeDraft().draftId,
+      deviceNow: NOW.toISOString(),
+    });
+  });
+
+  it("is picked by the draft kind", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      Response.json({ data: { code: "OK" } }),
+    );
+    const send = draftSender(fetcher);
+    await send(stocktakeDraft());
+    await send(draft());
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      "/api/stocktakes/KK-2026-003/submit",
+      "/api/receiving/receipts",
+    ]);
+  });
+
+  it("sends a stocktake count once when Gửi is pressed twice", async () => {
+    let release: (response: Response) => void = () => undefined;
+    const fetcher = vi.fn<typeof fetch>(
+      () => new Promise<Response>((resolve) => (release = resolve)),
+    );
+    const store = memoryDraftStore();
+    const outbox = createOutbox({
+      store,
+      userId: "vantung",
+      send: stocktakeSender(fetcher),
+    });
+    await store.put(stocktakeDraft());
+    const first = outbox.submit(stocktakeDraft().draftId);
+    expect(await outbox.submit(stocktakeDraft().draftId)).toEqual({
+      kind: "BUSY",
+    });
+    await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+    release(Response.json({ data: { code: "KK-2026-003" } }));
+    expect(await first).toEqual({ kind: "POSTED", code: "KK-2026-003" });
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });

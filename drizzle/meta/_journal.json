@@ -50,6 +50,13 @@
       "when": 1793188776292,
       "tag": "0006_repair_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793203449843,
+      "tag": "0007_stocktakes",
+      "breakpoints": true
     }
   ]
 }

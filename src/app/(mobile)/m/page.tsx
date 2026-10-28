@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { DraftBanner } from "@/components/drafts/draft-banner";
 import { ArrivalList } from "@/components/receiving/arrival-list";
 import { MobilePage } from "@/components/shell/mobile/mobile-page";
+import { StocktakeHome } from "@/components/stocktake/stocktake-home";
 import { getDatabase } from "@/db/client";
 import {
   BUSINESS_TIME_ZONE,
@@ -13,6 +14,7 @@ import {
 import { can } from "@/domain/permissions";
 import { requireUser } from "@/lib/auth/guard";
 import { arrivals, type Arrivals } from "@/lib/receiving/queries";
+import { openStocktakes, type OpenStocktake } from "@/lib/stocktakes/queries";
 
 export const metadata: Metadata = { title: "Việc hôm nay" };
 
@@ -36,7 +38,13 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const work: Arrivals | null = can(user.role, "receiving.manage")
     ? await arrivals(getDatabase(), today, { includeLater: later === "1" })
     : null;
-  const due = work?.dueToday ?? 0;
+  const counts: OpenStocktake[] | null = can(user.role, "stocktake.count")
+    ? await openStocktakes(getDatabase())
+    : null;
+  // A session still being counted is today's work too (spec mobile-home).
+  const due =
+    (work?.dueToday ?? 0) +
+    (counts?.filter((session) => session.status === "COUNTING").length ?? 0);
   const day = weekday.format(now);
   return (
     <MobilePage title="Việc hôm nay">
@@ -59,6 +67,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
           Xe sắp về sẽ hiện ở đây.
         </p>
       )}
+      {counts && <StocktakeHome sessions={counts} userId={user.id} />}
     </MobilePage>
   );
 }
