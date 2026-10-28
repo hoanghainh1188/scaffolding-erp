@@ -217,7 +217,8 @@ Lỗi theo kiểu `ServiceFailure` có sẵn: 400 dữ liệu sai, 403 quyền, 
 
 - `npm run db:seed:dev` thêm một phiên `KK` Chờ duyệt tại bãi mẫu với 5 dòng lệch như D13 (dùng mã vật tư đang có trong seed).
 - Phiên seed ở `BAI-01` giữ nguyên cho ảnh mốc D13. Vì D4 (một phiên mở mỗi vị trí), **E2E bắt đầu phiên ở `XUONG-01`**, không đụng `BAI-01`.
-- E2E chỉ đếm các dòng `E2E-KHO-01/02` (kiểm theo chênh lệch, như các change trước); các dòng khác của phạm vi để chưa đếm nên không điều chỉnh. E2E chỉ tạo chênh lệch **thừa** (`ADJUST_IN`) để không làm hụt hàng Chờ sửa `E2E-KHO-01` ở `XUONG-01` mà `repairs.spec.ts` dùng.
+- E2E chỉ đếm `E2E-KHO-02` (kiểm theo chênh lệch, như các change trước): `repairs.spec.ts` đo cột xưởng của `E2E-KHO-01` theo chênh lệch, nên một điều chỉnh song song trên mã đó làm test kia sai (chốt khi apply). Các dòng khác của phạm vi để chưa đếm nên không điều chỉnh. E2E chỉ tạo chênh lệch **thừa** (`ADJUST_IN`). Lần chạy đầu `E2E-KHO-02` chưa có tồn ở xưởng nên E2E thêm mã bằng "Thấy hàng không có trong danh sách"; các lần sau mã đã có trong danh sách.
+- Global setup gọi seed phiên mẫu (một lần, khi chưa có phiên nào) để CI có phiên Chờ duyệt ở `BAI-01` cho ảnh mốc D13.
 - Global setup hủy mọi phiên mở tại `XUONG-01` do tài khoản `e2e.*` bắt đầu. Nếu `XUONG-01` có phiên mở của người khác thì **dừng** với "XUONG-01 đang có phiên <mã> của <người>, hủy hoặc duyệt trước khi chạy E2E", không hủy dữ liệu người dùng.
 - Ghi chung một dòng ở `CLAUDE.md` mục "Lưu ý" với việc global setup tự thêm hàng Chờ sửa `E2E-KHO-01` ở `XUONG-01` (`ensureRepairStock`, nợ từ `simple-repair`).
 

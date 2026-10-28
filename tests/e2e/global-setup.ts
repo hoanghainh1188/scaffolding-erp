@@ -18,6 +18,7 @@ import {
   repairOrder,
   site,
   stockAdjustmentLine,
+  stocktake,
   user,
 } from "@/db/schema";
 import { createAuth } from "@/lib/auth/auth";
@@ -32,6 +33,8 @@ import { seedPurchasing } from "@/lib/purchasing/sample";
 import { seedReceiving } from "@/lib/receiving/sample";
 import { currentScrapPrice, setScrapPrice } from "@/lib/receiving/scrap-price";
 import { seedRepairs } from "@/lib/repairs/sample";
+import { seedStocktakes } from "@/lib/stocktakes/sample";
+import { cancelStocktake } from "@/lib/stocktakes/sessions";
 import { E2E_ACCOUNTS, E2E_TEMP_PREFIX } from "@/lib/users/e2e-accounts";
 import { seedAccounts } from "@/lib/users/seed";
 
@@ -194,6 +197,46 @@ async function removeTestRepairDrafts(db: Database) {
     );
 }
 
+/** Where stocktake.spec.ts counts; the seed session stays at BAI-01. */
+export const E2E_STOCKTAKE_PLACE = "XUONG-01";
+
+/**
+ * Cancels the open sessions earlier runs left at the workshop (design D16).
+ * One place holds one open session, so a session somebody else is counting
+ * there stops the run instead of being thrown away.
+ */
+async function cancelTestStocktakes(db: Database, actor: { id: string }) {
+  const open = await db
+    .select({
+      code: stocktake.code,
+      username: user.username,
+      name: user.name,
+    })
+    .from(stocktake)
+    .innerJoin(location, eq(location.id, stocktake.locationId))
+    .innerJoin(user, eq(user.id, stocktake.startedBy))
+    .where(
+      and(
+        eq(location.code, E2E_STOCKTAKE_PLACE),
+        sql`${stocktake.status} in ('COUNTING', 'SUBMITTED')`,
+      ),
+    );
+  for (const row of open) {
+    if (!row.username?.startsWith("e2e.")) {
+      throw new Error(
+        `${E2E_STOCKTAKE_PLACE} đang có phiên ${row.code} của ${row.name}, hủy hoặc duyệt trước khi chạy E2E`,
+      );
+    }
+    const done = await cancelStocktake(
+      db,
+      { id: actor.id, role: "DIRECTOR" },
+      row.code,
+      { reason: "E2E dọn phiên còn sót" },
+    );
+    if (!done.ok) throw new Error(`${row.code}: ${done.error}`);
+  }
+}
+
 export default async function globalSetup(): Promise<void> {
   const env = getEnv();
   if (!env.E2E_PASSWORD) {
@@ -243,6 +286,10 @@ export default async function globalSetup(): Promise<void> {
       // The D12 sample draft PSC-<year>-022 (simple-repair design D13), once.
       await seedRepairs(handle.db, director);
       await ensureRepairStock(handle.db, director);
+      // The D13 sample session at BAI-01 (stocktake design D16), once; the
+      // workshop is left free for stocktake.spec.ts.
+      await cancelTestStocktakes(handle.db, director);
+      if (warehouse) await seedStocktakes(handle.db, warehouse);
     }
   } finally {
     await handle.close();

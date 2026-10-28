@@ -17,6 +17,8 @@ const SAMPLE_ORDER = `PO-${new Date().getFullYear()}-001`;
 const RECEIVING_ORDER = `PO-${new Date().getFullYear()}-006`;
 /** The D12 sample draft (simple-repair design D13): after PSC-…-021. */
 const SAMPLE_REPAIR = `PSC-${new Date().getFullYear()}-022`;
+/** The D13 sample session (stocktake design D16): the first KK of a year. */
+const SAMPLE_STOCKTAKE = `KK-${new Date().getFullYear()}-001`;
 const PAGES = [
   { path: "/dashboard", name: "dashboard", ready: DESKTOP_READY },
   { path: "/m", name: "mobile-home", ready: MOBILE_READY },
@@ -77,6 +79,18 @@ const PAGES = [
     name: "d12-repair",
     ready: DESKTOP_READY,
   },
+  // stocktake: the seed session waiting at BAI-01; sessions stocktake.spec.ts
+  // opens at XUONG-01 come and go, so their rows are removed.
+  {
+    path: "/inventory/stocktakes?status=submitted",
+    name: "d13-stocktakes",
+    ready: DESKTOP_READY,
+  },
+  {
+    path: `/inventory/stocktakes/${SAMPLE_STOCKTAKE}?filter=diff`,
+    name: "d13-stocktake",
+    ready: DESKTOP_READY,
+  },
   { path: "/m/scan", name: "m2-scan", ready: MOBILE_READY },
   {
     path: `/m/receive/${RECEIVING_ORDER}`,
@@ -112,6 +126,14 @@ test.describe("visual baselines @visual", () => {
           .getByRole("listitem")
           .filter({ hasText: "E2E-KHO" })
           .evaluateAll((rows) => rows.forEach((row) => row.remove()));
+        // Stocktake sessions stocktake.spec.ts runs at the workshop (list
+        // rows, M1 cards) are not part of any baseline.
+        if (name.startsWith("d13") || name === "mobile-home") {
+          await page
+            .locator("tr, article")
+            .filter({ hasText: "XUONG-01" })
+            .evaluateAll((rows) => rows.forEach((row) => row.remove()));
+        }
         await page.evaluate(() => document.fonts.ready);
         await expect(page).toHaveScreenshot(`${name}-${width}.png`, {
           fullPage: true,
