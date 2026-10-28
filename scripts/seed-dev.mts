@@ -8,6 +8,7 @@ import { seedCatalog } from "@/lib/catalog/seed";
 import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
 import { seedReceiving } from "@/lib/receiving/sample";
+import { seedRepairs } from "@/lib/repairs/sample";
 import { DEV_ACCOUNTS, seedAccounts } from "@/lib/users/seed";
 
 async function main(): Promise<number> {
@@ -56,6 +57,13 @@ async function main(): Promise<number> {
         ? await seedReceiving(handle.db, { director, warehouse })
         : 0;
     process.stdout.write(`Phiếu nhập mẫu: thêm ${receipts} phiếu.\n`);
+    // Sample repair slip: a draft like drawing D12 (simple-repair D13).
+    const accountant = await handle.db.query.user.findFirst({
+      where: (row, { eq }) => eq(row.username, "ketoan"),
+      columns: { id: true },
+    });
+    const repairs = accountant ? await seedRepairs(handle.db, accountant) : 0;
+    process.stdout.write(`Phiếu sửa chữa mẫu: thêm ${repairs} phiếu.\n`);
     process.stdout.write(
       created.length > 0
         ? `Đã tạo ${created.length} tài khoản: ${created.join(", ")}.\n`

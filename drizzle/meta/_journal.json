@@ -43,6 +43,13 @@
       "when": 1793113035680,
       "tag": "0005_goods_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793188776292,
+      "tag": "0006_repair_orders",
+      "breakpoints": true
     }
   ]
 }
