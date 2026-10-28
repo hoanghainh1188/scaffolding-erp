@@ -184,9 +184,9 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | D12 Sửa chữa đơn giản | `D12-Repair.dc.html` | `simple-repair` | Đã duyệt |
 | D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Đã duyệt |
 | D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt |
-| D13 Kết quả kiểm kê | `D13-Stocktake.dc.html` | `stocktake` | Chờ duyệt |
-| M6a Bắt đầu kiểm kê | `M6a-StocktakeStart.dc.html` | `stocktake` | Chờ duyệt |
-| M6 Đếm hàng | `M6-Stocktake.dc.html` | `stocktake` | Chờ duyệt |
+| D13 Kết quả kiểm kê | `D13-Stocktake.dc.html` | `stocktake` | Đã duyệt |
+| M6a Bắt đầu kiểm kê | `M6a-StocktakeStart.dc.html` | `stocktake` | Đã duyệt |
+| M6 Đếm hàng | `M6-Stocktake.dc.html` | `stocktake` | Đã duyệt |
 
 Cách dùng khi propose: chỉ ra file trong `docs/design/screens/` của các màn thuộc change (bảng trên). Có thể handoff thêm từ canvas: **Export → Hand off to Claude Code**. Thiết kế là tham chiếu bố cục; quy tắc trong `openspec/specs/` và tài liệu này vẫn thắng nếu khác nhau.
 
