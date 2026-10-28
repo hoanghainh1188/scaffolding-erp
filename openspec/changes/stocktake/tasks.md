@@ -50,7 +50,8 @@
 ## 8. Dữ liệu mẫu, E2E
 
 - [ ] 8.1 `npm run db:seed:dev` thêm một phiên `KK` Chờ duyệt tại bãi mẫu với 5 dòng lệch như D13 (design D16) — kiểm tra: chạy seed hai lần không lỗi, không trùng
-- [ ] 8.2 E2E `tests/e2e/stocktake.spec.ts` trên `E2E-KHO-01` (kiểm theo chênh lệch): Thủ kho bắt đầu phiên, đếm 2 mã (một mã lệch), gửi; Giám đốc mở D13, yêu cầu đếm lại 1 dòng; Thủ kho đếm lại, gửi; Giám đốc duyệt, thẻ kho có dòng `KK-…`; Kế toán không thấy nút duyệt. Global setup hủy phiên mở còn sót của `E2E-KHO-01`. Thêm ảnh mốc `@visual` M6a, M6, D13 — kiểm tra: `npm run test:e2e` xanh
+- [ ] 8.2 E2E `tests/e2e/stocktake.spec.ts` theo design D16: Thủ kho bắt đầu phiên ở **`XUONG-01`** (không đụng phiên seed ở `BAI-01`), chỉ đếm dòng `E2E-KHO-01/02` (một dòng **thừa**, các dòng khác để chưa đếm), gửi; Giám đốc mở D13, yêu cầu đếm lại 1 dòng; Thủ kho đếm lại, gửi; Giám đốc duyệt, thẻ kho có dòng `KK-…` `ADJUST_IN`, tồn tăng đúng chênh lệch; Kế toán không thấy nút duyệt. Global setup hủy phiên mở tại `XUONG-01` do `e2e.*` bắt đầu; gặp phiên mở của người khác thì dừng với thông báo rõ, không hủy. Thêm ảnh mốc `@visual` M6a, M6, D13 (D13 chụp phiên seed ở `BAI-01`) — kiểm tra: `npm run test:e2e` xanh 2 lần liền
+- [ ] 8.3 Đối chiếu dòng `XUONG-01` trong `CLAUDE.md` mục "Lưu ý" (đã viết ở PR propose #55) với global setup thật; sửa nếu khác — kiểm tra: đọc lại mục Lưu ý khớp code
 
 ## 9. Kiểm tra cuối
 

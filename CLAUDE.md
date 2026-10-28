@@ -60,6 +60,7 @@ Lưu ý:
 - Không chạy hai `next dev` cùng lúc trên repo (trang sẽ tự tải lại liên tục). Muốn Playwright dùng lại dev server đang chạy: `PW_PORT=<cổng> npm run test:e2e` — server đó phải chạy với `AUTH_SIGN_IN_LIMIT_PER_MINUTE=1000`, không thì E2E bị giới hạn 20 lần đăng nhập/phút.
 - Sổ kho ở DB dev không xóa được: E2E ghi vào mã cố định `E2E-KHO-01/02` và kiểm theo chênh lệch.
 - Đơn thu mua do E2E tạo có ghi chú `E2E thử` (nhà cung cấp Hòa Phát mẫu); global setup xóa các đơn đó **khi chưa có phiếu nhập** (đơn đã có phiếu nhập ở lại vì sổ kho không xóa được). E2E nhập hàng ghi vào `E2E-KHO-01/02`, tình trạng Chờ sửa / Phế liệu, và kiểm theo chênh lệch. Không thêm nhà cung cấp riêng cho E2E: ảnh mốc D16 đếm số nhà cung cấp.
+- E2E dùng **`XUONG-01`**: global setup tự thêm hàng Chờ sửa `E2E-KHO-01` ở đó cho `repairs.spec.ts` (`ensureRepairStock`, dòng sổ ở lại DB dev) và hủy phiên kiểm kê mở ở đó do `e2e.*` bắt đầu (phiên mở của người khác thì dừng, không hủy). E2E kiểm kê bắt đầu phiên ở `XUONG-01`, chỉ tạo chênh lệch thừa, không đụng phiên seed ở `BAI-01` (ảnh mốc D13; một vị trí chỉ có một phiên mở).
 - E2E đăng nhập bằng tài khoản `e2e.*` (global setup tạo lại mỗi lần chạy) và chạy với vai trò Giám đốc mặc định; test cần vai trò khác dùng `test.use({ storageState: statePath("ACCOUNTANT") })`.
 - Ảnh mốc Playwright chỉ tạo trên CI: tab Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow.
 - Trong E2E, Next 16 giữ trang cũ ẩn trong DOM sau khi điều hướng: tìm theo chữ thì thêm `.filter({ visible: true })`.

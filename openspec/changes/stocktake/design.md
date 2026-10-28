@@ -33,7 +33,7 @@ Số "Cần xem kỹ: 2 dòng" trên bản vẽ là số mẫu. Theo luật cờ
 
 ### D2. Không khóa xuất nhập; số sổ lấy đúng lúc "Xong mã này" (điểm cần chốt 2)
 
-**Chọn:** không khóa. Mỗi mã trên điện thoại ghi hai mốc giờ: "Đếm mã này" (bắt đầu) và "Xong mã này" (xong). Lúc phiên được gửi, server tính cho mỗi dòng:
+**Chọn:** không khóa (ghi vào `docs/requirements.md` 0.2 #32, chốt 28/10/2026). Mỗi mã trên điện thoại ghi hai mốc giờ: "Đếm mã này" (bắt đầu) và "Xong mã này" (xong). Lúc phiên được gửi, server tính cho mỗi dòng:
 
 ```
 sổ lúc đếm = Σ quantity của inventory_ledger
@@ -81,7 +81,7 @@ Tính lúc gửi, lưu trên dòng; hàm thuần `stocktakeFlags` ở `src/domai
 | Cờ | Điều kiện | Lý do |
 |---|---|---|
 | `MOVED` "Có nhập/xuất trong lúc đếm" | Có dòng sổ của (mã + tình trạng) tại vị trí với `created_at` trong `[count_started_at, counted_at]` | Hàng có thể đã vào/ra bãi khi Thủ kho đang đếm đống đó (D2) |
-| `OVER_PCT` "Lệch x %" | `|chênh| × 100 > 1 × sổ` (ngưỡng **1 %**, hằng số trong domain); hoặc sổ = 0 mà đếm > 0 | Bản vẽ: lệch 1,2 % có cờ, 0,93 % không. Hằng số đổi được sau một lần chạy thật |
+| `OVER_PCT` "Lệch x %" | `|chênh| × 100 > 1 × sổ` (ngưỡng **1 %** cho mọi mã, kể cả mã tính theo kg — chốt khi review PR #55; một hằng số dùng chung trong domain); hoặc sổ = 0 mà đếm > 0 | Bản vẽ: lệch 1,2 % có cờ, 0,93 % không. Cờ chỉ nhắc xem kỹ, không chặn duyệt; hằng số đổi được sau một lần chạy thật |
 | `CONDITION_SWAP` "Nghi nhầm tình trạng" | Cùng mã trong phiên có một dòng chênh < 0 và một dòng chênh > 0 | Thường là phân loại Tốt/Chờ sửa khác lần trước, không phải mất hàng |
 
 Đã cân nhắc ngưỡng theo giá trị (VD lệch > 1.000.000 ₫): giá trị đã có cột riêng và tổng ở trên; giữ một ngưỡng cho dễ hiểu.
@@ -135,7 +135,7 @@ Phiên khớp hết vẫn duyệt được: `DONE` không có `posting_id` (ghi 
 | `inventory.view` (có sẵn) | `DIRECTOR`, `ACCOUNTANT`, `SALES` | `/inventory/stocktakes`, D13, API đọc |
 | `inventory.approve` (có sẵn) | `DIRECTOR` | Duyệt, đếm lại, trả lại, hủy phiên Chờ duyệt |
 
-Đã cân nhắc thêm `WORKSHOP` vào `stocktake.count` để thợ xưởng tự đếm xưởng: 0.4 giao kiểm kê cho Thủ kho; thêm sau chỉ là một dòng trong bảng quyền. Hỏi lại khi review.
+**Đã chốt (review PR #55): Xưởng chưa được đếm.** Đã cân nhắc thêm `WORKSHOP` vào `stocktake.count` để thợ xưởng tự đếm xưởng; không chọn vì 0.4 giao kiểm kê cho Thủ kho và vai trò Xưởng chưa có màn điện thoại riêng (M8 ở Bản 2). Thêm sau chỉ là một dòng trong bảng quyền.
 
 ### D12. Bảng dữ liệu (migration kế tiếp, dự kiến `drizzle/0007_stocktakes.sql`)
 
@@ -200,7 +200,7 @@ Unique (`stocktake_id`, `item_id`, `condition`). Trigger chặn `UPDATE`/`DELETE
 | `POST /api/stocktakes/:code/cancel` | `stocktake.count` / `inventory.approve` (D10) | `reason` | trạng thái |
 | `GET /api/stocktakes` | `inventory.view` | `?status=` | danh sách |
 | `GET /api/stocktakes/:code` | `inventory.view` | – | chi tiết D13 |
-| `POST /api/stocktakes/:code/approve` | `inventory.approve` | `unitCosts?: { lineId: number }` | trạng thái, số dòng sổ |
+| `POST /api/stocktakes/:code/approve` | `inventory.approve` | `unitCosts?: Record<uuid, number>` (khóa = `stocktake_line.id`, giá trị = đơn giá ₫; zod kiểm uuid và số nguyên ≥ 0) | trạng thái, số dòng sổ |
 | `POST /api/stocktakes/:code/recount` | `inventory.approve` | `lineIds[]` (≥ 1) | trạng thái |
 | `POST /api/stocktakes/:code/return` | `inventory.approve` | `reason` | trạng thái |
 
@@ -216,13 +216,17 @@ Lỗi theo kiểu `ServiceFailure` có sẵn: 400 dữ liệu sai, 403 quyền, 
 ### D16. Dữ liệu mẫu và E2E
 
 - `npm run db:seed:dev` thêm một phiên `KK` Chờ duyệt tại bãi mẫu với 5 dòng lệch như D13 (dùng mã vật tư đang có trong seed).
-- E2E dùng `E2E-KHO-01` (kiểm theo chênh lệch, như các change trước), một phiên mỗi lần chạy; global setup hủy phiên mở còn sót của `E2E-KHO-01` để không vướng D4.
+- Phiên seed ở `BAI-01` giữ nguyên cho ảnh mốc D13. Vì D4 (một phiên mở mỗi vị trí), **E2E bắt đầu phiên ở `XUONG-01`**, không đụng `BAI-01`.
+- E2E chỉ đếm các dòng `E2E-KHO-01/02` (kiểm theo chênh lệch, như các change trước); các dòng khác của phạm vi để chưa đếm nên không điều chỉnh. E2E chỉ tạo chênh lệch **thừa** (`ADJUST_IN`) để không làm hụt hàng Chờ sửa `E2E-KHO-01` ở `XUONG-01` mà `repairs.spec.ts` dùng.
+- Global setup hủy mọi phiên mở tại `XUONG-01` do tài khoản `e2e.*` bắt đầu. Nếu `XUONG-01` có phiên mở của người khác thì **dừng** với "XUONG-01 đang có phiên <mã> của <người>, hủy hoặc duyệt trước khi chạy E2E", không hủy dữ liệu người dùng.
+- Ghi chung một dòng ở `CLAUDE.md` mục "Lưu ý" với việc global setup tự thêm hàng Chờ sửa `E2E-KHO-01` ở `XUONG-01` (`ensureRepairStock`, nợ từ `simple-repair`).
 
 ## Risks / Trade-offs
 
 - **Sai vài giây quanh `created_at`** (D2) → cờ `MOVED` phủ; Giám đốc yêu cầu đếm lại dòng đó.
 - **Đồng hồ máy đổi giữa lúc đếm và lúc gửi** (người dùng chỉnh giờ) → offset sai cho các mốc trước khi chỉnh. Kẹp vào khoảng phiên giới hạn sai số; hiếm.
 - **Phiên mở lâu chặn vị trí** (D4) → nút Hủy; M1 luôn hiện phiên đang mở.
+- **Giám đốc vừa đếm vừa duyệt** (có cả `stocktake.count` và `inventory.approve`), nên có thể tự đếm, tự duyệt → chấp nhận ở quy mô hiện tại; D13 luôn hiện "Người đếm" cạnh nút duyệt để thấy rõ.
 - **Tính sổ lúc đếm bằng tổng sổ** cho mỗi dòng: tối đa vài trăm dòng mỗi phiên, có index `(item_id, condition, location_id)`; chạy một lần lúc gửi.
 - **Thiết bị khác của cùng người đếm**: nháp chỉ ở máy đã đếm; mở trên máy khác thấy phiên nhưng không thấy số chưa gửi. Chấp nhận như phiếu nhập.
 
@@ -233,6 +237,4 @@ Lỗi theo kiểu `ServiceFailure` có sẵn: 400 dữ liệu sai, 403 quyền, 
 
 ## Open Questions
 
-- Có cho vai trò Xưởng (`WORKSHOP`) tự đếm xưởng không (D11)?
-- Ngưỡng 1 % có hợp với hàng kg (sắt vụn) không, hay cần ngưỡng riêng? Đề xuất giữ 1 % ở MVP.
-- Sau khi duyệt các điểm trên, ghi quyết định "không khóa xuất nhập, số sổ lúc Xong mã này" vào `docs/requirements.md` 0.2 #32.
+Không còn. Đã chốt khi review PR #55: Xưởng chưa đếm (D11), ngưỡng 1 % cho mọi mã (D6), quyết định kiểm kê ghi vào `docs/requirements.md` 0.2 #32 (D2).

@@ -6,7 +6,7 @@ Sổ kho đã có, nhưng chưa có cách đếm lại hàng thật ở bãi, x�
 
 - Giai đoạn: **[MVP]** (đã lên MVP trong `docs/roadmap.md`), change số 08, issue #17.
 - Màn hình: **M6a** Bắt đầu kiểm kê, **M6** Đếm hàng, **D13** Kết quả kiểm kê (`docs/design/screens/M6a-StocktakeStart.dc.html`, `M6-Stocktake.dc.html`, `D13-Stocktake.dc.html`, đã duyệt ở PR #51). Thêm một khối "Kiểm kê" nhỏ trên **M1** (chưa vẽ, theo kiểu thẻ có sẵn của M1).
-- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #1, #10, #11, #24 (giá BQ toàn công ty), #7 (lưu nháp, không offline), **#31** (chỉ kiểm bãi và xưởng).
+- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #1, #10, #11, #24 (giá BQ toàn công ty), #7 (lưu nháp, không offline), **#31** (chỉ kiểm bãi và xưởng), và **#32 mới** (kiểm kê không khóa xuất nhập, chốt khi review PR #55).
 
 ## What Changes
 
@@ -20,6 +20,7 @@ Sổ kho đã có, nhưng chưa có cách đếm lại hàng thật ở bãi, x�
 - **Giám đốc duyệt = ghi sổ**, trong một transaction: dòng thiếu ghi `ADJUST_OUT`, dòng thừa ghi `ADJUST_IN`, tại vị trí của phiên, theo **giá BQ lúc duyệt**; **giá BQ không đổi**. Ngày nghiệp vụ = ngày duyệt. Kiểm tồn lại lúc duyệt. Duyệt hai lần chỉ ghi một bộ dòng. Dòng thừa của (mã + tình trạng) chưa từng có giá thì Giám đốc nhập đơn giá trước khi duyệt.
 - **D13**: danh sách phiên, chi tiết phiên (thông tin, bốn ô tóm tắt Thiếu / Thừa / Khớp / Cần xem kỹ, bảng kết quả lọc Dòng lệch / Khớp / Tất cả, thanh duyệt). Nằm trong menu **Kho** ở `/inventory/stocktakes`.
 - **Quyền mới** `stocktake.count` (Giám đốc, Thủ kho): bắt đầu, đếm, gửi, hủy phiên đang đếm. Xem D13 dùng `inventory.view` (văn phòng). Duyệt, trả lại, yêu cầu đếm lại dùng `inventory.approve` (Giám đốc).
+- **Ghi `docs/requirements.md` 0.2 #32** (quyết định kiểm kê) và một dòng E2E dùng `XUONG-01` ở `CLAUDE.md` mục "Lưu ý".
 - **Sửa `docs/ui.md` mục 3.3**: chuyển D13, M6 (và M6a) từ "Bản 2" sang "MVP" cho khớp roadmap.
 
 ## Ảnh hưởng tới sổ kho và giá vốn

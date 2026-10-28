@@ -50,6 +50,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 29 | Mã "Chuyến này không có" | Trên phiếu nhập, dòng đánh dấu **"Chuyến này không có"** mặc định **tích sẵn "Chờ chuyến sau"**: đơn giữ Đang nhận để chờ mã đó. Thủ kho bỏ tích nếu người bán không giao mã này nữa. Dòng **đếm thiếu** vẫn mặc định **không chờ** (#12) (chốt 27/10/2026) |
 | 30 | Hỏi lại khi nhập bất thường | Trên phiếu nhập, Thủ kho phải **xác nhận lại** trước khi ghi sổ khi: dòng tính theo cái nhận **vượt** số đơn còn lại; dòng tính theo kg (kg cân) vượt **quá 10 %** số còn lại; **tổng chi phí chuyến lớn hơn tổng chi phí dự kiến của cả đơn**. Phần đã xác nhận ghi vào lịch sử đơn; D3b hiện nhãn "Nhận dư". Lý do: sổ kho chỉ ghi thêm và chưa có phiếu sửa giá trị (#42) (chốt 27/10/2026) |
 | 31 | Phạm vi kiểm kê | Kiểm kê **chỉ đếm hàng ở bãi và xưởng** (`YARD`, `WORKSHOP`). Hàng ở công trình **không** kiểm kê bằng phiên đếm: đối chiếu với khách khi thu hồi và quyết toán. Có thể mở rộng sau (Q13) (chốt 28/10/2026) |
+| 32 | Kiểm kê và xuất nhập | Kiểm kê **không khóa xuất nhập**. Số sổ của mỗi dòng (mã hàng + tình trạng) = tồn trong sổ kho tại vị trí **lúc thủ kho bấm "Xong mã này"**; chênh lệch = số đếm − số sổ lúc đó. **Đếm mù**: điện thoại không hiện số sổ. Dòng chưa đếm **không điều chỉnh**. Giám đốc duyệt thì ghi `ADJUST_OUT` (thiếu) / `ADJUST_IN` (thừa) theo **giá BQ lúc duyệt**, ngày = ngày duyệt; giá BQ không đổi (chốt 28/10/2026) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 
