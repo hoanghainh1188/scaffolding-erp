@@ -49,6 +49,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 28 | Ai nhập chi phí từng chuyến | **Thủ kho nhập trên M3** lúc nhận hàng, trước khi xác nhận nhập kho. Chuyến đầu điền sẵn chi phí dự kiến của đơn; chuyến sau để trống. Thủ kho sửa theo số thật trả nhà xe, bốc xếp. Chi phí ghi cùng phiếu nhập và chia vào giá nhập ngay khi ghi sổ (#25) (chốt 27/10/2026) |
 | 29 | Mã "Chuyến này không có" | Trên phiếu nhập, dòng đánh dấu **"Chuyến này không có"** mặc định **tích sẵn "Chờ chuyến sau"**: đơn giữ Đang nhận để chờ mã đó. Thủ kho bỏ tích nếu người bán không giao mã này nữa. Dòng **đếm thiếu** vẫn mặc định **không chờ** (#12) (chốt 27/10/2026) |
 | 30 | Hỏi lại khi nhập bất thường | Trên phiếu nhập, Thủ kho phải **xác nhận lại** trước khi ghi sổ khi: dòng tính theo cái nhận **vượt** số đơn còn lại; dòng tính theo kg (kg cân) vượt **quá 10 %** số còn lại; **tổng chi phí chuyến lớn hơn tổng chi phí dự kiến của cả đơn**. Phần đã xác nhận ghi vào lịch sử đơn; D3b hiện nhãn "Nhận dư". Lý do: sổ kho chỉ ghi thêm và chưa có phiếu sửa giá trị (#42) (chốt 27/10/2026) |
+| 31 | Phạm vi kiểm kê | Kiểm kê **chỉ đếm hàng ở bãi và xưởng** (`YARD`, `WORKSHOP`). Hàng ở công trình **không** kiểm kê bằng phiên đếm: đối chiếu với khách khi thu hồi và quyết toán. Có thể mở rộng sau (Q13) (chốt 28/10/2026) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 
@@ -131,9 +132,9 @@ Thời gian giữ đăng nhập cụ thể (khi có và không tick ô) do chang
     - Đây là nguồn dữ liệu duy nhất để tính tồn kho, giá vốn, tiền thuê và báo cáo.
 - **Báo cáo tồn kho theo vị trí & tình trạng** **[MVP]**:
     - Số lượng tại Bãi (theo 4 tình trạng), tại Xưởng, tại từng Công trình.
-- **Kiểm kê (Stocktake) qua thiết bị di động** **[Bản 2]**:
+- **Kiểm kê (Stocktake) qua thiết bị di động** **[MVP]** – chỉ bãi và xưởng (0.2 #31):
     - Thủ kho tạo phiên kiểm kê trên PWA, nhập số lượng đếm thực tế.
-    - Hệ thống sinh phiếu điều chỉnh để cân bằng sổ sách sau khi được duyệt.
+    - Sau khi Giám đốc duyệt, hệ thống ghi dòng điều chỉnh vào sổ kho để cân bằng sổ sách.
 
 ## 3. Phân hệ Sửa chữa & Tân trang (Refurbishment)
 
