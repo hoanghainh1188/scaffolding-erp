@@ -292,7 +292,9 @@ test("M6a and M6 baselines @visual", async ({ page }) => {
   await waitForHydration(page, MOBILE_READY);
   await page
     .getByRole("searchbox", { name: "Tìm mã hoặc tên hàng" })
-    .fill(COUNTED);
+    // E2E-KHO-01 always has Chờ sửa at the workshop (global setup), so the
+    // card is the same whether or not the flow above already ran.
+    .fill(E2E_STOCK_ITEMS[0]);
   await page.evaluate(() => document.fonts.ready);
   await expect(page).toHaveScreenshot("m6-stocktake-375.png", {
     fullPage: true,

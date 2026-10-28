@@ -135,9 +135,13 @@ export function StocktakeStart({ places }: StocktakeStartProps) {
               <span className="text-label">
                 {row.code} · {row.name}
               </span>
-              <span className="text-caption text-muted-foreground">
-                {row.lastDone ? `Lần trước: ${row.lastDone} · ` : ""}
-                <span data-mask>{row.lines}</span> dòng hàng có tồn
+              {/* Live numbers: one full-width line, masked in screenshots. */}
+              <span
+                data-mask
+                className="block w-full text-caption text-muted-foreground"
+              >
+                Lần trước: {row.lastDone ?? "chưa kiểm"} · {row.lines} dòng hàng
+                có tồn
               </span>
               {row.openCode && (
                 <span className="text-caption text-warning">
