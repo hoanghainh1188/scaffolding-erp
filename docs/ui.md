@@ -17,7 +17,7 @@ Tài liệu nghiệp vụ đi kèm: `docs/requirements.md` (các quyết định
 3. **Mới / Tốt** → **Hợp đồng** (D4, D5) → Giám đốc duyệt → **Xuất kho theo đợt** (D6, M5) ra công trình.
 4. **Công trình trả hàng** → **Nhập thu hồi** (M4) → **Phiếu đền bù** (D8) → Giám đốc duyệt.
 5. Cuối kỳ → **Tính tiền thuê** (D7) → **Công nợ** (D14) → **Báo cáo** (D1, D15).
-6. Định kỳ → **Kiểm kê** (M6) → **Phiếu điều chỉnh** (D13). *[Bản 2]*
+6. Định kỳ → **Kiểm kê** bãi/xưởng (M6a, M6) → **Duyệt chênh lệch** (D13) → sổ kho ghi dòng điều chỉnh.
 
 ---
 
@@ -96,7 +96,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 - **D9. Danh mục vật tư** **[MVP]**: Danh sách mã hàng (tên, nhóm, ĐVT, trọng lượng chuẩn, giá thuê mặc định). Tab "Bộ" để cấu hình bộ cho mã nào cần (tùy chọn).
 - **D10. Tồn kho tổng hợp** **[MVP]**: Bảng tồn theo mã hàng. Cột: Tại bãi (Mới / Tốt / Chờ sửa / Phế liệu), Tại xưởng, Tại công trình (tổng, bấm để xem từng công trình). Hiện giá vốn bình quân. Bấm vào số để mở Thẻ kho.
 - **D11. Thẻ kho** **[MVP]**: Lịch sử xuất/nhập/chuyển tình trạng của 1 mã hàng, kèm biến động giá vốn bình quân.
-- **D13. Kết quả kiểm kê** **[Bản 2]**: Danh sách phiên kiểm kê. Chi tiết: số sổ sách, số đếm thực tế, chênh lệch. Approval Bar để duyệt và sinh phiếu điều chỉnh.
+- **D13. Kết quả kiểm kê** **[MVP]**: Danh sách phiên kiểm kê. Chi tiết: số sổ lúc đếm, số đếm thực tế, chênh lệch số lượng và giá trị, cờ cảnh báo. Lọc dòng lệch / khớp. Approval Bar: Duyệt và ghi sổ, Yêu cầu đếm lại dòng đã chọn, Trả lại.
 
 #### Sửa chữa
 
@@ -141,7 +141,8 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
     - Phần 4: Chụp ảnh hiện trạng hàng hỏng.
     - _Ghi chú:_ M3 và M4 dùng chung một form, chỉ khác Phần 1 (chọn PO hay chọn Công trình) và ô *Mất*.
 - **M5. Xuất kho theo đợt** **[MVP]**: Danh sách nhặt hàng đã rã bộ thành linh kiện. Tick từng dòng khi nhặt xong. Xác nhận xe rời bãi.
-- **M6. Phiên Kiểm kê** **[Bản 2]**: Tạo phiên, chọn khu vực. Đếm từng mã bằng Stepper. Gửi kết quả về văn phòng (D13).
+- **M6a. Bắt đầu kiểm kê** **[MVP]**: Chọn vị trí (chỉ bãi, xưởng) và nhóm hàng cần đếm.
+- **M6. Đếm hàng** **[MVP]**: Đếm mù (không hiện số sổ). Mỗi mã đếm theo tình trạng bằng Stepper, bấm "Xong mã này". Thêm hàng không có trong danh sách. Gửi kết quả về văn phòng (D13).
 - **M7. Lịch sử** **[MVP]**: Phiếu đã làm, lọc theo loại và ngày. Phiếu nháp chưa gửi hiện ở đầu danh sách.
 - **M8. Sửa chữa tại Xưởng** **[Bản 2]**: Xem lệnh được giao. Ghi vật tư phụ và công thợ. Báo hoàn thành để văn phòng nghiệm thu.
 
@@ -183,6 +184,9 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | D12 Sửa chữa đơn giản | `D12-Repair.dc.html` | `simple-repair` | Đã duyệt |
 | D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Đã duyệt |
 | D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt |
+| D13 Kết quả kiểm kê | `D13-Stocktake.dc.html` | `stocktake` | Chờ duyệt |
+| M6a Bắt đầu kiểm kê | `M6a-StocktakeStart.dc.html` | `stocktake` | Chờ duyệt |
+| M6 Đếm hàng | `M6-Stocktake.dc.html` | `stocktake` | Chờ duyệt |
 
 Cách dùng khi propose: chỉ ra file trong `docs/design/screens/` của các màn thuộc change (bảng trên). Có thể handoff thêm từ canvas: **Export → Hand off to Claude Code**. Thiết kế là tham chiếu bố cục; quy tắc trong `openspec/specs/` và tài liệu này vẫn thắng nếu khác nhau.
 
