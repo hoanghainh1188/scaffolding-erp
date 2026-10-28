@@ -150,8 +150,8 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 | Giai đoạn | Desktop | Mobile |
 |---|---|---|
-| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12 (đơn giản), D14 (phải thu), D16, D17 | M1, M2, M3, M4, M5, M7 |
-| **Bản 2** | D1 (đầy đủ), D12 (đầy đủ), D13, D14 (phải trả), D15 | M6, M8 |
+| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D16, D17 | M1, M2, M3, M4, M5, M6a, M6, M7 |
+| **Bản 2** | D1 (đầy đủ), D12 (đầy đủ), D14 (phải trả), D15 | M8 |
 
 ### 3.4. Thiết kế đã vẽ (Claude Design)
 
