@@ -205,7 +205,10 @@ export const E2E_STOCKTAKE_PLACE = "XUONG-01";
  * One place holds one open session, so a session somebody else is counting
  * there stops the run instead of being thrown away.
  */
-async function cancelTestStocktakes(db: Database, actor: { id: string }) {
+export async function cancelTestStocktakes(
+  db: Database,
+  actor: { id: string },
+) {
   const open = await db
     .select({
       code: stocktake.code,

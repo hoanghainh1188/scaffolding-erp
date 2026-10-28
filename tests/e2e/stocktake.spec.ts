@@ -13,6 +13,7 @@ import {
   location,
   stocktake,
   stocktakeLine,
+  user,
 } from "@/db/schema";
 import type { Condition } from "@/domain/condition";
 import { CONDITION_LABELS } from "@/domain/condition";
@@ -20,7 +21,11 @@ import type { Role } from "@/domain/role";
 import { getEnv } from "@/lib/env";
 
 import { statePath } from "./auth-helpers";
-import { E2E_STOCK_ITEMS, E2E_STOCKTAKE_PLACE } from "./global-setup";
+import {
+  cancelTestStocktakes,
+  E2E_STOCK_ITEMS,
+  E2E_STOCKTAKE_PLACE,
+} from "./global-setup";
 
 /** The item this spec counts; no other spec reads it at the workshop. */
 const COUNTED = E2E_STOCK_ITEMS[1];
@@ -37,6 +42,15 @@ import {
 test.describe.configure({ mode: "serial" });
 test.beforeEach(async ({ page }, testInfo) => {
   test.skip(!runOnlyIn(testInfo, "desktop-1280"), "one flow, one project");
+  // A retry starts where the failed try left a session open (global setup
+  // runs once per run, not per retry).
+  await withDb(async (db) => {
+    const [director] = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.username, "e2e.giamdoc"));
+    if (director) await cancelTestStocktakes(db, director);
+  });
   await page.setViewportSize({ width: 375, height: 812 });
 });
 
@@ -155,6 +169,8 @@ test("counts at the workshop, recounts one line, and the director posts it", asy
   page,
   browser,
 }) => {
+  // Phone, director and accountant in one flow: longer than one page test.
+  test.setTimeout(120_000);
   await page.goto("/m/stocktake/new");
   await waitForHydration(page, MOBILE_READY);
   await page
