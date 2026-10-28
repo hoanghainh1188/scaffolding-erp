@@ -67,19 +67,22 @@ export const POST_MESSAGES = {
     `Không đủ hàng: ${code} ${CONDITION_LABELS[condition]} tại ${place} còn ${left}`,
 } as const;
 
-interface ItemInfo {
+export interface ItemInfo {
   id: string;
   code: string;
   unit: QuantityUnit;
+  /** kg per piece as numeric text; null for items counted in kg. */
+  standardWeightKg: string | null;
 }
 
-interface PoolState {
+export interface PoolState {
   poolMilli: number;
   avgCost: Money | null;
   lastBusinessDate: BusinessDate | null;
 }
 
-const pairKey = (itemId: string, condition: string) => `${itemId}|${condition}`;
+export const pairKey = (itemId: string, condition: string) =>
+  `${itemId}|${condition}`;
 const placeKey = (itemId: string, condition: string, locationId: string) =>
   `${itemId}|${condition}|${locationId}`;
 
@@ -94,6 +97,7 @@ async function loadItems(
       id: item.id,
       code: item.code,
       unit: item.unit,
+      standardWeightKg: item.standardWeightKg,
       status: item.status,
     })
     .from(item)
@@ -109,6 +113,7 @@ async function loadItems(
       id: row.id,
       code: row.code,
       unit: row.unit as QuantityUnit,
+      standardWeightKg: row.standardWeightKg,
     });
   }
   if (found.size !== ids.length) {
@@ -213,6 +218,41 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
+export interface PostingLocks {
+  items: Map<string, ItemInfo>;
+  /** Location code by id. */
+  places: Map<string, string>;
+  /** Cost pool by pairKey(item, condition). */
+  pools: Map<string, PoolState>;
+}
+
+/**
+ * Takes every lock a posting needs, in the one order all documents use:
+ * items FOR SHARE, locations FOR SHARE, then cost pools FOR UPDATE, each
+ * sorted by id (design D4; simple-repair design D2). A document that must
+ * price its lines from the averages calls this first; postMovements then
+ * takes the same locks again in the same transaction, which is a no-op.
+ */
+export async function lockForPosting(
+  tx: Tx,
+  scope: {
+    itemIds: readonly string[];
+    locationIds: readonly string[];
+    pairs: readonly { itemId: string; condition: Condition }[];
+  },
+): Promise<PostingLocks> {
+  const items = await loadItems(tx, unique([...scope.itemIds]).sort());
+  const places = await loadLocations(tx, unique([...scope.locationIds]).sort());
+  const pairs = unique(
+    scope.pairs.map((pair) => pairKey(pair.itemId, pair.condition)),
+  ).map((key) => {
+    const [itemId, condition] = key.split("|") as [string, Condition];
+    return { itemId, condition };
+  });
+  const pools = await lockPools(tx, pairs);
+  return { items, places, pools };
+}
+
 /**
  * Writes the lines of one document into the ledger and moves the averages,
  * all inside the caller's transaction. Refuses (and writes nothing) when a
@@ -227,11 +267,11 @@ export async function postMovements(
   const drafts = posting.lines;
   if (drafts.length === 0) return { postingId: "", lines: [] };
 
-  const items = await loadItems(tx, unique(drafts.map((d) => d.itemId)));
-  const places = await loadLocations(
-    tx,
-    unique(drafts.map((d) => d.locationId)),
-  );
+  const { items, places, pools } = await lockForPosting(tx, {
+    itemIds: drafts.map((d) => d.itemId),
+    locationIds: drafts.map((d) => d.locationId),
+    pairs: drafts,
+  });
   for (const draft of drafts) {
     const info = items.get(draft.itemId) as ItemInfo;
     assertMovementLine({
@@ -249,7 +289,6 @@ export async function postMovements(
       return { itemId, condition };
     },
   );
-  const pools = await lockPools(tx, pairs);
   for (const pair of pairs) {
     assertBusinessDate({
       date: posting.businessDate,

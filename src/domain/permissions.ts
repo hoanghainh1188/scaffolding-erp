@@ -45,6 +45,9 @@ export const PERMISSIONS = {
   // M2 shows stock quantities (no cost) to anyone holding a phone.
   "stock.lookup": EVERYONE,
   "scrap-price.manage": ["DIRECTOR"],
+  // simple-repair design D4: the accountant keeps the books (repair cost,
+  // damage loss); office roles read slips through repairs.view.
+  "repairs.manage": ["DIRECTOR", "ACCOUNTANT"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;

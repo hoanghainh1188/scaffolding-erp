@@ -7,6 +7,7 @@ import { createDatabase, type Database } from "@/db/client";
 import {
   customer,
   goodsReceipt,
+  inventoryCost,
   inventoryLedger,
   item,
   itemGroup,
@@ -14,6 +15,7 @@ import {
   location,
   purchaseOrder,
   purchaseOrderLine,
+  repairOrder,
   site,
   stockAdjustmentLine,
   user,
@@ -22,10 +24,14 @@ import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
 import { createItem } from "@/lib/catalog/items";
 import { seedCatalog } from "@/lib/catalog/seed";
+import { toBusinessDate } from "@/domain/business-date";
+import type { MovementDraft } from "@/domain/movement";
+import { postMovements } from "@/lib/inventory/post";
 import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
 import { seedReceiving } from "@/lib/receiving/sample";
 import { currentScrapPrice, setScrapPrice } from "@/lib/receiving/scrap-price";
+import { seedRepairs } from "@/lib/repairs/sample";
 import { E2E_ACCOUNTS, E2E_TEMP_PREFIX } from "@/lib/users/e2e-accounts";
 import { seedAccounts } from "@/lib/users/seed";
 
@@ -104,6 +110,90 @@ async function ensureStockItems(db: Database, actor: { id: string }) {
   }
 }
 
+/**
+ * repairs.spec.ts takes Chờ sửa of E2E-KHO-01 at the workshop (no other
+ * spec reads it) into Tốt at the yard, and needs a Tốt average to ask about
+ * a high cost. Tops both up when short; ledger lines stay, like any E2E row.
+ */
+async function ensureRepairStock(db: Database, actor: { id: string }) {
+  const [kho] = await db
+    .select({ id: item.id })
+    .from(item)
+    .where(eq(item.code, E2E_STOCK_ITEMS[0]));
+  const places = await db
+    .select({ id: location.id, code: location.code })
+    .from(location);
+  const workshop = places.find((place) => place.code === "XUONG-01")?.id;
+  const yard = places.find((place) => place.code === "BAI-01")?.id;
+  if (!kho || !workshop || !yard) return;
+  const [atWorkshop] = await db
+    .select({
+      total: sql<string>`coalesce(sum(${inventoryLedger.quantity}), 0)`,
+    })
+    .from(inventoryLedger)
+    .where(
+      and(
+        eq(inventoryLedger.itemId, kho.id),
+        eq(inventoryLedger.condition, "NEEDS_REPAIR"),
+        eq(inventoryLedger.locationId, workshop),
+      ),
+    );
+  const [good] = await db
+    .select({ avg: inventoryCost.avgCost })
+    .from(inventoryCost)
+    .where(
+      and(
+        eq(inventoryCost.itemId, kho.id),
+        eq(inventoryCost.condition, "GOOD"),
+      ),
+    );
+  const lines: MovementDraft[] = [];
+  if (Number(atWorkshop?.total ?? 0) < 10) {
+    lines.push({
+      itemId: kho.id,
+      condition: "NEEDS_REPAIR" as const,
+      locationId: workshop,
+      movement: "ADJUST_IN" as const,
+      quantityMilli: 20_000,
+      unitCost: 50_000,
+      description: "E2E: hàng chờ sửa cho repairs.spec",
+    });
+  }
+  if (good?.avg == null) {
+    lines.push({
+      itemId: kho.id,
+      condition: "GOOD" as const,
+      locationId: yard,
+      movement: "ADJUST_IN" as const,
+      quantityMilli: 1_000,
+      unitCost: 100_000,
+      description: "E2E: giá vốn Tốt cho repairs.spec",
+    });
+  }
+  if (lines.length === 0) return;
+  await db.transaction((tx) =>
+    postMovements(tx, actor, {
+      documentType: "E2E",
+      documentId: null,
+      documentCode: "E2E-SUA",
+      businessDate: toBusinessDate(new Date()),
+      lines,
+    }),
+  );
+}
+
+/** Drafts repairs.spec.ts left; posted slips stay with their ledger lines. */
+async function removeTestRepairDrafts(db: Database) {
+  await db
+    .delete(repairOrder)
+    .where(
+      and(
+        eq(repairOrder.note, E2E_ORDER_NOTE),
+        eq(repairOrder.status, "DRAFT"),
+      ),
+    );
+}
+
 export default async function globalSetup(): Promise<void> {
   const env = getEnv();
   if (!env.E2E_PASSWORD) {
@@ -130,6 +220,7 @@ export default async function globalSetup(): Promise<void> {
       .from(user)
       .where(eq(user.username, "e2e.giamdoc"));
     await removeTestOrders(handle.db);
+    await removeTestRepairDrafts(handle.db);
     await removeTestCatalogRows(handle.db);
     if (director) {
       await seedCatalog(handle.db, director);
@@ -149,6 +240,9 @@ export default async function globalSetup(): Promise<void> {
       if (warehouse) {
         await seedReceiving(handle.db, { director, warehouse });
       }
+      // The D12 sample draft PSC-<year>-022 (simple-repair design D13), once.
+      await seedRepairs(handle.db, director);
+      await ensureRepairStock(handle.db, director);
     }
   } finally {
     await handle.close();
