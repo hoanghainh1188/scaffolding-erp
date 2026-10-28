@@ -44,7 +44,7 @@
 - [x] 7.1 `npm run db:seed:dev` theo design D13: bộ đếm `PSC` 2026 lên 021; nháp `PSC-2026-022` như D12 nếu đủ Chờ sửa. Cập nhật mô tả seed trong CLAUDE.md — kiểm tra: integration test seed: chạy 2 lần không nhân đôi; `npm run inventory:check` không lệch
 - [x] 7.2 `tests/e2e/global-setup.ts`: xóa nháp phiếu sửa có ghi chú `E2E thử`; E2E dùng `E2E-KHO-01/02`. Cập nhật CLAUDE.md mục "Lưu ý" — kiểm tra: `npm run test:e2e` 2 lần liền xanh
 - [x] 7.3 E2E `tests/e2e/repairs.spec.ts` (Kế toán, `statePath("ACCOUNTANT")`): mở `/repairs` → "Phiếu mới" → thêm `E2E-KHO-01` từ danh sách chờ sửa → nhập lấy ra / sửa xong / phế liệu / chi phí → thấy khối giá vốn (có dòng phần hỏng) → "Ghi sổ kho" → nhãn "Đã ghi sổ" → D10 tồn Chờ sửa giảm, Tốt và Phế liệu tăng đúng chênh lệch; nhập chi phí mỗi cái vượt giá Tốt → hộp thoại hỏi lại → "Sửa lại" rồi ghi được; Kinh doanh mở phiếu không có nút ghi sổ. Thêm kiểm `axe` cho `/repairs` và D12 — kiểm tra: `npm run test:e2e` xanh
-- [ ] 7.4 Ảnh mốc `@visual` mới: `/repairs` và D12 (nháp có 2 mã như bản vẽ) ở 1366 px; che ngày và mã phiếu — kiểm tra: chạy workflow **Update Playwright snapshots** trên nhánh `simple-repair`, CI xanh
+- [x] 7.4 Ảnh mốc `@visual` mới: `/repairs` và D12 (nháp có 2 mã như bản vẽ) ở 1366 px; che ngày và mã phiếu — kiểm tra: chạy workflow **Update Playwright snapshots** trên nhánh `simple-repair`, CI xanh
 
 ## 8. Kiểm tra tổng
 
