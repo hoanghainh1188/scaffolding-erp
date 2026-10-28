@@ -298,7 +298,11 @@ test("M6a and M6 baselines @visual", async ({ page }) => {
   await page.evaluate(() => document.fonts.ready);
   await expect(page).toHaveScreenshot("m6-stocktake-375.png", {
     fullPage: true,
-    mask: [page.locator("[data-mask]")],
+    // The session number grows with every run: mask the titles holding it.
+    mask: [
+      page.locator("[data-mask]"),
+      page.getByRole("heading", { name: /^Kiểm kê KK-/ }),
+    ],
     animations: "disabled",
   });
   await page.getByRole("button", { name: "Hủy phiên" }).click();
