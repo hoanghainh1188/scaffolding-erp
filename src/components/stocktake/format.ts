@@ -8,6 +8,12 @@ import {
   type QuantityUnit,
 } from "@/domain/quantity";
 
+/**
+ * A live count in a fixed box (up to 3 digits): screenshots mask it, and
+ * the words around it must not move when the number changes.
+ */
+export const COUNT_BOX = "inline-block min-w-[3ch] text-center tabular-nums";
+
 /** "+260.000 ₫", "-2.788.056 ₫", "0 ₫". */
 export function signedMoney(value: number): string {
   return `${value > 0 ? "+" : ""}${formatMoney(toMoney(value))}`;

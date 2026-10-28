@@ -13,6 +13,8 @@ import { STOCKTAKE_MESSAGES } from "@/domain/stocktake";
 import { callApi, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
+import { COUNT_BOX } from "./format";
+
 export interface StartPlaceOption {
   id: string;
   code: string;
@@ -170,8 +172,11 @@ export function StocktakeStart({ places }: StocktakeStartProps) {
             }}
           >
             <span className="text-label">Tất cả mã có tồn ở {place.code}</span>
-            <span className="text-caption text-muted-foreground">
-              <span data-mask>{place.lines}</span> dòng (mã + tình trạng)
+            <span
+              data-mask
+              className="block w-full text-caption text-muted-foreground"
+            >
+              {place.lines} dòng (mã + tình trạng)
             </span>
           </button>
           <div
@@ -202,7 +207,11 @@ export function StocktakeStart({ places }: StocktakeStartProps) {
                         : "border-border bg-card",
                     )}
                   >
-                    {group.name} (<span data-mask>{group.lines}</span>)
+                    {group.name} (
+                    <span data-mask className={COUNT_BOX}>
+                      {group.lines}
+                    </span>
+                    )
                   </button>
                 );
               })}
@@ -231,7 +240,11 @@ export function StocktakeStart({ places }: StocktakeStartProps) {
             disabled={pending || lines === 0 || Boolean(place?.openCode)}
             onClick={() => void start()}
           >
-            Bắt đầu đếm <span data-mask>{lines}</span> dòng
+            Bắt đầu đếm{" "}
+            <span data-mask className={COUNT_BOX}>
+              {lines}
+            </span>{" "}
+            dòng
           </Button>
         </div>
       </div>

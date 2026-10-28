@@ -20,6 +20,7 @@ import { toSearchText } from "@/domain/search-text";
 import { cn } from "@/lib/utils";
 
 import { AddItemSheet } from "./add-item-sheet";
+import { COUNT_BOX } from "./format";
 import { CountItemCard } from "./count-item-card";
 import { ReasonDialog } from "./reason-dialog";
 import {
@@ -302,8 +303,12 @@ export function StocktakeCount({
             Đã đếm
           </h3>
           <span className="text-h3 font-display tabular-nums">
-            <span data-mask>
-              {counted} / {total}
+            <span data-mask className={COUNT_BOX}>
+              {counted}
+            </span>{" "}
+            /{" "}
+            <span data-mask className={COUNT_BOX}>
+              {total}
             </span>{" "}
             dòng
           </span>
@@ -366,11 +371,11 @@ export function StocktakeCount({
       >
         {(
           [
-            ["todo", `Chưa đếm (${todoCount})`],
-            ["done", `Đã đếm (${items.length - todoCount})`],
-            ["all", "Tất cả"],
+            ["todo", "Chưa đếm", todoCount],
+            ["done", "Đã đếm", items.length - todoCount],
+            ["all", "Tất cả", null],
           ] as const
-        ).map(([key, label]) => (
+        ).map(([key, label, count]) => (
           <button
             key={key}
             type="button"
@@ -383,6 +388,16 @@ export function StocktakeCount({
             )}
           >
             {label}
+            {count !== null && (
+              <>
+                {" "}
+                (
+                <span data-mask className={COUNT_BOX}>
+                  {count}
+                </span>
+                )
+              </>
+            )}
           </button>
         ))}
       </div>
@@ -455,7 +470,11 @@ export function StocktakeCount({
       <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 border-t bg-card">
         <div className="mx-auto flex max-w-[640px] flex-col gap-2 px-4 py-3">
           {left > 0 && (
-            <p id="send-hint" className="text-caption text-muted-foreground">
+            <p
+              id="send-hint"
+              data-mask
+              className="text-caption text-muted-foreground"
+            >
               {STOCKTAKE_COUNT_MESSAGES.uncounted(left)}
             </p>
           )}
