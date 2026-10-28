@@ -69,8 +69,8 @@ const PAGES = [
     ready: DESKTOP_READY,
   },
   // simple-repair: drafts only (repairs.spec.ts posts its own slips), and
-  // the D12 sample draft. Its date is today and the E2E-KHO waiting rows
-  // move with other tests, so both are masked.
+  // the D12 sample draft. Its date is today, so it is masked; E2E-KHO
+  // waiting rows come and go with other tests, so they are removed.
   { path: "/repairs?status=draft", name: "repairs", ready: DESKTOP_READY },
   {
     path: `/repairs/${SAMPLE_REPAIR}`,
@@ -106,6 +106,12 @@ test.describe("visual baselines @visual", () => {
         await page.addStyleTag({
           content: "nextjs-portal { display: none !important; }",
         });
+        // D12 lists Chờ sửa at the yard, where receiving.spec.ts adds
+        // E2E-KHO rows: drop them so the page height never depends on it.
+        await page
+          .getByRole("listitem")
+          .filter({ hasText: "E2E-KHO" })
+          .evaluateAll((rows) => rows.forEach((row) => row.remove()));
         await page.evaluate(() => document.fonts.ready);
         await expect(page).toHaveScreenshot(`${name}-${width}.png`, {
           fullPage: true,
@@ -113,7 +119,6 @@ test.describe("visual baselines @visual", () => {
             page.locator("[data-clock]"),
             page.locator("[data-mask]"),
             page.getByRole("row").filter({ hasText: "E2E-KHO" }),
-            page.getByRole("listitem").filter({ hasText: "E2E-KHO" }),
           ],
           animations: "disabled",
           caret: "hide",
