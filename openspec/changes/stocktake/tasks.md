@@ -55,5 +55,5 @@
 
 ## 9. Kiểm tra cuối
 
-- [ ] 9.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate stocktake --strict` đều xanh; chạy workflow **Update Playwright snapshots** cho nhánh `stocktake`
+- [x] 9.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate stocktake --strict` đều xanh; chạy workflow **Update Playwright snapshots** cho nhánh `stocktake`
 - [ ] 9.2 Kiểm tra tay trên Edge 1366px và điện thoại: so M6a, M6, D13 với file thiết kế; đếm một phiên thật ở bãi dev lúc có một phiếu nhập chen giữa, so số sổ lúc đếm và chênh lệch với tính tay; `npm run inventory:check` sau khi duyệt
