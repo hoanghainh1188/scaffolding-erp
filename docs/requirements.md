@@ -11,6 +11,8 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 - Khách hàng: công ty vừa và nhỏ, chuyên **thu mua, gia công (sửa chữa/tân trang), buôn bán và cho thuê giàn giáo, vật tư xây dựng đã qua sử dụng**. Có thể kinh doanh cả **hàng mới**.
 - Hệ thống khép kín vòng đời vật tư: mua → nhập kho → sửa chữa → bán/cho thuê → thu hồi → đền bù → công nợ.
 - Quy mô hiện tại: **1 bãi + 1 xưởng**. CSDL vẫn hỗ trợ thêm kho/bãi sau này.
+- Số liệu thật 10/2026 (khảo sát 28/10, `docs/discovery/2026-10-28-khao-sat.md`): ~68 khách đang thuê, 96 công trình, 142 mã vật tư, ~2.500 tấn hàng (~1.800 tấn đang ở công trình), nợ ~9,8 tỷ, cọc ~8,9 tỷ. Thuê ~1 tỷ/tháng, bán 1–4 tỷ/tháng. Có 3 xe tải.
+- Ngoài mua – sửa – bán – thuê, công ty còn **sản xuất thành phẩm từ nguyên liệu** (change `production-orders`).
 
 ### 0.2. Quyết định đã chốt
 
@@ -47,6 +49,19 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 28 | Ai nhập chi phí từng chuyến | **Thủ kho nhập trên M3** lúc nhận hàng, trước khi xác nhận nhập kho. Chuyến đầu điền sẵn chi phí dự kiến của đơn; chuyến sau để trống. Thủ kho sửa theo số thật trả nhà xe, bốc xếp. Chi phí ghi cùng phiếu nhập và chia vào giá nhập ngay khi ghi sổ (#25) (chốt 27/10/2026) |
 | 29 | Mã "Chuyến này không có" | Trên phiếu nhập, dòng đánh dấu **"Chuyến này không có"** mặc định **tích sẵn "Chờ chuyến sau"**: đơn giữ Đang nhận để chờ mã đó. Thủ kho bỏ tích nếu người bán không giao mã này nữa. Dòng **đếm thiếu** vẫn mặc định **không chờ** (#12) (chốt 27/10/2026) |
 | 30 | Hỏi lại khi nhập bất thường | Trên phiếu nhập, Thủ kho phải **xác nhận lại** trước khi ghi sổ khi: dòng tính theo cái nhận **vượt** số đơn còn lại; dòng tính theo kg (kg cân) vượt **quá 10 %** số còn lại; **tổng chi phí chuyến lớn hơn tổng chi phí dự kiến của cả đơn**. Phần đã xác nhận ghi vào lịch sử đơn; D3b hiện nhãn "Nhận dư". Lý do: sổ kho chỉ ghi thêm và chưa có phiếu sửa giá trị (#42) (chốt 27/10/2026) |
+
+### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
+
+Các quyết định dưới đây có thể đổi sau khi chủ trả lời câu hỏi ở issue [#44](https://github.com/hoanghainh1188/scaffolding-erp/issues/44). Chưa dùng làm căn cứ propose cho change bị ảnh hưởng.
+
+| Quyết định | Điều có thể đổi | Câu hỏi |
+|---|---|---|
+| #4 Tính tiền thuê | Có trừ ngày Tết/lễ không; giá tháng ÷ 30 hay ÷ số ngày của tháng; thuê tối thiểu | Q1, Q2 |
+| #5 Hợp đồng – công trình | Có cho chuyển hàng thẳng công trình → công trình | Q8 |
+| #8 Phạm vi kế toán | Không xuất hóa đơn, nhưng **tiền VAT có trong công nợ** theo từng hợp đồng | Q4 |
+| #18 Hạn thanh toán | Có phạt/lãi chậm trả không | Q5 |
+| #20 Đền bù | Bảng giá đền bù lấy từ đâu | Q6 |
+| Danh mục (`master-data`) | Luật mã vật tư (mã cũ có dấu phẩy, `*`, `+`); cho thuê mã tính theo kg/mét; đơn vị bó, sọt, mét | Q3, Q9, Q10 |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 
@@ -177,7 +192,7 @@ Thời gian giữ đăng nhập cụ thể (khi có và không tick ô) do chang
 
 ## 7. NGOÀI PHẠM VI (hiện tại)
 
-- Xuất hóa đơn VAT, tích hợp phần mềm kế toán (MISA...).
+- Xuất hóa đơn VAT, tích hợp phần mềm kế toán (MISA...). (Tiền VAT trong công nợ: đang chờ Q4, xem 0.2b.)
 - Quản lý từng chiếc theo serial.
 - Quản lý giá vốn theo lô.
 - Chạy offline hoàn toàn trên PWA.
