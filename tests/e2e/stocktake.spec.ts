@@ -31,9 +31,13 @@ import {
   waitForHydration,
 } from "./helpers";
 
+// One project for the whole file: both tests start a session at the same
+// place, so they must not run side by side, and the snapshot workflow only
+// runs desktop-1280. The phone page sets its own phone viewport.
 test.describe.configure({ mode: "serial" });
-test.beforeEach(({}, testInfo) => {
-  test.skip(!runOnlyIn(testInfo, "mobile-375"), "phone and desk in one flow");
+test.beforeEach(async ({ page }, testInfo) => {
+  test.skip(!runOnlyIn(testInfo, "desktop-1280"), "one flow, one project");
+  await page.setViewportSize({ width: 375, height: 812 });
 });
 
 async function withDb<T>(
