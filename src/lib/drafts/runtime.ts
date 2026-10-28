@@ -1,8 +1,8 @@
 // The browser side of drafts (goods-receipt design D1): one outbox per
 // signed-in user, a change signal for lists that show drafts, and whether
 // the open page is working on a draft (the offline banner says so).
-import { createOutbox, receiptSender, type Outbox } from "./outbox";
-import { draftStore, type DraftRecord } from "./store";
+import { createOutbox, draftSender, type Outbox } from "./outbox";
+import { draftStore, type DraftKind, type DraftRecord } from "./store";
 
 type Listener = () => void;
 
@@ -25,6 +25,7 @@ function signal() {
 export const draftsChanged = signal();
 
 export interface PostedNotice {
+  kind: DraftKind;
   title: string;
   code: string;
 }
@@ -49,9 +50,9 @@ export function outboxFor(userId: string): Outbox {
     outbox = createOutbox({
       store: draftStore(),
       userId,
-      send: receiptSender(),
+      send: draftSender(),
       onPosted(record: DraftRecord, code: string) {
-        lastPosted = { title: record.title, code };
+        lastPosted = { kind: record.kind, title: record.title, code };
         posted.emit();
         draftsChanged.emit();
       },

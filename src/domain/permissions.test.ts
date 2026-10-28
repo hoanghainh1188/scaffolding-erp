@@ -26,6 +26,7 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "stock.lookup": ["DIRECTOR", "ACCOUNTANT", "SALES", "WAREHOUSE", "WORKSHOP"],
   "scrap-price.manage": ["DIRECTOR"],
   "repairs.manage": ["DIRECTOR", "ACCOUNTANT"],
+  "stocktake.count": ["DIRECTOR", "WAREHOUSE"],
 };
 
 const PAIRS = (Object.keys(PERMISSIONS) as Permission[]).flatMap((permission) =>
@@ -49,12 +50,12 @@ describe("can", () => {
     ]);
   });
 
-  it("gives the phone roles only reading, and the storekeeper receiving", () => {
+  it("gives the phone roles only reading, and the storekeeper receiving and counting", () => {
     const phone: readonly Permission[] = ["catalog.read", "stock.lookup"];
     for (const permission of Object.keys(PERMISSIONS) as Permission[]) {
       if (phone.includes(permission)) continue;
       expect(can("WAREHOUSE", permission)).toBe(
-        permission === "receiving.manage",
+        permission === "receiving.manage" || permission === "stocktake.count",
       );
       expect(can("WORKSHOP", permission)).toBe(false);
     }

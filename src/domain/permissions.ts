@@ -48,6 +48,10 @@ export const PERMISSIONS = {
   // simple-repair design D4: the accountant keeps the books (repair cost,
   // damage loss); office roles read slips through repairs.view.
   "repairs.manage": ["DIRECTOR", "ACCOUNTANT"],
+  // stocktake design D11: the storekeeper counts yards and the workshop on
+  // the phone; the director may stand in. Office roles read results through
+  // inventory.view; approving uses inventory.approve.
+  "stocktake.count": ["DIRECTOR", "WAREHOUSE"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;

@@ -9,6 +9,7 @@ import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
 import { seedReceiving } from "@/lib/receiving/sample";
 import { seedRepairs } from "@/lib/repairs/sample";
+import { seedStocktakes } from "@/lib/stocktakes/sample";
 import { DEV_ACCOUNTS, seedAccounts } from "@/lib/users/seed";
 
 async function main(): Promise<number> {
@@ -64,6 +65,11 @@ async function main(): Promise<number> {
     });
     const repairs = accountant ? await seedRepairs(handle.db, accountant) : 0;
     process.stdout.write(`Phiếu sửa chữa mẫu: thêm ${repairs} phiếu.\n`);
+    // Sample stocktake: a session waiting for approval like D13 (stocktake D16).
+    const stocktakes = warehouse
+      ? await seedStocktakes(handle.db, warehouse)
+      : 0;
+    process.stdout.write(`Phiên kiểm kê mẫu: thêm ${stocktakes} phiên.\n`);
     process.stdout.write(
       created.length > 0
         ? `Đã tạo ${created.length} tài khoản: ${created.join(", ")}.\n`

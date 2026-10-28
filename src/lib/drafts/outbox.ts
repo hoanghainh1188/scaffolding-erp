@@ -1,6 +1,6 @@
-// Sends confirmed drafts (goods-receipt design D1). Every send of a draft
-// carries the same draft id, so the server returns the receipt it already
-// made instead of making a second one. One send per draft at a time, also
+// Sends confirmed drafts (goods-receipt design D1, stocktake design D8).
+// Every send of a draft carries the same draft id, so the server returns
+// the document it already made instead of making a second one. One send per draft at a time, also
 // across tabs when the browser has Web Locks.
 import type { DraftRecord, DraftStore } from "./store";
 
@@ -19,35 +19,80 @@ export type Sender = (record: DraftRecord) => Promise<SendOutcome>;
 
 const RECEIPTS_URL = "/api/receiving/receipts";
 
+async function postJson(
+  fetcher: typeof fetch,
+  url: string,
+  body: object,
+): Promise<SendOutcome> {
+  let response: Response;
+  try {
+    response = await fetcher(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return { kind: "RETRY" };
+  }
+  return outcomeOf(response);
+}
+
+async function outcomeOf(response: Response): Promise<SendOutcome> {
+  if (response.status === 401) return { kind: "SIGNED_OUT" };
+  if (response.status >= 500) return { kind: "RETRY" };
+  const json = (await response.json().catch(() => null)) as {
+    data?: { code?: string; field?: string } | null;
+    error?: string | null;
+  } | null;
+  if (response.ok && json?.data?.code) {
+    return { kind: "POSTED", code: json.data.code };
+  }
+  return {
+    kind: "REJECTED",
+    error: json?.error ?? "Gửi phiếu không được, thử lại sau",
+    field: json?.data?.field ?? null,
+  };
+}
+
 /** The body a goods receipt draft sends: its payload's `body` + draft id. */
 export function receiptSender(fetcher: typeof fetch = fetch): Sender {
-  return async (record) => {
+  return (record) => {
     const payload = record.payload as { body?: object } | null;
-    let response: Response;
-    try {
-      response = await fetcher(RECEIPTS_URL, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...payload?.body, draftId: record.draftId }),
-      });
-    } catch {
-      return { kind: "RETRY" };
-    }
-    if (response.status === 401) return { kind: "SIGNED_OUT" };
-    if (response.status >= 500) return { kind: "RETRY" };
-    const json = (await response.json().catch(() => null)) as {
-      data?: { code?: string; field?: string } | null;
-      error?: string | null;
-    } | null;
-    if (response.ok && json?.data?.code) {
-      return { kind: "POSTED", code: json.data.code };
-    }
-    return {
-      kind: "REJECTED",
-      error: json?.error ?? "Gửi phiếu không được, thử lại sau",
-      field: json?.data?.field ?? null,
-    };
+    return postJson(fetcher, RECEIPTS_URL, {
+      ...payload?.body,
+      draftId: record.draftId,
+    });
   };
+}
+
+/**
+ * A stocktake count: the draft id is the submission id, and the phone's
+ * clock goes along so the server can correct the count times (D3).
+ */
+export function stocktakeSender(
+  fetcher: typeof fetch = fetch,
+  now: () => Date = () => new Date(),
+): Sender {
+  return (record) => {
+    const payload = record.payload as { body?: object } | null;
+    return postJson(
+      fetcher,
+      `/api/stocktakes/${encodeURIComponent(record.documentRef)}/submit`,
+      {
+        ...payload?.body,
+        submissionId: record.draftId,
+        deviceNow: now().toISOString(),
+      },
+    );
+  };
+}
+
+/** Picks the sender of the draft's kind. */
+export function draftSender(fetcher: typeof fetch = fetch): Sender {
+  const receipt = receiptSender(fetcher);
+  const stocktake = stocktakeSender(fetcher);
+  return (record) =>
+    record.kind === "STOCKTAKE" ? stocktake(record) : receipt(record);
 }
 
 /** Drafts this tab is sending now. */

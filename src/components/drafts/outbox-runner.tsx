@@ -54,7 +54,9 @@ export function OutboxRunner({ userId }: { userId: string }) {
     >
       <CheckCircle2 aria-hidden className="size-4 shrink-0" />
       <span className="flex-1">
-        Đã nhập kho {notice.code} · {notice.title}
+        {notice.kind === "STOCKTAKE"
+          ? `Đã gửi ${notice.code} về văn phòng`
+          : `Đã nhập kho ${notice.code} · ${notice.title}`}
       </span>
       <Button
         variant="ghost"

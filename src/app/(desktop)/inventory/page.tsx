@@ -1,4 +1,4 @@
-import { FileClock } from "lucide-react";
+import { ClipboardCheck, FileClock } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -51,6 +51,12 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href="/inventory/stocktakes">
+              <ClipboardCheck aria-hidden />
+              Kiểm kê
+            </Link>
+          </Button>
           <Button asChild variant="outline">
             <Link href="/inventory/adjustments">
               <FileClock aria-hidden />
