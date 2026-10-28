@@ -47,6 +47,23 @@ test.describe("accessibility", () => {
     }
   });
 
+  // simple-repair task 7.3: the list and D12 (new slip and a saved one).
+  test("repair pages have no serious or critical issues", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "desktop pages");
+    for (const path of [
+      "/repairs",
+      "/repairs/new",
+      `/repairs/PSC-${new Date().getFullYear()}-022`,
+    ]) {
+      await page.goto(path);
+      await waitForHydration(page, DESKTOP_READY);
+      await page.evaluate(() => document.fonts.ready);
+      expect(await seriousViolations(page), path).toEqual([]);
+    }
+  });
+
   // Own test: one loop over every desktop page outruns the 30s timeout on
   // CI, where next dev compiles each page on its first visit.
   test("purchasing pages have no serious or critical issues", async ({

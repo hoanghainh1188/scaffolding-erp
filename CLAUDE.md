@@ -50,7 +50,7 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 | `npm run tokens` | Sinh `src/styles/tokens.css` từ `docs/design-system/tokens.json` |
 | `npm run db:up` / `db:down` | Bật / tắt PostgreSQL trong Docker |
 | `npm run db:generate` / `db:migrate` / `db:studio` | Sinh migration SQL / chạy migration / xem dữ liệu |
-| `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD`, danh mục mẫu như thiết kế D9/D16 sổ kho mẫu (ví dụ tính tay design D11 của `inventory-ledger`), 5 đơn thu mua mẫu (đơn D3 của `purchase-orders`), giá sắt vụn 7.500 ₫/kg và một đơn đang nhận 2 chuyến như D3b (`goods-receipt`) |
+| `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD`, danh mục mẫu như thiết kế D9/D16 sổ kho mẫu (ví dụ tính tay design D11 của `inventory-ledger`), 5 đơn thu mua mẫu (đơn D3 của `purchase-orders`), giá sắt vụn 7.500 ₫/kg, một đơn đang nhận 2 chuyến như D3b (`goods-receipt`) và một phiếu sửa chữa nháp như D12 (`simple-repair`) |
 | `npm run inventory:check` | Đối chiếu giá vốn lưu riêng với sổ kho; lệch thì thoát mã 1 |
 | `npm run auth:create-director -- --username <tên> --name "<Họ tên>"` | Tạo tài khoản Giám đốc đầu tiên, in mật khẩu tạm một lần |
 
@@ -113,6 +113,7 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 - **Đơn thu mua** (`src/lib/purchasing/`): đơn chỉ lưu số và chi phí **dự kiến**, **không ghi sổ kho** (`PURCHASE_IN` thuộc phiếu nhập). Chia chi phí mua hàng và chia giá lô hàng cũ theo tình trạng dùng hàm thuần `src/domain/landed-cost.ts` (phần dư lớn nhất, tổng khớp từng đồng; phế liệu theo giá sắt vụn, 0.2 #27). Chuyển trạng thái đơn qua `transition()` ở `src/domain/purchase-order.ts`; "đơn đã có phiếu nhập chưa" đọc qua `src/lib/purchasing/receipts.ts`. Sửa đơn gửi kèm `updatedAt`, lệch thì 409.
 - Trang dùng giờ hiện tại (`new Date()`) phải `await connection()` trước (Cache Components).
 - **Phiếu nhập** (`src/lib/receiving/`): ghi qua `postReceipt` (khóa đơn `FOR UPDATE`, một transaction: phiếu + `PURCHASE_IN` + trạng thái đơn + lịch sử). Mã nháp `client_draft_id` chống tạo trùng. Không lưu tiền trên phiếu: tiền hàng = số × đơn giá dòng đơn, chi phí phân bổ đọc từ sổ kho. Nháp điện thoại ở `src/lib/drafts/` (IndexedDB), file `.wasm` quét QR chép vào `public/vendor/` khi `npm install`.
+- **Phiếu sửa chữa** (`src/lib/repairs/`): ghi sổ qua `postRepairOrder` (khóa phiếu, rồi `lockForPosting` vật tư → vị trí → giá, cùng thứ tự với `postMovements`). Giá phế liệu, phần hỏng, giá vào Tốt tính bằng hàm thuần `src/domain/repair-order.ts` (0.2 #23). Ngày sổ = ngày ghi sổ; ngày sửa xong chỉ là thông tin. Phiếu đã ghi sổ bị trigger khóa.
 
 ## Từ điển (tiếng Việt ↔ tên trong code)
 

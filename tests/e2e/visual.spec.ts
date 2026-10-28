@@ -15,6 +15,8 @@ const WIDTHS = [360, 375, 768, 1024, 1280, 1366] as const;
 const SAMPLE_ORDER = `PO-${new Date().getFullYear()}-001`;
 /** The receiving sample (goods-receipt D14): after the five D13 orders. */
 const RECEIVING_ORDER = `PO-${new Date().getFullYear()}-006`;
+/** The D12 sample draft (simple-repair design D13): after PSC-…-021. */
+const SAMPLE_REPAIR = `PSC-${new Date().getFullYear()}-022`;
 const PAGES = [
   { path: "/dashboard", name: "dashboard", ready: DESKTOP_READY },
   { path: "/m", name: "mobile-home", ready: MOBILE_READY },
@@ -66,6 +68,15 @@ const PAGES = [
     name: "scrap-price",
     ready: DESKTOP_READY,
   },
+  // simple-repair: drafts only (repairs.spec.ts posts its own slips), and
+  // the D12 sample draft. Its date is today and the E2E-KHO waiting rows
+  // move with other tests, so both are masked.
+  { path: "/repairs?status=draft", name: "repairs", ready: DESKTOP_READY },
+  {
+    path: `/repairs/${SAMPLE_REPAIR}`,
+    name: "d12-repair",
+    ready: DESKTOP_READY,
+  },
   { path: "/m/scan", name: "m2-scan", ready: MOBILE_READY },
   {
     path: `/m/receive/${RECEIVING_ORDER}`,
@@ -102,6 +113,7 @@ test.describe("visual baselines @visual", () => {
             page.locator("[data-clock]"),
             page.locator("[data-mask]"),
             page.getByRole("row").filter({ hasText: "E2E-KHO" }),
+            page.getByRole("listitem").filter({ hasText: "E2E-KHO" }),
           ],
           animations: "disabled",
           caret: "hide",
