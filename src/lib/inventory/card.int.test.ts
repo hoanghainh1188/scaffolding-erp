@@ -2,11 +2,12 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { site } from "@/db/schema";
-import type { BusinessDate } from "@/domain/business-date";
+import { toBusinessDate, type BusinessDate } from "@/domain/business-date";
 import { createTestContext } from "@/test/auth";
 import { setupInventoryFixture, type InventoryFixture } from "@/test/inventory";
 
 import { getStockCard, type CardFilter } from "./card";
+import { postMovements } from "./post";
 import { seedInventory } from "./sample";
 
 const ctx = createTestContext();
@@ -107,5 +108,59 @@ describe("getStockCard", () => {
 
   it("returns null for an unknown item", async () => {
     expect(await card({}, "KHONG-CO")).toBeNull();
+  });
+
+  it("shows a REVALUE line under every place filter", async () => {
+    await ctx.db.transaction((tx) =>
+      postMovements(tx, fx.director, {
+        documentType: "REVALUE",
+        documentId: null,
+        documentCode: "ĐCG-2026-001",
+        businessDate: toBusinessDate(new Date()),
+        lines: [
+          {
+            itemId: fx.item("GG-K17"),
+            condition: "GOOD",
+            locationId: null,
+            movement: "REVALUE",
+            quantityMilli: 0,
+            amount: -4_126_000,
+            description: "Giảm giá trị 4.126.000 ₫ · sửa PN-2026-087",
+          },
+        ],
+      }),
+    );
+    const period = {
+      from: "2026-10-01" as BusinessDate,
+      to: "2026-12-31" as BusinessDate,
+    };
+    const [maiDich] = await ctx.db
+      .select({ code: site.code })
+      .from(site)
+      .where(eq(site.locationId, fx.place("maiDich")));
+    for (const filter of [
+      { place: "yard" as const },
+      { place: "sites" as const },
+      { place: "sites" as const, siteCode: maiDich?.code },
+      { place: "workshop" as const },
+    ]) {
+      const result = await card({ ...filter, ...period });
+      const line = result?.lines.at(-1);
+      expect(line, filter.place).toMatchObject({
+        documentCode: "ĐCG-2026-001",
+        movement: "REVALUE",
+        in: 0,
+        out: 0,
+        unitCost: null,
+        avgAfter: 194_072,
+      });
+      expect(result?.closing).toBe(
+        result?.lines.at(-2)?.balance ?? result?.opening,
+      );
+      expect(result?.currentAvg).toBe(194_072);
+    }
+    // Another condition does not show it.
+    const repair = await card({ condition: "NEEDS_REPAIR", ...period });
+    expect(repair?.lines.some((l) => l.movement === "REVALUE")).toBe(false);
   });
 });

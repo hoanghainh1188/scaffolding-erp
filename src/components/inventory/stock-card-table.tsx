@@ -79,7 +79,8 @@ export function StockCardTable({ card, from, priced }: StockCardTableProps) {
           {card.lines.map((line) => {
             const adjustment =
               line.documentType === "ADJUSTMENT" ||
-              line.documentType === "OPENING";
+              line.documentType === "OPENING" ||
+              line.documentType === "REVALUE";
             return (
               <tr key={line.id} className="bg-card hover:bg-muted">
                 <th scope="row" className={cn(td, "text-left font-medium")}>
@@ -101,6 +102,11 @@ export function StockCardTable({ card, from, priced }: StockCardTableProps) {
                       Điều chỉnh
                     </ToneBadge>
                   ) : null}
+                  {line.documentType === "REVALUE" ? (
+                    <ToneBadge tone="warning" className="ml-2">
+                      Điều chỉnh giá
+                    </ToneBadge>
+                  ) : null}
                 </td>
                 <td className={td}>{line.description}</td>
                 <td className={cn(td, num)}>
@@ -114,7 +120,11 @@ export function StockCardTable({ card, from, priced }: StockCardTableProps) {
                 </td>
                 {priced ? (
                   <>
-                    <td className={cn(td, num)}>{formatCost(line.unitCost)}</td>
+                    <td className={cn(td, num)}>
+                      {line.movement === "REVALUE"
+                        ? ""
+                        : formatCost(line.unitCost)}
+                    </td>
                     <td className={cn(td, num)}>{formatCost(line.avgAfter)}</td>
                   </>
                 ) : null}

@@ -26,6 +26,7 @@ import {
   QUANTITY_UNIT_LABELS,
   type QuantityUnit,
 } from "@/domain/quantity";
+import { signedMoney } from "@/domain/stock-revaluation";
 import { moneyText } from "@/lib/activity/fields";
 
 type Executor = Pick<Database, "select">;
@@ -36,12 +37,14 @@ export interface AdjustmentLineView {
   unit: QuantityUnit;
   quantity: string;
   unitCost: number | null;
+  valueDelta: number | null;
 }
 
 export interface AdjustmentView {
   reason: string;
   relatedDocumentCode: string | null;
   openingDate: string | null;
+  correctedTripCost: number | null;
   lines: AdjustmentLineView[];
 }
 
@@ -57,6 +60,11 @@ const HEAD: readonly FieldSpec<AdjustmentView>[] = [
     label: "Ngày tồn đầu",
     value: (a) => (a.openingDate ? formatBusinessDate(a.openingDate) : null),
   },
+  {
+    field: "correctedTripCost",
+    label: "Chi phí chuyến đúng",
+    value: (a) => moneyText(a.correctedTripCost),
+  },
 ];
 
 const quantityText = (line: AdjustmentLineView) =>
@@ -66,16 +74,24 @@ const LINES: LineSpec<AdjustmentLineView> = {
   field: "lines",
   key: (line) => line.key,
   whole: (line) =>
-    joinParts(
-      quantityText(line),
-      line.unitCost === null ? null : `đơn giá ${moneyText(line.unitCost)}`,
-    ),
+    line.valueDelta !== null
+      ? `chênh lệch ${signedMoney(line.valueDelta)}`
+      : joinParts(
+          quantityText(line),
+          line.unitCost === null ? null : `đơn giá ${moneyText(line.unitCost)}`,
+        ),
   columns: [
     { field: "quantity", label: "Số lượng", value: quantityText },
     {
       field: "unitCost",
       label: "Đơn giá",
       value: (line) => moneyText(line.unitCost),
+    },
+    {
+      field: "valueDelta",
+      label: "Chênh lệch giá trị",
+      value: (line) =>
+        line.valueDelta === null ? null : signedMoney(line.valueDelta),
     },
   ],
 };
@@ -87,7 +103,7 @@ function lineKey(row: {
   code: string;
   condition: string;
   toCondition: string | null;
-  place: string;
+  place: string | null;
   toPlace: string | null;
 }): string {
   const label = (condition: string) =>
@@ -95,6 +111,7 @@ function lineKey(row: {
   const condition = row.toCondition
     ? `${label(row.condition)} → ${label(row.toCondition)}`
     : label(row.condition);
+  if (row.place === null) return `${row.code} ${condition}`;
   const where = row.toPlace ? `${row.place} → ${row.toPlace}` : row.place;
   return `${row.code} ${condition} ${where}`;
 }
@@ -109,6 +126,7 @@ export async function adjustmentView(
         reason: stockAdjustment.reason,
         relatedDocumentCode: stockAdjustment.relatedDocumentCode,
         openingDate: stockAdjustment.openingDate,
+        correctedTripCost: stockAdjustment.correctedTripCost,
       })
       .from(stockAdjustment)
       .where(eq(stockAdjustment.id, id)),
@@ -122,10 +140,11 @@ export async function adjustmentView(
         toPlace: toPlace.code,
         quantity: stockAdjustmentLine.quantity,
         unitCost: stockAdjustmentLine.unitCost,
+        valueDelta: stockAdjustmentLine.valueDelta,
       })
       .from(stockAdjustmentLine)
       .innerJoin(item, eq(item.id, stockAdjustmentLine.itemId))
-      .innerJoin(place, eq(place.id, stockAdjustmentLine.locationId))
+      .leftJoin(place, eq(place.id, stockAdjustmentLine.locationId))
       .leftJoin(toPlace, eq(toPlace.id, stockAdjustmentLine.toLocationId))
       .where(eq(stockAdjustmentLine.adjustmentId, id))
       .orderBy(asc(stockAdjustmentLine.lineNo)),
@@ -138,6 +157,7 @@ export async function adjustmentView(
       unit: line.unit as QuantityUnit,
       quantity: line.quantity,
       unitCost: line.unitCost,
+      valueDelta: line.valueDelta,
     })),
   };
 }
@@ -152,7 +172,16 @@ export function adjustmentChanges(
   ];
 }
 
-/** "3 dòng · Lý do: Kiểm đếm bãi". */
+/** "3 dòng · Lý do: Kiểm đếm bãi"; value documents add the source and total. */
 export function adjustmentSummary(view: AdjustmentView): string {
+  const values = view.lines.filter((line) => line.valueDelta !== null);
+  if (values.length > 0) {
+    return joinParts(
+      `Sửa ${view.relatedDocumentCode ?? ""}`,
+      countText(view.lines.length, "dòng"),
+      signedMoney(values.reduce((sum, l) => sum + (l.valueDelta ?? 0), 0)),
+      view.reason,
+    );
+  }
   return joinParts(countText(view.lines.length, "dòng"), view.reason);
 }

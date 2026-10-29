@@ -297,6 +297,7 @@ export function stocktakeAdjustmentLines(
       toLocationId: null,
       quantityMilli: difference,
       unitCost: line.unitCost,
+      valueDelta: null,
     });
   }
   return result;

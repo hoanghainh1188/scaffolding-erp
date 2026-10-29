@@ -22,12 +22,13 @@ const line = (
 });
 
 describe("movement types", () => {
-  it("has 13 types; only opening, purchase and repaired change the average", () => {
-    expect(MOVEMENTS).toHaveLength(13);
+  it("has 14 types; opening, purchase, repaired and revalue change the average", () => {
+    expect(MOVEMENTS).toHaveLength(14);
     expect(MOVEMENTS.filter(changesAverage)).toEqual([
       "OPENING",
       "PURCHASE_IN",
       "REPAIR_IN",
+      "REVALUE",
     ]);
   });
 
@@ -83,7 +84,28 @@ describe("assertMovementLine", () => {
     );
     expect(() =>
       assertMovementLine(line({ movement: "RETURN_IN", hasAmount: true })),
-    ).toThrow("Chỉ tồn đầu kỳ, nhập mua, nhập sau sửa mới có giá trị");
+    ).toThrow(
+      "Chỉ tồn đầu kỳ, nhập mua, nhập sau sửa, điều chỉnh giá mới có giá trị",
+    );
+  });
+
+  it("keeps quantity 0 to REVALUE only", () => {
+    expect(() =>
+      assertMovementLine(line({ movement: "REVALUE", quantityMilli: 0 })),
+    ).not.toThrow();
+    expect(() =>
+      assertMovementLine(line({ movement: "REVALUE", quantityMilli: 5000 })),
+    ).toThrow("Dòng điều chỉnh giá không có số lượng");
+    expect(() =>
+      assertMovementLine(
+        line({ movement: "REVALUE", quantityMilli: 0, hasAmount: false }),
+      ),
+    ).toThrow("Dòng làm đổi giá vốn phải có giá trị");
+    expect(() =>
+      assertMovementLine(
+        line({ movement: "ADJUST_IN", quantityMilli: 0, hasAmount: false }),
+      ),
+    ).toThrow("Số lượng ghi sổ phải khác 0");
   });
 });
 

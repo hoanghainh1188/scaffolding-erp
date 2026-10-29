@@ -8,6 +8,7 @@ import { setupInventoryFixture, type InventoryFixture } from "@/test/inventory";
 
 import { postMovements } from "./post";
 import { getItemSites, getSiteBreakdown, getStockOverview } from "./stock";
+import { itemStock, locationStock } from "./totals";
 
 const ctx = createTestContext();
 afterAll(ctx.close);
@@ -162,5 +163,70 @@ describe("getItemSites", () => {
       await getItemSites(ctx.db, fx.item("GG-K17")),
     );
     expect(all.has(fx.item("OT-06"))).toBe(false);
+  });
+});
+
+describe("stock after a REVALUE line (no location)", () => {
+  beforeEach(async () => {
+    await ctx.db.transaction((tx) =>
+      postMovements(
+        tx,
+        fx.director,
+        {
+          documentType: "REVALUE",
+          documentId: null,
+          documentCode: "ĐCG-2026-001",
+          businessDate: "2026-10-27" as BusinessDate,
+          lines: [
+            {
+              itemId: fx.item("GG-K17"),
+              condition: "GOOD",
+              locationId: null,
+              movement: "REVALUE",
+              quantityMilli: 0,
+              amount: 5_100_000,
+              description: "Tăng giá trị 5.100.000 ₫ · sửa TĐK-2026-001",
+            },
+          ],
+        },
+        "2026-10-27" as BusinessDate,
+      ),
+    );
+  });
+
+  it("keeps every quantity and values at the new average", async () => {
+    const row = await rowOf("GG-K17");
+    expect(row.yard.GOOD).toBe(1_240_000);
+    expect([row.workshop, row.sites, row.total]).toEqual([
+      60_000, 3_860_000, 5_388_000,
+    ]);
+    // 5.100 Tốt × 195.000 + 5.100.000 → 196.000 ₫
+    expect(row.value).toBe(
+      5100 * 196_000 + 186 * 160_000 + 42 * 160_000 + 60 * 160_000,
+    );
+  });
+
+  it("still adds up to the ledger and lists the same sites", async () => {
+    const { rows } = await getStockOverview(ctx.db);
+    const [sum] = await ctx.db.execute<{ quantity: string }>(sql`
+      select sum(quantity)::text as quantity from inventory_ledger
+    `);
+    expect(rows.reduce((s, r) => s + r.total, 0) / 1000).toBe(
+      Number(sum?.quantity),
+    );
+    const sites = await getItemSites(ctx.db, fx.item("GG-K17"));
+    expect(sites.map((s) => s.quantity).sort()).toEqual(
+      [720_000, 1_540_000, 1_600_000].sort(),
+    );
+  });
+
+  it("does not change the totals that block archiving", async () => {
+    expect(await itemStock(ctx.db, fx.item("GG-K17"))).toEqual({
+      pieceMilli: 5_388_000,
+      kgMilli: 0,
+    });
+    expect((await locationStock(ctx.db, fx.place("BAI-01"))).pieceMilli).toBe(
+      (1240 + 186 + 42 + 2500 + 100 + 11 + 18 + 64 + 6) * 1000,
+    );
   });
 });

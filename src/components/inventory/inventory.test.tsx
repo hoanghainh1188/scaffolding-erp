@@ -134,6 +134,7 @@ const card = (overrides: Partial<StockCard> = {}): StockCard => ({
       documentId: "adj-1",
       documentCode: "ĐC-2026-004",
       description: "Sửa PTH-2026-064",
+      movement: "ADJUST_OUT",
       in: 0,
       out: 10_000,
       balance: 1_320_000,

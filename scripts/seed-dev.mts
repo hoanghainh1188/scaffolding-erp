@@ -7,6 +7,7 @@ import { seedActivity } from "@/lib/activity/sample";
 import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
 import { seedCatalog } from "@/lib/catalog/seed";
+import { seedValueAdjustments } from "@/lib/inventory/revaluation-sample";
 import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
 import { seedReceiving } from "@/lib/receiving/sample";
@@ -63,6 +64,13 @@ async function main(): Promise<number> {
       ? await seedStocktakes(handle.db, warehouse)
       : 0;
     process.stdout.write(`Phiên kiểm kê mẫu: thêm ${stocktakes} phiên.\n`);
+    // Sample value adjustment: a trip-cost fix waiting for approval (K6).
+    const revaluations = accountant
+      ? await seedValueAdjustments(handle.db, accountant)
+      : 0;
+    process.stdout.write(
+      `Phiếu điều chỉnh giá mẫu: thêm ${revaluations} phiếu.\n`,
+    );
     // Sample activity log like drawing D18 (activity-log design D13).
     const sales = await actorByUsername(handle.db, "kinhdoanh");
     const activity =

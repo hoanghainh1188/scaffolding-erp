@@ -61,6 +61,8 @@ const desktopOnly = () =>
 
 test.describe("flows", () => {
   desktopOnly();
+  // In order: the value test needs the Mới stock the adjustment test adds.
+  test.describe.configure({ mode: "serial" });
 
   test("opening balance: Kế toán drafts, Giám đốc approves, D10 and D11 show it", async ({
     browser,
@@ -70,9 +72,8 @@ test.describe("flows", () => {
 
     await accountant.goto("/inventory/adjustments");
     await waitForHydration(accountant, DESKTOP_READY);
-    await accountant
-      .getByRole("button", { name: "Lập phiếu tồn đầu kỳ" })
-      .click();
+    await accountant.getByRole("button", { name: "Lập phiếu" }).click();
+    await accountant.getByRole("menuitem", { name: "Tồn đầu kỳ" }).click();
     const sheet = accountant.getByRole("dialog");
     await sheet.getByLabel("Lý do").fill("Số tồn khi bắt đầu dùng phần mềm");
     await fillLine(sheet as unknown as Page, 1, {
@@ -205,7 +206,121 @@ test.describe("flows", () => {
     await expect(lines).toHaveCount(2);
     await expect(lines.first()).toContainText("Điều chỉnh");
   });
+
+  test("raises then lowers the average by exactly the change ÷ stock", async ({
+    browser,
+  }) => {
+    const accountant = await as(browser, "ACCOUNTANT");
+    await accountant.goto(
+      "/inventory/items/E2E-KHO-02?condition=NEW&place=yard&from=2026-01-01&to=2030-12-31",
+    );
+    await waitForHydration(accountant, DESKTOP_READY);
+    const source = accountant
+      .getByRole("row")
+      .filter({ hasText: /(ĐC|TĐK)-\d{4}-\d{3}/ })
+      .first();
+    test.skip(
+      (await source.count()) === 0,
+      "E2E-KHO-02 Mới has no stock yet (runs after the adjustment flow)",
+    );
+    const related =
+      /(ĐC|TĐK)-\d{4}-\d{3}/.exec(await source.innerText())?.[0] ?? "";
+
+    // +1.000 ₫ per piece: the change is stock × 1.000, so it divides evenly.
+    const up = await valueAdjustment(
+      browser,
+      related,
+      "Tăng giá trị",
+      (pool) => pool * 1000,
+    );
+    expect(up.pool).toBeGreaterThan(0);
+    const upLines = up.director.getByRole("row", { name: /E2E-KHO-02/ });
+    await expect(upLines.first()).toContainText(money(up.avg + 1000));
+
+    await up.director.goto(
+      "/inventory/items/E2E-KHO-02?condition=NEW&place=yard",
+    );
+    await waitForHydration(up.director, DESKTOP_READY);
+    const row = up.director.getByRole("row").filter({ hasText: up.code });
+    await expect(row).toHaveCount(1);
+    await expect(row).toContainText("Điều chỉnh giá");
+    await expect(row).toContainText(money(up.avg + 1000));
+
+    // Back down by the same amount: the average and D10 value are as before.
+    const down = await valueAdjustment(
+      browser,
+      related,
+      "Giảm giá trị",
+      (pool) => pool * 1000,
+    );
+    expect(down.avg).toBe(up.avg + 1000);
+    await expect(
+      down.director.getByRole("row", { name: /E2E-KHO-02/ }).first(),
+    ).toContainText(money(up.avg));
+  });
 });
+
+/**
+ * One value adjustment of E2E-KHO-02 Mới through the screens: Kế toán drafts
+ * and submits, Giám đốc approves. Returns the stock and averages it saw.
+ */
+async function valueAdjustment(
+  browser: Browser,
+  related: string,
+  direction: "Tăng giá trị" | "Giảm giá trị",
+  amount: (pool: number) => number,
+) {
+  const accountant = await as(browser, "ACCOUNTANT");
+  await accountant.goto("/inventory/adjustments");
+  await waitForHydration(accountant, DESKTOP_READY);
+  await accountant.getByRole("button", { name: "Lập phiếu" }).click();
+  await accountant
+    .getByRole("menuitem", { name: "Điều chỉnh giá trị" })
+    .click();
+  const sheet = accountant.getByRole("dialog");
+  await sheet.getByLabel("Chứng từ bị sửa").fill(related);
+  await sheet.getByLabel("Lý do").fill("E2E thử điều chỉnh giá");
+  const line = sheet.getByRole("group", { name: "Dòng 1" });
+  await line
+    .getByLabel("Vật tư")
+    .selectOption({ label: "E2E-KHO-02 · Vật tư kho thử 2" });
+  await line.getByLabel("Tình trạng").selectOption("Mới");
+  await line.getByLabel("Tăng hay giảm").selectOption(direction);
+  await line.getByLabel("Chênh lệch (₫)").fill("1000");
+  const preview = line.getByText(/^Tồn .* → Giá BQ mới/);
+  await expect(preview).toBeVisible();
+  const [, poolText = "0", avgText = "0"] =
+    /^Tồn ([\d.]+) cái · Giá BQ ([\d.]+) ₫/.exec(await preview.innerText()) ??
+    [];
+  const pool = Number(poolText.replaceAll(".", ""));
+  const avg = Number(avgText.replaceAll(".", ""));
+  await line.getByLabel("Chênh lệch (₫)").fill(String(amount(pool)));
+  await sheet.getByRole("button", { name: "Lưu nháp" }).click();
+  await expect(accountant).toHaveURL(
+    /\/inventory\/adjustments\/[0-9a-f-]{36}$/,
+  );
+  const url = accountant.url();
+  const code = (
+    await accountant.getByRole("heading", { level: 1 }).innerText()
+  ).replace(/^.*· /, "");
+  await accountant.getByRole("button", { name: "Gửi duyệt" }).click();
+  await expect(accountant.getByText("Chờ duyệt").first()).toBeVisible();
+
+  const director = await as(browser, "DIRECTOR");
+  await director.goto(url);
+  await waitForHydration(director, DESKTOP_READY);
+  await director.getByRole("button", { name: "Duyệt và ghi sổ" }).click();
+  await director
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Duyệt và ghi sổ" })
+    .click();
+  await expect(
+    director.getByRole("heading", { name: "Dòng đã ghi sổ kho" }),
+  ).toBeVisible();
+  return { director, code, pool, avg };
+}
+
+const money = (value: number) => `${value.toLocaleString("vi-VN")} ₫`;
 
 test.describe("as Kinh doanh", () => {
   desktopOnly();

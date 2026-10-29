@@ -23,7 +23,10 @@ import * as adjustmentApprove from "./adjustments/[id]/approve/route";
 import * as adjustmentReturn from "./adjustments/[id]/return/route";
 import * as adjustmentOne from "./adjustments/[id]/route";
 import * as adjustmentSubmit from "./adjustments/[id]/submit/route";
+import * as adjustmentTripOne from "./adjustments/[id]/trip-cost/route";
+import * as revaluePreview from "./adjustments/revalue-preview/route";
 import * as adjustments from "./adjustments/route";
+import * as adjustmentTrip from "./adjustments/trip-cost/route";
 import * as card from "./items/[code]/card/route";
 import * as sites from "./items/[code]/sites/route";
 import * as stock from "./stock/route";
@@ -121,8 +124,50 @@ interface Call {
   run: (cookie: string) => Promise<Response>;
 }
 
+const revalueBody = (valueDelta: number = -150_000): AdjustmentBody => ({
+  kind: "REVALUE",
+  reason: "Tồn đầu ghi nhầm đơn giá",
+  relatedDocumentCode: "TEST",
+  lines: [{ itemId: fx.item("GG-K17"), condition: "GOOD", valueDelta }],
+});
+
 const base = "/api/inventory/adjustments";
 const WRITES: Call[] = [
+  {
+    name: "POST value adjustment",
+    permission: "inventory.adjust",
+    run: (cookie) =>
+      adjustments.POST(
+        appRequest(base, { method: "POST", cookie, body: revalueBody() }),
+      ),
+  },
+  {
+    name: "POST trip-cost fix",
+    permission: "inventory.adjust",
+    run: (cookie) =>
+      adjustmentTrip.POST(
+        appRequest(`${base}/trip-cost`, {
+          method: "POST",
+          cookie,
+          body: {
+            receiptId: crypto.randomUUID(),
+            correctedTripCost: 3_500_000,
+            reason: "Cước xe nhập nhầm",
+          },
+        }),
+      ),
+  },
+  {
+    name: "PATCH trip-cost fix",
+    permission: "inventory.adjust",
+    run: on(
+      adjustmentTripOne.PATCH,
+      "PATCH",
+      (id) => `${base}/${id}/trip-cost`,
+      () => draftId,
+      { correctedTripCost: 3_500_000, reason: "Cước xe nhập nhầm" },
+    ),
+  },
   {
     name: "POST adjustments",
     permission: "inventory.adjust",
@@ -267,9 +312,86 @@ describe("inventory API permissions", () => {
     }
   });
 
-  it("lets the accountant draft but not approve", async () => {
+  it.each(ROLES)(
+    "%s: previews a value only with inventory.adjust",
+    async (role) => {
+      const response = await revaluePreview.GET(
+        appRequest(
+          `${base}/revalue-preview?itemId=${fx.item("GG-K17")}&condition=GOOD&valueDelta=-150000`,
+          { cookie: cookies.get(role) },
+        ),
+      );
+      expect(response.status, role).toBe(
+        can(role, "inventory.adjust") ? 200 : 403,
+      );
+      if (response.status === 200) {
+        // 100 cái × 195.000 − 150.000 = 19.350.000 ÷ 100
+        expect((await response.json()).data).toMatchObject({ newAvg: 193_500 });
+      }
+    },
+  );
+
+  it("checks value inputs at the edge", async () => {
+    const cookie = cookies.get("ACCOUNTANT") ?? "";
+    const half = await adjustments.POST(
+      appRequest(base, { method: "POST", cookie, body: revalueBody(-1.5) }),
+    );
+    expect(half.status).toBe(400);
+    expect((await half.json()).error).toBe(
+      "Chênh lệch giá trị phải là số nguyên đồng",
+    );
+    const negative = await adjustmentTrip.POST(
+      appRequest(`${base}/trip-cost`, {
+        method: "POST",
+        cookie,
+        body: { receiptId: crypto.randomUUID(), correctedTripCost: -1 },
+      }),
+    );
+    expect(negative.status).toBe(400);
+    expect((await negative.json()).error).toBe(
+      "Chi phí chuyến phải là số nguyên không âm",
+    );
+    const long = await adjustments.POST(
+      appRequest(base, {
+        method: "POST",
+        cookie,
+        body: { ...revalueBody(), reason: "x".repeat(501) },
+      }),
+    );
+    expect(long.status).toBe(400);
+    expect((await long.json()).error).toBe("Lý do dài tối đa 500 ký tự");
+    const preview = await revaluePreview.GET(
+      appRequest(`${base}/revalue-preview?itemId=x&condition=GOOD`, { cookie }),
+    );
+    expect(preview.status).toBe(400);
+  });
+
+  it("lets the accountant post a value adjustment only through the director", async () => {
     const cookie = cookies.get("ACCOUNTANT") ?? "";
     const created = await WRITES[0]!.run(cookie);
+    expect(created.status).toBe(201);
+    const { data } = await created.json();
+    expect(data.code).toBe("ĐCG-2026-001");
+    await on(
+      adjustmentSubmit.POST,
+      "POST",
+      (id) => `${base}/${id}/submit`,
+      () => data.id,
+    )(cookie);
+    const before = await snapshot();
+    const approve = await on(
+      adjustmentApprove.POST,
+      "POST",
+      (id) => `${base}/${id}/approve`,
+      () => data.id,
+    )(cookie);
+    expect(approve.status).toBe(403);
+    expect(await snapshot()).toBe(before);
+  });
+
+  it("lets the accountant draft but not approve", async () => {
+    const cookie = cookies.get("ACCOUNTANT") ?? "";
+    const created = await WRITES[3]!.run(cookie);
     expect(created.status).toBe(201);
     const { data } = await created.json();
     await on(
@@ -316,6 +438,6 @@ describe("inventory API permissions", () => {
     expect((await stock.GET(appRequest("/api/inventory/stock"))).status).toBe(
       401,
     );
-    expect((await WRITES[0]!.run("")).status).toBe(401);
+    expect((await WRITES[3]!.run("")).status).toBe(401);
   });
 });

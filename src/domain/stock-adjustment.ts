@@ -5,8 +5,9 @@ import type { BusinessDate } from "./business-date";
 import { CONDITIONS, type Condition } from "./condition";
 import { DomainValueError } from "./errors";
 import type { MovementDraft } from "./movement";
+import { assertValueDelta } from "./stock-revaluation";
 
-export const ADJUSTMENT_KINDS = ["ADJUSTMENT", "OPENING"] as const;
+export const ADJUSTMENT_KINDS = ["ADJUSTMENT", "OPENING", "REVALUE"] as const;
 export type AdjustmentKind = (typeof ADJUSTMENT_KINDS)[number];
 
 export const ADJUSTMENT_LINE_TYPES = [
@@ -14,6 +15,7 @@ export const ADJUSTMENT_LINE_TYPES = [
   "CONDITION",
   "LOCATION",
   "OPENING",
+  "VALUE",
 ] as const;
 export type AdjustmentLineType = (typeof ADJUSTMENT_LINE_TYPES)[number];
 
@@ -24,12 +26,21 @@ export const ADJUSTMENT_LINE_TYPE_LABELS: Readonly<
   CONDITION: "Tình trạng",
   LOCATION: "Vị trí",
   OPENING: "Tồn đầu kỳ",
+  VALUE: "Giá trị",
 };
 
-/** Document code prefixes: ĐC-2026-004, TĐK-2026-001. */
+export const ADJUSTMENT_KIND_LABELS: Readonly<Record<AdjustmentKind, string>> =
+  {
+    ADJUSTMENT: "Điều chỉnh",
+    OPENING: "Tồn đầu kỳ",
+    REVALUE: "Điều chỉnh giá",
+  };
+
+/** Document code prefixes: ĐC-2026-004, TĐK-2026-001, ĐCG-2026-001. */
 export const ADJUSTMENT_PREFIX: Readonly<Record<AdjustmentKind, string>> = {
   ADJUSTMENT: "ĐC",
   OPENING: "TĐK",
+  REVALUE: "ĐCG",
 };
 
 export const REASON_MAX = 500;
@@ -50,6 +61,7 @@ export const ADJUSTMENT_MESSAGES = {
   openingDate: "Chọn ngày tồn đầu",
   openingFuture: "Ngày tồn đầu không được sau hôm nay",
   condition: "Chọn tình trạng",
+  location: "Chọn vị trí",
 } as const;
 
 export interface AdjustmentLineInput {
@@ -57,10 +69,13 @@ export interface AdjustmentLineInput {
   itemId: string;
   condition: Condition;
   toCondition: Condition | null;
-  locationId: string;
+  /** Null only on VALUE lines. */
+  locationId: string | null;
   toLocationId: string | null;
   quantityMilli: number;
   unitCost: number | null;
+  /** Signed change of value, VALUE lines only. */
+  valueDelta: number | null;
 }
 
 /** Trimmed reason, required, at most 500 characters. */
@@ -91,11 +106,21 @@ export function assertAdjustmentLine(
   kind: AdjustmentKind,
   line: AdjustmentLineInput,
 ): void {
-  if ((kind === "OPENING") !== (line.lineType === "OPENING")) {
+  if (
+    (kind === "OPENING") !== (line.lineType === "OPENING") ||
+    (kind === "REVALUE") !== (line.lineType === "VALUE")
+  ) {
     throw new DomainValueError(ADJUSTMENT_MESSAGES.wrongKind);
   }
   if (!isCondition(line.condition)) {
     throw new DomainValueError(ADJUSTMENT_MESSAGES.condition);
+  }
+  if (line.lineType === "VALUE") {
+    assertValueDelta(line.valueDelta ?? 0);
+    return;
+  }
+  if (line.locationId === null) {
+    throw new DomainValueError(ADJUSTMENT_MESSAGES.location);
   }
   assertUnitCost(line.unitCost);
   switch (line.lineType) {
@@ -167,6 +192,9 @@ export function adjustmentMovements(
       description,
     };
     switch (line.lineType) {
+      case "VALUE":
+        // REVALUE documents post through revaluationMovements.
+        throw new DomainValueError(ADJUSTMENT_MESSAGES.wrongKind);
       case "QUANTITY":
         drafts.push({
           ...base,

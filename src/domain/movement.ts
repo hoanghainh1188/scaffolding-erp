@@ -19,14 +19,19 @@ export const MOVEMENTS = [
   "SALE_OUT",
   "ADJUST_OUT",
   "ADJUST_IN",
+  "REVALUE",
 ] as const;
 export type Movement = (typeof MOVEMENTS)[number];
 
-/** Stock coming in from outside the company: these change the average. */
+/**
+ * Stock coming in from outside the company, and value corrections
+ * (0.2 #35): these change the average.
+ */
 const COST_CHANGING: ReadonlySet<Movement> = new Set([
   "OPENING",
   "PURCHASE_IN",
   "REPAIR_IN",
+  "REVALUE",
 ]);
 
 export function changesAverage(movement: Movement): boolean {
@@ -40,12 +45,14 @@ export function isInbound(movement: Movement): boolean {
 
 export const MOVEMENT_MESSAGES = {
   zero: "Số lượng ghi sổ phải khác 0",
+  revalueQuantity: "Dòng điều chỉnh giá không có số lượng",
   inboundSign: "Dòng nhập phải có số lượng dương",
   outboundSign: "Dòng xuất phải có số lượng âm",
   wholePieces: (code: string) =>
     `${code} tính theo cái, số lượng phải là số nguyên`,
   amountMissing: "Dòng làm đổi giá vốn phải có giá trị",
-  amountNotAllowed: "Chỉ tồn đầu kỳ, nhập mua, nhập sau sửa mới có giá trị",
+  amountNotAllowed:
+    "Chỉ tồn đầu kỳ, nhập mua, nhập sau sửa, điều chỉnh giá mới có giá trị",
   backdated: (code: string, condition: Condition, last: BusinessDate) =>
     `${code} ${CONDITION_LABELS[condition]} đã có biến động ngày ${formatBusinessDate(last)}, không ghi lùi ngày được`,
   future: "Ngày ghi sổ không được sau hôm nay",
@@ -62,6 +69,15 @@ export interface MovementLineCheck {
 
 /** Sign, whole pieces and amount rules of one ledger line. */
 export function assertMovementLine(line: MovementLineCheck): void {
+  if (line.movement === "REVALUE") {
+    if (line.quantityMilli !== 0) {
+      throw new DomainValueError(MOVEMENT_MESSAGES.revalueQuantity);
+    }
+    if (!line.hasAmount) {
+      throw new DomainValueError(MOVEMENT_MESSAGES.amountMissing);
+    }
+    return;
+  }
   if (line.quantityMilli === 0) {
     throw new DomainValueError(MOVEMENT_MESSAGES.zero);
   }
@@ -106,13 +122,15 @@ export function assertBusinessDate(input: {
 /**
  * One line to post, before costs are known. postMovements fills unit cost,
  * amount and average. `amount` is given only on lines that change the
- * average; `unitCost` only to price a pair that never had a line;
+ * average (a signed change of value on REVALUE); `unitCost` only to
+ * price a pair that never had a line;
  * `pairedWith` is the index of the outgoing line an incoming one mirrors.
  */
 export interface MovementDraft {
   itemId: string;
   condition: Condition;
-  locationId: string;
+  /** Null only on REVALUE: the average is company-wide (0.2 #24, #35). */
+  locationId: string | null;
   movement: Movement;
   quantityMilli: number;
   amount?: number;
