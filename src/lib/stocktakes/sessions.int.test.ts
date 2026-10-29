@@ -39,6 +39,8 @@ afterAll(async () => {
 });
 
 const K = 1000;
+/** Rounds of the double-start race; RACES=300 to stress it locally. */
+const RACES = Number(process.env.RACES ?? 30);
 const OCT_20 = "2026-10-20" as BusinessDate;
 const OCT_28 = "2026-10-28" as BusinessDate;
 
@@ -397,6 +399,28 @@ describe("startStocktake (4.1)", () => {
     expect(a.data.code).toBe(b.data.code);
     expect([a.data.replayed, b.data.replayed].sort()).toEqual([false, true]);
     expect(await ctx.db.select().from(stocktake)).toHaveLength(1);
+  });
+
+  it("never calls the place busy for its own repeated start (repeated races)", async () => {
+    await openD13();
+    for (let round = 0; round < RACES; round += 1) {
+      const body = {
+        clientStartId: crypto.randomUUID(),
+        locationId: fx.place("BAI-01"),
+        groupIds: null,
+      };
+      const [a, b] = await Promise.all([
+        startStocktake(ctx.db, keeper, body),
+        startStocktake(other.db, keeper, body),
+      ]);
+      expect([a, b].map((result) => result.ok)).toEqual([true, true]);
+      if (!a.ok || !b.ok) return;
+      expect(a.data.code).toBe(b.data.code);
+      await cancelStocktake(ctx.db, keeper, a.data.code, {
+        reason: "Thử bắt đầu hai lần",
+      });
+    }
+    expect(await ctx.db.select().from(stocktake)).toHaveLength(RACES);
   });
 });
 

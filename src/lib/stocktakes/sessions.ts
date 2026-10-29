@@ -250,12 +250,14 @@ async function startInTransaction(
       STOCKTAKE_SERVICE_MESSAGES.locationArchived(place.code),
     );
   }
-  // The same request may have been committed since the check before the
-  // transaction: answer it rather than call the place busy.
-  const replay = await replayStart(tx, actor, input.clientStartId);
-  if (replay) return replay;
+  // Read the open session first, then the request id: a start with the
+  // same id committed between the two reads is answered, not called busy.
+  // One committed after the first read makes our insert hit a unique
+  // index, and startStocktake reads it back.
   const open = await openSessionAt(tx, place.id);
   if (open) {
+    const replay = await replayStart(tx, actor, input.clientStartId);
+    if (replay) return replay;
     throw new ServiceFailure(
       conflict(STOCKTAKE_MESSAGES.openSession(place.code, open)),
     );
