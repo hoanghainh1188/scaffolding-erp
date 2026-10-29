@@ -15,10 +15,10 @@ export const GET = withAuth(
 
 /** 201 for a new receipt, 200 when the draft had been posted already. */
 export const POST = withAuth(
-  async (request, { user }) => {
+  async (request, { actor }) => {
     const body = await readJson(request, receiptBody);
     if (!body.ok) return body.response;
-    const result = await postReceipt(catalogDb(), user, body.data);
+    const result = await postReceipt(catalogDb(), actor, body.data);
     return respond(result, result.ok && !result.data.replayed ? 201 : 200);
   },
   { permission: "receiving.manage" },

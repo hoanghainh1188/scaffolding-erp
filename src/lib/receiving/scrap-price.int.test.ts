@@ -6,6 +6,7 @@ import { goodsReceipt } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import { cancelOrder, closeOrder, updateOrder } from "@/lib/purchasing/orders";
 import { getOrderByCode, listOrders } from "@/lib/purchasing/queries";
+import { activityRows } from "@/test/activity";
 import { createTestContext } from "@/test/auth";
 import { d3Order } from "@/test/purchasing";
 import {
@@ -156,5 +157,49 @@ describe("an order with a receipt (4.2)", () => {
       ["GG-M16", 0],
       ["PL-SAT", 1_250_500],
     ]);
+  });
+});
+
+describe("scrap price in the activity log (activity-log 5.3)", () => {
+  it("logs the first price, a change, and nothing for the same price", async () => {
+    await setScrapPrice(ctx.db, fx.director, { pricePerKg: 7_500 });
+    await setScrapPrice(ctx.db, fx.director, { pricePerKg: 7_800 });
+    await setScrapPrice(ctx.db, fx.director, { pricePerKg: 7_800 });
+    const rows = (await activityRows(ctx.db)).filter(
+      (row) => row.documentType === "SCRAP_PRICE",
+    );
+    expect(rows.map((row) => row.summary)).toEqual([
+      "Giá sắt vụn: 7.500 ₫/kg",
+      "Giá sắt vụn: 7.500 ₫/kg → 7.800 ₫/kg",
+    ]);
+    expect(rows[1]?.changes).toEqual([
+      {
+        field: "pricePerKg",
+        label: "Giá sắt vụn",
+        before: "7.500 ₫/kg",
+        after: "7.800 ₫/kg",
+      },
+    ]);
+  });
+
+  it("logs a note change at the same price", async () => {
+    await setScrapPrice(ctx.db, fx.director, { pricePerKg: 7_500 });
+    await setScrapPrice(ctx.db, fx.director, {
+      pricePerKg: 7_500,
+      note: "Giá vựa Bình Dương 29/10",
+    });
+    const rows = (await activityRows(ctx.db)).filter(
+      (row) => row.documentType === "SCRAP_PRICE",
+    );
+    expect(rows.at(-1)?.summary).toBe("Ghi chú: – → Giá vựa Bình Dương 29/10");
+  });
+
+  it("a refused price adds no row", async () => {
+    await setScrapPrice(ctx.db, fx.director, { pricePerKg: -1 });
+    expect(
+      (await activityRows(ctx.db)).filter(
+        (row) => row.documentType === "SCRAP_PRICE",
+      ),
+    ).toEqual([]);
   });
 });

@@ -29,6 +29,7 @@ test.describe("accessibility", () => {
     for (const path of [
       "/dashboard",
       "/settings/users",
+      "/settings/activity?from=2026-10-27&to=2026-10-28",
       "/catalog/items?item=GG-K17",
       "/catalog/kits",
       "/catalog/partners?tab=customers",

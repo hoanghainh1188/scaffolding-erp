@@ -22,19 +22,21 @@ export const GET = withAuth<Params>(
 
 /** Drafts only: replaces the reason and the lines. */
 export const PATCH = withAuth<Params>(
-  async (request, { params }) => {
+  async (request, { actor, params }) => {
     if (!isUuid(params.id)) return NOT_FOUND();
     const body = await readJson(request, adjustmentBody);
     if (!body.ok) return body.response;
-    return respond(await updateAdjustment(catalogDb(), params.id, body.data));
+    return respond(
+      await updateAdjustment(catalogDb(), actor, params.id, body.data),
+    );
   },
   { permission: "inventory.adjust" },
 );
 
 export const DELETE = withAuth<Params>(
-  async (_request, { params }) => {
+  async (_request, { actor, params }) => {
     if (!isUuid(params.id)) return NOT_FOUND();
-    return respond(await deleteAdjustment(catalogDb(), params.id));
+    return respond(await deleteAdjustment(catalogDb(), actor, params.id));
   },
   { permission: "inventory.adjust" },
 );

@@ -70,6 +70,13 @@ const PAGES = [
     name: "scrap-price",
     ready: DESKTOP_READY,
   },
+  // D18: the seed sample of 27–28/10/2026 (activity-log design D13); rows
+  // other tests log carry the day they run, outside this range.
+  {
+    path: "/settings/activity?from=2026-10-27&to=2026-10-28",
+    name: "d18-activity",
+    ready: DESKTOP_READY,
+  },
   // simple-repair: drafts only (repairs.spec.ts posts its own slips), and
   // the D12 sample draft. Its date is today, so it is masked; E2E-KHO
   // waiting rows come and go with other tests, so they are removed.

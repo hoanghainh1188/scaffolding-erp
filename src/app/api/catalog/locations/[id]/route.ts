@@ -13,12 +13,12 @@ type Params = { id: string };
 
 /** Edits, archives (status) or restores; code and unit never change. */
 export const PATCH = withAuth<Params>(
-  async (request, { user, params }) => {
+  async (request, { actor, params }) => {
     if (!isUuid(params.id)) return NOT_FOUND();
     const body = await readJson(request, locationBody);
     if (!body.ok) return body.response;
     return respond(
-      await updateLocation(catalogDb(), user, params.id, body.data),
+      await updateLocation(catalogDb(), actor, params.id, body.data),
     );
   },
   { permission: "locations.manage" },
@@ -26,9 +26,9 @@ export const PATCH = withAuth<Params>(
 
 /** Only rows nothing refers to; others answer 409 (archive instead). */
 export const DELETE = withAuth<Params>(
-  async (_request, { params }) => {
+  async (_request, { actor, params }) => {
     if (!isUuid(params.id)) return NOT_FOUND();
-    return respond(await deleteLocation(catalogDb(), params.id));
+    return respond(await deleteLocation(catalogDb(), actor, params.id));
   },
   { permission: "locations.manage" },
 );

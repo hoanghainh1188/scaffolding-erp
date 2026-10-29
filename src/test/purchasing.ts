@@ -7,9 +7,9 @@ import type { OrderBody } from "@/lib/purchasing/orders";
 import type { TestContext } from "./auth";
 
 export interface PurchasingFixture {
-  director: { id: string; username: string; password: string };
-  sales: { id: string; username: string; password: string };
-  accountant: { id: string; username: string; password: string };
+  director: import("./auth").TestUser;
+  sales: import("./auth").TestUser;
+  accountant: import("./auth").TestUser;
   item: (code: string) => string;
   /** Supplier id by code: NCC-0001 Hòa Phát, NCC-0002 Chú Ba ve chai. */
   supplier: (code: string) => string;

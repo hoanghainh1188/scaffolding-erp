@@ -29,8 +29,8 @@ export async function resetInventoryTables({
 }
 
 export interface InventoryFixture {
-  director: { id: string; username: string; password: string };
-  accountant: { id: string; username: string; password: string };
+  director: import("./auth").TestUser;
+  accountant: import("./auth").TestUser;
   /** Item id by code (seedCatalog items). */
   item: (code: string) => string;
   /** Location id by code (BAI-01, XUONG-01) or sample site key. */

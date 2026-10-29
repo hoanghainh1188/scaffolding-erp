@@ -23,6 +23,14 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   hourCycle: "h23",
 });
 
+const secondFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: BUSINESS_TIME_ZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+
 function assertValidInstant(instant: Date): void {
   if (Number.isNaN(instant.getTime())) {
     throw new DomainValueError("Thời điểm không hợp lệ");
@@ -93,6 +101,12 @@ export function formatDateTime(instant: Date): string {
     dateTimeFormatter.formatToParts(instant).map((p) => [p.type, p.value]),
   );
   return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
+}
+
+/** "28/10/2026 22:47:13" in Vietnam time (D18 Thời điểm). */
+export function formatDateTimeSeconds(instant: Date): string {
+  const [date = ""] = formatDateTime(instant).split(" ");
+  return `${date} ${secondFormatter.format(instant)}`;
 }
 
 /** First and last day of the month a business date falls in. */

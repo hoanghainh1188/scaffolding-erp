@@ -20,12 +20,12 @@ export const GET = withAuth(
 
 /** "Lưu nháp" ({ place: false }) or "Lưu đơn" ({ place: true }). */
 export const POST = withAuth(
-  async (request, { user }) => {
+  async (request, { actor }) => {
     const body = await readJson(request, createBody);
     if (!body.ok) return body.response;
     const { place, ...order } = body.data;
     return respond(
-      await createOrder(catalogDb(), user, order, { place: place ?? false }),
+      await createOrder(catalogDb(), actor, order, { place: place ?? false }),
       201,
     );
   },

@@ -275,11 +275,11 @@ describe("edit, cancel, close, delete", () => {
 
   it("deletes a draft for good and never gives its code again", async () => {
     const draft = await made();
-    expect((await deleteOrder(ctx.db, draft)).ok).toBe(true);
+    expect((await deleteOrder(ctx.db, fx.sales, draft)).ok).toBe(true);
     expect(await getOrderByCode(ctx.db, draft)).toBeNull();
     expect(await made()).toBe("PO-2026-002");
     const placed = await made(true);
-    expect(await deleteOrder(ctx.db, placed)).toMatchObject({
+    expect(await deleteOrder(ctx.db, fx.sales, placed)).toMatchObject({
       ok: false,
       error: "Đơn đã đặt không xóa được, dùng Hủy đơn",
     });
@@ -327,7 +327,7 @@ describe("orders never touch the ledger (design D1)", () => {
     });
     await placeOrder(ctx.db, fx.sales, code);
     await cancelOrder(ctx.db, fx.sales, code, "Thử");
-    await deleteOrder(ctx.db, await made());
+    await deleteOrder(ctx.db, fx.sales, await made());
     expect(await ledger()).toBe(beforeLedger);
     expect(await costs()).toEqual(beforeCosts);
     expect((await reconcileInventory(ctx.db)).length).toBe(0);
@@ -440,12 +440,12 @@ describe("catalog guards (task 3.5)", () => {
 
   it("keeps a supplier an order names", async () => {
     await made();
-    expect(await deleteSupplier(ctx.db, fx.supplier("NCC-0002"))).toMatchObject(
-      {
-        ok: false,
-        error: "Nhà cung cấp đã được dùng nên chỉ ngừng dùng được",
-      },
-    );
+    expect(
+      await deleteSupplier(ctx.db, fx.director, fx.supplier("NCC-0002")),
+    ).toMatchObject({
+      ok: false,
+      error: "Nhà cung cấp đã được dùng nên chỉ ngừng dùng được",
+    });
   });
 
   it("refuses to archive an item in an open order, keeps an item in a draft", async () => {
@@ -463,7 +463,9 @@ describe("catalog guards (task 3.5)", () => {
       { itemId: fx.item("OT-06"), unit: "PIECE", quantity: "5", unitPrice: 1 },
     ];
     await made(false, body);
-    expect(await deleteItem(ctx.db, fx.item("OT-06"))).toMatchObject({
+    expect(
+      await deleteItem(ctx.db, fx.director, fx.item("OT-06")),
+    ).toMatchObject({
       ok: false,
       error: "Vật tư đã được dùng nên chỉ ngừng dùng được",
     });

@@ -18,10 +18,10 @@ export const GET = withAuth(
 );
 
 export const POST = withAuth(
-  async (request, { user }) => {
+  async (request, { actor }) => {
     const body = await readJson(request, startBody);
     if (!body.ok) return body.response;
-    const result = await startStocktake(catalogDb(), user, body.data);
+    const result = await startStocktake(catalogDb(), actor, body.data);
     return respond(result, result.ok && !result.data.replayed ? 201 : 200);
   },
   { permission: "stocktake.count" },

@@ -48,8 +48,16 @@ import {
   type Actor,
   type ServiceResult,
 } from "@/lib/catalog/common";
+import { changeSummary, reasonSummary } from "@/domain/activity-summary";
+import { logActivity } from "@/lib/activity/log";
 import { nextDocumentCode } from "@/lib/inventory/counter";
 
+import {
+  orderChanges,
+  orderSummary,
+  orderView,
+  placedSummary,
+} from "./activity";
 import { receiptSummary } from "./receipts";
 
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -434,6 +442,11 @@ async function placeLocked(tx: Tx, actor: Actor, order: LockedOrder) {
     })
     .where(eq(purchaseOrder.id, order.id));
   await addEvent(tx, order.id, "PLACED", actor);
+  await logActivity(tx, actor, {
+    action: "SUBMIT",
+    document: { type: "PURCHASE_ORDER", id: order.id, code: order.code },
+    summary: placedSummary(await orderView(tx, order.id)),
+  });
 }
 
 // ----------------------------------------------------------- writing
@@ -464,6 +477,11 @@ export function createOrder(
       if (!row) throw new Error("purchase order insert returned nothing");
       await writeLines(tx, row.id, order);
       await addEvent(tx, row.id, "CREATED", actor);
+      await logActivity(tx, actor, {
+        action: "CREATE",
+        document: { type: "PURCHASE_ORDER", id: row.id, code },
+        summary: orderSummary(await orderView(tx, row.id)),
+      });
       if (options.place) {
         await placeLocked(tx, actor, {
           ...row,
@@ -558,6 +576,7 @@ export function updateOrder(
         }
       }
       const head = headOf(next);
+      const before = await orderView(tx, order.id);
       await tx
         .update(purchaseOrder)
         .set(
@@ -576,6 +595,13 @@ export function updateOrder(
       if (order.status !== "DRAFT") {
         await addEvent(tx, order.id, "UPDATED", actor);
       }
+      const changes = orderChanges(before, await orderView(tx, order.id));
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: { type: "PURCHASE_ORDER", id: order.id, code: order.code },
+        summary: changeSummary(changes),
+        changes,
+      });
       return { id: order.id, code: order.code };
     });
     return ok(updated);
@@ -628,6 +654,15 @@ function endOrder(
         actor,
         text,
       );
+      await logActivity(tx, actor, {
+        action: command === "CANCEL" ? "CANCEL" : "CLOSE",
+        document: { type: "PURCHASE_ORDER", id: order.id, code: order.code },
+        summary: text
+          ? reasonSummary(text)
+          : command === "CANCEL"
+            ? "Hủy đơn"
+            : "Đóng đơn",
+      });
       return { id: order.id, code: order.code };
     });
     return ok(ended);
@@ -651,6 +686,7 @@ export const closeOrder = (
 /** Only drafts go away for good; a placed order is cancelled instead. */
 export function deleteOrder(
   db: Database,
+  actor: Actor,
   code: string,
 ): Promise<ServiceResult<null>> {
   return run(async () => {
@@ -659,7 +695,13 @@ export function deleteOrder(
       if (order.status !== "DRAFT") {
         throw new DomainValueError(PURCHASE_MESSAGES.deletePlaced);
       }
+      const draft = await orderView(tx, order.id);
       await tx.delete(purchaseOrder).where(eq(purchaseOrder.id, order.id));
+      await logActivity(tx, actor, {
+        action: "DELETE_DRAFT",
+        document: { type: "PURCHASE_ORDER", id: order.id, code: order.code },
+        summary: `Nháp: ${orderSummary(draft)}`,
+      });
     });
     return ok(null);
   });

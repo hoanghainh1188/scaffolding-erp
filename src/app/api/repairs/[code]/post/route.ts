@@ -8,12 +8,12 @@ type Params = { code: string };
 
 /** "Ghi sổ kho": 422 with the question when a high cost is not confirmed. */
 export const POST = withAuth<Params>(
-  async (request, { user, params }) => {
+  async (request, { actor, params }) => {
     if (!REPAIR_CODE.test(params.code)) return NOT_FOUND();
     const body = await readJson(request, postBody);
     if (!body.ok) return body.response;
     return respond(
-      await postRepairOrder(catalogDb(), user, params.code, body.data),
+      await postRepairOrder(catalogDb(), actor, params.code, body.data),
     );
   },
   { permission: "repairs.manage" },

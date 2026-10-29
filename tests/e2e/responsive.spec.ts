@@ -24,6 +24,10 @@ const PAGES = [
   { path: "/purchasing/orders/new", ready: DESKTOP_READY },
   { path: `/purchasing/orders/${SAMPLE_ORDER}`, ready: DESKTOP_READY },
   { path: "/settings/users", ready: DESKTOP_READY },
+  {
+    path: "/settings/activity?from=2026-10-27&to=2026-10-28",
+    ready: DESKTOP_READY,
+  },
   { path: "/catalog/items?item=GG-K17", ready: DESKTOP_READY },
   { path: "/catalog/partners?tab=customers", ready: DESKTOP_READY },
   { path: "/change-password", ready: null },

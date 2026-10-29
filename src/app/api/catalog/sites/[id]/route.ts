@@ -13,20 +13,20 @@ type Params = { id: string };
 
 /** Edits, archives (status) or restores; code and unit never change. */
 export const PATCH = withAuth<Params>(
-  async (request, { user, params }) => {
+  async (request, { actor, params }) => {
     if (!isUuid(params.id)) return NOT_FOUND();
     const body = await readJson(request, siteBody);
     if (!body.ok) return body.response;
-    return respond(await updateSite(catalogDb(), user, params.id, body.data));
+    return respond(await updateSite(catalogDb(), actor, params.id, body.data));
   },
   { permission: "partners.manage" },
 );
 
 /** Only rows nothing refers to; others answer 409 (archive instead). */
 export const DELETE = withAuth<Params>(
-  async (_request, { params }) => {
+  async (_request, { actor, params }) => {
     if (!isUuid(params.id)) return NOT_FOUND();
-    return respond(await deleteSite(catalogDb(), params.id));
+    return respond(await deleteSite(catalogDb(), actor, params.id));
   },
   { permission: "partners.manage" },
 );

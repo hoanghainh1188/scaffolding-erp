@@ -12,10 +12,10 @@ type Params = { code: string };
  * "Hủy phiên": counters while counting, the director also once sent. The
  * guard admits either permission; the service checks the state (D10).
  */
-export const POST = withAuth<Params>(async (request, { user, params }) => {
+export const POST = withAuth<Params>(async (request, { actor, params }) => {
   if (
-    !can(user.role, "stocktake.count") &&
-    !can(user.role, "inventory.approve")
+    !can(actor.role, "stocktake.count") &&
+    !can(actor.role, "inventory.approve")
   ) {
     return fail(GUARD_MESSAGES.forbidden, 403);
   }
@@ -23,6 +23,6 @@ export const POST = withAuth<Params>(async (request, { user, params }) => {
   const body = await readJson(request, reasonBody);
   if (!body.ok) return body.response;
   return respond(
-    await cancelStocktake(catalogDb(), user, params.code, body.data),
+    await cancelStocktake(catalogDb(), actor, params.code, body.data),
   );
 });

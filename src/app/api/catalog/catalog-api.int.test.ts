@@ -63,9 +63,10 @@ beforeEach(async () => {
     });
     cookies.set(role, await signInAs(ctx, person));
   }
-  const owner = {
-    id: (await createTestUser(ctx, { role: "DIRECTOR", username: "owner" })).id,
-  };
+  const owner = await createTestUser(ctx, {
+    role: "DIRECTOR",
+    username: "owner",
+  });
   const group = await createGroup(ctx.db, owner, { name: "Giàn giáo" });
   const groupId = group.ok ? group.data.id : "";
   const frame = await createItem(ctx.db, owner, {

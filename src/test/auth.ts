@@ -6,6 +6,8 @@ import type { Role } from "@/domain/role";
 import { createAuth, type Auth } from "@/lib/auth/auth";
 import { insertUser, type UserStatus } from "@/lib/auth/credentials";
 
+import { systemActor, type ActivityActor } from "@/lib/activity/actor";
+
 import { truncateWithLedger } from "./inventory";
 
 export const TEST_SECRET = "integration-test-secret-0123456789abcdef";
@@ -69,7 +71,7 @@ export async function resetAuthTables({ db }: TestContext): Promise<void> {
   // empty.
   await truncateWithLedger(
     db,
-    sql`truncate table "user", "session", "account", "verification", "rate_limit", "login_throttle", "auth_rate_limit" cascade`,
+    sql`truncate table "activity_log", "user", "session", "account", "verification", "rate_limit", "login_throttle", "auth_rate_limit" cascade`,
   );
 }
 
@@ -82,11 +84,10 @@ export interface TestUserOptions {
   password?: string;
 }
 
-export interface TestUser {
-  id: string;
+/** Also an activity-log actor: a computer with an unknown browser. */
+export interface TestUser extends ActivityActor {
   username: string;
   password: string;
-  role: Role;
 }
 
 let counter = 0;
@@ -106,7 +107,11 @@ export async function createTestUser(
     status: options.status,
     mustChangePassword: options.mustChangePassword ?? false,
   });
-  return { id, username, password, role: options.role };
+  return {
+    ...systemActor({ id, role: options.role }),
+    username,
+    password,
+  };
 }
 
 /** Cookie header for a fresh session of `user`, made by Better Auth. */

@@ -16,7 +16,7 @@ import {
 export const OCT_26 = new Date("2026-10-26T03:00:00Z");
 
 export interface ReceivingFixture extends PurchasingFixture {
-  warehouse: { id: string; username: string; password: string };
+  warehouse: import("./auth").TestUser;
 }
 
 /** Purchasing fixture plus Thủ kho Văn Tùng and a scrap price of 7.500 ₫/kg. */
