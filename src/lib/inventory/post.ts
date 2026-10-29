@@ -16,6 +16,7 @@ import { toBusinessDate, type BusinessDate } from "@/domain/business-date";
 import { CONDITION_LABELS, type Condition } from "@/domain/condition";
 import { DomainValueError } from "@/domain/errors";
 import { toMoney, type Money } from "@/domain/money";
+import { averageAfterRevalue } from "@/domain/stock-revaluation";
 import {
   assertBusinessDate,
   assertMovementLine,
@@ -47,7 +48,8 @@ export interface PostedLine {
   id: number;
   itemId: string;
   condition: Condition;
-  locationId: string;
+  /** Null only on REVALUE lines. */
+  locationId: string | null;
   movement: MovementDraft["movement"];
   quantityMilli: number;
   unitCost: Money;
@@ -237,12 +239,16 @@ export async function lockForPosting(
   tx: Tx,
   scope: {
     itemIds: readonly string[];
-    locationIds: readonly string[];
+    /** REVALUE lines have no location; nulls are skipped. */
+    locationIds: readonly (string | null)[];
     pairs: readonly { itemId: string; condition: Condition }[];
   },
 ): Promise<PostingLocks> {
   const items = await loadItems(tx, unique([...scope.itemIds]).sort());
-  const places = await loadLocations(tx, unique([...scope.locationIds]).sort());
+  const places = await loadLocations(
+    tx,
+    unique(scope.locationIds.filter((id): id is string => id !== null)).sort(),
+  );
   const pairs = unique(
     scope.pairs.map((pair) => pairKey(pair.itemId, pair.condition)),
   ).map((key) => {
@@ -309,7 +315,15 @@ export async function postMovements(
     let unitCost: Money;
     let amount: Money;
     let avgAfter: Money;
-    if (changesAverage(draft.movement)) {
+    if (draft.movement === "REVALUE") {
+      // A change of value over the whole pool (0.2 #35): stock stays.
+      amount = toMoney(draft.amount ?? 0);
+      avgAfter = averageAfterRevalue(pool, amount, {
+        code: info.code,
+        condition: draft.condition,
+      });
+      unitCost = avgAfter;
+    } else if (changesAverage(draft.movement)) {
       amount = toMoney(draft.amount ?? 0);
       avgAfter = averageAfterInflow(pool, draft.quantityMilli, amount);
       unitCost = unitCostOf(amount, draft.quantityMilli);
@@ -346,11 +360,14 @@ export async function postMovements(
 
   // No (item, condition, location) may go below zero (spec: Tồn không âm).
   const changes = new Map<string, number>();
-  const outgoing: MovementDraft[] = [];
+  const outgoing: (MovementDraft & { locationId: string })[] = [];
   for (const draft of drafts) {
+    if (draft.locationId === null) continue;
     const key = placeKey(draft.itemId, draft.condition, draft.locationId);
     changes.set(key, (changes.get(key) ?? 0) + draft.quantityMilli);
-    if (draft.quantityMilli < 0) outgoing.push(draft);
+    if (draft.quantityMilli < 0) {
+      outgoing.push({ ...draft, locationId: draft.locationId });
+    }
   }
   const stock = await stockAt(tx, outgoing);
   for (const draft of outgoing) {

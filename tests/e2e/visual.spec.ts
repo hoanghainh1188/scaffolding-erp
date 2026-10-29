@@ -141,6 +141,20 @@ test.describe("visual baselines @visual", () => {
             .filter({ hasText: "XUONG-01" })
             .evaluateAll((rows) => rows.forEach((row) => row.remove()));
         }
+        // Masked dates and clocks still set their column widths: "29/10"
+        // and "30/10" differ by a fraction of a pixel, which shifts the
+        // text after them. Zero their digits so the layout is the same
+        // every day.
+        await page.locator("[data-mask], [data-clock]").evaluateAll((nodes) =>
+          nodes.forEach((node) => {
+            const walker = document.createTreeWalker(
+              node,
+              NodeFilter.SHOW_TEXT,
+            );
+            for (let text = walker.nextNode(); text; text = walker.nextNode())
+              text.textContent = (text.textContent ?? "").replace(/\d/g, "0");
+          }),
+        );
         await page.evaluate(() => document.fonts.ready);
         await expect(page).toHaveScreenshot(`${name}-${width}.png`, {
           fullPage: true,

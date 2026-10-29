@@ -8,6 +8,7 @@ import {
   type BusinessDate,
 } from "@/domain/business-date";
 import { CONDITIONS, type Condition } from "@/domain/condition";
+import { REVALUE_MESSAGES } from "@/domain/stock-revaluation";
 
 import { CARD_PLACES, type CardFilter, type CardPlace } from "./card";
 
@@ -22,6 +23,11 @@ export const adjustmentLineBody = z.object({
   toLocationId: z.string().max(40).nullable().optional(),
   quantity: z.string().max(30).optional(),
   unitCost: z.number().nullable().optional(),
+  valueDelta: z
+    .number()
+    .int({ message: REVALUE_MESSAGES.deltaWhole })
+    .nullable()
+    .optional(),
 });
 
 export const adjustmentBody = z.object({
@@ -30,7 +36,39 @@ export const adjustmentBody = z.object({
   relatedDocumentCode: text.nullable().optional(),
   openingDate: z.string().max(10).nullable().optional(),
   lines: z.array(adjustmentLineBody).max(200).optional(),
+  updatedAt: z.string().max(40).nullable().optional(),
 });
+
+/** Trip-cost fix of a goods receipt (stock-value-adjustment design D6). */
+export const tripAdjustmentBody = z.object({
+  receiptId: z.string().max(40).optional(),
+  correctedTripCost: z
+    .number({ message: REVALUE_MESSAGES.tripCost })
+    .int({ message: REVALUE_MESSAGES.tripCost })
+    .min(0, { message: REVALUE_MESSAGES.tripCost }),
+  reason: text.optional(),
+  updatedAt: z.string().max(40).nullable().optional(),
+});
+
+/** ?itemId=&condition=&valueDelta= of the value preview. */
+export function revaluePreviewFrom(params: Params): {
+  itemId: string;
+  condition: Condition;
+  valueDelta: number;
+} | null {
+  const itemId = read(params, "itemId");
+  const condition = read(params, "condition");
+  const valueDelta = Number(read(params, "valueDelta"));
+  if (
+    !itemId ||
+    !/^[0-9a-f-]{36}$/i.test(itemId) ||
+    !(CONDITIONS as readonly string[]).includes(condition ?? "") ||
+    !Number.isSafeInteger(valueDelta)
+  ) {
+    return null;
+  }
+  return { itemId, condition: condition as Condition, valueDelta };
+}
 
 export const returnBody = z.object({ reason: text.optional() });
 

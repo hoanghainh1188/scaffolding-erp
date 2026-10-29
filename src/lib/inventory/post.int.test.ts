@@ -333,3 +333,77 @@ describe("postMovements: refusals", () => {
     expect(row?.kg).toBe("570.500");
   });
 });
+
+describe("postMovements: REVALUE", () => {
+  it("revalues the whole pool with one line and moves no stock", async () => {
+    await post("2026-10-01", [
+      draft("GG-K17", "GOOD", "BAI-01", "OPENING", 920, {
+        amount: 920 * 195_000,
+      }),
+      draft("GG-K17", "GOOD", "maiDich", "OPENING", 300, {
+        amount: 300 * 195_000,
+      }),
+    ]);
+    const before = await ledgerCount();
+    const { lines } = await post(
+      "2026-10-27",
+      [
+        draft("GG-K17", "GOOD", "BAI-01", "REVALUE", 0, {
+          locationId: null,
+          amount: 610_000,
+        }),
+      ],
+      "ĐCG-2026-001",
+    );
+    expect(lines[0]).toMatchObject({
+      movement: "REVALUE",
+      locationId: null,
+      quantityMilli: 0,
+      amount: 610_000,
+      avgCostAfter: 195_500,
+      poolMilliAfter: 1_220_000,
+    });
+    expect(await ledgerCount()).toBe(before + 1);
+    expect(await pool("GG-K17", "GOOD")).toMatchObject({
+      avgCost: 195_500,
+      poolQuantity: "1220.000",
+    });
+    const atPlaces = await ctx.db
+      .select({
+        place: inventoryLedger.locationId,
+        qty: inventoryLedger.quantity,
+      })
+      .from(inventoryLedger)
+      .where(eq(inventoryLedger.movement, "OPENING"))
+      .orderBy(asc(inventoryLedger.id));
+    expect(atPlaces.map((row) => row.qty)).toEqual(["920.000", "300.000"]);
+    // A return from the site later is booked at the new average.
+    const { lines: back } = await post("2026-10-27", [
+      draft("GG-K17", "GOOD", "maiDich", "RETURN_OUT", -10),
+      draft("GG-K17", "GOOD", "BAI-01", "RETURN_IN", 10),
+    ]);
+    expect(back.map((line) => line.unitCost)).toEqual([195_500, 195_500]);
+  });
+
+  it("refuses to revalue a sold-out pair and writes nothing", async () => {
+    await post("2026-10-01", [
+      draft("PK-KU", "NEW", "BAI-01", "OPENING", 10, { amount: 10 * 52_000 }),
+    ]);
+    await post("2026-10-02", [
+      draft("PK-KU", "NEW", "BAI-01", "SALE_OUT", -10),
+    ]);
+    const before = await ledgerCount();
+    expect(
+      await failure(
+        post("2026-10-27", [
+          draft("PK-KU", "NEW", "BAI-01", "REVALUE", 0, {
+            locationId: null,
+            amount: 300_000,
+          }),
+        ]),
+      ),
+    ).toBe("PK-KU Mới đã hết hàng, không điều chỉnh giá trị được");
+    expect(await ledgerCount()).toBe(before);
+    expect((await pool("PK-KU", "NEW"))?.avgCost).toBe(52_000);
+  });
+});

@@ -79,6 +79,7 @@ interface AdjustmentFormSheetProps {
 const TITLES: Readonly<Record<AdjustmentKind, string>> = {
   ADJUSTMENT: "Phiếu điều chỉnh",
   OPENING: "Phiếu tồn đầu kỳ",
+  REVALUE: "Phiếu điều chỉnh giá trị",
 };
 
 let nextKey = 0;
@@ -117,8 +118,8 @@ function fromDetail(
       itemId: line.itemId,
       condition: line.condition,
       toCondition: line.toCondition ?? "NEEDS_REPAIR",
-      locationId: line.locationId,
-      toLocationId: line.toLocationId ?? line.locationId,
+      locationId: line.locationId ?? "",
+      toLocationId: line.toLocationId ?? line.locationId ?? "",
       direction: line.quantity < 0 ? "OUT" : "IN",
       quantity: formatQuantityForInput(
         toQuantity(Math.abs(line.quantity), unit),

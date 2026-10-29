@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { BusinessDate } from "./business-date";
 import {
+  ADJUSTMENT_PREFIX,
   adjustmentMovements,
   assertAdjustmentLine,
   assertOpeningDate,
@@ -21,8 +22,11 @@ const line = (
   toLocationId: null,
   quantityMilli: -5000,
   unitCost: null,
+  valueDelta: null,
   ...overrides,
 });
+const valueLine = (valueDelta: number | null) =>
+  line({ lineType: "VALUE", locationId: null, quantityMilli: 0, valueDelta });
 const day = (value: string) => value as BusinessDate;
 
 describe("normalizeReason", () => {
@@ -158,6 +162,39 @@ describe("assertAdjustmentLine", () => {
       ),
     ).toThrow("Dòng không hợp với loại phiếu");
   });
+
+  it("keeps value lines in value documents only", () => {
+    expect(() =>
+      assertAdjustmentLine("REVALUE", valueLine(-1_500_000)),
+    ).not.toThrow();
+    expect(() => assertAdjustmentLine("REVALUE", line({}))).toThrow(
+      "Dòng không hợp với loại phiếu",
+    );
+    expect(() =>
+      assertAdjustmentLine("ADJUSTMENT", valueLine(-1_500_000)),
+    ).toThrow("Dòng không hợp với loại phiếu");
+    expect(() => assertAdjustmentLine("REVALUE", valueLine(0))).toThrow(
+      "Chênh lệch giá trị phải khác 0",
+    );
+    expect(() => assertAdjustmentLine("REVALUE", valueLine(null))).toThrow(
+      "Chênh lệch giá trị phải khác 0",
+    );
+    expect(() => assertAdjustmentLine("REVALUE", valueLine(-1.5))).toThrow(
+      "Chênh lệch giá trị phải là số nguyên đồng",
+    );
+  });
+
+  it("wants a location on every other line", () => {
+    expect(() =>
+      assertAdjustmentLine("ADJUSTMENT", line({ locationId: null })),
+    ).toThrow("Chọn vị trí");
+  });
+
+  it("does not turn value lines into quantity movements", () => {
+    expect(() =>
+      adjustmentMovements("ĐCG-2026-001", "x", [valueLine(1)]),
+    ).toThrow("Dòng không hợp với loại phiếu");
+  });
 });
 
 describe("adjustmentMovements", () => {
@@ -257,6 +294,9 @@ describe("codes and dates", () => {
     expect(formatDocumentCode("ĐC", 2026, 4)).toBe("ĐC-2026-004");
     expect(formatDocumentCode("TĐK", 2026, 1)).toBe("TĐK-2026-001");
     expect(formatDocumentCode("ĐC", 2026, 1234)).toBe("ĐC-2026-1234");
+    expect(formatDocumentCode(ADJUSTMENT_PREFIX.REVALUE, 2026, 1)).toBe(
+      "ĐCG-2026-001",
+    );
   });
 
   it("checks the opening date", () => {

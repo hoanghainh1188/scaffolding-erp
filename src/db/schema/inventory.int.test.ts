@@ -166,6 +166,57 @@ describe("inventory_ledger checks", () => {
     ).toBe("23514");
   });
 
+  it("takes a REVALUE line with no quantity and no location", async () => {
+    await db.insert(inventoryLedger).values(line());
+    await db.insert(inventoryLedger).values(
+      line({
+        movement: "REVALUE",
+        quantity: "0",
+        locationId: null,
+        amount: -1500000,
+        unitCost: 186780,
+        avgCostAfter: 186780,
+        documentType: "REVALUE",
+        documentCode: "ĐCG-2026-001",
+      }),
+    );
+    expect(await countLines()).toBe(2);
+  });
+
+  it("keeps REVALUE to quantity 0 and no location, others to a location", async () => {
+    const revalue = {
+      movement: "REVALUE",
+      amount: 610000,
+      documentType: "REVALUE",
+      documentCode: "ĐCG-2026-001",
+    };
+    for (const values of [
+      line({ ...revalue, quantity: "5.000", locationId: null }),
+      line({ ...revalue, quantity: "0", locationId: yardId }),
+      line({ movement: "ADJUST_IN", quantity: "5.000", locationId: null }),
+    ]) {
+      expect(
+        (await failure(db.insert(inventoryLedger).values(values))).code,
+      ).toBe("23514");
+    }
+    expect(await countLines()).toBe(0);
+  });
+
+  it("refuses to update a REVALUE line", async () => {
+    await db.insert(inventoryLedger).values(
+      line({
+        movement: "REVALUE",
+        quantity: "0",
+        locationId: null,
+        amount: 610000,
+        documentType: "REVALUE",
+        documentCode: "ĐCG-2026-001",
+      }),
+    );
+    const error = await failure(db.update(inventoryLedger).set({ amount: 1 }));
+    expect(error.message).toContain(APPEND_ONLY);
+  });
+
   it("keeps items and locations with ledger lines (RESTRICT)", async () => {
     await db.insert(inventoryLedger).values(line());
     expect(
