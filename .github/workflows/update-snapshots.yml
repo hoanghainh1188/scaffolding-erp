@@ -1,17 +1,21 @@
 name: Update Playwright snapshots
 
-# Run from the Actions tab on the branch whose baselines should change.
-# Baselines are only ever made here (Linux + Edge), never on a dev machine.
+# Add the "update-snapshots" label to a PR, or run it from the Actions tab on
+# the branch whose baselines should change. Baselines are only ever made here
+# (Linux + Edge), never on a dev machine.
 on:
   workflow_dispatch:
+  pull_request:
+    types: [labeled]
 
 concurrency:
-  group: update-snapshots-${{ github.ref }}
+  group: update-snapshots-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: false
 
 permissions:
   contents: write # commit the new images
   actions: write # re-run ci.yml on the branch
+  pull-requests: write # take the label off again
 
 env:
   CI: "true"
@@ -23,6 +27,11 @@ env:
 jobs:
   update:
     name: Update visual baselines
+    # Labels on PRs from forks cannot push; other labels do nothing.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.label.name == 'update-snapshots' &&
+      github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # Screens are behind sign-in: the dev server needs a database.
@@ -40,7 +49,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.ref }}
+          # The PR branch itself, not the merge commit of a pull_request run.
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -54,6 +64,8 @@ jobs:
         run: npx playwright test --grep @visual --project desktop-1280 --update-snapshots=all
       - name: Commit baselines
         id: commit
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -65,9 +77,9 @@ jobs:
             # [skip ci]: a GITHUB_TOKEN push still opens a pull_request run that
             # waits for approval and hides the dispatched run below on the PR.
             git commit -m "test: update Playwright visual baselines [skip ci]"
-            git push
+            git push origin "HEAD:${BRANCH}"
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Committed new baselines to ${GITHUB_REF_NAME}." >> "$GITHUB_STEP_SUMMARY"
+            echo "Committed new baselines to ${BRANCH}." >> "$GITHUB_STEP_SUMMARY"
           fi
       # workflow_dispatch is not affected by [skip ci]. The run checks the new
       # commit and shows on the PR.
@@ -75,4 +87,12 @@ jobs:
         if: steps.commit.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run ci.yml --ref "$GITHUB_REF_NAME"
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: gh workflow run ci.yml --ref "$BRANCH"
+      # So the label can be added again after the next visual change.
+      - name: Remove the label
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --remove-label update-snapshots

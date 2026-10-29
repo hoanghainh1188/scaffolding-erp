@@ -62,7 +62,8 @@ Lưu ý:
 - Đơn thu mua do E2E tạo có ghi chú `E2E thử` (nhà cung cấp Hòa Phát mẫu); global setup xóa các đơn đó **khi chưa có phiếu nhập** (đơn đã có phiếu nhập ở lại vì sổ kho không xóa được). E2E nhập hàng ghi vào `E2E-KHO-01/02`, tình trạng Chờ sửa / Phế liệu, và kiểm theo chênh lệch. Không thêm nhà cung cấp riêng cho E2E: ảnh mốc D16 đếm số nhà cung cấp.
 - E2E dùng **`XUONG-01`**: global setup tự thêm hàng Chờ sửa `E2E-KHO-01` ở đó cho `repairs.spec.ts` (`ensureRepairStock`, dòng sổ ở lại DB dev) và hủy phiên kiểm kê mở ở đó do `e2e.*` bắt đầu (phiên mở của người khác thì dừng, không hủy). E2E kiểm kê bắt đầu phiên ở `XUONG-01`, chỉ đếm `E2E-KHO-02` (vì `repairs.spec.ts` đo `E2E-KHO-01` ở xưởng) và chỉ tạo chênh lệch thừa; global setup tạo một lần phiên mẫu Chờ duyệt ở `BAI-01` cho ảnh mốc D13, E2E không đụng phiên đó (một vị trí chỉ có một phiên mở).
 - E2E đăng nhập bằng tài khoản `e2e.*` (global setup tạo lại mỗi lần chạy) và chạy với vai trò Giám đốc mặc định; test cần vai trò khác dùng `test.use({ storageState: statePath("ACCOUNTANT") })`.
-- Ảnh mốc Playwright chỉ tạo trên CI: tab Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow.
+- Ảnh mốc Playwright chỉ tạo trên CI: gắn nhãn **`update-snapshots`** vào PR (workflow tự gỡ nhãn khi xong), hoặc tab Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow.
+- CI chạy song song (integration và E2E Edge chia 2, ảnh mốc là job riêng); job `Lint, types, tests, build` và `E2E (Edge)` chỉ gom kết quả, giữ đúng tên check bắt buộc. PR chỉ sửa `docs/` (trừ `docs/design-system/`), `openspec/`, `CLAUDE.md`, `AGENTS.md` thì bỏ qua test và E2E.
 - Trong E2E, Next 16 giữ trang cũ ẩn trong DOM sau khi điều hướng: tìm theo chữ thì thêm `.filter({ visible: true })`.
 
 ## Quy trình làm việc: OpenSpec
@@ -85,7 +86,7 @@ Sửa lỗi nhỏ, đổi chữ, chỉnh style: không cần change.
 - `design.md` trả lời từng điểm "cần chốt" trong issue, mỗi điểm có lý do và phương án đã cân nhắc.
 - Quyết định nghiệp vụ mới (người dùng chốt khi review) ghi vào `docs/requirements.md` mục 0.2, kèm ngày, trong cùng PR.
 - **Review nằm trong comment PR.** Khi được bảo "đọc review", đọc comment mới nhất, sửa hết mục "Cần sửa", kèm test cho từng điểm.
-- Trước khi báo apply xong: `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate <change> --strict` đều xanh. Giao diện đổi thì chạy workflow Update Playwright snapshots.
+- Trước khi báo apply xong: `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate <change> --strict` đều xanh. Giao diện đổi thì gắn nhãn `update-snapshots` vào PR.
 - Archive: không tự tick task chưa làm. Task kiểm tra tay chưa làm thì ghi "làm sau, theo dõi ở #33" trong `tasks.md`, thêm một mục cho change đó vào issue **#33** (tổng hợp kiểm tra tay mọi change; ghi các bước và số cần so), rồi báo người dùng. Không để kiểm tra tay rải ở issue của từng change.
 
 ## Quy tắc nghiệp vụ không được phá
