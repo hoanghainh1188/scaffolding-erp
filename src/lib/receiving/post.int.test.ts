@@ -18,6 +18,7 @@ import { postMovements } from "@/lib/inventory/post";
 import { closeOrder, updateOrder } from "@/lib/purchasing/orders";
 import { getOrderByCode } from "@/lib/purchasing/queries";
 import { receiptSummary } from "@/lib/purchasing/receipts";
+import { activityTrail, lastActivity } from "@/test/activity";
 import { createTestContext } from "@/test/auth";
 import { d3Order } from "@/test/purchasing";
 import {
@@ -507,5 +508,55 @@ describe("resending a draft never makes a second receipt (4.6)", () => {
       .select({ n: sql<number>`count(*)::int` })
       .from(goodsReceiptLine);
     expect(lineCount[0]?.n).toBe(receipt.ok ? 2 : 1);
+  });
+});
+
+describe("posting in the activity log (activity-log 5.3)", () => {
+  it("logs one POST row, flagged when anomalies were confirmed", async () => {
+    const body = tripOne(code, lines);
+    body.lines = body.lines?.map((line) =>
+      line.orderLineId === lines.get("GG-K17")
+        ? counted(line.orderLineId ?? "", "2000", { GOOD: "2000" })
+        : line,
+    );
+    body.confirmedOverrides = [`line:${lines.get("GG-K17")}`];
+    await posted(body);
+    const row = await lastActivity(ctx.db, "PN-2026-001");
+    expect(row).toMatchObject({
+      action: "POST",
+      documentType: "GOODS_RECEIPT",
+      role: "WAREHOUSE",
+    });
+    expect(row?.flags).toContain("ANOMALY");
+    expect(row?.summary).toMatch(/^Nhận 2\.000 cái GG-K17, .* từ PO-2026-001/);
+    expect(row?.summary).toContain("đã xác nhận nhận dư GG-K17 2.000/200 cái");
+  });
+
+  it("a plain trip carries no anomaly flag", async () => {
+    await posted(tripOne(code, lines));
+    expect((await lastActivity(ctx.db, "PN-2026-001"))?.flags).not.toContain(
+      "ANOMALY",
+    );
+  });
+
+  it("sending the same draft again adds no row", async () => {
+    const body = tripOne(code, lines);
+    await posted(body);
+    const again = await posted(body);
+    expect(again.replayed).toBe(true);
+    expect(await activityTrail(ctx.db, "PN-2026-001")).toEqual([
+      "POST PN-2026-001",
+    ]);
+  });
+
+  it("a refused receipt adds no row", async () => {
+    const body = tripOne(code, lines);
+    body.lines = body.lines?.filter(
+      (line) => line.orderLineId !== lines.get("GG-M16"),
+    );
+    expect((await post(body)).ok).toBe(false);
+    expect(
+      (await activityTrail(ctx.db)).filter((row) => row.startsWith("POST")),
+    ).toEqual([]);
   });
 });

@@ -52,6 +52,9 @@ export const PERMISSIONS = {
   // the phone; the director may stand in. Office roles read results through
   // inventory.view; approving uses inventory.approve.
   "stocktake.count": ["DIRECTOR", "WAREHOUSE"],
+  // activity-log design D11: only the director reads the activity log; no
+  // permission writes or deletes it (services log through logActivity).
+  "activity.view": ["DIRECTOR"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;

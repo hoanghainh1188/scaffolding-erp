@@ -13,6 +13,7 @@ import {
   appRequest,
   createTestContext,
   createTestUser,
+  type TestUser,
   installTestContext,
   signInAs,
 } from "@/test/auth";
@@ -42,7 +43,7 @@ let code = "";
 beforeEach(async () => {
   fx = await setupInventoryFixture(ctx);
   cookies.clear();
-  const people = new Map<Role, { id: string }>();
+  const people = new Map<Role, TestUser>();
   for (const role of ROLES) {
     const person = await createTestUser(ctx, {
       role,
@@ -76,7 +77,8 @@ beforeEach(async () => {
       "2026-10-01" as BusinessDate,
     ),
   );
-  const keeper = people.get("WAREHOUSE") ?? { id: "" };
+  const keeper = people.get("WAREHOUSE");
+  if (!keeper) throw new Error("no storekeeper");
   const started = await startStocktake(ctx.db, keeper, {
     clientStartId: crypto.randomUUID(),
     locationId: fx.place("BAI-01"),

@@ -11,7 +11,15 @@ import {
 import { DomainValueError } from "@/domain/errors";
 import { parseCatalogCode } from "@/domain/item-code";
 import type { LocationType } from "@/domain/location-type";
+import { diffFields } from "@/domain/activity-changes";
+import { changeSummary, joinParts } from "@/domain/activity-summary";
 import { toSearchText } from "@/domain/search-text";
+import {
+  LOCATION_FIELDS,
+  SITE_FIELDS,
+  locationKindLabel,
+} from "@/lib/activity/fields";
+import { logActivity } from "@/lib/activity/log";
 import type { Executor } from "@/lib/auth/credentials";
 
 import {
@@ -196,7 +204,13 @@ export function createSite(
           updatedBy: actor.id,
         })
         .returning({ id: site.id });
-      return row?.id ?? "";
+      const id = row?.id ?? "";
+      await logActivity(tx, actor, {
+        action: "CREATE",
+        document: { type: "SITE", id, code },
+        summary: joinParts(name, address),
+      });
+      return id;
     });
     const created = await getSite(db, id);
     return created ? ok(created) : notFound();
@@ -262,6 +276,17 @@ export function updateSite(
         .update(location)
         .set({ name, ...status, ...stamp })
         .where(eq(location.id, current.locationId));
+      const changes = diffFields(SITE_FIELDS, current, {
+        name,
+        address,
+        status: input.status ?? current.status,
+      });
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: { type: "SITE", id, code: current.code },
+        summary: changeSummary(changes),
+        changes,
+      });
       return true;
     });
     if (!found) return notFound();
@@ -272,6 +297,7 @@ export function updateSite(
 
 export function deleteSite(
   db: Database,
+  actor: Actor,
   id: string,
 ): Promise<ServiceResult<null>> {
   return runService(async () => {
@@ -281,6 +307,11 @@ export function deleteSite(
       await db.transaction(async (tx) => {
         await tx.delete(site).where(eq(site.id, id));
         await tx.delete(location).where(eq(location.id, current.locationId));
+        await logActivity(tx, actor, {
+          action: "DELETE",
+          document: { type: "SITE", id, code: current.code },
+          summary: current.name,
+        });
       });
       return ok(null);
     } catch (error: unknown) {
@@ -349,10 +380,26 @@ export function createLocation(
     const code = parseCatalogCode(input.code ?? "");
     const name = requireName(input.name);
     try {
-      const [row] = await db
-        .insert(location)
-        .values({ code, name, type, createdBy: actor.id, updatedBy: actor.id })
-        .returning();
+      const row = await db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(location)
+          .values({
+            code,
+            name,
+            type,
+            createdBy: actor.id,
+            updatedBy: actor.id,
+          })
+          .returning();
+        if (created) {
+          await logActivity(tx, actor, {
+            action: "CREATE",
+            document: { type: "LOCATION", id: created.id, code },
+            summary: joinParts(name, locationKindLabel(type)),
+          });
+        }
+        return created;
+      });
       return row
         ? ok({ id: row.id, code, name, type, status: "ACTIVE" as const })
         : notFound();
@@ -443,6 +490,13 @@ export function updateLocation(
           updatedAt: new Date(),
         })
         .where(eq(location.id, id));
+      const changes = diffFields(LOCATION_FIELDS, current, { name, status });
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: { type: "LOCATION", id, code: current.code },
+        summary: changeSummary(changes),
+        changes,
+      });
     });
     return ok({
       id,
@@ -456,6 +510,7 @@ export function updateLocation(
 
 export function deleteLocation(
   db: Database,
+  actor: Actor,
   id: string,
 ): Promise<ServiceResult<null>> {
   return runService(async () => {
@@ -467,6 +522,11 @@ export function deleteLocation(
       await db.transaction(async (tx) => {
         if (current.status === "ACTIVE") await keepOneYard(tx, id);
         await tx.delete(location).where(eq(location.id, id));
+        await logActivity(tx, actor, {
+          action: "DELETE",
+          document: { type: "LOCATION", id, code: current.code },
+          summary: current.name,
+        });
       });
       return ok(null);
     } catch (error: unknown) {

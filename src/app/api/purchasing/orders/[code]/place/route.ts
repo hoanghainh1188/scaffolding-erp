@@ -9,11 +9,11 @@ type Params = { code: string };
 
 /** Nháp → đang xử lý (design D2). */
 export const POST = withAuth<Params>(
-  async (_request, { user, params }) => {
+  async (_request, { actor, params }) => {
     if (!ORDER_CODE.test(params.code)) {
       return fail(PURCHASE_MESSAGES.notFound, 404);
     }
-    return respond(await placeOrder(catalogDb(), user, params.code));
+    return respond(await placeOrder(catalogDb(), actor, params.code));
   },
   { permission: "purchasing.manage" },
 );

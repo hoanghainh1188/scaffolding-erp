@@ -71,32 +71,32 @@ describe("missing rows answer 404", () => {
     expect(await updateGroup(ctx.db, actor, MISSING, { name: "X" })).toEqual(
       notFound,
     );
-    expect(await deleteGroup(ctx.db, MISSING)).toEqual(notFound);
+    expect(await deleteGroup(ctx.db, actor, MISSING)).toEqual(notFound);
     expect(await updateItem(ctx.db, actor, MISSING, { name: "X" })).toEqual(
       notFound,
     );
-    expect(await deleteItem(ctx.db, MISSING)).toEqual(notFound);
+    expect(await deleteItem(ctx.db, actor, MISSING)).toEqual(notFound);
     expect(await updateKit(ctx.db, actor, MISSING, { name: "X" })).toEqual(
       notFound,
     );
-    expect(await deleteKit(ctx.db, MISSING)).toEqual(notFound);
+    expect(await deleteKit(ctx.db, actor, MISSING)).toEqual(notFound);
     expect(await updateCustomer(ctx.db, actor, MISSING, { name: "X" })).toEqual(
       notFound,
     );
-    expect(await deleteCustomer(ctx.db, MISSING)).toEqual(notFound);
+    expect(await deleteCustomer(ctx.db, actor, MISSING)).toEqual(notFound);
     expect(await updateSupplier(ctx.db, actor, MISSING, { name: "X" })).toEqual(
       notFound,
     );
-    expect(await deleteSupplier(ctx.db, MISSING)).toEqual(notFound);
+    expect(await deleteSupplier(ctx.db, actor, MISSING)).toEqual(notFound);
     expect(await getSupplierForEdit(ctx.db, MISSING)).toBeNull();
     expect(await updateSite(ctx.db, actor, MISSING, { name: "X" })).toEqual(
       notFound,
     );
-    expect(await deleteSite(ctx.db, MISSING)).toEqual(notFound);
+    expect(await deleteSite(ctx.db, actor, MISSING)).toEqual(notFound);
     expect(await updateLocation(ctx.db, actor, MISSING, { name: "X" })).toEqual(
       notFound,
     );
-    expect(await deleteLocation(ctx.db, MISSING)).toEqual(notFound);
+    expect(await deleteLocation(ctx.db, actor, MISSING)).toEqual(notFound);
   });
 });
 
@@ -245,7 +245,11 @@ describe("sites and locations", () => {
       customerId: owner.ok ? owner.data.id : "",
     });
     expect(
-      await deleteLocation(ctx.db, place.ok ? place.data.locationId : ""),
+      await deleteLocation(
+        ctx.db,
+        actor,
+        place.ok ? place.data.locationId : "",
+      ),
     ).toMatchObject({ status: 400, error: "Sửa công trình để đổi vị trí này" });
   });
 
@@ -255,11 +259,11 @@ describe("sites and locations", () => {
       name: "Xưởng 2",
       type: "WORKSHOP",
     });
-    expect(await deleteLocation(ctx.db, spare.ok ? spare.data.id : "")).toEqual(
-      {
-        ok: true,
-        data: null,
-      },
-    );
+    expect(
+      await deleteLocation(ctx.db, actor, spare.ok ? spare.data.id : ""),
+    ).toEqual({
+      ok: true,
+      data: null,
+    });
   });
 });
