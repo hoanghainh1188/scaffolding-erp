@@ -3,12 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
+  # Also the run on update-snapshots.yml's baseline commit: required checks
+  # only count job checks from events like pull_request, never from
+  # workflow_dispatch.
   pull_request:
-  # Lets update-snapshots.yml re-run CI after committing new baselines. Its
-  # GITHUB_TOKEN push would only open a pull_request run waiting for approval,
-  # so that commit uses [skip ci] and the result reaches the PR as a commit
-  # status (dispatch-* jobs below).
-  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -31,7 +29,7 @@ env:
 jobs:
   # Docs and planning files (ignored by Prettier, read by no code or test)
   # skip every other job; a skipped job counts as passed for the PR. Pushes
-  # to main and dispatched runs always run everything.
+  # to main always run everything.
   changes:
     name: Detect code changes
     runs-on: ubuntu-latest
@@ -299,45 +297,3 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 14
-
-  # Dispatched runs (from update-snapshots.yml) are not listed in PR checks,
-  # so mirror their result as a commit status, which is.
-  dispatch-pending:
-    name: Report pending status
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    permissions:
-      statuses: write
-    steps:
-      - name: Mark the commit pending
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA"
-          -f state=pending -f context="CI (dispatched)"
-          -f description="Running lint, types, tests, build and E2E"
-          -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-
-  dispatch-result:
-    name: Report final status
-    needs: [gate-checks, gate-e2e, e2e-basic]
-    if: always() && github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    permissions:
-      statuses: write
-    steps:
-      - name: Mark the commit with the run result
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RESULTS: ${{ needs.gate-checks.result }} ${{ needs.gate-e2e.result }} ${{ needs.e2e-basic.result }}
-        run: |
-          case "$RESULTS" in
-            "success success success") state=success; msg="All jobs passed" ;;
-            *cancelled*)       state=error;   msg="Run cancelled" ;;
-            *)                 state=failure; msg="Jobs: $RESULTS" ;;
-          esac
-          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
-            -f state="$state" -f context="CI (dispatched)" -f description="$msg" \
-            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

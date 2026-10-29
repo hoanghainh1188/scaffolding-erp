@@ -13,9 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write # commit the new images
-  actions: write # re-run ci.yml on the branch
-  pull-requests: write # take the label off again
+  contents: write # commit the new images (fallback without the app)
+  pull-requests: write # take the label off again, comment on the PR
 
 env:
   CI: "true"
@@ -34,6 +33,14 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Required checks only count runs from events such as pull_request, so the
+    # baseline commit must start a normal pull_request run. A GITHUB_TOKEN push
+    # starts one that waits for "Approve workflows to run"; a push made with
+    # the snapshots GitHub App's token starts one right away. Set up the app
+    # as described in CLAUDE.md (secrets SNAPSHOTS_APP_ID and
+    # SNAPSHOTS_APP_PRIVATE_KEY).
+    env:
+      HAS_APP: ${{ secrets.SNAPSHOTS_APP_ID != '' }}
     # Screens are behind sign-in: the dev server needs a database.
     services:
       postgres:
@@ -47,10 +54,19 @@ jobs:
           --health-cmd "pg_isready -U erp -d scaffolding_erp_test"
           --health-interval 2s --health-timeout 3s --health-retries 30
     steps:
+      - name: Get the snapshots app token
+        id: app-token
+        if: env.HAS_APP == 'true'
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.SNAPSHOTS_APP_ID }}
+          private-key: ${{ secrets.SNAPSHOTS_APP_PRIVATE_KEY }}
       - uses: actions/checkout@v7
         with:
           # The PR branch itself, not the merge commit of a pull_request run.
           ref: ${{ github.head_ref || github.ref_name }}
+          # The push below uses the token checkout stores.
+          token: ${{ steps.app-token.outputs.token || github.token }}
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -74,21 +90,26 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Baselines unchanged." >> "$GITHUB_STEP_SUMMARY"
           else
-            # [skip ci]: a GITHUB_TOKEN push still opens a pull_request run that
-            # waits for approval and hides the dispatched run below on the PR.
-            git commit -m "test: update Playwright visual baselines [skip ci]"
+            git commit -m "test: update Playwright visual baselines"
             git push origin "HEAD:${BRANCH}"
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Committed new baselines to ${BRANCH}." >> "$GITHUB_STEP_SUMMARY"
           fi
-      # workflow_dispatch is not affected by [skip ci]. The run checks the new
-      # commit and shows on the PR.
-      - name: Re-run CI on the branch
-        if: steps.commit.outputs.changed == 'true'
+      # Without the app the CI run on the new commit waits for approval.
+      - name: Ask for approval of the CI run
+        if: steps.commit.outputs.changed == 'true' && env.HAS_APP != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-        run: gh workflow run ci.yml --ref "$BRANCH"
+          PR: ${{ github.event.pull_request.number }}
+          MSG: >-
+            New visual baselines were committed. CI on that commit waits for
+            approval: open the PR's checks box and click **Approve workflows
+            to run** (or set up the snapshots app, see CLAUDE.md).
+        run: |
+          echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$PR" != "" ]; then
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$MSG"
+          fi
       # So the label can be added again after the next visual change.
       - name: Remove the label
         if: always() && github.event_name == 'pull_request'
