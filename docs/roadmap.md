@@ -48,7 +48,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | K4 | `temp-password-expiry` | #26 | Mật khẩu tạm hết hạn sau 48 giờ | 02 |
 | K5 | `qr-labels` | #40 | In nhãn QR dán lên hàng | 06 |
 | K6 | `stock-value-adjustment` | #42 | Phiếu điều chỉnh giá trị kho | 04 |
-| K7 | ô nhập ngày | #37 | Ô ngày chung luôn hiện `dd/mm/yyyy` | – |
+| K7 | ô nhập ngày | #37 | Ô ngày chung luôn hiện `dd/mm/yyyy` (`DateInput`, sửa lỗi nhỏ PR #59) ✅ | – |
 
 ## Ghi chú
 
