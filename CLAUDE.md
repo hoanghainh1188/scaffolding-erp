@@ -151,5 +151,6 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 - **Thiết kế màn hình** đã vẽ: file ở `docs/design/screens/` (đọc `README.md` trong đó trước), bảng màn ↔ change ở `docs/ui.md` mục 3.4. Khi làm change có giao diện, mở đúng file thiết kế của change đó. Hex trong file thiết kế phải đổi sang token.
 - **Viết tiền:** `1.250.000 ₫` theo spec `domain-values`, kể cả khi README Bright Blue Base ghi kiểu `đ`.
 - Không tự thêm thư viện UI khác khi chưa hỏi.
+- **Ô ngày:** dùng `DateInput` (`src/components/domain/date-input.tsx`), luôn hiện `dd/mm/yyyy` và gửi `YYYY-MM-DD`; không dùng `<input type="date">`.
 - Desktop: bảng dữ liệu. Mobile: thẻ (card), nút to, stepper +/-.
 - Chữ trên giao diện: tiếng Việt.
