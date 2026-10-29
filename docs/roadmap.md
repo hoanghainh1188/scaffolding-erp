@@ -26,7 +26,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | 14 | `receivables` | #14 | Công nợ tách loại (thuê, bán, vận chuyển, đền bù, VAT), cọc, bảo lãnh, thanh toán | D14 | 13 | |
 | 15 | `dashboard-basic` | #15 | Việc chờ duyệt, **doanh số ngày/tháng**, công trình rủi ro, tra một công trình, hàng ở ngoài theo khu vực | D1 | 14 | |
 | 16 | `production-orders` | #46 | **Sản xuất** thành phẩm từ nguyên liệu (mới) | cần vẽ | 04 | 🔒 Q11 |
-| 17 | `activity-log` | #47 | Nhật ký thao tác cho Giám đốc (mới) | cần vẽ | 02 | |
+| 17 | `activity-log` | #47 | Nhật ký thao tác cho Giám đốc (mới) | D18 | 02 | |
 | 18 | `data-migration` | #48 | Chuyển dữ liệu từ Excel khi bắt đầu dùng (mới, **bắt buộc trước khi chạy thật**) | cần vẽ | 14 | |
 
 ## Bản 2
