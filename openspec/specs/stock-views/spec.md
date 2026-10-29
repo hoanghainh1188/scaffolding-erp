@@ -50,7 +50,7 @@ Mỗi con số khác 0 trong bảng D10 SHALL là liên kết tới thẻ kho c�
 - **THEN** hiện `CT-0001` 1.600, `CT-0003` 1.540, `CT-0005` 720 **AND** bấm `CT-0003` mở thẻ kho lọc vị trí `CT-0003`
 
 ### Requirement: Thẻ kho D11
-Trang `/inventory/items/<mã>` SHALL hiện tên, mã, đơn vị và bảng sổ trong kỳ: dòng đầu "Tồn đầu kỳ", rồi từng dòng sổ theo ngày nghiệp vụ và thứ tự ghi với các cột Ngày, Chứng từ (phiếu điều chỉnh có nhãn "Điều chỉnh"), Diễn giải, Nhập, Xuất, Tồn (cộng dồn theo bộ lọc), Đơn giá ghi sổ, Giá vốn BQ sau; dòng cuối "Cộng phát sinh trong kỳ". Chân bảng ghi "Sổ kho chỉ ghi thêm, không sửa dòng cũ. Phiếu ghi sai thì làm phiếu điều chỉnh."
+Trang `/inventory/items/<mã>` SHALL hiện tên, mã, đơn vị và bảng sổ trong kỳ: dòng đầu "Tồn đầu kỳ", rồi từng dòng sổ theo ngày nghiệp vụ và thứ tự ghi với các cột Ngày, Chứng từ (phiếu điều chỉnh có nhãn "Điều chỉnh", phiếu điều chỉnh giá trị có nhãn "Điều chỉnh giá"), Diễn giải, Nhập, Xuất, Tồn (cộng dồn theo bộ lọc), Đơn giá ghi sổ, Giá vốn BQ sau; dòng cuối "Cộng phát sinh trong kỳ". Chân bảng ghi "Sổ kho chỉ ghi thêm, không sửa dòng cũ. Phiếu ghi sai thì làm phiếu điều chỉnh."
 
 #### Scenario: Thẻ kho GG-K17 Tốt tại bãi tháng 10
 - **WHEN** mở thẻ kho `GG-K17`, Tốt, Tại bãi, kỳ 01/10/2026–31/10/2026 với số liệu mẫu ở design D11
@@ -63,6 +63,17 @@ Trang `/inventory/items/<mã>` SHALL hiện tên, mã, đơn vị và bảng s�
 #### Scenario: Mã không tồn tại
 - **WHEN** mở `/inventory/items/KHONG-CO`
 - **THEN** trang 404 "Không tìm thấy mã hàng"
+
+### Requirement: Dòng điều chỉnh giá trên thẻ kho D11
+Dòng `REVALUE` (không có vị trí) SHALL hiện trên thẻ kho D11 ở **mọi** bộ lọc vị trí khi chọn đúng tình trạng của nó: Nhập, Xuất trống, Tồn không đổi, Đơn giá ghi sổ trống, Diễn giải ghi chênh lệch giá trị và chứng từ gốc, Giá vốn BQ sau là giá mới.
+
+#### Scenario: Dòng điều chỉnh giá trên thẻ kho
+- **WHEN** `ĐCG-2026-001` (sửa `PN-2026-094`) ghi sổ ngày 30/10/2026 giảm 1.500.000 ₫ cho `GG-K17` Tốt khi giá BQ 195.282 ₫, tổng tồn 1.240 cái (cả 1.240 ở bãi)
+- **THEN** thẻ kho `GG-K17`, Tốt, Tại bãi có dòng 30/10 `ĐCG-2026-001` nhãn "Điều chỉnh giá", diễn giải "Giảm giá trị 1.500.000 ₫ · sửa PN-2026-094", Nhập và Xuất trống, Tồn 1.240, Giá vốn BQ sau 194.072 ₫ **AND** thẻ kho cùng mã lọc Tại công trình cũng có dòng đó
+
+#### Scenario: Chọn tất cả tình trạng
+- **WHEN** mở thẻ kho `GG-K17` với tình trạng "Tất cả" sau khi có dòng điều chỉnh giá
+- **THEN** dòng điều chỉnh giá vẫn hiện **AND** hai cột giá ẩn như các dòng khác
 
 ### Requirement: Bộ lọc và số tóm tắt của thẻ kho
 D11 SHALL lọc theo tình trạng (Tất cả, Mới, Tốt, Chờ sửa, Phế liệu; mặc định Tốt), vị trí (Tại bãi, Tại xưởng, Tại công trình hoặc một công trình; mặc định Tại bãi), kỳ (mặc định tháng hiện tại theo giờ Việt Nam); bộ lọc nằm trên URL. Bốn số tóm tắt: Tồn đầu kỳ, Nhập trong kỳ, Xuất trong kỳ (dấu −), Tồn cuối kỳ; thẻ Giá vốn bình quân hiện tại khi chọn một tình trạng. Chọn "Tất cả" tình trạng SHALL ẩn hai cột giá và thẻ giá vốn.
