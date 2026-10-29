@@ -2,9 +2,10 @@
 
 ## 1. Tài liệu và cơ sở dữ liệu
 
-- [ ] 1.1 Ghi `docs/requirements.md` 0.2 #35 (điều chỉnh giá trị: tồn 0 thì chặn, còn tồn thì dồn cả chênh lệch, hàng ở công trình chịu chênh lệch, chứng từ gốc bắt buộc, chia lại chỉ cho chi phí chuyến phiếu nhập; ngày duyệt PR). Kiểm: đọc lại bảng 0.2 đúng định dạng.
+- [x] 1.1 Ghi `docs/requirements.md` 0.2 #35 (điều chỉnh giá trị: dòng `REVALUE` số lượng 0 không vị trí, tồn 0 thì chặn, còn tồn thì dồn cả chênh lệch, hàng ở công trình chịu chênh lệch, chứng từ gốc bắt buộc, chia lại chỉ cho chi phí chuyến phiếu nhập; chốt 29/10/2026). Đã ghi trong PR propose #65 theo review.
 - [ ] 1.2 Viết `drizzle/0009_stock_value_adjustment.sql` và sửa schema Drizzle (`src/db/schema/inventory.ts`) theo design D6: `inventory_ledger` cho `location_id` trống chỉ với `REVALUE` (số lượng 0); `stock_adjustment` loại `REVALUE`, `source_receipt_id`, `recorded_trip_cost`, `corrected_trip_cost`, check, unique một phần; `stock_adjustment_line` kiểu `VALUE`, `value_delta`, check shape, unique. Kiểm: `npm run db:migrate` chạy trên DB dev, `npm run inventory:check` vẫn "0 lệch".
 - [ ] 1.3 Integration test schema (`src/db/schema/inventory.int.test.ts`): DB nhận `REVALUE` số lượng 0 không vị trí; từ chối `REVALUE` có số lượng, `REVALUE` có vị trí, `ADJUST_IN` không vị trí, dòng `VALUE` có `value_delta` 0; trigger vẫn chặn UPDATE/DELETE dòng `REVALUE`; hai phiếu sửa chi phí chưa `DONE` cùng phiếu nhập bị unique chặn. Kiểm: `npm run test:int` xanh.
+- [ ] 1.4 Cập nhật `CLAUDE.md` mục Quy ước code, gạch "Sổ kho": `inventory_ledger.location_id` có thể `NULL` (chỉ dòng `REVALUE`, số lượng 0); truy vấn theo vị trí phải `inner join location` hoặc lọc `location_id is not null`; thẻ kho lọc vị trí thêm `OR location_id IS NULL`; `REVALUE` là loại thứ tư đổi giá BQ (cùng `OPENING`, `PURCHASE_IN`, `REPAIR_IN`). Thêm gạch "Phiếu điều chỉnh giá trị" (`ĐCG`, chứng từ gốc bắt buộc, sửa chi phí chuyến qua `buildTripRevaluation`). Kiểm: đọc lại mục, `npm run format:check` xanh.
 
 ## 2. Logic thuần + unit test (viết test trước)
 

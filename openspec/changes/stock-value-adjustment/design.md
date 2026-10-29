@@ -80,7 +80,7 @@ giá BQ mới = roundHalfUp(value×1000, poolMilli)
 - **Giá trị sau < 0** → chặn, báo số âm. Bằng 0 thì cho.
 - Màn lập và màn duyệt hiện giá BQ trước → sau để Giám đốc thấy độ lệch. Không đặt ngưỡng chặn %.
 
-Vì sao dồn hết: tổng giá vốn của cả công ty (đã xuất + còn tồn) cuối cùng **đúng bằng** số đúng, vì phần đã xuất theo giá cao được bù bằng phần còn lại theo giá thấp hơn (spec scenario "Hàng của chuyến đã bán một phần": 50 × 315.020 + 150 × 158.996 = 39.600.400 ₫, đúng bằng 200 × 198.002; lệch tối đa vài đồng do làm tròn giá BQ). Đây là cách sửa bình quân gia quyền thường dùng khi không có sổ cái. Ghi vào `docs/requirements.md` 0.2 #35 khi được duyệt (task 1.1).
+Vì sao dồn hết: tổng giá vốn của cả công ty (đã xuất + còn tồn) cuối cùng **đúng bằng** số đúng, vì phần đã xuất theo giá cao được bù bằng phần còn lại theo giá thấp hơn (spec scenario "Hàng của chuyến đã bán một phần": 50 × 315.020 + 150 × 158.996 = 39.600.400 ₫, đúng bằng 200 × 198.002; lệch tối đa vài đồng do làm tròn giá BQ). Đây là cách sửa bình quân gia quyền thường dùng khi không có sổ cái. Đã ghi vào `docs/requirements.md` 0.2 #35 (chốt 29/10/2026).
 
 **Phương án đã cân nhắc:**
 
@@ -121,6 +121,8 @@ dòng mới:   chênh[mã+tt] = tripCost(chi phí đúng).byCondition − đã g
 ```
 
 Bước kiểm bắt trường hợp trọng lượng chuẩn đã sửa trong danh mục (chia theo trọng lượng hoặc phế liệu đổi kg quy đổi), đơn giá đơn đã đổi, hay có phiếu tay đã sửa giá trị của chuyến: khi đó không dám "chia đúng như gốc", người dùng lập dòng tay. Giá sắt vụn lấy từ phiếu nhập (không lấy giá hiện tại) nên phần Phế liệu chỉ đổi khi S > T (#27).
+
+**Hàng của chuyến đã qua phiếu sửa** (Chờ sửa → Tốt): phần chi phí sai đã theo giá vốn sang Tốt. "Sửa chi phí chuyến" chỉ sửa đúng (mã + tình trạng) mà phiếu nhập đã ghi, nên phần đó vẫn nằm ở Tốt, và dòng Chờ sửa có thể bị chặn nếu Chờ sửa đã hết (D2). Trường hợp này Kế toán **lập dòng tay** cho Tốt (chứng từ gốc vẫn là `PN-…` vì cần dòng sổ của mã + tình trạng; nếu `PN` không có dòng Tốt thì ghi chứng từ gốc là phiếu sửa `PSC-…`). Không thêm code.
 
 Một phiếu nhập chỉ có một phiếu sửa chi phí **chưa ghi sổ** (unique một phần trong DB, D6; lưu phiếu khóa dòng `goods_receipt` `FOR SHARE` như quy ước bản ghi được tham chiếu). Lý do: hai phiếu cùng tính từ một "đã ghi" sẽ trừ hai lần.
 
@@ -185,6 +187,8 @@ Một phiếu nhập chỉ có một phiếu sửa chi phí **chưa ghi sổ** (
 - Khung "Sửa chi phí chuyến": chọn phiếu nhập (mã `PN-…`, đơn, ngày), hiện chi phí đã ghi, ô chi phí đúng, lý do, bảng dòng chỉ đọc.
 - Chi tiết phiếu: như spec "Hiện trên trang Phiếu điều chỉnh". Danh sách thêm loại "Điều chỉnh giá".
 - Thẻ kho D11 (`card.ts`): lọc vị trí thêm `OR location_id IS NULL`; dòng `REVALUE` hiện nhãn "Điều chỉnh giá", Nhập/Xuất/Đơn giá trống.
+- Không có ô ngày trên phiếu (ngày nghiệp vụ = ngày duyệt). Nếu sau này thêm ô ngày (VD lọc danh sách) thì dùng `DateInput`, không dùng `<input type="date">`.
+- Mỗi lệnh ghi (tạo, sửa, dựng từ phiếu nhập, xóa nháp, gửi, duyệt, trả lại) gọi `logActivity` trong transaction của lệnh (spec delta `activity-log`; `coverage.test.ts` bắt chỗ quên).
 
 ## Risks / Trade-offs
 

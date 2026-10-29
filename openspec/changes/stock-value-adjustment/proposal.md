@@ -19,7 +19,8 @@ Sổ kho chỉ ghi thêm. Phiếu điều chỉnh hiện có (`stock-adjustments
 - **Sổ kho thêm loại biến động `REVALUE`**: số lượng **0**, **không có vị trí** (giá BQ là của toàn công ty), giá trị = chênh lệch, giá BQ sau = giá mới. Đây là loại duy nhất được có số lượng 0.
 - **Thẻ kho D11** hiện dòng `REVALUE` ở mọi bộ lọc vị trí (cột Nhập, Xuất trống; diễn giải ghi giá trị điều chỉnh và giá BQ cũ → mới).
 - **Nhật ký thao tác** ghi các thao tác của phiếu điều chỉnh giá như phiếu điều chỉnh (Tạo, Sửa, Xóa nháp, Gửi, Duyệt, Trả lại).
-- Khi được duyệt: ghi quyết định mới vào `docs/requirements.md` 0.2 #35 (cách xử lý tồn 0, hàng đã ra khỏi kho một phần).
+- Ghi quyết định mới vào `docs/requirements.md` **0.2 #35** (chốt 29/10/2026, ngay trong PR này theo review).
+- Cập nhật `CLAUDE.md` mục Quy ước code "Sổ kho": `location_id` có thể trống (chỉ `REVALUE`), cách truy vấn theo vị trí cho đúng (task 1.4).
 
 ## Ảnh hưởng tới sổ kho và giá vốn
 
