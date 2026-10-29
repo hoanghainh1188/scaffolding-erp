@@ -58,6 +58,8 @@ Vì sao `document_id` không có FK: nháp bị xóa (đơn nháp, phiếu sửa
 
 Vì sao chỉ lưu `device` + `browser`, không lưu cả chuỗi User-Agent: D18 chỉ cần hai thứ này; chuỗi đầy đủ dài (~200 byte/dòng), gần như là dấu vân tay thiết bị, ít giá trị cho Giám đốc. Bảng `session` của Better Auth đã giữ User-Agent nếu cần tra sâu.
 
+**Người dùng có nhật ký không xóa được nữa** (review PR #62). `user_id` là FK `RESTRICT` và trigger chặn xóa nhật ký, nên một tài khoản đã từng đăng nhập hay làm gì đó không bao giờ xóa được (ứng dụng vốn không có lệnh xóa người dùng, chỉ khóa). Chỗ duy nhất đang xóa người dùng là E2E global setup (tài khoản tạm `e2etmp*` của `auth.spec.ts`, các tài khoản này đăng nhập và đổi mật khẩu nên có dòng `SIGN_IN`, `UPDATE`). Cách xử lý ở D13. **Không** đổi FK sang `CASCADE`/`SET NULL`: mất dấu người làm, và trigger chặn xóa nhật ký thì `CASCADE` đằng nào cũng lỗi.
+
 **Phương án đã cân nhắc:**
 
 | Phương án | Vì sao không chọn |
@@ -134,7 +136,7 @@ logActivity(tx: Tx, actor: ActivityActor, entry: {
 
 **Đăng nhập và đổi mật khẩu** (Better Auth tự ghi mật khẩu / phiên ở kết nối riêng):
 
-- `signIn`: sau khi mật khẩu đúng và tài khoản Đang dùng, gộp `recordLastLogin` + `logActivity(SIGN_IN)` vào **một** transaction. Nếu transaction này lỗi thì xóa phiên vừa tạo và trả lỗi, để không có phiên đăng nhập mà không có nhật ký.
+- `signIn`: sau khi mật khẩu đúng và tài khoản Đang dùng, gộp `recordLastLogin` + `logActivity(SIGN_IN)` vào **một** transaction. Nếu transaction này lỗi thì xóa phiên vừa tạo và trả lỗi, để không có phiên đăng nhập mà không có nhật ký. Nhánh này có integration test riêng (giả lập `logActivity` lỗi → không còn phiên của lần đăng nhập đó, trả 500).
 - `changePassword`, `createUser`, `resetPassword`: đã có transaction riêng của app; `logActivity` vào đúng transaction đó.
 
 **Phương án đã cân nhắc:**
@@ -253,6 +255,9 @@ Nếu khi review muốn thư viện thì chỉ thay phần trong `buildXlsx`, AP
 - `src/lib/activity/sample.ts`: nhật ký mẫu như D18 (11 dòng, ngày 27–28/10/2026, 5 tài khoản mẫu), ghi qua `logActivity` với `now` cố định. Chỉ chạy trong `npm run db:seed:dev` và E2E global setup, **một lần** (bỏ qua nếu đã có dòng của tài khoản mẫu trong ngày 28/10/2026). Mã chứng từ trỏ tới chứng từ mẫu có thật nếu seed có; tóm tắt ghi đúng như bản vẽ.
 - Ảnh mốc D18 mở `/settings/activity?from=2026-10-27&to=2026-10-28` lọc các tài khoản mẫu, nên số không đổi theo ngày chạy CI; dòng do E2E tạo (ngày chạy) nằm ngoài khoảng đó.
 - E2E chức năng kiểm theo **chênh lệch** (nhật ký không xóa được, như sổ kho): đếm dòng trước, làm thao tác, đếm sau.
+- **Tài khoản tạm E2E** (`e2etmp*`, review PR #62). Global setup đổi từ "xóa hết" sang: **xóa** tài khoản tạm **chưa có** dòng nhật ký nào (phiên, `account` đi theo `CASCADE` như hiện nay); **khóa** phần còn lại (`status = 'LOCKED'`, xóa phiên của chúng) bằng SQL trực tiếp. Lý do chọn cách này thay vì khóa tất cả: tài khoản tạm chưa đăng nhập (VD test lỗi giữa chừng) vẫn được dọn, DB dev ít rác hơn; tên tạm đã duy nhất theo thời gian (`tempUsername`) nên tài khoản cũ đã khóa không đụng tài khoản mới. Tài khoản tạm đã khóa ở lại DB dev (D17 hiện chúng ở nhóm Đã khóa; không có ảnh mốc D17 đếm người dùng). Trên CI DB mới mỗi lần nên không tích lại.
+- **Các chỗ dọn khác của global setup** (`removeTestOrders`, `removeTestRepairDrafts`, `removeTestCatalogRows`) xóa thẳng bằng SQL: không đi qua service nên **không ghi nhật ký**, và `document_id` không có FK nên dòng nhật ký cũ của các bản ghi đó (VD "Tạo `PO-2026-0xx`" do E2E làm) **không chặn** việc xóa; dòng nhật ký ở lại DB dev, trỏ tới mã đã mất, đúng như "Xóa nháp". Các bước global setup gọi service (`cancelTestStocktakes`, `setScrapPrice`, `ensure*Stock`, seed) ghi nhật ký bình thường với `systemActor` của `e2e.giamdoc` (thiết bị Máy tính · Khác).
+- `seedAccounts` với `reset: true` chỉ **sửa** tài khoản `e2e.*` (mật khẩu, trạng thái), không xóa, nên không vướng FK.
 
 ## Risks / Trade-offs
 
