@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, type FormEvent } from "react";
 
+import { DateInput } from "@/components/domain/date-input";
 import { FormError } from "@/components/catalog/form-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -355,11 +356,10 @@ export function OrderForm({ suppliers, items, order }: OrderFormProps) {
             <div className="grid grid-cols-[minmax(0,1fr)_120px] gap-2">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="order-date">Ngày dự kiến nhập</Label>
-                <Input
+                <DateInput
                   id="order-date"
-                  type="date"
                   value={expectedDate}
-                  onChange={(event) => setExpectedDate(event.target.value)}
+                  onValueChange={setExpectedDate}
                 />
                 <FieldMessage message={errors.expectedDate} />
               </div>

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { DateInput } from "@/components/domain/date-input";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CONDITION_LABELS, CONDITIONS } from "@/domain/condition";
 import { cn } from "@/lib/utils";
@@ -106,21 +106,19 @@ export function StockCardFilters(props: StockCardFiltersProps) {
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="card-from">Từ ngày</Label>
-          <Input
+          <DateInput
             id="card-from"
-            type="date"
             value={from}
-            onChange={(event) => setFrom(event.target.value)}
+            onValueChange={setFrom}
             className="w-40"
           />
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="card-to">Đến ngày</Label>
-          <Input
+          <DateInput
             id="card-to"
-            type="date"
             value={to}
-            onChange={(event) => setTo(event.target.value)}
+            onValueChange={setTo}
             className="w-40"
           />
         </div>
