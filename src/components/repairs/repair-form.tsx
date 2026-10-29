@@ -6,6 +6,7 @@ import { CheckIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { DateInput } from "@/components/domain/date-input";
 import { ConfirmAction } from "@/components/catalog/confirm-action";
 import { FormError } from "@/components/catalog/form-error";
 import { FieldMessage } from "@/components/purchasing/field-message";
@@ -376,13 +377,12 @@ export function RepairForm({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="repair-date">Ngày sửa xong</Label>
-              <Input
+              <DateInput
                 id="repair-date"
                 data-mask
-                type="date"
                 max={today}
                 value={repairDate}
-                onChange={(event) => setRepairDate(event.target.value)}
+                onValueChange={setRepairDate}
               />
               <p className="text-caption text-muted-foreground">
                 Sổ kho ghi theo ngày ghi sổ.

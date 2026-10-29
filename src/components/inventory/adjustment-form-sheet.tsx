@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 
+import { DateInput } from "@/components/domain/date-input";
 import { FormError } from "@/components/catalog/form-error";
 import { useCatalogAction } from "@/components/catalog/use-catalog-action";
 import { Button } from "@/components/ui/button";
@@ -249,12 +250,11 @@ export function AdjustmentFormSheet({
           {kind === "OPENING" ? (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="adjustment-opening-date">Ngày tồn đầu</Label>
-              <Input
+              <DateInput
                 id="adjustment-opening-date"
-                type="date"
                 value={openingDate}
                 max={today}
-                onChange={(event) => setOpeningDate(event.target.value)}
+                onValueChange={setOpeningDate}
                 className="w-48"
               />
             </div>

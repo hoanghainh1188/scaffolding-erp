@@ -58,6 +58,34 @@ export function formatBusinessDate(value: string): string {
   return `${day}/${month}/${year}`;
 }
 
+/** What a date field shows: "" stays empty, "2026-11-05" → "05/11/2026". */
+export function formatBusinessDateInput(value: string): string {
+  return value === "" ? "" : formatBusinessDate(value);
+}
+
+const TYPED_DAY = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/;
+
+/**
+ * Reads a typed day, always day first ("05/11/2026", "5/11/2026" are
+ * 5 November) whatever the browser language. Empty text means no date.
+ */
+export function parseBusinessDateInput(text: string): BusinessDate | null {
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+  const match = TYPED_DAY.exec(trimmed);
+  if (!match) {
+    throw new DomainValueError("Ngày phải có dạng dd/mm/yyyy, VD: 05/11/2026");
+  }
+  const [, day = "", month = "", year = ""] = match;
+  const iso = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  if (!isBusinessDate(iso)) {
+    throw new DomainValueError(
+      `Không có ngày ${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`,
+    );
+  }
+  return iso;
+}
+
 /** "27/10/2026 00:00" in Vietnam time. */
 export function formatDateTime(instant: Date): string {
   assertValidInstant(instant);

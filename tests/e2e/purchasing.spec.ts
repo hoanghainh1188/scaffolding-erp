@@ -46,7 +46,7 @@ async function newOrder(page: Page) {
     .locator("option", { hasText: "Thép Hòa Phát" })
     .getAttribute("value");
   await supplier.selectOption(value ?? "");
-  await page.getByLabel("Ngày dự kiến nhập").fill("2030-01-15");
+  await page.getByLabel("Ngày dự kiến nhập").fill("15/01/2030");
   await page.getByLabel("Ghi chú").fill("E2E thử");
   const frames = await fillLine(page, 1, {
     item: "GG-K17 · Khung giàn giáo 1,7m",

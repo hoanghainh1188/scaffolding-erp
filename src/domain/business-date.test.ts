@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatBusinessDate,
+  formatBusinessDateInput,
+  parseBusinessDateInput,
   monthRange,
   formatDateTime,
   isBusinessDate,
@@ -60,5 +62,52 @@ describe("monthRange", () => {
       from: "2028-02-01",
       to: "2028-02-29",
     });
+  });
+});
+
+describe("date field text", () => {
+  it("shows a stored day as dd/mm/yyyy and empty as empty", () => {
+    expect(formatBusinessDateInput("2026-11-05")).toBe("05/11/2026");
+    expect(formatBusinessDateInput("")).toBe("");
+  });
+
+  it("reads day first, with or without leading zeros", () => {
+    expect(parseBusinessDateInput("05/11/2026")).toBe("2026-11-05");
+    expect(parseBusinessDateInput("5/11/2026")).toBe("2026-11-05");
+    expect(parseBusinessDateInput(" 5/1/2027 ")).toBe("2027-01-05");
+    expect(parseBusinessDateInput("05-11-2026")).toBe("2026-11-05");
+    expect(parseBusinessDateInput("05.11.2026")).toBe("2026-11-05");
+  });
+
+  it("treats empty text as no date", () => {
+    expect(parseBusinessDateInput("")).toBeNull();
+    expect(parseBusinessDateInput("   ")).toBeNull();
+  });
+
+  it("accepts 29/02 only in a leap year", () => {
+    expect(parseBusinessDateInput("29/02/2028")).toBe("2028-02-29");
+    expect(() => parseBusinessDateInput("29/02/2026")).toThrow(
+      "Không có ngày 29/02/2026",
+    );
+  });
+
+  it("rejects days that are not on the calendar", () => {
+    expect(() => parseBusinessDateInput("31/04/2026")).toThrow(
+      "Không có ngày 31/04/2026",
+    );
+    expect(() => parseBusinessDateInput("1/13/2026")).toThrow(
+      "Không có ngày 01/13/2026",
+    );
+    expect(() => parseBusinessDateInput("0/1/2026")).toThrow(
+      "Không có ngày 00/01/2026",
+    );
+  });
+
+  it("rejects text that is not dd/mm/yyyy", () => {
+    for (const text of ["2026-11-05", "05/11/26", "hôm nay", "05/11"]) {
+      expect(() => parseBusinessDateInput(text)).toThrow(
+        "Ngày phải có dạng dd/mm/yyyy, VD: 05/11/2026",
+      );
+    }
   });
 });
