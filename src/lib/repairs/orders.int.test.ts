@@ -17,6 +17,7 @@ import type { Condition } from "@/domain/condition";
 import { lockForPosting, postMovements } from "@/lib/inventory/post";
 import { reconcileInventory } from "@/lib/inventory/reconcile";
 import { setScrapPrice } from "@/lib/receiving/scrap-price";
+import { activityRows, activityTrail, lastActivity } from "@/test/activity";
 import { createTestContext } from "@/test/auth";
 import {
   setupInventoryFixture,
@@ -198,6 +199,7 @@ describe("drafts", () => {
     const first = await getRepairOrder(ctx.db, code);
     const edited = await updateRepairDraft(
       ctx.db,
+      fx.accountant,
       code,
       slip(D12, {
         note: "Giám đốc sửa",
@@ -209,6 +211,7 @@ describe("drafts", () => {
     expect(
       await updateRepairDraft(
         ctx.db,
+        fx.accountant,
         code,
         slip(D12, { updatedAt: first?.updatedAt.toISOString() }),
         OCT_28,
@@ -257,7 +260,9 @@ describe("drafts", () => {
 
   it("deletes a draft but never a posted slip", async () => {
     const code = await draft();
-    expect((await deleteRepairDraft(ctx.db, code)).ok).toBe(true);
+    expect((await deleteRepairDraft(ctx.db, fx.accountant, code)).ok).toBe(
+      true,
+    );
     expect(await listRepairOrders(ctx.db)).toEqual([]);
     const posted = await draft();
     expect(
@@ -268,11 +273,14 @@ describe("drafts", () => {
       status: 409,
       error: "Phiếu đã ghi sổ, không sửa hay xóa được",
     };
-    expect(await deleteRepairDraft(ctx.db, posted)).toEqual(frozen);
+    expect(await deleteRepairDraft(ctx.db, fx.accountant, posted)).toEqual(
+      frozen,
+    );
     const current = await getRepairOrder(ctx.db, posted);
     expect(
       await updateRepairDraft(
         ctx.db,
+        fx.accountant,
         posted,
         slip(D12, { updatedAt: current?.updatedAt.toISOString() }),
         OCT_28,
@@ -642,6 +650,7 @@ describe("two writers", () => {
     const seen = (await getRepairOrder(ctx.db, code))?.updatedAt.toISOString();
     await updateRepairDraft(
       other.db,
+      fx.accountant,
       code,
       slip([["GG-K17", 40, 40, 0, 0]], { updatedAt: seen }),
       OCT_28,
@@ -796,7 +805,71 @@ describe("reading", () => {
 
   it("keeps repair lines out of reach of a deleted draft", async () => {
     const code = await draft();
-    await deleteRepairDraft(ctx.db, code);
+    await deleteRepairDraft(ctx.db, fx.accountant, code);
     expect(await ctx.db.select().from(repairOrderLine)).toEqual([]);
+  });
+});
+
+describe("repair slips in the activity log (activity-log 5.4)", () => {
+  it("logs the draft, an edit, and the posting like D18", async () => {
+    const code = await draft();
+    const [row] = await ctx.db
+      .select({ updatedAt: repairOrder.updatedAt })
+      .from(repairOrder)
+      .where(eq(repairOrder.code, code));
+    await updateRepairDraft(
+      ctx.db,
+      fx.accountant,
+      code,
+      slip(D12, {
+        repairedBy: "Tổ anh Tám",
+        updatedAt: row?.updatedAt.toISOString(),
+      }),
+      OCT_28,
+    );
+    expect(
+      (await postRepairOrder(ctx.db, fx.accountant, code, {}, OCT_28)).ok,
+    ).toBe(true);
+    const rows = await activityRows(ctx.db, code);
+    expect(rows.map((entry) => [entry.action, entry.summary])).toEqual([
+      ["CREATE", "2 mã hàng · lấy 60 cái từ BAI-01"],
+      ["UPDATE", "Người sửa: Tổ anh Bảy → Tổ anh Tám"],
+      ["POST", "56 cái về Tốt, 4 phế liệu · chi phí 2.220.000 ₫"],
+    ]);
+    expect(rows[2]?.flags).not.toContain("ANOMALY");
+  });
+
+  it("flags a posting with a confirmed high cost", async () => {
+    const code = await draft([["GG-K17", 20, 20, 0, 6_000_000]]);
+    await postRepairOrder(
+      ctx.db,
+      fx.accountant,
+      code,
+      { confirmedOverrides: ["line:GG-K17"] },
+      OCT_28,
+    );
+    const row = await lastActivity(ctx.db, code);
+    expect(row?.flags).toContain("ANOMALY");
+    expect(row?.summary).toContain(
+      "đã xác nhận chi phí cao GG-K17 300.000 ₫/cái",
+    );
+  });
+
+  it("a refused posting adds no row, a deleted draft keeps its row", async () => {
+    const code = await draft();
+    await postRepairOrder(ctx.db, fx.accountant, code, {}, OCT_28);
+    expect(
+      (await postRepairOrder(ctx.db, fx.accountant, code, {}, OCT_28)).ok,
+    ).toBe(false);
+    expect(await activityTrail(ctx.db, code)).toEqual([
+      `CREATE ${code}`,
+      `POST ${code}`,
+    ]);
+    const other = await draft();
+    await deleteRepairDraft(ctx.db, fx.accountant, other);
+    expect(await lastActivity(ctx.db, other)).toMatchObject({
+      action: "DELETE_DRAFT",
+      summary: "Nháp có 2 mã hàng, chưa ghi sổ",
+    });
   });
 });

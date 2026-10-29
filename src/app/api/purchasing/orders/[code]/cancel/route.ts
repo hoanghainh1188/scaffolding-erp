@@ -10,14 +10,14 @@ type Params = { code: string };
 
 /** Before any goods receipt; the reason is required. */
 export const POST = withAuth<Params>(
-  async (request, { user, params }) => {
+  async (request, { actor, params }) => {
     if (!ORDER_CODE.test(params.code)) {
       return fail(PURCHASE_MESSAGES.notFound, 404);
     }
     const body = await readJson(request, reasonBody);
     if (!body.ok) return body.response;
     return respond(
-      await cancelOrder(catalogDb(), user, params.code, body.data.reason),
+      await cancelOrder(catalogDb(), actor, params.code, body.data.reason),
     );
   },
   { permission: "purchasing.manage" },

@@ -1,14 +1,16 @@
 // Shared pieces of the catalog services (master-data design D7, D12).
 import { DomainValueError } from "@/domain/errors";
+import type { ActivityActor } from "@/lib/activity/actor";
 
 export type CatalogStatus = "ACTIVE" | "ARCHIVED";
 
 export const CATALOG_STATUSES = ["ACTIVE", "ARCHIVED"] as const;
 
-/** Who makes the change; their id goes into created_by / updated_by. */
-export interface Actor {
-  id: string;
-}
+/**
+ * Who makes the change: their id goes into created_by / updated_by, and the
+ * whole actor into the activity log (activity-log design D4).
+ */
+export type Actor = ActivityActor;
 
 export type ServiceResult<T> =
   | { ok: true; data: T }

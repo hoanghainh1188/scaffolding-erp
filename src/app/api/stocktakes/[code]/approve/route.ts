@@ -8,12 +8,12 @@ type Params = { code: string };
 
 /** "Duyệt và ghi sổ": posts every difference in one transaction (D9). */
 export const POST = withAuth<Params>(
-  async (request, { user, params }) => {
+  async (request, { actor, params }) => {
     if (!STOCKTAKE_CODE.test(params.code)) return NOT_FOUND();
     const body = await readJson(request, approveBody);
     if (!body.ok) return body.response;
     return respond(
-      await approveStocktake(catalogDb(), user, params.code, body.data),
+      await approveStocktake(catalogDb(), actor, params.code, body.data),
     );
   },
   { permission: "inventory.approve" },

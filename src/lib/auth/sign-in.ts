@@ -4,7 +4,6 @@ import { isAPIError } from "better-auth/api";
 
 import type { Database } from "@/db/client";
 import { loginThrottle, session, user } from "@/db/schema";
-import { detectDevice } from "@/domain/device";
 import {
   evaluateLoginThrottle,
   recordFailure,
@@ -12,6 +11,8 @@ import {
 } from "@/domain/login-throttle";
 import type { Role } from "@/domain/role";
 import { isValidUsername, normalizeUsername } from "@/domain/username";
+import { actorFromRequest } from "@/lib/activity/actor";
+import { logActivity } from "@/lib/activity/log";
 
 import type { Auth } from "./auth";
 import { clientIp, consumeSignInAttempt } from "./rate-limit";
@@ -105,7 +106,18 @@ export async function signIn(
       })
       .where(eq(session.token, attempt.token));
   }
-  await recordLastLogin(db, attempt.userId, input.headers, now);
+  try {
+    await recordSignIn(
+      db,
+      { id: attempt.userId, role: account.role as Role },
+      input.headers,
+      now,
+    );
+  } catch (error: unknown) {
+    // No session without its log row (activity-log design D4).
+    await db.delete(session).where(eq(session.token, attempt.token));
+    throw error;
+  }
 
   return {
     ok: true,
@@ -199,22 +211,27 @@ async function recordFailedAttempt(
   });
 }
 
-/** Informational (D17); a failure here is logged, never blocks sign-in. */
-async function recordLastLogin(
+/**
+ * The last sign-in of D17 and the SIGN_IN row of the activity log, in one
+ * transaction (activity-log design D4).
+ */
+async function recordSignIn(
   db: Database,
-  userId: string,
+  account: { id: string; role: Role },
   headers: Headers,
   now: Date,
 ): Promise<void> {
-  try {
-    await db
+  const actor = actorFromRequest(account, headers);
+  await db.transaction(async (tx) => {
+    await tx
       .update(user)
-      .set({
-        lastLoginAt: now,
-        lastLoginDevice: detectDevice(headers.get("user-agent")),
-      })
-      .where(eq(user.id, userId));
-  } catch (error: unknown) {
-    console.error("[auth] could not record last sign-in", { userId, error });
-  }
+      .set({ lastLoginAt: now, lastLoginDevice: actor.device })
+      .where(eq(user.id, account.id));
+    await logActivity(
+      tx,
+      actor,
+      { action: "SIGN_IN", summary: "Đăng nhập thành công" },
+      { now },
+    );
+  });
 }

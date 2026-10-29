@@ -3,10 +3,11 @@
 // be emptied, so stock is checked by difference. Lines go into Chờ sửa and
 // Phế liệu, which inventory.spec.ts never reads (it runs in parallel).
 import { eq } from "drizzle-orm";
+import { actorByUsername } from "@/lib/activity/actor";
 import { expect, test, type Page } from "@playwright/test";
 
 import { createDatabase } from "@/db/client";
-import { goodsReceipt, item, purchaseOrder, supplier, user } from "@/db/schema";
+import { goodsReceipt, item, purchaseOrder, supplier } from "@/db/schema";
 import { toBusinessDate } from "@/domain/business-date";
 import { getEnv } from "@/lib/env";
 import { createOrder } from "@/lib/purchasing/orders";
@@ -25,10 +26,8 @@ async function placeOrder(pieces: number[]): Promise<string> {
   const handle = createDatabase(getEnv().DATABASE_URL);
   try {
     const db = handle.db;
-    const [sales] = await db
-      .select({ id: user.id })
-      .from(user)
-      .where(eq(user.username, "e2e.kinhdoanh"));
+    const sales = await actorByUsername(db, "e2e.kinhdoanh");
+    if (!sales) throw new Error("e2e.kinhdoanh is missing");
     const [seller] = await db
       .select({ id: supplier.id })
       .from(supplier)
@@ -37,7 +36,7 @@ async function placeOrder(pieces: number[]): Promise<string> {
     const id = (code: string) => items.find((row) => row.code === code)?.id;
     const created = await createOrder(
       db,
-      { id: sales?.id ?? "" },
+      sales,
       {
         supplierId: seller?.id,
         kind: "USED",

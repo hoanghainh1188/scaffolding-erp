@@ -8,12 +8,12 @@ type Params = { code: string };
 
 /** "Gửi văn phòng": a repeated submission id answers what it took (D8). */
 export const POST = withAuth<Params>(
-  async (request, { user, params }) => {
+  async (request, { actor, params }) => {
     if (!STOCKTAKE_CODE.test(params.code)) return NOT_FOUND();
     const body = await readJson(request, submitBody);
     if (!body.ok) return body.response;
     return respond(
-      await submitStocktake(catalogDb(), user, params.code, body.data),
+      await submitStocktake(catalogDb(), actor, params.code, body.data),
     );
   },
   { permission: "stocktake.count" },

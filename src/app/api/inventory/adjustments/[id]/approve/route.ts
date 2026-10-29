@@ -6,9 +6,9 @@ type Params = { id: string };
 
 /** The director approves: the lines go into the ledger now. */
 export const POST = withAuth<Params>(
-  async (_request, { user, params }) => {
+  async (_request, { actor, params }) => {
     if (!isUuid(params.id)) return NOT_FOUND();
-    return respond(await approveAdjustment(catalogDb(), user, params.id));
+    return respond(await approveAdjustment(catalogDb(), actor, params.id));
   },
   { permission: "inventory.approve" },
 );

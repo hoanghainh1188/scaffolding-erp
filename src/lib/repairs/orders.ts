@@ -39,6 +39,8 @@ import {
   type Actor,
   type ServiceResult,
 } from "@/lib/catalog/common";
+import { changeSummary, countText } from "@/domain/activity-summary";
+import { logActivity } from "@/lib/activity/log";
 import { nextDocumentCode } from "@/lib/inventory/counter";
 import {
   POST_MESSAGES,
@@ -48,6 +50,13 @@ import {
   type Tx,
 } from "@/lib/inventory/post";
 import { currentScrapPrice } from "@/lib/receiving/scrap-price";
+
+import {
+  draftSummary,
+  postedSummary,
+  repairChanges,
+  repairView,
+} from "./activity";
 
 export const REPAIR_SERVICE_MESSAGES = {
   frozen: "Phiếu đã ghi sổ, không sửa hay xóa được",
@@ -303,7 +312,13 @@ export function createRepairDraft(
           createdBy: actor.id,
         })
         .returning({ id: repairOrder.id, updatedAt: repairOrder.updatedAt });
-      await writeLines(tx, row?.id ?? "", checked.lines);
+      const id = row?.id ?? "";
+      await writeLines(tx, id, checked.lines);
+      await logActivity(tx, actor, {
+        action: "CREATE",
+        document: { type: "REPAIR_ORDER", id, code: next },
+        summary: draftSummary(await repairView(tx, id)),
+      });
       return { code: next, updatedAt: row?.updatedAt ?? new Date() };
     });
     return ok(saved);
@@ -312,6 +327,7 @@ export function createRepairDraft(
 
 export function updateRepairDraft(
   db: Database,
+  actor: Actor,
   code: string,
   body: RepairBody,
   now: BusinessDate = today(),
@@ -328,6 +344,7 @@ export function updateRepairDraft(
         throw new ServiceFailure(conflict(REPAIR_SERVICE_MESSAGES.stale));
       }
       const checked = await checkSlip(tx, body, now);
+      const before = await repairView(tx, current.id);
       await tx
         .update(repairOrder)
         .set({
@@ -340,6 +357,13 @@ export function updateRepairDraft(
         })
         .where(eq(repairOrder.id, current.id));
       await writeLines(tx, current.id, checked.lines);
+      const changes = repairChanges(before, await repairView(tx, current.id));
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: { type: "REPAIR_ORDER", id: current.id, code },
+        summary: changeSummary(changes),
+        changes,
+      });
     });
     return ok({ code, updatedAt });
   });
@@ -347,6 +371,7 @@ export function updateRepairDraft(
 
 export function deleteRepairDraft(
   db: Database,
+  actor: Actor,
   code: string,
 ): Promise<ServiceResult<null>> {
   return run(async () => {
@@ -355,7 +380,13 @@ export function deleteRepairDraft(
       if (current.status !== "DRAFT") {
         throw new ServiceFailure(conflict(REPAIR_SERVICE_MESSAGES.frozen));
       }
+      const draft = await repairView(tx, current.id);
       await tx.delete(repairOrder).where(eq(repairOrder.id, current.id));
+      await logActivity(tx, actor, {
+        action: "DELETE_DRAFT",
+        document: { type: "REPAIR_ORDER", id: current.id, code },
+        summary: `Nháp có ${countText(draft.lines.length, "mã hàng")}, chưa ghi sổ`,
+      });
     });
     return ok(null);
   });
@@ -515,6 +546,9 @@ export function postRepairOrder(
           .where(eq(repairOrderLine.id, line.orderLineId));
       }
       const postedAt = new Date();
+      const confirmed = anomalies.filter((anomaly) =>
+        confirmedKeys.includes(anomaly.key),
+      );
       await tx
         .update(repairOrder)
         .set({
@@ -523,13 +557,21 @@ export function postRepairOrder(
           postedAt,
           postingId,
           scrapPriceUsed: scrapPricePerKg,
-          confirmedNote: repairPostedNote(
-            slip.code,
-            anomalies.filter((anomaly) => confirmedKeys.includes(anomaly.key)),
-          ),
+          confirmedNote: repairPostedNote(slip.code, confirmed),
           updatedAt: postedAt,
         })
         .where(eq(repairOrder.id, slip.id));
+      await logActivity(tx, actor, {
+        action: "POST",
+        document: { type: "REPAIR_ORDER", id: slip.id, code: slip.code },
+        summary: postedSummary(
+          await repairView(tx, slip.id),
+          confirmed.length > 0
+            ? `đã xác nhận ${confirmed.map((anomaly) => anomaly.note).join("; ")}`
+            : null,
+        ),
+        anomaly: confirmed.length > 0,
+      });
       return { code: slip.code, postingId };
     });
     return ok(posted);

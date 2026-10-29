@@ -124,7 +124,7 @@ logActivity(tx: Tx, actor: ActivityActor, entry: {
 
 - Luôn nhận `tx` (không nhận `db`) nên **không thể** gọi ngoài transaction của thao tác. Kiểu `Tx` có sẵn trong service.
 - Một câu `INSERT`. Lỗi thì ném ra, transaction của thao tác rollback.
-- Tính cờ `OFF_HOURS` từ `now` (D8), `SENSITIVE` từ `changes` + `sensitive`, `ANOMALY` từ `anomaly`.
+- Tính cờ `OFF_HOURS` từ `now` (D8), `SENSITIVE` từ `sensitive`, `ANOMALY` từ `anomaly`. Service đặt `sensitive: touchesSensitive(spec, changes)` khi sửa CCCD / STK (D7).
 - Cắt tóm tắt quá 300 ký tự thành 299 + "…"; quá 50 trường đổi thì gộp (D6).
 - Sửa có `changes` rỗng (D6) thì **không ghi** và trả về luôn; service không cần tự kiểm.
 
@@ -160,7 +160,7 @@ Lý do: lớp 1 bắt chỗ quên ngay cả khi người viết quên test; lớ
 
 ### D6. Trường đổi và tóm tắt (điểm cần chốt 5)
 
-Hàm thuần `diffFields(spec, before, after)` ở `src/domain/activity.ts`:
+Hàm thuần `diffFields(spec, before, after)` ở `src/domain/activity-changes.ts` (cùng `diffLines`, `withTotal`, `capChanges`, `touchesSensitive`):
 
 - `spec` là danh sách trường của một loại chứng từ: `{ field, label, format(value) → string | null, sensitive?: "ID_NUMBER" | "BANK_ACCOUNT" }`. Mỗi loại chứng từ khai một `spec` (VD `SUPPLIER_FIELDS`, `PURCHASE_ORDER_FIELDS`) ở `src/lib/activity/fields.ts`, dùng lại `formatMoney`, `formatPhone`, `formatBusinessDate`, nhãn tình trạng.
 - So **sau khi format**: hai giá trị hiện ra giống nhau là không đổi (VD `0903123456` và `0903 123 456`). Kết quả chỉ chứa trường khác nhau.
@@ -170,7 +170,7 @@ Hàm thuần `diffFields(spec, before, after)` ở `src/domain/activity.ts`:
 
 Service sửa đọc bản ghi `FOR UPDATE` trước khi ghi (đã có), dựng `before`, ghi, dựng `after` từ dữ liệu đã kiểm, gọi `logActivity` với `diffFields(...)`. Rỗng thì `logActivity` không ghi (D4).
 
-**Tóm tắt** (cột Nội dung): mỗi service viết một câu ngắn bằng hàm thuần ở `src/domain/activity-summary.ts` (để unit test được), VD:
+**Tóm tắt** (cột Nội dung): mỗi service viết một câu ngắn bằng các hàm chung ở `src/domain/activity-summary.ts` (`changeSummary`, `joinParts`, `reasonSummary`, `clampSummary`; có unit test); câu riêng của từng chứng từ nằm cạnh service (`src/lib/{purchasing,repairs,inventory}/activity.ts`) và được kiểm bằng integration test, VD:
 
 - Sửa: tối đa 2 trường đầu "Đơn giá GG-K17: 190.000 ₫ → 185.000 ₫", còn nữa thì "… và 3 thay đổi khác".
 - Tạo đơn: "Hòa Phát mẫu · 5 mã hàng · 52.942.500 ₫". Ghi sổ phiếu nhập: "Nhận 80 khung 1,7m, 50 kích U · đã xác nhận nhận dư". Duyệt kiểm kê: "Ghi sổ 5 dòng điều chỉnh · −2.788.056 ₫". Trả lại: `Lý do: "Ghi rõ số phiếu thu hồi"`.
@@ -186,7 +186,7 @@ Service sửa đọc bản ghi `FOR UPDATE` trước khi ghi (đã có), dựng 
 ### D8. Cờ (điểm cần chốt 4)
 
 - **`OFF_HOURS`**: `src/domain/activity.ts` có `WORKING_HOURS = { start: "06:00", end: "21:00" }` (một chỗ, theo quy ước SaaS #33 (5)) và hàm thuần `isOffHours(at: Date, hours: WorkingHours): boolean`: đổi `at` sang giờ `Asia/Ho_Chi_Minh` (Intl, như `business-date.ts`), so theo phút + giây; **giờ làm việc là [06:00:00, 21:00:00)**: 05:59:59 và 21:00:00 là ngoài giờ, 06:00:00 và 20:59:59 là trong giờ. `logActivity` nhận `workingHours` làm tham số, mặc định `WORKING_HOURS`. Lý do chọn 21:00:00 là ngoài giờ: "sau 21:00" theo cách nói thường bao gồm 21:00 đúng; đặt biên nửa mở để không có khe hở hay trùng.
-- **`SENSITIVE`**: tự bật khi `changes` có trường `sensitive` (CCCD, STK) hoặc `entry.sensitive` (đổi vai trò, khóa, mở khóa, đặt lại mật khẩu). Thêm "đặt lại mật khẩu" so với issue vì đó là cách chiếm tài khoản người khác dễ nhất.
+- **`SENSITIVE`**: bật khi service truyền `sensitive: true`: sửa CCCD / STK (`touchesSensitive`), đổi vai trò, khóa, mở khóa, đặt lại mật khẩu. Thêm "đặt lại mật khẩu" so với issue vì đó là cách chiếm tài khoản người khác dễ nhất.
 - **`ANOMALY`**: service truyền `anomaly: true` khi:
   - `postReceipt` có `confirmedOverrides` không rỗng (0.2 #30),
   - `postRepairOrder` có câu hỏi chi phí cao đã xác nhận (0.2 #23),

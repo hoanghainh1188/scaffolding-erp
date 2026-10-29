@@ -93,7 +93,7 @@ describe("archiving an item with stock", () => {
       status: "ARCHIVED",
     });
     expect(archived.ok).toBe(true);
-    expect(await deleteItem(ctx.db, fx.item("OT-06"))).toEqual({
+    expect(await deleteItem(ctx.db, fx.director, fx.item("OT-06"))).toEqual({
       ok: false,
       status: 409,
       error: "Vật tư đã được dùng nên chỉ ngừng dùng được",
@@ -158,7 +158,7 @@ describe("archiving a site or workshop with stock", () => {
       status: "ARCHIVED",
     });
     expect(archived.ok && archived.data.status).toBe("ARCHIVED");
-    expect(await deleteSite(ctx.db, anPhu.id)).toEqual({
+    expect(await deleteSite(ctx.db, fx.director, anPhu.id)).toEqual({
       ok: false,
       status: 409,
       error: "Công trình đã được dùng nên chỉ ngừng dùng được",

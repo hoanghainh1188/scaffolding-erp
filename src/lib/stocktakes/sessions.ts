@@ -14,10 +14,12 @@ import {
   stocktakeGroup,
   stocktakeLine,
 } from "@/db/schema";
+import { countText, joinParts, reasonSummary } from "@/domain/activity-summary";
 import { toBusinessDate, type BusinessDate } from "@/domain/business-date";
 import { CONDITIONS, type Condition } from "@/domain/condition";
 import { DomainValueError } from "@/domain/errors";
 import type { LocationType } from "@/domain/location-type";
+import { formatMoney, toMoney } from "@/domain/money";
 import { can } from "@/domain/permissions";
 import {
   quantityFromDb,
@@ -55,6 +57,7 @@ import {
 } from "@/lib/catalog/common";
 import { nextDocumentCode } from "@/lib/inventory/counter";
 import { postMovements, type Tx } from "@/lib/inventory/post";
+import { logActivity } from "@/lib/activity/log";
 
 export const STOCKTAKE_SERVICE_MESSAGES = {
   clientStartId: "Thiếu mã yêu cầu bắt đầu",
@@ -303,7 +306,23 @@ async function startInTransaction(
       origin: "LISTED",
     })),
   );
+  await logActivity(
+    tx,
+    actor,
+    {
+      action: "CREATE",
+      document: { type: "STOCKTAKE", id: stocktakeId, code },
+      summary: `Bắt đầu kiểm kê ${place.code} · ${countText(pairs.length, "dòng")}`,
+    },
+    { now },
+  );
   return { code, lineCount: pairs.length, replayed: false };
+}
+
+/** "−2.788.056 ₫" / "+260.000 ₫": a stocktake's net change in value. */
+function signedMoney(value: number): string {
+  const text = formatMoney(toMoney(Math.abs(value)));
+  return value < 0 ? `−${text}` : `+${text}`;
 }
 
 /** Starts a session (design D4, D8); the same request id answers the same. */
@@ -710,7 +729,18 @@ async function submitInTransaction(
       updatedAt: now,
     })
     .where(eq(stocktake.id, session.id));
-  return answer(false);
+  const sent = await answer(false);
+  await logActivity(
+    tx,
+    actor,
+    {
+      action: "SUBMIT",
+      document: { type: "STOCKTAKE", id: session.id, code: session.code },
+      summary: `Gửi văn phòng ${sent.counted} / ${sent.total} dòng`,
+    },
+    { now },
+  );
+  return sent;
 }
 
 /** Sends the counts to the office (design D2, D3, D8). */
@@ -840,6 +870,24 @@ export function approveStocktake(
             updatedAt: now,
           })
           .where(eq(stocktake.id, session.id));
+        const value = posted.lines.reduce((sum, line) => sum + line.amount, 0);
+        await logActivity(
+          tx,
+          actor,
+          {
+            action: "APPROVE",
+            document: { type: "STOCKTAKE", id: session.id, code: session.code },
+            summary:
+              posted.lines.length > 0
+                ? joinParts(
+                    `Ghi sổ ${countText(posted.lines.length, "dòng")} điều chỉnh`,
+                    signedMoney(value),
+                  )
+                : "Khớp hết, không ghi sổ",
+            anomaly: lines.some((line) => line.flags.length > 0),
+          },
+          { now },
+        );
         return { code: session.code, ledgerLines: posted.lines.length };
       }),
     );
@@ -857,7 +905,7 @@ export interface ChangedStocktake {
 /** Sends chosen counted lines back to the phone (design D10). */
 export function requestRecount(
   db: Database,
-  _actor: Actor,
+  actor: Actor,
   code: string,
   body: { lineIds?: unknown },
 ): Promise<ServiceResult<ChangedStocktake>> {
@@ -924,6 +972,11 @@ export function requestRecount(
             updatedAt: new Date(),
           })
           .where(eq(stocktake.id, session.id));
+        await logActivity(tx, actor, {
+          action: "RETURN",
+          document: { type: "STOCKTAKE", id: session.id, code: session.code },
+          summary: `Yêu cầu đếm lại ${countText(ids.length, "dòng")}`,
+        });
         return { code: session.code, status: "COUNTING" as const, round };
       }),
     );
@@ -963,6 +1016,16 @@ export function returnStocktake(
             updatedAt: now,
           })
           .where(eq(stocktake.id, session.id));
+        await logActivity(
+          tx,
+          actor,
+          {
+            action: "RETURN",
+            document: { type: "STOCKTAKE", id: session.id, code: session.code },
+            summary: reasonSummary(reason),
+          },
+          { now },
+        );
         return { code: session.code, status: "COUNTING" as const, round };
       }),
     );
@@ -1005,6 +1068,16 @@ export function cancelStocktake(
             updatedAt: now,
           })
           .where(eq(stocktake.id, session.id));
+        await logActivity(
+          tx,
+          actor,
+          {
+            action: "CANCEL",
+            document: { type: "STOCKTAKE", id: session.id, code: session.code },
+            summary: reasonSummary(reason),
+          },
+          { now },
+        );
         return {
           code: session.code,
           status: "CANCELLED" as const,

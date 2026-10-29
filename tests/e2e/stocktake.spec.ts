@@ -4,6 +4,7 @@
 // measures E2E-KHO-01 at the workshop), and only as a surplus; the ledger
 // cannot be emptied, so the result is checked against the session.
 import { and, eq } from "drizzle-orm";
+import { actorByUsername } from "@/lib/activity/actor";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import { createDatabase } from "@/db/client";
@@ -13,7 +14,6 @@ import {
   location,
   stocktake,
   stocktakeLine,
-  user,
 } from "@/db/schema";
 import type { Condition } from "@/domain/condition";
 import { CONDITION_LABELS } from "@/domain/condition";
@@ -45,10 +45,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   // A retry starts where the failed try left a session open (global setup
   // runs once per run, not per retry).
   await withDb(async (db) => {
-    const [director] = await db
-      .select({ id: user.id })
-      .from(user)
-      .where(eq(user.username, "e2e.giamdoc"));
+    const director = await actorByUsername(db, "e2e.giamdoc");
     if (director) await cancelTestStocktakes(db, director);
   });
   await page.setViewportSize({ width: 375, height: 812 });

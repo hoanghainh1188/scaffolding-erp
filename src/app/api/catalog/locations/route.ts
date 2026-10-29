@@ -19,10 +19,10 @@ export const GET = withAuth(
 );
 
 export const POST = withAuth(
-  async (request, { user }) => {
+  async (request, { actor }) => {
     const body = await readJson(request, locationBody);
     if (!body.ok) return body.response;
-    return respond(await createLocation(catalogDb(), user, body.data), 201);
+    return respond(await createLocation(catalogDb(), actor, body.data), 201);
   },
   { permission: "locations.manage" },
 );

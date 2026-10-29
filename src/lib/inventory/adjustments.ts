@@ -6,6 +6,13 @@ import { alias } from "drizzle-orm/pg-core";
 
 import type { Database } from "@/db/client";
 import {
+  changeSummary,
+  countText,
+  joinParts,
+  reasonSummary,
+} from "@/domain/activity-summary";
+import { logActivity } from "@/lib/activity/log";
+import {
   inventoryLedger,
   item,
   location,
@@ -46,6 +53,11 @@ import {
 
 import { nextDocumentCode } from "./counter";
 import { postMovements, type Tx } from "./post";
+import {
+  adjustmentChanges,
+  adjustmentSummary,
+  adjustmentView,
+} from "./activity";
 
 export type AdjustmentStatus = "DRAFT" | "PENDING_APPROVAL" | "DONE";
 
@@ -490,6 +502,12 @@ async function unitsOf(tx: Tx, lines: AdjustmentLineInput[]) {
 
 const today = () => toBusinessDate(new Date());
 
+/** Adjustments and opening balances are separate types in the log. */
+const docType = (kind: string) =>
+  kind === "OPENING"
+    ? ("OPENING_BALANCE" as const)
+    : ("STOCK_ADJUSTMENT" as const);
+
 export function createAdjustment(
   db: Database,
   actor: Actor,
@@ -523,6 +541,11 @@ export function createAdjustment(
         checked.lines,
         await unitsOf(tx, checked.lines),
       );
+      await logActivity(tx, actor, {
+        action: "CREATE",
+        document: { type: docType(kind), id: adjustmentId, code },
+        summary: adjustmentSummary(await adjustmentView(tx, adjustmentId)),
+      });
       return adjustmentId;
     });
     const created = await getAdjustment(db, id);
@@ -554,6 +577,7 @@ function requireDraft(status: string): void {
 
 export function updateAdjustment(
   db: Database,
+  actor: Actor,
   id: string,
   body: AdjustmentBody,
   now: BusinessDate = today(),
@@ -564,6 +588,7 @@ export function updateAdjustment(
       requireDraft(current.status);
       const kind = current.kind as AdjustmentKind;
       const checked = await checkDocument(tx, kind, body, now);
+      const before = await adjustmentView(tx, id);
       await tx
         .update(stockAdjustment)
         .set({
@@ -574,6 +599,13 @@ export function updateAdjustment(
         })
         .where(eq(stockAdjustment.id, id));
       await writeLines(tx, id, checked.lines, await unitsOf(tx, checked.lines));
+      const changes = adjustmentChanges(before, await adjustmentView(tx, id));
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: { type: docType(current.kind), id, code: current.code },
+        summary: changeSummary(changes),
+        changes,
+      });
     });
     const updated = await getAdjustment(db, id);
     return updated ? ok(updated) : notFound();
@@ -582,13 +614,20 @@ export function updateAdjustment(
 
 export function deleteAdjustment(
   db: Database,
+  actor: Actor,
   id: string,
 ): Promise<ServiceResult<null>> {
   return runService(async () => {
     await db.transaction(async (tx) => {
       const current = await lockAdjustment(tx, id);
       requireDraft(current.status);
+      const draft = await adjustmentView(tx, id);
       await tx.delete(stockAdjustment).where(eq(stockAdjustment.id, id));
+      await logActivity(tx, actor, {
+        action: "DELETE_DRAFT",
+        document: { type: docType(current.kind), id, code: current.code },
+        summary: `Nháp: ${adjustmentSummary(draft)}`,
+      });
     });
     return ok(null);
   });
@@ -634,6 +673,11 @@ export function submitAdjustment(
           updatedAt: new Date(),
         })
         .where(eq(stockAdjustment.id, id));
+      await logActivity(tx, actor, {
+        action: "SUBMIT",
+        document: { type: docType(current.kind), id, code: current.code },
+        summary: adjustmentSummary(await adjustmentView(tx, id)),
+      });
     });
     const updated = await getAdjustment(db, id);
     return updated ? ok(updated) : notFound();
@@ -700,6 +744,14 @@ export function approveAdjustment(
           updatedAt: new Date(),
         })
         .where(eq(stockAdjustment.id, id));
+      await logActivity(tx, actor, {
+        action: "APPROVE",
+        document: { type: docType(current.kind), id, code: current.code },
+        summary: joinParts(
+          `Ghi sổ ${countText(drafts.length, "dòng")}`,
+          current.reason,
+        ),
+      });
     });
     const updated = await getAdjustment(db, id);
     return updated ? ok(updated) : notFound();
@@ -728,6 +780,11 @@ export function returnAdjustment(
           updatedAt: new Date(),
         })
         .where(eq(stockAdjustment.id, id));
+      await logActivity(tx, actor, {
+        action: "RETURN",
+        document: { type: docType(current.kind), id, code: current.code },
+        summary: reasonSummary(why),
+      });
     });
     const updated = await getAdjustment(db, id);
     return updated ? ok(updated) : notFound();

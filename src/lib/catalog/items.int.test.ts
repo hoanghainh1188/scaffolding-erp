@@ -110,12 +110,12 @@ describe("item groups", () => {
 
   it("will not delete a group with items, deletes an empty one", async () => {
     await made(frame);
-    expect(await deleteGroup(ctx.db, scaffold)).toEqual({
+    expect(await deleteGroup(ctx.db, actor, scaffold)).toEqual({
       ok: false,
       status: 409,
       error: "Nhóm hàng đã được dùng nên chỉ ngừng dùng được",
     });
-    expect(await deleteGroup(ctx.db, fittings)).toEqual({
+    expect(await deleteGroup(ctx.db, actor, fittings)).toEqual({
       ok: true,
       data: null,
     });
@@ -267,11 +267,11 @@ describe("items", () => {
       unit: "PIECE",
       standardWeightKg: "1",
     });
-    expect(await deleteItem(ctx.db, spare.id)).toEqual({
+    expect(await deleteItem(ctx.db, actor, spare.id)).toEqual({
       ok: true,
       data: null,
     });
-    expect(await deleteItem(ctx.db, ch.id)).toEqual({
+    expect(await deleteItem(ctx.db, actor, ch.id)).toEqual({
       ok: false,
       status: 409,
       error: "Vật tư đã được dùng nên chỉ ngừng dùng được",
@@ -355,8 +355,14 @@ describe("kits", () => {
       components: [{ itemId: k17.id, quantity: 4 }],
     });
     expect(edited).toMatchObject({ ok: true, data: { weightMilli: 54_000 } });
-    expect(await deleteKit(ctx.db, set.id)).toEqual({ ok: true, data: null });
+    expect(await deleteKit(ctx.db, actor, set.id)).toEqual({
+      ok: true,
+      data: null,
+    });
     // The part is free again: it can be deleted now.
-    expect(await deleteItem(ctx.db, k17.id)).toEqual({ ok: true, data: null });
+    expect(await deleteItem(ctx.db, actor, k17.id)).toEqual({
+      ok: true,
+      data: null,
+    });
   });
 });

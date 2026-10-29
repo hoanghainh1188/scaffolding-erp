@@ -5,6 +5,7 @@ import { createDatabase } from "@/db/client";
 import { inventoryCost, inventoryLedger } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import type { Condition } from "@/domain/condition";
+import { activityRows } from "@/test/activity";
 import { createTestContext } from "@/test/auth";
 import { setupInventoryFixture, type InventoryFixture } from "@/test/inventory";
 
@@ -282,6 +283,7 @@ describe("condition fix ĐC", () => {
     const edited = await data(
       updateAdjustment(
         ctx.db,
+        fx.accountant,
         draft.id,
         { ...conditionFix(), reason: "Sửa PTH-2026-064" },
         TODAY,
@@ -294,13 +296,19 @@ describe("condition fix ĐC", () => {
     );
     expect(done.posted).toHaveLength(2);
     expect(
-      await updateAdjustment(ctx.db, draft.id, conditionFix(), TODAY),
+      await updateAdjustment(
+        ctx.db,
+        fx.accountant,
+        draft.id,
+        conditionFix(),
+        TODAY,
+      ),
     ).toEqual({
       ok: false,
       status: 409,
       error: "Phiếu đã được ghi sổ",
     });
-    expect(await deleteAdjustment(ctx.db, draft.id)).toEqual({
+    expect(await deleteAdjustment(ctx.db, fx.accountant, draft.id)).toEqual({
       ok: false,
       status: 409,
       error: "Phiếu đã được ghi sổ",
@@ -339,7 +347,9 @@ describe("condition fix ĐC", () => {
       status: 400,
       error: "Phiếu cần ít nhất một dòng",
     });
-    expect((await deleteAdjustment(ctx.db, draft.id)).ok).toBe(true);
+    expect((await deleteAdjustment(ctx.db, fx.accountant, draft.id)).ok).toBe(
+      true,
+    );
     expect(await getAdjustment(ctx.db, draft.id)).toBeNull();
   });
 
@@ -505,5 +515,103 @@ describe("opening TĐK", () => {
       status: 400,
       error: "Số lượng cái phải là số nguyên",
     });
+  });
+});
+
+describe("adjustments in the activity log (activity-log 5.6)", () => {
+  it("logs the whole flow with the right document type", async () => {
+    await open([["GG-K17", "GOOD", "BAI-01", 100, 195_000]]);
+    const draft = await data(
+      createAdjustment(ctx.db, fx.accountant, conditionFix(), TODAY),
+    );
+    await data(submitAdjustment(ctx.db, fx.accountant, draft.id));
+    await data(
+      returnAdjustment(
+        ctx.db,
+        fx.director,
+        draft.id,
+        "Ghi rõ số phiếu thu hồi",
+      ),
+    );
+    await data(
+      updateAdjustment(
+        ctx.db,
+        fx.accountant,
+        draft.id,
+        { ...conditionFix(), reason: "Sửa PTH-2026-064" },
+        TODAY,
+      ),
+    );
+    // Saving it again unchanged writes nothing.
+    await data(
+      updateAdjustment(
+        ctx.db,
+        fx.accountant,
+        draft.id,
+        { ...conditionFix(), reason: "Sửa PTH-2026-064" },
+        TODAY,
+      ),
+    );
+    await data(submitAdjustment(ctx.db, fx.accountant, draft.id));
+    await data(approveAdjustment(ctx.db, fx.director, draft.id, TODAY));
+    const rows = await activityRows(ctx.db, draft.code);
+    expect(rows.map((row) => row.action)).toEqual([
+      "CREATE",
+      "SUBMIT",
+      "RETURN",
+      "UPDATE",
+      "SUBMIT",
+      "APPROVE",
+    ]);
+    expect(rows.every((row) => row.documentType === "STOCK_ADJUSTMENT")).toBe(
+      true,
+    );
+    expect(rows[2]?.summary).toBe('Lý do: "Ghi rõ số phiếu thu hồi"');
+    expect(rows[3]?.changes).toEqual([
+      {
+        field: "reason",
+        label: "Lý do",
+        before: "Sửa PTH-2026-064: 10 cái thực tế là Chờ sửa",
+        after: "Sửa PTH-2026-064",
+      },
+    ]);
+    expect(rows[5]?.summary).toBe("Ghi sổ 2 dòng · Sửa PTH-2026-064");
+  });
+
+  it("logs an opening balance as such, and a deleted draft", async () => {
+    const draft = await data(
+      createAdjustment(
+        ctx.db,
+        fx.accountant,
+        {
+          kind: "OPENING",
+          reason: "Số tồn khi bắt đầu dùng phần mềm",
+          openingDate: "2026-09-30",
+          lines: [
+            {
+              lineType: "OPENING",
+              itemId: fx.item("GG-K15"),
+              condition: "GOOD",
+              locationId: fx.place("BAI-01"),
+              quantity: "600",
+              unitCost: 165_000,
+            },
+          ],
+        },
+        TODAY,
+      ),
+    );
+    await data(deleteAdjustment(ctx.db, fx.accountant, draft.id));
+    expect(await activityRows(ctx.db, draft.code)).toMatchObject([
+      {
+        action: "CREATE",
+        documentType: "OPENING_BALANCE",
+        summary: "1 dòng · Số tồn khi bắt đầu dùng phần mềm",
+      },
+      {
+        action: "DELETE_DRAFT",
+        documentType: "OPENING_BALANCE",
+      },
+    ]);
   });
 });
