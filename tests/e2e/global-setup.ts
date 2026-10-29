@@ -1,10 +1,11 @@
 // Before any E2E test: put the e2e.* accounts in a known state and remove
 // the throwaway accounts earlier runs created. Uses the same database as the
 // dev server (DATABASE_URL).
-import { and, eq, like, notInArray, sql } from "drizzle-orm";
+import { and, eq, inArray, like, notInArray, sql } from "drizzle-orm";
 
 import { createDatabase, type Database } from "@/db/client";
 import {
+  activityLog,
   customer,
   goodsReceipt,
   inventoryCost,
@@ -16,11 +17,14 @@ import {
   purchaseOrder,
   purchaseOrderLine,
   repairOrder,
+  session,
   site,
   stockAdjustmentLine,
   stocktake,
   user,
 } from "@/db/schema";
+import { actorByUsername, type ActivityActor } from "@/lib/activity/actor";
+import { seedActivity } from "@/lib/activity/sample";
 import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
 import { createItem } from "@/lib/catalog/items";
@@ -91,7 +95,7 @@ async function removeTestOrders(db: Database) {
 /** Fixed items inventory.spec.ts posts to; created once, never deleted. */
 export const E2E_STOCK_ITEMS = ["E2E-KHO-01", "E2E-KHO-02"] as const;
 
-async function ensureStockItems(db: Database, actor: { id: string }) {
+async function ensureStockItems(db: Database, actor: ActivityActor) {
   const [group] = await db
     .select({ id: itemGroup.id })
     .from(itemGroup)
@@ -118,7 +122,7 @@ async function ensureStockItems(db: Database, actor: { id: string }) {
  * spec reads it) into Tốt at the yard, and needs a Tốt average to ask about
  * a high cost. Tops both up when short; ledger lines stay, like any E2E row.
  */
-async function ensureRepairStock(db: Database, actor: { id: string }) {
+async function ensureRepairStock(db: Database, actor: ActivityActor) {
   const [kho] = await db
     .select({ id: item.id })
     .from(item)
@@ -191,7 +195,7 @@ async function ensureRepairStock(db: Database, actor: { id: string }) {
  * another CI shard, so give it one opening piece at the yard when missing.
  * Runs after the D13 sample session, which therefore never lists it.
  */
-async function ensureStocktakeCost(db: Database, actor: { id: string }) {
+async function ensureStocktakeCost(db: Database, actor: ActivityActor) {
   const [kho] = await db
     .select({ id: item.id })
     .from(item)
@@ -252,10 +256,7 @@ export const E2E_STOCKTAKE_PLACE = "XUONG-01";
  * One place holds one open session, so a session somebody else is counting
  * there stops the run instead of being thrown away.
  */
-export async function cancelTestStocktakes(
-  db: Database,
-  actor: { id: string },
-) {
+export async function cancelTestStocktakes(db: Database, actor: ActivityActor) {
   const open = await db
     .select({
       code: stocktake.code,
@@ -277,14 +278,29 @@ export async function cancelTestStocktakes(
         `${E2E_STOCKTAKE_PLACE} đang có phiên ${row.code} của ${row.name}, hủy hoặc duyệt trước khi chạy E2E`,
       );
     }
-    const done = await cancelStocktake(
-      db,
-      { id: actor.id, role: "DIRECTOR" },
-      row.code,
-      { reason: "E2E dọn phiên còn sót" },
-    );
+    const done = await cancelStocktake(db, actor, row.code, {
+      reason: "E2E dọn phiên còn sót",
+    });
     if (!done.ok) throw new Error(`${row.code}: ${done.error}`);
   }
+}
+
+/**
+ * Throwaway accounts of auth.spec.ts (activity-log design D13): those with
+ * no activity log row are deleted (sessions and accounts go with them, ON
+ * DELETE CASCADE); the log keeps a foreign key to whoever acted, so the
+ * rest are locked and signed out instead, and stay in the dev database.
+ */
+async function removeTempAccounts(db: Database): Promise<void> {
+  const temp = like(user.username, `${E2E_TEMP_PREFIX}%`);
+  const logged = sql`exists (select 1 from ${activityLog} where ${activityLog.userId} = ${user.id})`;
+  await db.delete(user).where(and(temp, sql`not ${logged}`));
+  const kept = db.select({ id: user.id }).from(user).where(temp);
+  await db.delete(session).where(inArray(session.userId, kept));
+  await db
+    .update(user)
+    .set({ status: "LOCKED", updatedAt: new Date() })
+    .where(and(temp, eq(user.status, "ACTIVE")));
 }
 
 export default async function globalSetup(): Promise<void> {
@@ -299,19 +315,13 @@ export default async function globalSetup(): Promise<void> {
       secret: env.BETTER_AUTH_SECRET,
       baseURL: env.BETTER_AUTH_URL,
     });
-    // Test-only rows: sessions and accounts go with them (ON DELETE CASCADE).
-    await handle.db
-      .delete(user)
-      .where(like(user.username, `${E2E_TEMP_PREFIX}%`));
+    await removeTempAccounts(handle.db);
     await seedAccounts({ db: handle.db, auth }, E2E_ACCOUNTS, {
       password: env.E2E_PASSWORD,
       reset: true,
     });
     // The D9 / D16 sample data, so catalog tests and screenshots have rows.
-    const [director] = await handle.db
-      .select({ id: user.id })
-      .from(user)
-      .where(eq(user.username, "e2e.giamdoc"));
+    const director = await actorByUsername(handle.db, "e2e.giamdoc");
     await removeTestOrders(handle.db);
     await removeTestRepairDrafts(handle.db);
     await removeTestCatalogRows(handle.db);
@@ -326,10 +336,7 @@ export default async function globalSetup(): Promise<void> {
       if (!(await currentScrapPrice(handle.db))) {
         await setScrapPrice(handle.db, director, { pricePerKg: 7_500 });
       }
-      const [warehouse] = await handle.db
-        .select({ id: user.id })
-        .from(user)
-        .where(eq(user.username, "e2e.thukho"));
+      const warehouse = await actorByUsername(handle.db, "e2e.thukho");
       if (warehouse) {
         await seedReceiving(handle.db, { director, warehouse });
       }
@@ -341,6 +348,17 @@ export default async function globalSetup(): Promise<void> {
       await cancelTestStocktakes(handle.db, director);
       if (warehouse) await seedStocktakes(handle.db, warehouse);
       await ensureStocktakeCost(handle.db, director);
+      // The D18 sample on 27–28/10/2026 (activity-log design D13), once.
+      const accountant = await actorByUsername(handle.db, "e2e.ketoan");
+      const sales = await actorByUsername(handle.db, "e2e.kinhdoanh");
+      if (accountant && sales && warehouse) {
+        await seedActivity(handle.db, {
+          director,
+          accountant,
+          sales,
+          warehouse,
+        });
+      }
     }
   } finally {
     await handle.close();

@@ -72,7 +72,7 @@ describe("customers", () => {
     });
     expect(first).toMatchObject({ ok: true, data: { code: "NT-0001" } });
     expect(second).toMatchObject({ ok: true, data: { code: "NT-0002" } });
-    if (second.ok) await deleteCustomer(ctx.db, second.data.id);
+    if (second.ok) await deleteCustomer(ctx.db, actor, second.data.id);
     const third = await createCustomer(ctx.db, actor, {
       kind: "PERSON",
       name: "Anh Hùng",
@@ -157,7 +157,7 @@ describe("customers", () => {
     const owner = await customerId();
     const place = await siteFor(owner);
     await updateSite(ctx.db, actor, place.id, { status: "ARCHIVED" });
-    expect(await deleteCustomer(ctx.db, owner)).toEqual({
+    expect(await deleteCustomer(ctx.db, actor, owner)).toEqual({
       ok: false,
       status: 409,
       error: "Nhà thầu đã được dùng nên chỉ ngừng dùng được",
@@ -247,7 +247,10 @@ describe("suppliers", () => {
     );
     await updateSupplier(ctx.db, actor, id, { status: "ARCHIVED" });
     expect(await listSuppliers(ctx.db)).toHaveLength(0);
-    expect(await deleteSupplier(ctx.db, id)).toEqual({ ok: true, data: null });
+    expect(await deleteSupplier(ctx.db, actor, id)).toEqual({
+      ok: true,
+      data: null,
+    });
   });
 });
 
@@ -330,7 +333,7 @@ describe("sites", () => {
   it("deletes a site created by mistake with its location", async () => {
     const owner = await customerId();
     const place = await siteFor(owner);
-    expect(await deleteSite(ctx.db, place.id)).toEqual({
+    expect(await deleteSite(ctx.db, actor, place.id)).toEqual({
       ok: true,
       data: null,
     });
@@ -374,7 +377,7 @@ describe("locations", () => {
       status: 409,
       error: "Phải còn ít nhất một bãi đang dùng",
     });
-    expect(await deleteLocation(ctx.db, yard?.id ?? "")).toMatchObject({
+    expect(await deleteLocation(ctx.db, actor, yard?.id ?? "")).toMatchObject({
       status: 409,
     });
   });

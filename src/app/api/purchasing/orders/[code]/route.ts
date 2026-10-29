@@ -22,12 +22,12 @@ export const GET = withAuth<Params>(
 
 /** The whole order from D3, with the updatedAt the form was opened with. */
 export const PATCH = withAuth<Params>(
-  async (request, { user, params }) => {
+  async (request, { actor, params }) => {
     if (!ORDER_CODE.test(params.code)) return NOT_FOUND();
     const body = await readJson(request, orderBody);
     if (!body.ok) return body.response;
     return respond(
-      await updateOrder(catalogDb(), user, params.code, body.data),
+      await updateOrder(catalogDb(), actor, params.code, body.data),
     );
   },
   { permission: "purchasing.manage" },
@@ -35,9 +35,9 @@ export const PATCH = withAuth<Params>(
 
 /** Drafts only; a placed order is cancelled instead. */
 export const DELETE = withAuth<Params>(
-  async (_request, { params }) => {
+  async (_request, { actor, params }) => {
     if (!ORDER_CODE.test(params.code)) return NOT_FOUND();
-    return respond(await deleteOrder(catalogDb(), params.code));
+    return respond(await deleteOrder(catalogDb(), actor, params.code));
   },
   { permission: "purchasing.manage" },
 );

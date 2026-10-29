@@ -2,6 +2,8 @@
 // submit with the book at "Xong mã này", approve into the ledger, recount,
 // return, cancel, and the read side.
 import { and, eq, sql } from "drizzle-orm";
+import { activityRows, activityTrail } from "@/test/activity";
+import { systemActor, type ActivityActor } from "@/lib/activity/actor";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase } from "@/db/client";
@@ -45,8 +47,8 @@ const OCT_20 = "2026-10-20" as BusinessDate;
 const OCT_28 = "2026-10-28" as BusinessDate;
 
 let fx: InventoryFixture;
-let keeper: { id: string; role: "WAREHOUSE" };
-let director: { id: string; role: "DIRECTOR" };
+let keeper: ActivityActor;
+let director: ActivityActor;
 
 beforeEach(async () => {
   fx = await setupInventoryFixture(ctx);
@@ -55,8 +57,11 @@ beforeEach(async () => {
     username: "vantung",
     name: "Văn Tùng",
   });
-  keeper = { id: user.id, role: "WAREHOUSE" };
-  director = { id: fx.director.id, role: "DIRECTOR" };
+  keeper = systemActor(
+    { id: user.id, role: "WAREHOUSE" },
+    { device: "MOBILE" },
+  );
+  director = fx.director;
 });
 
 /** The database clock: ledger created_at comes from it (design D2). */
@@ -139,7 +144,7 @@ async function openD13() {
 async function start(
   groupIds: string[] | null = null,
   place = "BAI-01",
-  actor: { id: string } = keeper,
+  actor: ActivityActor = keeper,
 ) {
   const result = await startStocktake(
     ctx.db,
@@ -1178,6 +1183,90 @@ describe("queries (4.8)", () => {
     expect(open).toMatchObject([
       { code, status: "COUNTING", recountLines: 1, counted: 5, total: 6 },
       { locationCode: "XUONG-01", status: "COUNTING", recountLines: 0 },
+    ]);
+  });
+});
+
+describe("stocktakes in the activity log (activity-log 5.5)", () => {
+  it("logs start, submit and an approval with flagged lines", async () => {
+    const code = await d13Session();
+    await approveStocktake(ctx.db, director, code, {}, OCT_28);
+    const rows = await activityRows(ctx.db, code);
+    expect(rows.map((row) => row.action)).toEqual([
+      "CREATE",
+      "SUBMIT",
+      "APPROVE",
+    ]);
+    expect(rows[0]?.summary).toMatch(/^Bắt đầu kiểm kê BAI-01 · \d+ dòng$/);
+    expect(rows[0]).toMatchObject({ role: "WAREHOUSE", device: "MOBILE" });
+    expect(rows[1]?.summary).toMatch(/^Gửi văn phòng \d+ \/ \d+ dòng$/);
+    expect(rows[2]).toMatchObject({
+      role: "DIRECTOR",
+      summary: "Ghi sổ 5 dòng điều chỉnh · −2.788.056 ₫",
+    });
+    expect(rows[2]?.flags).toContain("ANOMALY");
+  });
+
+  it("an approval that fails leaves no APPROVE row", async () => {
+    const code = await d13Session();
+    await post([
+      {
+        code: "GG-CH",
+        condition: "GOOD",
+        pieces: -2_460,
+        movement: "SALE_OUT",
+      },
+    ]);
+    expect(
+      (await approveStocktake(ctx.db, director, code, {}, OCT_28)).ok,
+    ).toBe(false);
+    expect(await activityTrail(ctx.db, code)).toEqual([
+      `CREATE ${code}`,
+      `SUBMIT ${code}`,
+    ]);
+  });
+
+  it("two approvals at once log one APPROVE row", async () => {
+    const code = await d13Session();
+    await Promise.all([
+      approveStocktake(ctx.db, director, code, {}, OCT_28),
+      approveStocktake(other.db, director, code, {}, OCT_28),
+    ]);
+    expect(
+      (await activityTrail(ctx.db, code)).filter((row) =>
+        row.startsWith("APPROVE"),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("a repeated submission adds no row", async () => {
+    await openD13();
+    const code = await start();
+    const id = crypto.randomUUID();
+    await submit(code, D13_COUNTS, {}, id);
+    await submit(code, D13_COUNTS, {}, id);
+    expect(
+      (await activityTrail(ctx.db, code)).filter((row) =>
+        row.startsWith("SUBMIT"),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("logs a return with its reason, a recount and a cancel", async () => {
+    const code = await d13Session();
+    await returnStocktake(ctx.db, director, code, {
+      reason: "Đếm lại khu B",
+    });
+    await submit(code, D13_COUNTS);
+    const [line] = await sessionLines(code);
+    await requestRecount(ctx.db, director, code, { lineIds: [line?.id] });
+    await cancelStocktake(ctx.db, director, code, { reason: "Bắt đầu nhầm" });
+    const rows = (await activityRows(ctx.db, code)).slice(2);
+    expect(rows.map((row) => [row.action, row.summary])).toEqual([
+      ["RETURN", 'Lý do: "Đếm lại khu B"'],
+      ["SUBMIT", expect.stringMatching(/^Gửi văn phòng/)],
+      ["RETURN", "Yêu cầu đếm lại 1 dòng"],
+      ["CANCEL", 'Lý do: "Bắt đầu nhầm"'],
     ]);
   });
 });

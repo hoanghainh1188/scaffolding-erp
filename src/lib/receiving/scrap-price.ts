@@ -5,8 +5,11 @@ import { desc, eq } from "drizzle-orm";
 import type { Database } from "@/db/client";
 import { scrapPrice, user } from "@/db/schema";
 import { DomainValueError } from "@/domain/errors";
-import { toMoney, type Money } from "@/domain/money";
+import { diffFields, type FieldSpec } from "@/domain/activity-changes";
+import { changeSummary, joinParts } from "@/domain/activity-summary";
+import { formatMoney, toMoney, type Money } from "@/domain/money";
 import { checkScrapNote, checkScrapPrice } from "@/domain/scrap-price";
+import { logActivity } from "@/lib/activity/log";
 import { ok, type Actor, type ServiceResult } from "@/lib/catalog/common";
 
 export interface ScrapPriceRow {
@@ -68,6 +71,20 @@ export interface ScrapPriceBody {
   note?: string | null;
 }
 
+const perKg = (value: number) => `${formatMoney(toMoney(value))}/kg`;
+
+const SCRAP_FIELDS: readonly FieldSpec<{
+  pricePerKg: number;
+  note: string | null;
+}>[] = [
+  {
+    field: "pricePerKg",
+    label: "Giá sắt vụn",
+    value: (row) => perKg(row.pricePerKg),
+  },
+  { field: "note", label: "Ghi chú", value: (row) => row.note },
+];
+
 /** "Lưu giá": adds a row; the price holds from now on. */
 export async function setScrapPrice(
   db: Database,
@@ -84,9 +101,26 @@ export async function setScrapPrice(
     const field = error.message.startsWith("Ghi chú") ? "note" : "pricePerKg";
     return { ok: false, status: 422, error: error.message, field };
   }
-  await db
-    .insert(scrapPrice)
-    .values({ pricePerKg: price, note, createdBy: actor.id });
+  await db.transaction(async (tx) => {
+    const previous = await currentScrapPrice(tx);
+    const [row] = await tx
+      .insert(scrapPrice)
+      .values({ pricePerKg: price, note, createdBy: actor.id })
+      .returning({ id: scrapPrice.id });
+    const changes = previous
+      ? diffFields(SCRAP_FIELDS, previous, { pricePerKg: price, note })
+      : [];
+    await logActivity(tx, actor, {
+      action: "UPDATE",
+      document: { type: "SCRAP_PRICE", id: String(row?.id ?? ""), code: null },
+      summary:
+        changes.length > 0
+          ? changeSummary(changes)
+          : joinParts(`Giá sắt vụn: ${perKg(price)}`, note),
+      // The first price has nothing to compare with: always logged.
+      changes: previous ? changes : undefined,
+    });
+  });
   const current = await currentScrapPrice(db);
   if (!current) throw new Error("scrap price insert returned nothing");
   return ok(current);

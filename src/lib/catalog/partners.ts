@@ -23,7 +23,11 @@ import {
   maskIdNumber,
   normalizePhone,
 } from "@/domain/partner-fields";
+import { diffFields, touchesSensitive } from "@/domain/activity-changes";
+import { changeSummary, joinParts } from "@/domain/activity-summary";
 import { toSearchText } from "@/domain/search-text";
+import { CUSTOMER_FIELDS, SUPPLIER_FIELDS } from "@/lib/activity/fields";
+import { logActivity } from "@/lib/activity/log";
 import type { Executor } from "@/lib/auth/credentials";
 
 import {
@@ -270,7 +274,13 @@ export function createCustomer(
           updatedBy: actor.id,
         })
         .returning({ id: customer.id });
-      return row?.id ?? "";
+      const id = row?.id ?? "";
+      await logActivity(tx, actor, {
+        action: "CREATE",
+        document: { type: "CUSTOMER", id, code },
+        summary: joinParts(values.name, values.contactName),
+      });
+      return id;
     });
     const created = await getCustomer(db, id);
     return created ? ok(created) : notFound();
@@ -321,6 +331,16 @@ export function updateCustomer(
           updatedAt: new Date(),
         })
         .where(eq(customer.id, id));
+      const changes = diffFields(CUSTOMER_FIELDS, current, {
+        ...values,
+        status: input.status ?? current.status,
+      });
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: { type: "CUSTOMER", id, code: current.code },
+        summary: changeSummary(changes),
+        changes,
+      });
       return true;
     });
     if (!found) return notFound();
@@ -331,15 +351,25 @@ export function updateCustomer(
 
 export function deleteCustomer(
   db: Database,
+  actor: Actor,
   id: string,
 ): Promise<ServiceResult<null>> {
   return runService(async () => {
     try {
-      const deleted = await db
-        .delete(customer)
-        .where(eq(customer.id, id))
-        .returning({ id: customer.id });
-      return deleted.length > 0 ? ok(null) : notFound();
+      const found = await db.transaction(async (tx) => {
+        const [deleted] = await tx
+          .delete(customer)
+          .where(eq(customer.id, id))
+          .returning({ code: customer.code, name: customer.name });
+        if (!deleted) return false;
+        await logActivity(tx, actor, {
+          action: "DELETE",
+          document: { type: "CUSTOMER", id, code: deleted.code },
+          summary: deleted.name,
+        });
+        return true;
+      });
+      return found ? ok(null) : notFound();
     } catch (error: unknown) {
       if (isForeignKeyViolation(error)) {
         return conflict(PARTNER_MESSAGES.customerInUse);
@@ -496,6 +526,13 @@ export function createSupplier(
           updatedBy: actor.id,
         })
         .returning();
+      if (created) {
+        await logActivity(tx, actor, {
+          action: "CREATE",
+          document: { type: "SUPPLIER", id: created.id, code },
+          summary: values.name,
+        });
+      }
       return created;
     });
     return row ? ok(toSupplierRow(row)) : notFound();
@@ -538,7 +575,16 @@ export function updateSupplier(
         })
         .where(eq(supplier.id, id))
         .returning();
-      return updated ?? null;
+      if (!updated) return null;
+      const changes = diffFields(SUPPLIER_FIELDS, current, updated);
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: { type: "SUPPLIER", id, code: current.code },
+        summary: changeSummary(changes),
+        changes,
+        sensitive: touchesSensitive(SUPPLIER_FIELDS, changes),
+      });
+      return updated;
     });
     return row ? ok(toSupplierRow(row)) : notFound();
   });
@@ -546,15 +592,25 @@ export function updateSupplier(
 
 export function deleteSupplier(
   db: Database,
+  actor: Actor,
   id: string,
 ): Promise<ServiceResult<null>> {
   return runService(async () => {
     try {
-      const deleted = await db
-        .delete(supplier)
-        .where(eq(supplier.id, id))
-        .returning({ id: supplier.id });
-      return deleted.length > 0 ? ok(null) : notFound();
+      const found = await db.transaction(async (tx) => {
+        const [deleted] = await tx
+          .delete(supplier)
+          .where(eq(supplier.id, id))
+          .returning({ code: supplier.code, name: supplier.name });
+        if (!deleted) return false;
+        await logActivity(tx, actor, {
+          action: "DELETE",
+          document: { type: "SUPPLIER", id, code: deleted.code },
+          summary: deleted.name,
+        });
+        return true;
+      });
+      return found ? ok(null) : notFound();
     } catch (error: unknown) {
       if (isForeignKeyViolation(error)) {
         return conflict(PARTNER_MESSAGES.supplierInUse);

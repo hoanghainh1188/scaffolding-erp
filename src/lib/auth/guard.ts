@@ -4,6 +4,7 @@ import { forbidden, redirect } from "next/navigation";
 import { headers } from "next/headers";
 
 import { can, type Permission } from "@/domain/permissions";
+import { actorFromRequest, type ActivityActor } from "@/lib/activity/actor";
 import { fail } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/current-user";
 
@@ -56,6 +57,8 @@ export interface GuardOptions {
 
 export interface GuardedContext<P> {
   user: CurrentUser;
+  /** The user as the activity log records them (activity-log design D4). */
+  actor: ActivityActor;
   params: P;
 }
 
@@ -90,7 +93,11 @@ export function withAuth<P = Record<string, never>>(
     if (options.permission && !can(user.role, options.permission)) {
       return fail(GUARD_MESSAGES.forbidden, 403);
     }
-    return handler(request, { user, params: await context.params });
+    return handler(request, {
+      user,
+      actor: actorFromRequest(user, headers),
+      params: await context.params,
+    });
   };
 }
 

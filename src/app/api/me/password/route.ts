@@ -15,12 +15,12 @@ const bodySchema = z.object({
 
 // Allowed while the temporary password is still pending: that is its job.
 export const POST = withAuth(
-  async (request, { user }) => {
+  async (request, { user, actor }) => {
     const body = await readJson(request, bodySchema);
     if (!body.ok) return body.response;
     const result = await changePassword(
       { db: getDatabase(), auth: getAuth() },
-      { userId: user.id, currentSessionId: user.sessionId, ...body.data },
+      { actor, currentSessionId: user.sessionId, ...body.data },
     );
     return result.ok ? ok(null) : fail(result.error, result.status);
   },

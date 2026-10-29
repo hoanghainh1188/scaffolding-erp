@@ -23,10 +23,10 @@ export const GET = withAuth(
 );
 
 export const POST = withAuth(
-  async (request, { user }) => {
+  async (request, { actor }) => {
     const body = await readJson(request, scrapPriceBody);
     if (!body.ok) return body.response;
-    return respond(await setScrapPrice(catalogDb(), user, body.data), 201);
+    return respond(await setScrapPrice(catalogDb(), actor, body.data), 201);
   },
   { permission: "scrap-price.manage" },
 );

@@ -6,9 +6,12 @@ import { z } from "zod";
 import type { Database } from "@/db/client";
 import { account, loginThrottle, session, user } from "@/db/schema";
 import { isDevice, type Device } from "@/domain/device";
-import { ROLES, type Role } from "@/domain/role";
+import { joinParts } from "@/domain/activity-summary";
+import { ROLE_LABELS, ROLES, type Role } from "@/domain/role";
 import { generateTempPassword } from "@/domain/temp-password";
 import { isValidUsername, normalizeUsername } from "@/domain/username";
+import type { ActivityActor } from "@/lib/activity/actor";
+import { logActivity } from "@/lib/activity/log";
 import type { Auth } from "@/lib/auth/auth";
 import {
   CREDENTIAL_PROVIDER,
@@ -57,10 +60,19 @@ export interface UserServiceDeps {
   auth: Auth;
 }
 
-/** The director doing the change. */
-export interface Actor {
-  id: string;
-}
+/** The director doing the change, as the activity log records them. */
+export type Actor = ActivityActor;
+
+const USER_STATUS_LABELS: Readonly<Record<UserStatus, string>> = {
+  ACTIVE: "Đang dùng",
+  LOCKED: "Đã khóa",
+};
+
+const userDocument = (target: { id: string; username: string }) => ({
+  type: "USER" as const,
+  id: target.id,
+  code: target.username,
+});
 
 const MAX_NAME_LENGTH = 100;
 
@@ -179,6 +191,12 @@ export async function createUser(
         password: tempPassword,
         mustChangePassword: true,
       });
+      // Never the temporary password (activity-log design D7).
+      await logActivity(tx, actor, {
+        action: "CREATE",
+        document: userDocument({ id, username: input.username }),
+        summary: joinParts(input.name, ROLE_LABELS[input.role]),
+      });
       return loadRow(tx, id);
     });
     if (row === "forbidden") return forbidden();
@@ -205,6 +223,12 @@ export async function resetPassword(
     if (!target) return notFound();
     if (target.status !== "ACTIVE") return conflict(USER_MESSAGES.resetLocked);
     await setPassword(tx, target, hash);
+    await logActivity(tx, actor, {
+      action: "UPDATE",
+      document: userDocument(target),
+      summary: `Đặt lại mật khẩu cho ${target.username}`,
+      sensitive: true,
+    });
     return {
       ok: true as const,
       data: { user: toUserRow(target), tempPassword },
@@ -232,6 +256,13 @@ export async function unlockUser(
       .update(user)
       .set({ status: "ACTIVE", updatedAt: new Date() })
       .where(eq(user.id, targetId));
+    await logActivity(tx, actor, {
+      action: "UPDATE",
+      document: userDocument(target),
+      summary: `Mở khóa ${target.username}, cấp mật khẩu tạm mới`,
+      changes: [statusChange(target.status as UserStatus, "ACTIVE")],
+      sensitive: true,
+    });
     return {
       ok: true as const,
       data: { user: { ...toUserRow(target), status: "ACTIVE" }, tempPassword },
@@ -259,6 +290,13 @@ export async function lockUser(
       .where(eq(user.id, targetId));
     // Signed out everywhere, right away (D5).
     await tx.delete(session).where(eq(session.userId, targetId));
+    await logActivity(tx, actor, {
+      action: "UPDATE",
+      document: userDocument(target),
+      summary: `Khóa tài khoản ${target.username}`,
+      changes: [statusChange(target.status as UserStatus, "LOCKED")],
+      sensitive: true,
+    });
     return {
       ok: true as const,
       data: { user: { ...toUserRow(target), status: "LOCKED" as const } },
@@ -285,11 +323,39 @@ export async function changeRole(
       .update(user)
       .set({ role, updatedAt: new Date() })
       .where(eq(user.id, targetId));
+    const was = target.role as Role;
+    const changes =
+      was === role
+        ? []
+        : [
+            {
+              field: "role",
+              label: "Vai trò",
+              before: ROLE_LABELS[was],
+              after: ROLE_LABELS[role],
+            },
+          ];
+    await logActivity(tx, actor, {
+      action: "UPDATE",
+      document: userDocument(target),
+      summary: `Vai trò ${target.username}: ${ROLE_LABELS[was]} → ${ROLE_LABELS[role]}`,
+      changes,
+      sensitive: true,
+    });
     return {
       ok: true as const,
       data: { user: { ...toUserRow(target), role } },
     };
   });
+}
+
+function statusChange(from: UserStatus, to: UserStatus) {
+  return {
+    field: "status",
+    label: "Trạng thái",
+    before: USER_STATUS_LABELS[from],
+    after: USER_STATUS_LABELS[to],
+  };
 }
 
 /**

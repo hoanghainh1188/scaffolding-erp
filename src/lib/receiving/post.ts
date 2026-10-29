@@ -19,6 +19,7 @@ import {
   purchaseOrderLine,
   supplier,
 } from "@/db/schema";
+import { joinParts } from "@/domain/activity-summary";
 import { toBusinessDate, type BusinessDate } from "@/domain/business-date";
 import { CONDITIONS } from "@/domain/condition";
 import { DomainValueError } from "@/domain/errors";
@@ -56,6 +57,7 @@ import {
   receiptAnomalies,
   receiptPostedNote,
   unconfirmedAnomalies,
+  type Anomaly,
 } from "@/domain/receipt-anomalies";
 import { costTrip, needsScrapPrice } from "@/domain/receipt-cost";
 import {
@@ -67,6 +69,7 @@ import {
   type Actor,
   type ServiceResult,
 } from "@/lib/catalog/common";
+import { logActivity } from "@/lib/activity/log";
 import { nextDocumentCode } from "@/lib/inventory/counter";
 import { postMovements, type Tx } from "@/lib/inventory/post";
 import { receiptSummary } from "@/lib/purchasing/receipts";
@@ -470,6 +473,17 @@ async function postInTransaction(
     });
   }
   await tx.insert(purchaseOrderEvent).values(events);
+  await logActivity(
+    tx,
+    actor,
+    {
+      action: "POST",
+      document: { type: "GOODS_RECEIPT", id: receiptId, code },
+      summary: receiptActivitySummary(order.code, paired, confirmed),
+      anomaly: confirmed.length > 0,
+    },
+    { now },
+  );
 
   return {
     code,
@@ -479,6 +493,30 @@ async function postInTransaction(
     orderOutcome: next.outcome,
     replayed: false,
   };
+}
+
+/**
+ * "Nhận 80 cái GG-K17, 50 cái PK-KU từ PO-2026-052 · đã xác nhận nhận dư
+ * GG-K17" (activity-log design D6): the first three items, then a count.
+ */
+function receiptActivitySummary(
+  orderCode: string,
+  paired: readonly { open: ReceivingLine; line: ReceiptLineInput }[],
+  confirmed: readonly Anomaly[],
+): string {
+  const received = paired
+    .filter(({ line }) => line.quantityMilli > 0)
+    .map(
+      ({ open, line }) =>
+        `${formatQuantity(toQuantity(line.quantityMilli, open.itemUnit))} ${QUANTITY_UNIT_LABELS[open.itemUnit]} ${open.itemCode}`,
+    );
+  const shown = received.slice(0, 3).join(", ");
+  const more = received.length > 3 ? ` và ${received.length - 3} mã khác` : "";
+  return joinParts(
+    received.length > 0 ? `Nhận ${shown}${more} từ ${orderCode}` : orderCode,
+    confirmed.length > 0 &&
+      `đã xác nhận ${confirmed.map((anomaly) => anomaly.note).join("; ")}`,
+  );
 }
 
 /** "Xác nhận nhập kho" (spec goods-receipts). */

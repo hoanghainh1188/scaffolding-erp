@@ -14,6 +14,11 @@ import {
 import { toSearchText } from "@/domain/search-text";
 import { WEIGHT_MESSAGES } from "@/domain/weight-conversion";
 
+import { diffFields } from "@/domain/activity-changes";
+import { changeSummary, joinParts } from "@/domain/activity-summary";
+import { ITEM_FIELDS, type ItemView } from "@/lib/activity/fields";
+import { logActivity } from "@/lib/activity/log";
+
 import { claimItemOrKitCode } from "./codes";
 import {
   archivedAt,
@@ -219,6 +224,26 @@ async function requireActiveGroup(
   }
 }
 
+/** An item as the activity log compares it: the group by its name. */
+async function itemView(
+  tx: Pick<Database, "select">,
+  row: Omit<ItemView, "groupName"> & { groupId: string },
+): Promise<ItemView> {
+  const [group] = await tx
+    .select({ name: itemGroup.name })
+    .from(itemGroup)
+    .where(eq(itemGroup.id, row.groupId));
+  return {
+    name: row.name,
+    groupName: group?.name ?? "",
+    standardWeightKg: row.standardWeightKg,
+    dailyRentalPrice: row.dailyRentalPrice,
+    lostPrice: row.lostPrice,
+    damagePrice: row.damagePrice,
+    status: row.status,
+  };
+}
+
 export function createItem(
   db: Database,
   actor: Actor,
@@ -259,7 +284,16 @@ export function createItem(
           updatedBy: actor.id,
         })
         .returning({ id: item.id });
-      return row?.id ?? "";
+      const id = row?.id ?? "";
+      await logActivity(tx, actor, {
+        action: "CREATE",
+        document: { type: "ITEM", id, code },
+        summary: joinParts(
+          name,
+          unit === "KG" ? "tính theo kg" : "tính theo cái",
+        ),
+      });
+      return id;
     });
     const created = await getItem(db, id);
     return created ? ok(created) : notFound();
@@ -347,29 +381,44 @@ export function updateItem(
           );
         }
       }
+      const next = {
+        name,
+        groupId: input.groupId ?? current.groupId,
+        standardWeightKg: weight,
+        dailyRentalPrice: rent,
+        lostPrice:
+          input.lostPrice === undefined
+            ? current.lostPrice
+            : price(input.lostPrice),
+        damagePrice:
+          input.damagePrice === undefined
+            ? current.damagePrice
+            : price(input.damagePrice),
+        status: input.status ?? current.status,
+      };
       await tx
         .update(item)
         .set({
-          name,
-          groupId: input.groupId ?? current.groupId,
-          standardWeightKg: weight,
-          dailyRentalPrice: rent,
-          lostPrice:
-            input.lostPrice === undefined
-              ? current.lostPrice
-              : price(input.lostPrice),
-          damagePrice:
-            input.damagePrice === undefined
-              ? current.damagePrice
-              : price(input.damagePrice),
+          ...next,
           searchText: toSearchText(name, current.code),
           ...(input.status === undefined
             ? {}
-            : { status: input.status, archivedAt: archivedAt(input.status) }),
+            : { archivedAt: archivedAt(input.status) }),
           updatedBy: actor.id,
           updatedAt: new Date(),
         })
         .where(eq(item.id, id));
+      const changes = diffFields(
+        ITEM_FIELDS,
+        await itemView(tx, current),
+        await itemView(tx, next),
+      );
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: { type: "ITEM", id, code: current.code },
+        summary: changeSummary(changes),
+        changes,
+      });
       return true;
     });
     if (!found) return notFound();
@@ -380,15 +429,25 @@ export function updateItem(
 
 export function deleteItem(
   db: Database,
+  actor: Actor,
   id: string,
 ): Promise<ServiceResult<null>> {
   return runService(async () => {
     try {
-      const deleted = await db
-        .delete(item)
-        .where(eq(item.id, id))
-        .returning({ id: item.id });
-      return deleted.length > 0 ? ok(null) : notFound();
+      const found = await db.transaction(async (tx) => {
+        const [deleted] = await tx
+          .delete(item)
+          .where(eq(item.id, id))
+          .returning({ code: item.code, name: item.name });
+        if (!deleted) return false;
+        await logActivity(tx, actor, {
+          action: "DELETE",
+          document: { type: "ITEM", id, code: deleted.code },
+          summary: deleted.name,
+        });
+        return true;
+      });
+      return found ? ok(null) : notFound();
     } catch (error: unknown) {
       if (isForeignKeyViolation(error)) return conflict(ITEM_MESSAGES.inUse);
       throw error;

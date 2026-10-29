@@ -54,6 +54,7 @@ const echo = withAuth(async (_request, { user }) => ok({ role: user.role }), {
   permission: "users.manage",
 });
 const anyone = withAuth(async () => ok(null));
+const whoActs = withAuth(async (_request, { actor }) => ok(actor));
 
 describe("withAuth", () => {
   it("answers 401 with the envelope when signed out", async () => {
@@ -81,6 +82,27 @@ describe("withAuth", () => {
     const cookie = await signInAs(ctx, minhanh);
     const response = await echo(appRequest("/api/x", { cookie }));
     expect(await response.json()).toMatchObject({ data: { role: "DIRECTOR" } });
+  });
+
+  it("hands the activity-log actor: role, phone or computer, browser", async () => {
+    const vantung = await createTestUser(ctx, { role: "WAREHOUSE" });
+    const cookie = await signInAs(ctx, vantung);
+    const phone = appRequest("/api/x", { cookie });
+    phone.headers.set(
+      "user-agent",
+      "Mozilla/5.0 (Linux; Android 14; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+    );
+    expect((await (await whoActs(phone)).json()).data).toEqual({
+      id: vantung.id,
+      role: "WAREHOUSE",
+      device: "MOBILE",
+      browser: "CHROME",
+    });
+    const bare = await whoActs(appRequest("/api/x", { cookie }));
+    expect((await bare.json()).data).toMatchObject({
+      device: "DESKTOP",
+      browser: "OTHER",
+    });
   });
 
   it("refuses writes from another origin or without one", async () => {

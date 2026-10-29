@@ -26,10 +26,10 @@ export const GET = withAuth(
 );
 
 export const POST = withAuth(
-  async (request, { user }) => {
+  async (request, { actor }) => {
     const body = await readJson(request, kitBody);
     if (!body.ok) return body.response;
-    return respond(await createKit(catalogDb(), user, body.data), 201);
+    return respond(await createKit(catalogDb(), actor, body.data), 201);
   },
   { permission: "items.manage" },
 );

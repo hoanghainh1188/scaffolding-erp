@@ -3,6 +3,10 @@
 import { and, asc, eq, ilike, inArray, type SQL } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
+import { diffFields, diffLines } from "@/domain/activity-changes";
+import { changeSummary, countText, joinParts } from "@/domain/activity-summary";
+import { KIT_FIELDS, KIT_PARTS, type KitPartView } from "@/lib/activity/fields";
+import { logActivity } from "@/lib/activity/log";
 import { item, kit, kitComponent } from "@/db/schema";
 import { DomainValueError } from "@/domain/errors";
 import { parseCatalogCode } from "@/domain/item-code";
@@ -184,6 +188,30 @@ async function checkComponents(
   if (error) throw new DomainValueError(error);
 }
 
+/** Kit lines by item code, in code order, for the activity log. */
+async function partViews(
+  tx: Pick<Database, "select">,
+  parts: readonly KitComponentInput[],
+): Promise<KitPartView[]> {
+  if (parts.length === 0) return [];
+  const rows = await tx
+    .select({ id: item.id, code: item.code })
+    .from(item)
+    .where(
+      inArray(
+        item.id,
+        parts.map((part) => part.itemId),
+      ),
+    );
+  const codeOf = new Map(rows.map((row) => [row.id, row.code]));
+  return parts
+    .map((part) => ({
+      code: codeOf.get(part.itemId) ?? part.itemId,
+      quantity: part.quantity,
+    }))
+    .sort((a, b) => a.code.localeCompare(b.code));
+}
+
 export function createKit(
   db: Database,
   actor: Actor,
@@ -211,6 +239,11 @@ export function createKit(
       await tx
         .insert(kitComponent)
         .values(components.map((line) => ({ kitId, ...line })));
+      await logActivity(tx, actor, {
+        action: "CREATE",
+        document: { type: "KIT", id: kitId, code },
+        summary: joinParts(name, countText(components.length, "linh kiện")),
+      });
       return kitId;
     });
     const created = await getKit(db, id);
@@ -240,15 +273,14 @@ export function updateKit(
       }
       const name =
         input.name === undefined ? current.name : requireName(input.name);
-      const components =
-        input.components ??
-        (await tx
-          .select({
-            itemId: kitComponent.itemId,
-            quantity: kitComponent.quantity,
-          })
-          .from(kitComponent)
-          .where(eq(kitComponent.kitId, id)));
+      const stored = await tx
+        .select({
+          itemId: kitComponent.itemId,
+          quantity: kitComponent.quantity,
+        })
+        .from(kitComponent)
+        .where(eq(kitComponent.kitId, id));
+      const components = input.components ?? stored;
       // Coming back into use re-checks the parts: one may have been archived.
       if (input.components !== undefined || input.status === "ACTIVE") {
         await checkComponents(tx, components);
@@ -271,6 +303,23 @@ export function updateKit(
           .insert(kitComponent)
           .values(components.map((line) => ({ kitId: id, ...line })));
       }
+      const changes = [
+        ...diffFields(KIT_FIELDS, current, {
+          name,
+          status: input.status ?? current.status,
+        }),
+        ...diffLines(
+          KIT_PARTS,
+          await partViews(tx, stored),
+          await partViews(tx, components),
+        ),
+      ];
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: { type: "KIT", id, code: current.code },
+        summary: changeSummary(changes),
+        changes,
+      });
       return true;
     });
     if (!found) return notFound();
@@ -281,15 +330,25 @@ export function updateKit(
 
 export function deleteKit(
   db: Database,
+  actor: Actor,
   id: string,
 ): Promise<ServiceResult<null>> {
   return runService(async () => {
     try {
-      const deleted = await db
-        .delete(kit)
-        .where(eq(kit.id, id))
-        .returning({ id: kit.id });
-      return deleted.length > 0 ? ok(null) : notFound();
+      const found = await db.transaction(async (tx) => {
+        const [deleted] = await tx
+          .delete(kit)
+          .where(eq(kit.id, id))
+          .returning({ code: kit.code, name: kit.name });
+        if (!deleted) return false;
+        await logActivity(tx, actor, {
+          action: "DELETE",
+          document: { type: "KIT", id, code: deleted.code },
+          summary: deleted.name,
+        });
+        return true;
+      });
+      return found ? ok(null) : notFound();
     } catch (error: unknown) {
       if (isForeignKeyViolation(error)) {
         return conflict(KIT_SERVICE_MESSAGES.inUse);

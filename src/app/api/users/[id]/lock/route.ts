@@ -3,7 +3,7 @@ import { respond, userServiceDeps } from "@/lib/users/respond";
 import { lockUser } from "@/lib/users/service";
 
 export const POST = withAuth<{ id: string }>(
-  async (_request, { user, params }) =>
-    respond(await lockUser(userServiceDeps(), user, params.id)),
+  async (_request, { actor, params }) =>
+    respond(await lockUser(userServiceDeps(), actor, params.id)),
   { permission: "users.manage" },
 );

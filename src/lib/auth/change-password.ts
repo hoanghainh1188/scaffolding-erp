@@ -3,6 +3,8 @@ import { and, eq, ne } from "drizzle-orm";
 import type { Database } from "@/db/client";
 import { account, session, user } from "@/db/schema";
 import { validateNewPassword } from "@/domain/password";
+import type { ActivityActor } from "@/lib/activity/actor";
+import { logActivity } from "@/lib/activity/log";
 
 import type { Auth } from "./auth";
 import {
@@ -16,7 +18,8 @@ export const CHANGE_PASSWORD_MESSAGES = {
 } as const;
 
 export interface ChangePasswordInput {
-  userId: string;
+  /** The signed-in user changing their own password. */
+  actor: ActivityActor;
   /** Kept signed in; every other session of the user ends. */
   currentSessionId: string;
   currentPassword: string;
@@ -42,7 +45,7 @@ export async function changePassword(
         eq(account.providerId, CREDENTIAL_PROVIDER),
       ),
     )
-    .where(eq(user.id, input.userId));
+    .where(eq(user.id, input.actor.id));
   if (
     !row?.hash ||
     !(await verifyPassword(auth, row.hash, input.currentPassword))
@@ -69,22 +72,28 @@ export async function changePassword(
       .set({ password: hash, updatedAt: new Date() })
       .where(
         and(
-          eq(account.userId, input.userId),
+          eq(account.userId, input.actor.id),
           eq(account.providerId, CREDENTIAL_PROVIDER),
         ),
       );
     await tx
       .update(user)
       .set({ mustChangePassword: false, updatedAt: new Date() })
-      .where(eq(user.id, input.userId));
+      .where(eq(user.id, input.actor.id));
     await tx
       .delete(session)
       .where(
         and(
-          eq(session.userId, input.userId),
+          eq(session.userId, input.actor.id),
           ne(session.id, input.currentSessionId),
         ),
       );
+    // Never the password itself (activity-log design D7).
+    await logActivity(tx, input.actor, {
+      action: "UPDATE",
+      document: { type: "USER", id: input.actor.id, code: row.username },
+      summary: "Đổi mật khẩu",
+    });
   });
   return { ok: true };
 }
