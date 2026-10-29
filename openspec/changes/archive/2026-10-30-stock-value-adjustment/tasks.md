@@ -50,7 +50,7 @@
 
 - [x] 8.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` xanh, `npx openspec validate stock-value-adjustment --strict` xanh, coverage `src/domain`, `src/lib` ≥ 80 %.
 - [x] 8.2 Gắn nhãn `update-snapshots` vào PR apply (trang Phiếu điều chỉnh và D11 đổi), chờ CI xanh.
-- [ ] 8.3 Kiểm tra tay trên Edge 1366px: lập "Sửa chi phí chuyến" cho phiếu nhập mẫu, so số dòng với tính tay; duyệt; mở D11 và `npm run inventory:check`. Chưa làm kịp thì ghi "làm sau, theo dõi ở #33" khi archive.
+- [ ] 8.3 Kiểm tra tay trên Edge 1366px: lập "Sửa chi phí chuyến" cho phiếu nhập mẫu, so số dòng với tính tay; duyệt; mở D11 và `npm run inventory:check`. — làm sau, theo dõi ở #33
 
 ## Workflow follow-up
 
