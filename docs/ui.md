@@ -128,6 +128,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 - **D16. Danh mục đối tác & địa điểm** **[MVP]**: Nhà cung cấp/Cai thầu, Nhà thầu (khách hàng), Công trình, Kho/Bãi/Xưởng.
 - **D17. Người dùng & Vai trò** **[MVP]**: Danh sách tài khoản, gán vai trò (Giám đốc, Kế toán, Kinh doanh, Thủ kho, Xưởng).
+- **D18. Nhật ký thao tác** **[MVP]** (Giám đốc, trong Cài đặt): ai, lúc nào, làm gì với chứng từ nào. Bốn ô tóm tắt (tổng, duyệt/ghi sổ, sửa/xóa/trả lại, cần xem kỹ), lọc người / loại chứng từ / ngày / mã / loại thao tác, bảng nhóm theo ngày, mở dòng xem trước → sau. Cờ "Ngoài giờ", "Dữ liệu nhạy cảm", "Có xác nhận bất thường". Chỉ ghi thêm. Xuất Excel.
 
 ### 3.2. Phân hệ Mobile (Thủ kho, Xưởng)
 
@@ -150,7 +151,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 | Giai đoạn | Desktop | Mobile |
 |---|---|---|
-| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D16, D17 | M1, M2, M3, M4, M5, M6a, M6, M7 |
+| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D16, D17, D18 | M1, M2, M3, M4, M5, M6a, M6, M7 |
 | **Bản 2** | D1 (đầy đủ), D12 (đầy đủ), D14 (phải trả), D15 | M8 |
 
 ### 3.4. Thiết kế đã vẽ (Claude Design)
@@ -166,6 +167,7 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | M4 Nhập thu hồi | `M4-ReturnNote.dc.html` | `returns-and-compensation` | Đã chốt phong cách |
 | Đăng nhập | `Login.dc.html` | `auth-and-roles` | Đã duyệt |
 | D17 Người dùng | `D17-Users.dc.html` | `auth-and-roles` | Đã duyệt |
+| D18 Nhật ký thao tác | `D18-ActivityLog.dc.html` | `activity-log` | Đã duyệt |
 | D9 Danh mục vật tư | `D9-Items.dc.html` | `master-data` | Đã duyệt |
 | D16 Đối tác & công trình | `D16-Partners.dc.html` | `master-data` | Đã duyệt |
 | D10 Tồn kho tổng hợp | `D10-Stock.dc.html` | `inventory-ledger` | Đã duyệt |
