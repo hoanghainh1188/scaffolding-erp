@@ -185,6 +185,53 @@ async function ensureRepairStock(db: Database, actor: { id: string }) {
   );
 }
 
+/**
+ * stocktake.spec.ts counts a Chờ sửa surplus of E2E-KHO-02, and approval
+ * needs a Chờ sửa average. receiving.spec.ts makes one, but may run in
+ * another CI shard, so give it one opening piece at the yard when missing.
+ * Runs after the D13 sample session, which therefore never lists it.
+ */
+async function ensureStocktakeCost(db: Database, actor: { id: string }) {
+  const [kho] = await db
+    .select({ id: item.id })
+    .from(item)
+    .where(eq(item.code, E2E_STOCK_ITEMS[1]));
+  const [yard] = await db
+    .select({ id: location.id })
+    .from(location)
+    .where(eq(location.code, "BAI-01"));
+  if (!kho || !yard) return;
+  const [cost] = await db
+    .select({ avg: inventoryCost.avgCost })
+    .from(inventoryCost)
+    .where(
+      and(
+        eq(inventoryCost.itemId, kho.id),
+        eq(inventoryCost.condition, "NEEDS_REPAIR"),
+      ),
+    );
+  if (cost?.avg != null) return;
+  await db.transaction((tx) =>
+    postMovements(tx, actor, {
+      documentType: "E2E",
+      documentId: null,
+      documentCode: "E2E-KK",
+      businessDate: toBusinessDate(new Date()),
+      lines: [
+        {
+          itemId: kho.id,
+          condition: "NEEDS_REPAIR",
+          locationId: yard.id,
+          movement: "OPENING",
+          quantityMilli: 1_000,
+          amount: 50_000,
+          description: "E2E: giá vốn Chờ sửa cho stocktake.spec",
+        },
+      ],
+    }),
+  );
+}
+
 /** Drafts repairs.spec.ts left; posted slips stay with their ledger lines. */
 async function removeTestRepairDrafts(db: Database) {
   await db
@@ -293,6 +340,7 @@ export default async function globalSetup(): Promise<void> {
       // workshop is left free for stocktake.spec.ts.
       await cancelTestStocktakes(handle.db, director);
       if (warehouse) await seedStocktakes(handle.db, warehouse);
+      await ensureStocktakeCost(handle.db, director);
     }
   } finally {
     await handle.close();
