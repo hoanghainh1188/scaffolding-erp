@@ -25,11 +25,75 @@ env:
   BETTER_AUTH_SECRET: ci-only-secret-not-for-real-use-0123456789
   E2E_PASSWORD: e2e-pass-1234
 
+# Branch protection requires "Lint, types, tests, build", "E2E (Edge)" and
+# "E2E basic (Firefox, WebKit)". The first two gather parallel jobs (gate-*
+# below), so the required names never change when the split does.
 jobs:
-  checks:
-    name: Lint, types, tests, build
+  # Docs and planning files (ignored by Prettier, read by no code or test)
+  # skip every other job; a skipped job counts as passed for the PR. Pushes
+  # to main and dispatched runs always run everything.
+  changes:
+    name: Detect code changes
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 2
+    permissions:
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -z "$PR" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --jq '.[].filename')
+          # docs/design-system/tokens.json feeds tokens.css and brand colours.
+          # An empty list counts as code (the empty line matches nothing).
+          if grep -qE '^docs/design-system/' <<< "$files" ||
+             grep -qvE '^(docs/|openspec/|\.claude/|CLAUDE\.md$|AGENTS\.md$)' <<< "$files"; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "Docs-only change: tests and E2E skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  static:
+    name: Lint, types, unit, build
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      # Unit and component, including the tokens.css drift test.
+      - run: npm run test:unit
+      # Proves the production build works; E2E runs on `next dev` (design D15).
+      - run: npm run build
+
+  # Integration files run one at a time against one database, so split them
+  # across jobs that each have their own database.
+  integration:
+    name: Integration tests (${{ matrix.shard }}/2)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     services:
       postgres:
         image: postgres:17-alpine
@@ -48,21 +112,36 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
       - name: Migrate the test database
         run: npm run db:migrate
-      # Unit, component and integration (integration is mandatory on CI),
-      # including the tokens.css drift test.
-      - run: npm test
-      # Proves the production build works; E2E runs on `next dev` (design D15).
-      - run: npm run build
+      - run: npx vitest run --project integration --shard=${{ matrix.shard }}/2
 
+  gate-checks:
+    name: Lint, types, tests, build
+    needs: [changes, static, integration]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every part to pass or be skipped
+        env:
+          RESULTS: ${{ needs.changes.result }} ${{ needs.static.result }} ${{ needs.integration.result }}
+        run: |
+          echo "Results: $RESULTS"
+          case "$RESULTS" in *failure*|*cancelled*) exit 1 ;; esac
+
+  # Functional E2E split in two; each shard signs in on its own (the setup
+  # project runs in every shard) and has its own database.
   e2e:
-    name: E2E (Edge)
+    name: E2E Edge (${{ matrix.shard }}/2)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     # Sign-in is real: the dev server and the E2E global setup need a database.
     services:
       postgres:
@@ -94,7 +173,46 @@ jobs:
         run: >-
           npx playwright test --grep-invert @visual
           --project setup --project desktop-1280 --project desktop-1366
-          --project mobile-375
+          --project mobile-375 --shard=${{ matrix.shard }}/2
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  visual:
+    name: E2E visual (Edge)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp
+          POSTGRES_DB: scaffolding_erp_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U erp -d scaffolding_erp_test"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Migrate the database
+        run: npm run db:migrate
+      - name: Install Edge
+        timeout-minutes: 10
+        run: npx playwright install --with-deps msedge
       - name: Visual baselines
         id: visual
         run: npx playwright test --grep @visual --project desktop-1280
@@ -103,18 +221,32 @@ jobs:
         run: |
           {
             echo "### Visual baselines differ or are missing"
-            echo "Open the playwright-report artifact to compare images."
-            echo "If the change is intended, run the **Update Playwright snapshots** workflow on this branch (Actions tab → Run workflow)."
+            echo "Open the playwright-report-visual artifact to compare images."
+            echo "If the change is intended, add the **update-snapshots** label to the PR (or run the **Update Playwright snapshots** workflow on this branch from the Actions tab)."
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-visual
           path: |
             playwright-report/
             test-results/
           retention-days: 14
+
+  gate-e2e:
+    name: E2E (Edge)
+    needs: [changes, e2e, visual]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every part to pass or be skipped
+        env:
+          RESULTS: ${{ needs.changes.result }} ${{ needs.e2e.result }} ${{ needs.visual.result }}
+        run: |
+          echo "Results: $RESULTS"
+          case "$RESULTS" in *failure*|*cancelled*) exit 1 ;; esac
 
   # Basic support (@basic) in Firefox and WebKit. The official Playwright
   # image ships both browsers and their system packages, so nothing comes
@@ -122,6 +254,8 @@ jobs:
   # the image; the database service is reached by its name.
   e2e-basic:
     name: E2E basic (Firefox, WebKit)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     container:
@@ -187,7 +321,7 @@ jobs:
 
   dispatch-result:
     name: Report final status
-    needs: [checks, e2e, e2e-basic]
+    needs: [gate-checks, gate-e2e, e2e-basic]
     if: always() && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -197,7 +331,7 @@ jobs:
       - name: Mark the commit with the run result
         env:
           GH_TOKEN: ${{ github.token }}
-          RESULTS: ${{ needs.checks.result }} ${{ needs.e2e.result }} ${{ needs.e2e-basic.result }}
+          RESULTS: ${{ needs.gate-checks.result }} ${{ needs.gate-e2e.result }} ${{ needs.e2e-basic.result }}
         run: |
           case "$RESULTS" in
             "success success success") state=success; msg="All jobs passed" ;;
