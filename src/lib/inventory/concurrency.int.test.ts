@@ -9,6 +9,7 @@ import { inventoryCost } from "@/db/schema";
 import { averageAfterInflow } from "@/domain/average-cost";
 import type { BusinessDate } from "@/domain/business-date";
 import { toMoney } from "@/domain/money";
+import { averageAfterRevalue } from "@/domain/stock-revaluation";
 import type { MovementDraft } from "@/domain/movement";
 import { updateItem } from "@/lib/catalog/items";
 import { createTestContext } from "@/test/auth";
@@ -92,6 +93,47 @@ async function restart() {
 }
 
 describe("two postings at once", () => {
+  it("a revaluation and a purchase give the result of their finishing order", async () => {
+    for (let round = 0; round < ROUNDS; round += 1) {
+      await restart();
+      await post(ctx.db, "OPEN", [
+        line("GG-K17", "OPENING", 920, { amount: 920 * 195_000 }),
+      ]);
+      const finished: string[] = [];
+      const a = post(ctx.db, "PN", [
+        line("GG-K17", "PURCHASE_IN", 160, { amount: 31_384_800 }),
+      ]).then(() => finished.push("PN"));
+      const b = post(other.db, "ĐCG", [
+        line("GG-K17", "REVALUE", 0, { locationId: null, amount: -1_500_000 }),
+      ]).then(() => finished.push("ĐCG"));
+      await Promise.all([a, b]);
+      let state = { poolMilli: 920_000, avgCost: toMoney(195_000) };
+      for (const name of finished) {
+        state =
+          name === "PN"
+            ? {
+                poolMilli: state.poolMilli + 160_000,
+                avgCost: averageAfterInflow(
+                  state,
+                  160_000,
+                  toMoney(31_384_800),
+                ),
+              }
+            : {
+                poolMilli: state.poolMilli,
+                avgCost: averageAfterRevalue(state, toMoney(-1_500_000), {
+                  code: "GG-K17",
+                  condition: "GOOD",
+                }),
+              };
+      }
+      expect(await pool("GG-K17")).toMatchObject({
+        avgCost: state.avgCost,
+        poolQuantity: "1080.000",
+      });
+    }
+  });
+
   it("two purchases of the same pair give the average of their finishing order", async () => {
     for (let round = 0; round < ROUNDS; round += 1) {
       await restart();

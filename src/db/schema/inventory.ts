@@ -14,11 +14,13 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 import { item, location } from "./catalog";
+import { goodsReceipt } from "./receiving";
 
 const CONDITIONS_SQL = sql.raw(`('NEW', 'GOOD', 'NEEDS_REPAIR', 'SCRAP')`);
 
@@ -55,9 +57,10 @@ export const inventoryLedger = pgTable(
       .notNull()
       .references(() => item.id, { onDelete: "restrict" }),
     condition: text("condition").notNull(),
-    locationId: uuid("location_id")
-      .notNull()
-      .references(() => location.id, { onDelete: "restrict" }),
+    /** Null only on REVALUE lines: the average is company-wide (#24, #35). */
+    locationId: uuid("location_id").references(() => location.id, {
+      onDelete: "restrict",
+    }),
     movement: text("movement").notNull(),
     quantity: numeric("quantity", { precision: 14, scale: 3 }).notNull(),
     unitCost: bigint("unit_cost", { mode: "number" }).notNull(),
@@ -86,7 +89,7 @@ export const inventoryLedger = pgTable(
     ),
     check(
       "inventory_ledger_movement_check",
-      sql`(${table.movement} in ${sqlList(MOVEMENTS_IN)} and ${table.quantity} > 0) or (${table.movement} in ${sqlList(MOVEMENTS_OUT)} and ${table.quantity} < 0)`,
+      sql`(${table.movement} in ${sqlList(MOVEMENTS_IN)} and ${table.quantity} > 0 and ${table.locationId} is not null) or (${table.movement} in ${sqlList(MOVEMENTS_OUT)} and ${table.quantity} < 0 and ${table.locationId} is not null) or (${table.movement} = 'REVALUE' and ${table.quantity} = 0 and ${table.locationId} is null)`,
     ),
     check(
       "inventory_ledger_cost_check",
@@ -152,6 +155,13 @@ export const stockAdjustment = pgTable(
     reason: text("reason").notNull(),
     relatedDocumentCode: text("related_document_code"),
     openingDate: date("opening_date"),
+    /** Trip-cost corrections (stock-value-adjustment design D4, D6). */
+    sourceReceiptId: uuid("source_receipt_id").references(
+      () => goodsReceipt.id,
+      { onDelete: "restrict" },
+    ),
+    recordedTripCost: bigint("recorded_trip_cost", { mode: "number" }),
+    correctedTripCost: bigint("corrected_trip_cost", { mode: "number" }),
     returnedReason: text("returned_reason"),
     postingId: uuid("posting_id"),
     createdBy: text("created_by")
@@ -179,7 +189,7 @@ export const stockAdjustment = pgTable(
   (table) => [
     check(
       "stock_adjustment_kind_check",
-      sql`${table.kind} in ('ADJUSTMENT', 'OPENING')`,
+      sql`${table.kind} in ('ADJUSTMENT', 'OPENING', 'REVALUE')`,
     ),
     check(
       "stock_adjustment_status_check",
@@ -193,7 +203,16 @@ export const stockAdjustment = pgTable(
       "stock_adjustment_done_check",
       sql`(${table.status} = 'DONE') = (${table.postingId} is not null)`,
     ),
+    check(
+      "stock_adjustment_revalue_check",
+      sql`(${table.kind} <> 'REVALUE' or ${table.relatedDocumentCode} is not null)
+        and ((${table.sourceReceiptId} is null and ${table.recordedTripCost} is null and ${table.correctedTripCost} is null)
+          or (${table.kind} = 'REVALUE' and ${table.sourceReceiptId} is not null and ${table.recordedTripCost} >= 0 and ${table.correctedTripCost} >= 0))`,
+    ),
     index("stock_adjustment_status_idx").on(table.status, table.createdAt),
+    uniqueIndex("stock_adjustment_open_trip_idx")
+      .on(table.sourceReceiptId)
+      .where(sql`${table.status} <> 'DONE'`),
   ],
 );
 
@@ -213,19 +232,22 @@ export const stockAdjustmentLine = pgTable(
       .references(() => item.id, { onDelete: "restrict" }),
     condition: text("condition").notNull(),
     toCondition: text("to_condition"),
-    locationId: uuid("location_id")
-      .notNull()
-      .references(() => location.id, { onDelete: "restrict" }),
+    /** Null only on VALUE lines. */
+    locationId: uuid("location_id").references(() => location.id, {
+      onDelete: "restrict",
+    }),
     toLocationId: uuid("to_location_id").references(() => location.id, {
       onDelete: "restrict",
     }),
     quantity: numeric("quantity", { precision: 14, scale: 3 }).notNull(),
     unitCost: bigint("unit_cost", { mode: "number" }),
+    /** Signed change of value, VALUE lines only. */
+    valueDelta: bigint("value_delta", { mode: "number" }),
   },
   (table) => [
     check(
       "stock_adjustment_line_type_check",
-      sql`${table.lineType} in ('QUANTITY', 'CONDITION', 'LOCATION', 'OPENING')`,
+      sql`${table.lineType} in ('QUANTITY', 'CONDITION', 'LOCATION', 'OPENING', 'VALUE')`,
     ),
     check(
       "stock_adjustment_line_condition_check",
@@ -233,10 +255,11 @@ export const stockAdjustmentLine = pgTable(
     ),
     check(
       "stock_adjustment_line_shape_check",
-      sql`(${table.lineType} = 'QUANTITY' and ${table.quantity} <> 0 and ${table.toCondition} is null and ${table.toLocationId} is null)
-        or (${table.lineType} = 'CONDITION' and ${table.quantity} > 0 and ${table.toCondition} is not null and ${table.toCondition} <> ${table.condition} and ${table.toLocationId} is null)
-        or (${table.lineType} = 'LOCATION' and ${table.quantity} > 0 and ${table.toLocationId} is not null and ${table.toLocationId} <> ${table.locationId} and ${table.toCondition} is null)
-        or (${table.lineType} = 'OPENING' and ${table.quantity} > 0 and ${table.unitCost} is not null and ${table.toCondition} is null and ${table.toLocationId} is null)`,
+      sql`(${table.lineType} = 'QUANTITY' and ${table.quantity} <> 0 and ${table.toCondition} is null and ${table.toLocationId} is null and ${table.locationId} is not null and ${table.valueDelta} is null)
+        or (${table.lineType} = 'CONDITION' and ${table.quantity} > 0 and ${table.toCondition} is not null and ${table.toCondition} <> ${table.condition} and ${table.toLocationId} is null and ${table.locationId} is not null and ${table.valueDelta} is null)
+        or (${table.lineType} = 'LOCATION' and ${table.quantity} > 0 and ${table.toLocationId} is not null and ${table.toLocationId} <> ${table.locationId} and ${table.toCondition} is null and ${table.locationId} is not null and ${table.valueDelta} is null)
+        or (${table.lineType} = 'OPENING' and ${table.quantity} > 0 and ${table.unitCost} is not null and ${table.toCondition} is null and ${table.toLocationId} is null and ${table.locationId} is not null and ${table.valueDelta} is null)
+        or (${table.lineType} = 'VALUE' and ${table.quantity} = 0 and ${table.valueDelta} <> 0 and ${table.locationId} is null and ${table.toCondition} is null and ${table.toLocationId} is null and ${table.unitCost} is null)`,
     ),
     check(
       "stock_adjustment_line_cost_check",
@@ -246,6 +269,9 @@ export const stockAdjustmentLine = pgTable(
       table.adjustmentId,
       table.lineNo,
     ),
+    uniqueIndex("stock_adjustment_line_value_pair_idx")
+      .on(table.adjustmentId, table.itemId, table.condition)
+      .where(sql`${table.lineType} = 'VALUE'`),
   ],
 );
 

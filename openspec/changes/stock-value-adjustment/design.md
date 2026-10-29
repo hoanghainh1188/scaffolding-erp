@@ -167,6 +167,8 @@ Một phiếu nhập chỉ có một phiếu sửa chi phí **chưa ghi sổ** (
   - Unique `(adjustment_id, item_id, condition) WHERE line_type = 'VALUE'`.
 - `document_counter` dùng prefix `ĐCG` (không tạo sequence mới, 0.2 #33).
 
+**Ghi chú khi làm (apply):** sửa phiếu dùng `PATCH` như route có sẵn. Nhật ký dùng lại loại chứng từ `STOCK_ADJUSTMENT` (mã `ĐCG` phân biệt), không đổi ràng buộc `activity_log`. Code nằm ở `src/lib/inventory/revaluations.ts` (kiểm chứng từ gốc, xem trước, `buildTripRevaluation`), `trip-adjustments.ts` (lập/sửa phiếu sửa chi phí) và `adjustment-queries.ts` (phần đọc tách khỏi `adjustments.ts` cho dưới 800 dòng).
+
 **Domain:** `ADJUSTMENT_KINDS` thêm `REVALUE`, `ADJUSTMENT_PREFIX.REVALUE = "ĐCG"`, nhãn "Điều chỉnh giá"; `src/domain/stock-revaluation.ts`: `assertValueLine`, `averageAfterRevalue`, `revaluationMovements`, `revaluationFromTrip` (thuần, nhận số liệu chuyến đã đọc sẵn).
 
 **API** (đều qua `withAuth`):
@@ -174,9 +176,9 @@ Một phiếu nhập chỉ có một phiếu sửa chi phí **chưa ghi sổ** (
 | Route | Quyền | Vào | Ra |
 |---|---|---|---|
 | `POST /api/inventory/adjustments` | `inventory.adjust` | `kind: "REVALUE"`, `reason`, `relatedDocumentCode`, `lines: [{itemId, condition, valueDelta}]` | phiếu Nháp |
-| `PUT /api/inventory/adjustments/<id>` | `inventory.adjust` | như trên + `updatedAt` (lệch → 409) | phiếu |
+| `PATCH /api/inventory/adjustments/<id>` | `inventory.adjust` | như trên + `updatedAt` (lệch → 409) | phiếu |
 | `POST /api/inventory/adjustments/trip-cost` | `inventory.adjust` | `receiptId`, `correctedTripCost`, `reason` | phiếu Nháp `REVALUE` có dòng dựng sẵn |
-| `PUT /api/inventory/adjustments/<id>/trip-cost` | `inventory.adjust` | `correctedTripCost`, `reason`, `updatedAt` | dựng lại dòng |
+| `PATCH /api/inventory/adjustments/<id>/trip-cost` | `inventory.adjust` | `correctedTripCost`, `reason`, `updatedAt` | dựng lại dòng |
 | `GET /api/inventory/adjustments/revalue-preview?itemId&condition&valueDelta` | `inventory.adjust` | | tồn, giá BQ, giá trị, giá BQ mới dự kiến (hoặc lỗi tồn 0 / âm) |
 | `submit`, `approve`, `return`, `DELETE` có sẵn | như cũ | | |
 

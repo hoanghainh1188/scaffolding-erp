@@ -4,25 +4,22 @@ import { connection } from "next/server";
 
 import { TabLinks } from "@/components/catalog/tab-links";
 import { AdjustmentActions } from "@/components/inventory/adjustment-actions";
-import { AdjustmentFormSheet } from "@/components/inventory/adjustment-form-sheet";
+import { AdjustmentCreateMenu } from "@/components/inventory/adjustment-create-menu";
+import { createChoiceFrom } from "@/components/inventory/create-choices";
 import { AdjustmentStatusBadge } from "@/components/inventory/adjustment-status-badge";
-import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
 import { formatDateTime, toBusinessDate } from "@/domain/business-date";
 import { can } from "@/domain/permissions";
+import { ADJUSTMENT_KIND_LABELS } from "@/domain/stock-adjustment";
 import { requirePermission } from "@/lib/auth/guard";
 import { listAdjustments } from "@/lib/inventory/adjustments";
 import { adjustmentFormOptions } from "@/lib/inventory/form-options";
 import { adjustmentStatusFrom } from "@/lib/inventory/respond";
+import { receiptOptions } from "@/lib/inventory/revaluations";
 
 export const metadata: Metadata = { title: "Phiếu điều chỉnh" };
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
-
-const KIND_LABELS = {
-  ADJUSTMENT: "Điều chỉnh",
-  OPENING: "Tồn đầu kỳ",
-} as const;
 
 /** Adjustment and opening documents (spec stock-adjustments). */
 export default async function Page({ searchParams }: { searchParams: Search }) {
@@ -32,13 +29,14 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const params = await searchParams;
   const status = adjustmentStatusFrom(params);
   const db = getDatabase();
-  const [rows, options] = await Promise.all([
+  const [rows, options, receipts] = await Promise.all([
     listAdjustments(db, { status }),
     canAdjust ? adjustmentFormOptions(db) : null,
+    canAdjust ? receiptOptions(db) : [],
   ]);
   await connection();
   const today = toBusinessDate(new Date());
-  const opened = typeof params.new === "string" ? params.new : null;
+  const opened = createChoiceFrom(params.new);
 
   const tab = (value: string | undefined, label: string) => ({
     label,
@@ -61,29 +59,18 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         <div className="flex flex-col gap-1">
           <h1 className="text-h1">Phiếu điều chỉnh</h1>
           <p className="text-sm text-muted-foreground">
-            Sửa sai số lượng, tình trạng, vị trí và nhập tồn đầu kỳ. Chỉ ghi sổ
-            khi Giám đốc duyệt.
+            Sửa sai số lượng, tình trạng, vị trí, giá trị và nhập tồn đầu kỳ.
+            Chỉ ghi sổ khi Giám đốc duyệt.
           </p>
         </div>
         {options ? (
-          <div className="flex flex-wrap gap-2">
-            <AdjustmentFormSheet
-              kind="OPENING"
-              items={options.items}
-              places={options.places}
-              today={today}
-              defaultOpen={opened === "OPENING"}
-              trigger={<Button variant="outline">Lập phiếu tồn đầu kỳ</Button>}
-            />
-            <AdjustmentFormSheet
-              kind="ADJUSTMENT"
-              items={options.items}
-              places={options.places}
-              today={today}
-              defaultOpen={opened === "ADJUSTMENT"}
-              trigger={<Button>Lập phiếu điều chỉnh</Button>}
-            />
-          </div>
+          <AdjustmentCreateMenu
+            items={options.items}
+            places={options.places}
+            receipts={receipts}
+            today={today}
+            initial={opened}
+          />
         ) : null}
       </div>
       <TabLinks
@@ -138,7 +125,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
                       </Link>
                     </th>
                     <td className="border-b px-3 py-2.5">
-                      {KIND_LABELS[row.kind]}
+                      {ADJUSTMENT_KIND_LABELS[row.kind]}
                     </td>
                     <td className="border-b px-3 py-2.5 whitespace-nowrap tabular-nums">
                       {formatDateTime(row.createdAt)}

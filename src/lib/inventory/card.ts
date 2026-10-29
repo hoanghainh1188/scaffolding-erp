@@ -7,8 +7,10 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   lt,
   lte,
+  or,
   sql,
   type SQL,
 } from "drizzle-orm";
@@ -52,6 +54,7 @@ export interface CardLine {
   documentId: string | null;
   documentCode: string;
   description: string;
+  movement: string;
   /** Thousandths of the item's unit; one of in / out is 0. */
   in: number;
   out: number;
@@ -125,10 +128,15 @@ export async function getStockCard(
   if (filter.condition) {
     scope.push(eq(inventoryLedger.condition, filter.condition));
   }
+  // REVALUE lines have no location: the average is company-wide, so they
+  // show under every place filter (0.2 #35).
   scope.push(
     places.length > 0
-      ? inArray(inventoryLedger.locationId, places)
-      : sql`false`,
+      ? or(
+          inArray(inventoryLedger.locationId, places),
+          isNull(inventoryLedger.locationId),
+        )!
+      : isNull(inventoryLedger.locationId),
   );
 
   const [before] = await db
@@ -145,6 +153,7 @@ export async function getStockCard(
       documentId: inventoryLedger.documentId,
       documentCode: inventoryLedger.documentCode,
       description: inventoryLedger.description,
+      movement: inventoryLedger.movement,
       quantity: inventoryLedger.quantity,
       unitCost: inventoryLedger.unitCost,
       avgAfter: inventoryLedger.avgCostAfter,
@@ -176,10 +185,11 @@ export async function getStockCard(
       documentId: row.documentId,
       documentCode: row.documentCode,
       description: row.description,
+      movement: row.movement,
       in: Math.max(quantity, 0),
       out: Math.max(-quantity, 0),
       balance,
-      unitCost: priced ? row.unitCost : null,
+      unitCost: priced && row.movement !== "REVALUE" ? row.unitCost : null,
       avgAfter: priced ? row.avgAfter : null,
     };
   });

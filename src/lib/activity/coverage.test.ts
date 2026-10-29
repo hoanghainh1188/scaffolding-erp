@@ -27,6 +27,8 @@ export const NOT_LOGGED: Readonly<Record<string, string>> = {
   "auth/actions.ts#signOutAction": "signing out is not logged (spec)",
   "inventory/post.ts#postMovements":
     "ledger helper; the document's own service logs the action",
+  "inventory/adjustments.ts#lockAdjustment":
+    "row lock shared with trip-adjustments.ts; the command logs",
   "inventory/post.ts#lockForPosting":
     "row locks before posting; writes nothing",
   "scan/detector.ts#createQrDetector": "camera QR reader in the browser",

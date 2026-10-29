@@ -8,6 +8,9 @@ import { AdjustmentActions } from "@/components/inventory/adjustment-actions";
 import { AdjustmentFormSheet } from "@/components/inventory/adjustment-form-sheet";
 import { AdjustmentStatusBadge } from "@/components/inventory/adjustment-status-badge";
 import { formatCost, formatStock } from "@/components/inventory/format";
+import { TripCostSheet } from "@/components/inventory/trip-cost-sheet";
+import { ValueAdjustmentLines } from "@/components/inventory/value-adjustment-lines";
+import { ValueAdjustmentSheet } from "@/components/inventory/value-adjustment-sheet";
 import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
 import {
@@ -16,7 +19,10 @@ import {
   toBusinessDate,
 } from "@/domain/business-date";
 import { can } from "@/domain/permissions";
-import { ADJUSTMENT_LINE_TYPE_LABELS } from "@/domain/stock-adjustment";
+import {
+  ADJUSTMENT_KIND_LABELS,
+  ADJUSTMENT_LINE_TYPE_LABELS,
+} from "@/domain/stock-adjustment";
 import { requirePermission } from "@/lib/auth/guard";
 import { getAdjustment } from "@/lib/inventory/adjustments";
 import { adjustmentFormOptions } from "@/lib/inventory/form-options";
@@ -31,9 +37,10 @@ const MOVEMENT_LABELS: Record<string, string> = {
   ADJUST_IN: "Vào",
   ADJUST_OUT: "Ra",
   OPENING: "Tồn đầu",
+  REVALUE: "Điều chỉnh giá",
 };
 
-/** One adjustment or opening document, with the lines it posted. */
+/** One adjustment, opening or value document, with the lines it posted. */
 export default async function Page({ params }: { params: Params }) {
   const user = await requirePermission("inventory.view");
   const { id } = await params;
@@ -69,8 +76,7 @@ export default async function Page({ params }: { params: Params }) {
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-h1">
-              {adjustment.kind === "OPENING" ? "Tồn đầu kỳ" : "Điều chỉnh"} ·{" "}
-              {adjustment.code}
+              {ADJUSTMENT_KIND_LABELS[adjustment.kind]} · {adjustment.code}
             </h1>
             <AdjustmentStatusBadge status={adjustment.status} />
           </div>
@@ -83,7 +89,21 @@ export default async function Page({ params }: { params: Params }) {
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
-          {options ? (
+          {options && adjustment.kind === "REVALUE" ? (
+            adjustment.sourceReceiptId ? (
+              <TripCostSheet
+                receipts={[]}
+                adjustment={adjustment}
+                trigger={<Button variant="outline">Sửa</Button>}
+              />
+            ) : (
+              <ValueAdjustmentSheet
+                items={options.items}
+                adjustment={adjustment}
+                trigger={<Button variant="outline">Sửa</Button>}
+              />
+            )
+          ) : options ? (
             <AdjustmentFormSheet
               kind={adjustment.kind}
               items={options.items}
@@ -135,81 +155,85 @@ export default async function Page({ params }: { params: Params }) {
           </div>
         </dl>
       </section>
-      <section
-        aria-labelledby="lines"
-        className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-5"
-      >
-        <h2 id="lines" className="font-display text-h2">
-          Các dòng
-        </h2>
-        <div className="relative overflow-x-auto rounded-md border">
-          <table className="w-full border-collapse text-sm">
-            <thead className="bg-muted">
-              <tr>
-                <th scope="col" className={th}>
-                  Kiểu
-                </th>
-                <th scope="col" className={th}>
-                  Vật tư
-                </th>
-                <th scope="col" className={th}>
-                  Tình trạng
-                </th>
-                <th scope="col" className={th}>
-                  Vị trí
-                </th>
-                <th scope="col" className={`${th} text-right`}>
-                  Số lượng
-                </th>
-                {adjustment.kind === "OPENING" ? (
-                  <th scope="col" className={`${th} text-right`}>
-                    Đơn giá vốn
+      {adjustment.kind === "REVALUE" ? (
+        <ValueAdjustmentLines adjustment={adjustment} />
+      ) : (
+        <section
+          aria-labelledby="lines"
+          className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-5"
+        >
+          <h2 id="lines" className="font-display text-h2">
+            Các dòng
+          </h2>
+          <div className="relative overflow-x-auto rounded-md border">
+            <table className="w-full border-collapse text-sm">
+              <thead className="bg-muted">
+                <tr>
+                  <th scope="col" className={th}>
+                    Kiểu
                   </th>
-                ) : null}
-              </tr>
-            </thead>
-            <tbody>
-              {adjustment.lines.map((line) => (
-                <tr key={line.lineNo}>
-                  <td className={td}>
-                    {ADJUSTMENT_LINE_TYPE_LABELS[line.lineType]}
-                  </td>
-                  <td className={td}>
-                    <span className="font-semibold">{line.itemCode}</span> ·{" "}
-                    {line.itemName}
-                  </td>
-                  <td className={td}>
-                    <span className="inline-flex items-center gap-1.5">
-                      <ConditionBadge condition={line.condition} />
-                      {line.toCondition ? (
-                        <>
-                          <span aria-label="sang">→</span>
-                          <ConditionBadge condition={line.toCondition} />
-                        </>
-                      ) : null}
-                    </span>
-                  </td>
-                  <td className={td}>
-                    {line.locationCode}
-                    {line.toLocationCode ? ` → ${line.toLocationCode}` : ""}
-                  </td>
-                  <td className={`${td} text-right tabular-nums`}>
-                    {line.quantity > 0 && line.lineType === "QUANTITY"
-                      ? "+"
-                      : ""}
-                    {formatStock(line.quantity, line.unit)}
-                  </td>
+                  <th scope="col" className={th}>
+                    Vật tư
+                  </th>
+                  <th scope="col" className={th}>
+                    Tình trạng
+                  </th>
+                  <th scope="col" className={th}>
+                    Vị trí
+                  </th>
+                  <th scope="col" className={`${th} text-right`}>
+                    Số lượng
+                  </th>
                   {adjustment.kind === "OPENING" ? (
-                    <td className={`${td} text-right tabular-nums`}>
-                      {formatCost(line.unitCost)}
-                    </td>
+                    <th scope="col" className={`${th} text-right`}>
+                      Đơn giá vốn
+                    </th>
                   ) : null}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody>
+                {adjustment.lines.map((line) => (
+                  <tr key={line.lineNo}>
+                    <td className={td}>
+                      {ADJUSTMENT_LINE_TYPE_LABELS[line.lineType]}
+                    </td>
+                    <td className={td}>
+                      <span className="font-semibold">{line.itemCode}</span> ·{" "}
+                      {line.itemName}
+                    </td>
+                    <td className={td}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <ConditionBadge condition={line.condition} />
+                        {line.toCondition ? (
+                          <>
+                            <span aria-label="sang">→</span>
+                            <ConditionBadge condition={line.toCondition} />
+                          </>
+                        ) : null}
+                      </span>
+                    </td>
+                    <td className={td}>
+                      {line.locationCode}
+                      {line.toLocationCode ? ` → ${line.toLocationCode}` : ""}
+                    </td>
+                    <td className={`${td} text-right tabular-nums`}>
+                      {line.quantity > 0 && line.lineType === "QUANTITY"
+                        ? "+"
+                        : ""}
+                      {formatStock(line.quantity, line.unit)}
+                    </td>
+                    {adjustment.kind === "OPENING" ? (
+                      <td className={`${td} text-right tabular-nums`}>
+                        {formatCost(line.unitCost)}
+                      </td>
+                    ) : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
       {adjustment.posted.length > 0 ? (
         <section
           aria-labelledby="posted"
@@ -255,12 +279,18 @@ export default async function Page({ params }: { params: Params }) {
                     <td className={td}>
                       <ConditionBadge condition={line.condition} />
                     </td>
-                    <td className={td}>{line.locationCode}</td>
-                    <td className={`${td} text-right`}>
-                      {formatStock(line.quantity, "KG")}
+                    <td className={td}>
+                      {line.locationCode ?? "Toàn công ty"}
                     </td>
                     <td className={`${td} text-right`}>
-                      {formatCost(line.unitCost)}
+                      {line.movement === "REVALUE"
+                        ? "–"
+                        : formatStock(line.quantity, "KG")}
+                    </td>
+                    <td className={`${td} text-right`}>
+                      {line.movement === "REVALUE"
+                        ? "–"
+                        : formatCost(line.unitCost)}
                     </td>
                     <td className={`${td} text-right`}>
                       {formatCost(line.avgAfter)}

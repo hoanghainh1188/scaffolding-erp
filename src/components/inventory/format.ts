@@ -20,3 +20,23 @@ export function formatStockWithUnit(milli: number, unit: QuantityUnit): string {
 export function formatCost(value: number | null): string {
   return value === null ? "–" : formatMoney(toMoney(value));
 }
+
+export interface ValuePreviewView {
+  poolMilli: number;
+  avgCost: number | null;
+  value: number;
+  newAvg: number | null;
+  error: string | null;
+}
+
+/**
+ * "Tồn 1.240 cái · Giá BQ 195.282 ₫ · Giá trị 242.149.680 ₫ → Giá BQ mới
+ * 194.072 ₫", or the reason the line would be refused.
+ */
+export function formatValuePreview(
+  preview: ValuePreviewView,
+  unit: QuantityUnit,
+): string {
+  if (preview.error) return preview.error;
+  return `Tồn ${formatStockWithUnit(preview.poolMilli, unit)} · Giá BQ ${formatCost(preview.avgCost)} · Giá trị ${formatCost(preview.value)} → Giá BQ mới ${formatCost(preview.newAvg)}`;
+}

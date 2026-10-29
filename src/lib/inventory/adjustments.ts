@@ -1,8 +1,7 @@
 // Adjustment and opening-balance documents (inventory-ledger spec
 // stock-adjustments, design D7, D8). Nothing reaches the ledger until the
 // director approves; approving posts every line in the same transaction.
-import { and, asc, desc, eq, inArray, ne, sql, type SQL } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+import { and, asc, eq, inArray, ne } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
 import {
@@ -18,7 +17,6 @@ import {
   location,
   stockAdjustment,
   stockAdjustmentLine,
-  user,
 } from "@/db/schema";
 import {
   isBusinessDate,
@@ -41,6 +39,14 @@ import {
   type AdjustmentLineType,
 } from "@/domain/stock-adjustment";
 import {
+  assertValueDelta,
+  assertValueLines,
+  REVALUE_MESSAGES,
+  revaluationMovements,
+  signedMoney,
+  type ValueLine,
+} from "@/domain/stock-revaluation";
+import {
   conflict,
   notFound,
   ok,
@@ -54,20 +60,27 @@ import {
 import { nextDocumentCode } from "./counter";
 import { postMovements, type Tx } from "./post";
 import {
+  assertValueLinesAgainstLedger,
+  buildTripRevaluation,
+  sameValueLines,
+} from "./revaluations";
+import {
   adjustmentChanges,
   adjustmentSummary,
   adjustmentView,
 } from "./activity";
 
-export type AdjustmentStatus = "DRAFT" | "PENDING_APPROVAL" | "DONE";
-
-export const ADJUSTMENT_STATUS_LABELS: Readonly<
-  Record<AdjustmentStatus, string>
-> = {
-  DRAFT: "Nháp",
-  PENDING_APPROVAL: "Chờ duyệt",
-  DONE: "Đã ghi sổ",
-};
+export {
+  ADJUSTMENT_STATUS_LABELS,
+  getAdjustment,
+  listAdjustments,
+  type AdjustmentDetail,
+  type AdjustmentLineRow,
+  type AdjustmentStatus,
+  type AdjustmentSummary,
+  type PostedRow,
+} from "./adjustment-queries";
+import { getAdjustment, type AdjustmentDetail } from "./adjustment-queries";
 
 export const ADJUSTMENT_SERVICE_MESSAGES = {
   notDraft: "Chỉ sửa hoặc xóa được phiếu nháp",
@@ -81,6 +94,9 @@ export const ADJUSTMENT_SERVICE_MESSAGES = {
     `${code} ${CONDITION_LABELS[condition]} đã có biến động, dùng phiếu điều chỉnh`,
   kind: "Chọn loại phiếu",
   relatedTooLong: "Mã chứng từ dài tối đa 40 ký tự",
+  stale: "Phiếu vừa được người khác sửa, tải lại rồi làm lại",
+  tripLinesFixed:
+    "Phiếu sửa chi phí chuyến chỉ đổi được chi phí chuyến đúng và lý do",
   tooManyLines: "Phiếu tối đa 200 dòng",
 } as const;
 
@@ -96,6 +112,8 @@ export interface AdjustmentLineBody {
   /** "10", "-5", "12850.5" (numeric(14,3) text). */
   quantity?: string;
   unitCost?: number | null;
+  /** Signed change of value in đồng (REVALUE documents). */
+  valueDelta?: number | null;
 }
 
 export interface AdjustmentBody {
@@ -104,206 +122,8 @@ export interface AdjustmentBody {
   relatedDocumentCode?: string | null;
   openingDate?: string | null;
   lines?: AdjustmentLineBody[];
-}
-
-export interface AdjustmentSummary {
-  id: string;
-  code: string;
-  kind: AdjustmentKind;
-  status: AdjustmentStatus;
-  reason: string;
-  relatedDocumentCode: string | null;
-  openingDate: string | null;
-  lineCount: number;
-  createdByName: string;
-  createdAt: Date;
-}
-
-export interface AdjustmentLineRow {
-  lineNo: number;
-  lineType: AdjustmentLineType;
-  itemId: string;
-  itemCode: string;
-  itemName: string;
-  unit: "PIECE" | "KG";
-  condition: Condition;
-  toCondition: Condition | null;
-  locationId: string;
-  locationCode: string;
-  locationName: string;
-  toLocationId: string | null;
-  toLocationCode: string | null;
-  toLocationName: string | null;
-  /** Thousandths of the item's unit. */
-  quantity: number;
-  unitCost: number | null;
-}
-
-export interface PostedRow {
-  id: number;
-  movement: string;
-  itemCode: string;
-  condition: Condition;
-  locationCode: string;
-  quantity: number;
-  unitCost: number;
-  avgAfter: number;
-}
-
-export interface AdjustmentDetail extends AdjustmentSummary {
-  returnedReason: string | null;
-  createdBy: string;
-  approvedByName: string | null;
-  approvedAt: Date | null;
-  submittedAt: Date | null;
-  lines: AdjustmentLineRow[];
-  posted: PostedRow[];
-}
-
-// --------------------------------------------------------------- reading
-
-const creator = alias(user, "creator");
-const approver = alias(user, "approver");
-
-/** Pending first (the director's queue), then newest first. */
-export async function listAdjustments(
-  db: Database,
-  filter: { status?: AdjustmentStatus } = {},
-): Promise<AdjustmentSummary[]> {
-  const where: SQL[] = [];
-  if (filter.status) where.push(eq(stockAdjustment.status, filter.status));
-  const rows = await db
-    .select({
-      id: stockAdjustment.id,
-      code: stockAdjustment.code,
-      kind: stockAdjustment.kind,
-      status: stockAdjustment.status,
-      reason: stockAdjustment.reason,
-      relatedDocumentCode: stockAdjustment.relatedDocumentCode,
-      openingDate: stockAdjustment.openingDate,
-      createdAt: stockAdjustment.createdAt,
-      createdByName: creator.name,
-      lineCount: sql<number>`(select count(*)::int from ${stockAdjustmentLine} where ${stockAdjustmentLine.adjustmentId} = ${stockAdjustment.id})`,
-    })
-    .from(stockAdjustment)
-    .innerJoin(creator, eq(creator.id, stockAdjustment.createdBy))
-    .where(where.length ? and(...where) : undefined)
-    .orderBy(
-      sql`case when ${stockAdjustment.status} = 'PENDING_APPROVAL' then 0 else 1 end`,
-      desc(stockAdjustment.createdAt),
-    );
-  return rows.map((row) => ({
-    ...row,
-    kind: row.kind as AdjustmentKind,
-    status: row.status as AdjustmentStatus,
-  }));
-}
-
-const toLocation = alias(location, "to_location");
-
-export async function getAdjustment(
-  db: Database,
-  id: string,
-): Promise<AdjustmentDetail | null> {
-  const [head] = await db
-    .select({
-      id: stockAdjustment.id,
-      code: stockAdjustment.code,
-      kind: stockAdjustment.kind,
-      status: stockAdjustment.status,
-      reason: stockAdjustment.reason,
-      relatedDocumentCode: stockAdjustment.relatedDocumentCode,
-      openingDate: stockAdjustment.openingDate,
-      returnedReason: stockAdjustment.returnedReason,
-      postingId: stockAdjustment.postingId,
-      createdAt: stockAdjustment.createdAt,
-      createdBy: stockAdjustment.createdBy,
-      createdByName: creator.name,
-      approvedByName: approver.name,
-      approvedAt: stockAdjustment.approvedAt,
-      submittedAt: stockAdjustment.submittedAt,
-    })
-    .from(stockAdjustment)
-    .innerJoin(creator, eq(creator.id, stockAdjustment.createdBy))
-    .leftJoin(approver, eq(approver.id, stockAdjustment.approvedBy))
-    .where(eq(stockAdjustment.id, id));
-  if (!head) return null;
-
-  const lines = await db
-    .select({
-      lineNo: stockAdjustmentLine.lineNo,
-      lineType: stockAdjustmentLine.lineType,
-      itemId: stockAdjustmentLine.itemId,
-      itemCode: item.code,
-      itemName: item.name,
-      unit: item.unit,
-      condition: stockAdjustmentLine.condition,
-      toCondition: stockAdjustmentLine.toCondition,
-      locationId: stockAdjustmentLine.locationId,
-      locationCode: location.code,
-      locationName: location.name,
-      toLocationId: stockAdjustmentLine.toLocationId,
-      toLocationCode: toLocation.code,
-      toLocationName: toLocation.name,
-      quantity: stockAdjustmentLine.quantity,
-      unitCost: stockAdjustmentLine.unitCost,
-    })
-    .from(stockAdjustmentLine)
-    .innerJoin(item, eq(item.id, stockAdjustmentLine.itemId))
-    .innerJoin(location, eq(location.id, stockAdjustmentLine.locationId))
-    .leftJoin(toLocation, eq(toLocation.id, stockAdjustmentLine.toLocationId))
-    .where(eq(stockAdjustmentLine.adjustmentId, id))
-    .orderBy(asc(stockAdjustmentLine.lineNo));
-
-  const posted = head.postingId
-    ? await db
-        .select({
-          id: inventoryLedger.id,
-          movement: inventoryLedger.movement,
-          itemCode: item.code,
-          condition: inventoryLedger.condition,
-          locationCode: location.code,
-          quantity: inventoryLedger.quantity,
-          unitCost: inventoryLedger.unitCost,
-          avgAfter: inventoryLedger.avgCostAfter,
-        })
-        .from(inventoryLedger)
-        .innerJoin(item, eq(item.id, inventoryLedger.itemId))
-        .innerJoin(location, eq(location.id, inventoryLedger.locationId))
-        .where(eq(inventoryLedger.postingId, head.postingId))
-        .orderBy(asc(inventoryLedger.id))
-    : [];
-
-  return {
-    id: head.id,
-    code: head.code,
-    reason: head.reason,
-    relatedDocumentCode: head.relatedDocumentCode,
-    openingDate: head.openingDate,
-    returnedReason: head.returnedReason,
-    createdAt: head.createdAt,
-    createdBy: head.createdBy,
-    createdByName: head.createdByName,
-    approvedByName: head.approvedByName,
-    approvedAt: head.approvedAt,
-    submittedAt: head.submittedAt,
-    kind: head.kind as AdjustmentKind,
-    status: head.status as AdjustmentStatus,
-    lineCount: lines.length,
-    lines: lines.map((line) => ({
-      ...line,
-      lineType: line.lineType as AdjustmentLineType,
-      unit: line.unit as "PIECE" | "KG",
-      condition: line.condition as Condition,
-      toCondition: line.toCondition as Condition | null,
-      quantity: quantityFromDb(line.quantity, "KG").milli,
-    })),
-    posted: posted.map((row) => ({
-      ...row,
-      condition: row.condition as Condition,
-      quantity: quantityFromDb(row.quantity, "KG").milli,
-    })),
-  };
+  /** The updatedAt the form was loaded with; a mismatch answers 409. */
+  updatedAt?: string | null;
 }
 
 // --------------------------------------------------------------- writing
@@ -337,6 +157,11 @@ async function checkDocument(
   const related = optionalText(body.relatedDocumentCode);
   if (related && related.length > 40) {
     throw new DomainValueError(ADJUSTMENT_SERVICE_MESSAGES.relatedTooLong);
+  }
+  if (kind === "REVALUE") {
+    if (!related) throw new DomainValueError(REVALUE_MESSAGES.relatedMissing);
+    const lines = await checkValueLines(tx, related, body.lines ?? []);
+    return { reason, relatedDocumentCode: related, openingDate: null, lines };
   }
   const openingDate =
     kind === "OPENING"
@@ -422,6 +247,7 @@ async function checkDocument(
       toLocationId: line.toLocationId ?? null,
       quantityMilli: quantityFromDb((line.quantity ?? "").trim(), unit).milli,
       unitCost: line.unitCost ?? null,
+      valueDelta: null,
     };
     assertAdjustmentLine(kind, checked);
     return checked;
@@ -429,6 +255,84 @@ async function checkDocument(
 
   if (kind === "OPENING") await assertOpeningFree(tx, lines, itemById);
   return { reason, relatedDocumentCode: related, openingDate, lines };
+}
+
+const UUID_TEXT = /^[0-9a-f-]{36}$/i;
+
+/** Item codes by id; refuses unknown and archived items. */
+async function activeItemCodes(
+  tx: Tx,
+  ids: readonly string[],
+): Promise<Map<string, string>> {
+  const wanted = [...new Set(ids)];
+  if (!wanted.every((id) => UUID_TEXT.test(id))) {
+    throw new DomainValueError(ADJUSTMENT_SERVICE_MESSAGES.itemMissing);
+  }
+  const rows = wanted.length
+    ? await tx
+        .select({ id: item.id, code: item.code, status: item.status })
+        .from(item)
+        .where(inArray(item.id, wanted))
+    : [];
+  const codes = new Map<string, string>();
+  for (const row of rows) {
+    if (row.status !== "ACTIVE") {
+      throw new ServiceFailure(
+        conflict(ADJUSTMENT_SERVICE_MESSAGES.itemArchived(row.code)),
+      );
+    }
+    codes.set(row.id, row.code);
+  }
+  if (codes.size !== wanted.length) {
+    throw new DomainValueError(ADJUSTMENT_SERVICE_MESSAGES.itemMissing);
+  }
+  return codes;
+}
+
+/**
+ * Value lines (design D5): a whole non-zero change per (item + condition),
+ * each pair once, held by the source document and priceable now.
+ */
+async function checkValueLines(
+  tx: Tx,
+  related: string,
+  raw: readonly AdjustmentLineBody[],
+): Promise<AdjustmentLineInput[]> {
+  if (raw.length > MAX_LINES) {
+    throw new DomainValueError(ADJUSTMENT_SERVICE_MESSAGES.tooManyLines);
+  }
+  const codes = await activeItemCodes(
+    tx,
+    raw.map((line) => line.itemId ?? ""),
+  );
+  const lines = raw.map((line): AdjustmentLineInput => {
+    const checked: AdjustmentLineInput = {
+      lineType: "VALUE",
+      itemId: line.itemId ?? "",
+      condition: (line.condition ?? "") as Condition,
+      toCondition: null,
+      locationId: null,
+      toLocationId: null,
+      quantityMilli: 0,
+      unitCost: null,
+      valueDelta: line.valueDelta ?? 0,
+    };
+    assertAdjustmentLine("REVALUE", checked);
+    return checked;
+  });
+  const values = toValueLines(lines);
+  const codeOf = (id: string) => codes.get(id) ?? "";
+  assertValueLines(values, codeOf);
+  await assertValueLinesAgainstLedger(tx, related, values, codeOf);
+  return lines;
+}
+
+function toValueLines(lines: readonly AdjustmentLineInput[]): ValueLine[] {
+  return lines.map((line) => ({
+    itemId: line.itemId,
+    condition: line.condition,
+    valueDelta: assertValueDelta(line.valueDelta ?? 0),
+  }));
 }
 
 /** An opening only for (item + condition) pairs with no other movement. */
@@ -462,7 +366,7 @@ async function assertOpeningFree(
   }
 }
 
-async function writeLines(
+export async function writeLines(
   tx: Tx,
   adjustmentId: string,
   lines: AdjustmentLineInput[],
@@ -486,11 +390,12 @@ async function writeLines(
         toQuantity(line.quantityMilli, units.get(line.itemId) ?? "KG"),
       ),
       unitCost: line.unitCost,
+      valueDelta: line.valueDelta,
     })),
   );
 }
 
-async function unitsOf(tx: Tx, lines: AdjustmentLineInput[]) {
+export async function unitsOf(tx: Tx, lines: AdjustmentLineInput[]) {
   const ids = [...new Set(lines.map((line) => line.itemId))];
   if (ids.length === 0) return new Map<string, "PIECE" | "KG">();
   const rows = await tx
@@ -503,7 +408,7 @@ async function unitsOf(tx: Tx, lines: AdjustmentLineInput[]) {
 const today = () => toBusinessDate(new Date());
 
 /** Adjustments and opening balances are separate types in the log. */
-const docType = (kind: string) =>
+export const docType = (kind: string) =>
   kind === "OPENING"
     ? ("OPENING_BALANCE" as const)
     : ("STOCK_ADJUSTMENT" as const);
@@ -554,7 +459,7 @@ export function createAdjustment(
 }
 
 /** Locks the document; throws when it is missing. */
-async function lockAdjustment(tx: Tx, id: string) {
+export async function lockAdjustment(tx: Tx, id: string) {
   const [row] = await tx
     .select()
     .from(stockAdjustment)
@@ -564,7 +469,18 @@ async function lockAdjustment(tx: Tx, id: string) {
   return row;
 }
 
-function requireDraft(status: string): void {
+/** The form's updatedAt must still be the stored one (409 otherwise). */
+export function assertFresh(
+  stored: Date,
+  sent: string | null | undefined,
+): void {
+  if (!sent) return;
+  if (new Date(sent).getTime() !== stored.getTime()) {
+    throw new ServiceFailure(conflict(ADJUSTMENT_SERVICE_MESSAGES.stale));
+  }
+}
+
+export function requireDraft(status: string): void {
   if (status === "DONE") {
     throw new ServiceFailure(
       conflict(ADJUSTMENT_SERVICE_MESSAGES.alreadyPosted),
@@ -586,6 +502,12 @@ export function updateAdjustment(
     await db.transaction(async (tx) => {
       const current = await lockAdjustment(tx, id);
       requireDraft(current.status);
+      assertFresh(current.updatedAt, body.updatedAt);
+      if (current.sourceReceiptId) {
+        throw new ServiceFailure(
+          conflict(ADJUSTMENT_SERVICE_MESSAGES.tripLinesFixed),
+        );
+      }
       const kind = current.kind as AdjustmentKind;
       const checked = await checkDocument(tx, kind, body, now);
       const before = await adjustmentView(tx, id);
@@ -648,6 +570,7 @@ async function storedLines(tx: Tx, id: string): Promise<AdjustmentLineInput[]> {
     toLocationId: row.toLocationId,
     quantityMilli: quantityFromDb(row.quantity, "KG").milli,
     unitCost: row.unitCost,
+    valueDelta: row.valueDelta,
   }));
 }
 
@@ -708,7 +631,29 @@ export function approveAdjustment(
       requirePending(current.status);
       const kind = current.kind as AdjustmentKind;
       const lines = await storedLines(tx, id);
-      const drafts = adjustmentMovements(current.code, current.reason, lines);
+      if (kind === "REVALUE" && current.sourceReceiptId) {
+        // Nothing booked on the trip may have moved since the lines were built.
+        const rebuilt = await buildTripRevaluation(
+          tx,
+          current.sourceReceiptId,
+          current.correctedTripCost ?? 0,
+        );
+        if (
+          rebuilt.recordedCost !== current.recordedTripCost ||
+          !sameValueLines(rebuilt.lines, toValueLines(lines))
+        ) {
+          throw new DomainValueError(
+            REVALUE_MESSAGES.tripNotReproducible(rebuilt.receiptCode),
+          );
+        }
+      }
+      const drafts =
+        kind === "REVALUE"
+          ? revaluationMovements(
+              current.relatedDocumentCode ?? "",
+              toValueLines(lines),
+            )
+          : adjustmentMovements(current.code, current.reason, lines);
       const { postingId } = await postMovements(
         tx,
         actor,
@@ -747,10 +692,19 @@ export function approveAdjustment(
       await logActivity(tx, actor, {
         action: "APPROVE",
         document: { type: docType(current.kind), id, code: current.code },
-        summary: joinParts(
-          `Ghi sổ ${countText(drafts.length, "dòng")}`,
-          current.reason,
-        ),
+        summary:
+          kind === "REVALUE"
+            ? joinParts(
+                `Sửa ${current.relatedDocumentCode ?? ""}`,
+                `ghi sổ ${countText(drafts.length, "dòng")} điều chỉnh giá`,
+                signedMoney(
+                  lines.reduce((sum, l) => sum + (l.valueDelta ?? 0), 0),
+                ),
+              )
+            : joinParts(
+                `Ghi sổ ${countText(drafts.length, "dòng")}`,
+                current.reason,
+              ),
       });
     });
     const updated = await getAdjustment(db, id);
