@@ -167,7 +167,7 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | M4 Nhập thu hồi | `M4-ReturnNote.dc.html` | `returns-and-compensation` | Đã chốt phong cách |
 | Đăng nhập | `Login.dc.html` | `auth-and-roles` | Đã duyệt |
 | D17 Người dùng | `D17-Users.dc.html` | `auth-and-roles` | Đã duyệt |
-| D18 Nhật ký thao tác | `D18-ActivityLog.dc.html` | `activity-log` | Chờ duyệt |
+| D18 Nhật ký thao tác | `D18-ActivityLog.dc.html` | `activity-log` | Đã duyệt |
 | D9 Danh mục vật tư | `D9-Items.dc.html` | `master-data` | Đã duyệt |
 | D16 Đối tác & công trình | `D16-Partners.dc.html` | `master-data` | Đã duyệt |
 | D10 Tồn kho tổng hợp | `D10-Stock.dc.html` | `inventory-ledger` | Đã duyệt |
