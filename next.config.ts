@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
-// Applied to every response. CSP needs a per-request nonce, which makes every
-// page render per request; it gets its own change (security-headers).
-const securityHeaders = [
+// Applied to every response. Content-Security-Policy (CSP) with a per-request
+// nonce is handled dynamically in src/proxy.ts.
+export const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
