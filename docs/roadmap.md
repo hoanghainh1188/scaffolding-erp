@@ -43,7 +43,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | # | Tên change | Issue | Nội dung | Phụ thuộc |
 |---|---|---|---|---|
 | K1 | `security-headers` | #23 | CSP theo nonce ✅ | 02 |
-| K2 | `e2e-production-build` | #24 | E2E trên `next build && next start` | 02 |
+| K2 | `e2e-production-build` | #24 | E2E trên `next build && next start` ✅ | 02 |
 | K3 | `login-lockout-hardening` | #25 | Chống cố tình nhập sai để chặn người khác | 02 |
 | K4 | `temp-password-expiry` | #26 | Mật khẩu tạm hết hạn sau 48 giờ | 02 |
 | K5 | `qr-labels` | #40 | In nhãn QR dán lên hàng | 06 |
