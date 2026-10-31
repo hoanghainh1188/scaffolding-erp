@@ -71,6 +71,13 @@
       "when": 1793290036128,
       "tag": "0009_stock_value_adjustment",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793457189641,
+      "tag": "0010_login_throttle_ip",
+      "breakpoints": true
     }
   ]
 }

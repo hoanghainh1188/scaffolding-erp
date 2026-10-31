@@ -79,4 +79,31 @@ describe("auth tables", () => {
       ),
     ).toEqual({ code: "23505", constraint: "user_username_unique" });
   });
+
+  it("stores and queries login_throttle with composite primary key (usernameKey, ip)", async () => {
+    const { loginThrottle } = await import("./auth");
+    await db.insert(loginThrottle).values([
+      {
+        usernameKey: "vantung",
+        ip: "10.0.0.1",
+        failedCount: 3,
+        firstFailedAt: new Date(),
+        lockedUntil: null,
+      },
+      {
+        usernameKey: "vantung",
+        ip: "10.0.0.2",
+        failedCount: 5,
+        firstFailedAt: new Date(),
+        lockedUntil: new Date(),
+      },
+    ]);
+
+    const records = await db
+      .select()
+      .from(loginThrottle)
+      .where(sql`${loginThrottle.usernameKey} = 'vantung'`);
+    expect(records).toHaveLength(2);
+    expect(records.map((r) => r.ip).sort()).toEqual(["10.0.0.1", "10.0.0.2"]);
+  });
 });
