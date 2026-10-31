@@ -15,6 +15,8 @@ describe("securityHeaders in next.config.ts", () => {
     expect(map.get("X-Frame-Options")).toBe("DENY");
     expect(map.get("X-Content-Type-Options")).toBe("nosniff");
     expect(map.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
-    expect(map.get("Permissions-Policy")).toBe("camera=(self), microphone=(), geolocation=()");
+    expect(map.get("Permissions-Policy")).toBe(
+      "camera=(self), microphone=(), geolocation=()",
+    );
   });
 });

@@ -30,7 +30,9 @@ describe("security-headers integration", () => {
     const resApi = await proxy(reqApi);
     expect(resApi.headers.get("Content-Security-Policy")).toBeNull();
 
-    const reqManifest = new NextRequest("http://localhost:3000/manifest.webmanifest");
+    const reqManifest = new NextRequest(
+      "http://localhost:3000/manifest.webmanifest",
+    );
     const resManifest = await proxy(reqManifest);
     expect(resManifest.headers.get("Content-Security-Policy")).toBeNull();
   });
@@ -44,6 +46,8 @@ describe("security-headers integration", () => {
     expect(map.get("X-Frame-Options")).toBe("DENY");
     expect(map.get("X-Content-Type-Options")).toBe("nosniff");
     expect(map.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
-    expect(map.get("Permissions-Policy")).toBe("camera=(self), microphone=(), geolocation=()");
+    expect(map.get("Permissions-Policy")).toBe(
+      "camera=(self), microphone=(), geolocation=()",
+    );
   });
 });
