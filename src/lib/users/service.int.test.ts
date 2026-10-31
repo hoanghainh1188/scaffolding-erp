@@ -111,6 +111,11 @@ describe("createUser", () => {
     expect(
       (await statusOf(result.ok ? result.data.user.id : ""))?.mustChange,
     ).toBe(true);
+    expect(result.ok && result.data.user.tempPasswordExpiresAt).toBeTruthy();
+    const expiresMs = new Date(
+      result.ok ? result.data.user.tempPasswordExpiresAt! : "",
+    ).getTime();
+    expect(expiresMs - Date.now()).toBeGreaterThan(47.9 * 60 * 60 * 1000);
     expect(await canSignIn("ducluc", tempPassword)).toBe(true);
   });
 
@@ -242,6 +247,11 @@ describe("resetPassword", () => {
     expect(await canSignIn("vantung", vantung.password)).toBe(false);
     expect(await ctx.db.select().from(loginThrottle)).toHaveLength(0);
     expect((await statusOf(vantung.id))?.mustChange).toBe(true);
+    expect(result.ok && result.data.user.tempPasswordExpiresAt).toBeTruthy();
+    const expiresMs = new Date(
+      result.ok ? result.data.user.tempPasswordExpiresAt! : "",
+    ).getTime();
+    expect(expiresMs - Date.now()).toBeGreaterThan(47.9 * 60 * 60 * 1000);
     expect(
       await canSignIn("vantung", result.ok ? result.data.tempPassword : ""),
     ).toBe(true);
@@ -307,6 +317,11 @@ describe("lockUser / unlockUser", () => {
       data: { user: { status: "ACTIVE" } },
     });
     expect(await canSignIn("ngoclam", ngoclam.password)).toBe(false);
+    expect(result.ok && result.data.user.tempPasswordExpiresAt).toBeTruthy();
+    const expiresMs = new Date(
+      result.ok ? result.data.user.tempPasswordExpiresAt! : "",
+    ).getTime();
+    expect(expiresMs - Date.now()).toBeGreaterThan(47.9 * 60 * 60 * 1000);
     expect(
       await canSignIn("ngoclam", result.ok ? result.data.tempPassword : ""),
     ).toBe(true);
