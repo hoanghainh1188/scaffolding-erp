@@ -50,7 +50,8 @@ npm run dev              # http://localhost:3000, đăng nhập bằng giamdoc /
 
 - `npm test` — unit, component và integration. Integration cần `TEST_DATABASE_URL`; thiếu thì được bỏ qua kèm thông báo (trên CI thì bắt buộc).
 - `npm run test:int` — chỉ integration test. Chạy migration vào DB test trước nếu test cần bảng: `DATABASE_URL=$TEST_DATABASE_URL npm run db:migrate`.
-- `npm run test:e2e` — Playwright trên Microsoft Edge, tự bật `next dev`. Cần DB dev đã migrate và `E2E_PASSWORD` trong `.env`; global setup tạo lại các tài khoản `e2e.*` mỗi lần chạy. Máy không có Edge: `PW_CHANNEL=chromium npm run test:e2e`. Đang chạy `npm run dev` ở cổng khác thì đặt `PW_PORT` trùng cổng đó để dùng lại, đừng chạy hai `next dev` cùng lúc.
+- `npm run test:e2e` — Playwright trên Microsoft Edge, tự bật `next dev` ở local (trên CI hoặc khi chạy `npm run test:e2e:prod` sẽ chạy trên bản production build). Cần DB dev đã migrate và `E2E_PASSWORD` trong `.env`; global setup tạo lại các tài khoản `e2e.*` mỗi lần chạy. Máy không có Edge: `PW_CHANNEL=chromium npm run test:e2e`. Đang chạy `npm run dev` ở cổng khác thì đặt `PW_PORT` trùng cổng đó để dùng lại, đừng chạy hai server cùng lúc.
+- `npm run test:e2e:prod` — Build production với `E2E=1` rồi chạy Playwright E2E trên bản production build.
 - Test ảnh mốc (`@visual`) chỉ chạy trên CI. Muốn tạo hoặc cập nhật ảnh mốc: GitHub → Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow. Workflow commit ảnh vào nhánh rồi tự chạy lại CI.
 
 ### Design token
