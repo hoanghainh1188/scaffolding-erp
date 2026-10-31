@@ -41,27 +41,35 @@ Khi đăng nhập sai, hệ thống SHALL hiện cùng một thông báo "Tên �
 - **THEN** trang hiện đúng thông báo "Tên đăng nhập hoặc mật khẩu không đúng" như trường hợp sai mật khẩu
 
 ### Requirement: Tạm khóa khi nhập sai nhiều lần
-Sau 5 lần đăng nhập sai liên tiếp với cùng một tên đăng nhập trong vòng 15 phút, hệ thống SHALL từ chối mọi lần đăng nhập với tên đó trong 15 phút kể từ lần sai thứ 5, kể cả khi mật khẩu đúng, với thông báo "Nhập sai quá nhiều lần. Thử lại sau 15 phút hoặc nhờ Giám đốc đặt lại mật khẩu". Quy tắc áp dụng cả cho tên không tồn tại. Đăng nhập đúng hoặc Giám đốc đặt lại mật khẩu SHALL xóa bộ đếm.
+Sau 5 lần đăng nhập sai liên tiếp với cùng một tên đăng nhập từ cùng một địa chỉ IP trong vòng 15 phút, hệ thống SHALL từ chối mọi lần đăng nhập với tên đó từ địa chỉ IP đó trong 15 phút kể từ lần sai thứ 5, kể cả khi mật khẩu đúng, với thông báo "Nhập sai quá nhiều lần. Thử lại sau 15 phút hoặc nhờ Giám đốc đặt lại mật khẩu". Quy tắc áp dụng cả cho tên không tồn tại. Đăng nhập đúng từ địa chỉ IP đó, hoặc Giám đốc đặt lại mật khẩu, hoặc lệnh dòng lệnh cứu hộ SHALL xóa bản ghi khóa. Người dùng hợp lệ đăng nhập từ địa chỉ IP khác SHALL không bị chặn bởi các lần nhập sai từ địa chỉ IP ban đầu.
 
 #### Scenario: Sai lần thứ 5
-- **WHEN** người dùng `vantung` nhập sai mật khẩu 5 lần liên tiếp lúc 08:00–08:03
-- **THEN** lần thứ 6 lúc 08:04 với mật khẩu đúng bị từ chối với thông báo tạm khóa, không tạo phiên
+- **WHEN** người dùng `vantung` nhập sai mật khẩu 5 lần liên tiếp từ cùng một địa chỉ IP lúc 08:00–08:03
+- **THEN** lần thứ 6 lúc 08:04 với mật khẩu đúng từ địa chỉ IP đó bị từ chối với thông báo tạm khóa, không tạo phiên
 
 #### Scenario: Hết thời gian tạm khóa
-- **WHEN** lần sai thứ 5 của `vantung` lúc 08:03 và người đó đăng nhập đúng lúc 08:19
+- **WHEN** lần sai thứ 5 của `vantung` từ cùng IP lúc 08:03 và người đó đăng nhập đúng từ IP đó lúc 08:19
 - **THEN** đăng nhập thành công và bộ đếm về 0
 
 #### Scenario: Sai 4 lần rồi đúng
-- **WHEN** người dùng `thuha` sai 4 lần rồi nhập đúng
-- **THEN** đăng nhập thành công; lần sai tiếp theo được đếm lại từ 1
+- **WHEN** người dùng `thuha` sai 4 lần từ cùng IP rồi nhập đúng từ IP đó
+- **THEN** đăng nhập thành công; lần sai tiếp theo từ IP đó được đếm lại từ 1
 
 #### Scenario: Tên không tồn tại cũng bị tạm khóa
-- **WHEN** ai đó thử tên `khongco` sai 5 lần
-- **THEN** lần thứ 6 nhận thông báo tạm khóa giống tài khoản có thật
+- **WHEN** ai đó thử tên `khongco` sai 5 lần từ cùng một IP
+- **THEN** lần thứ 6 từ IP đó nhận thông báo tạm khóa giống tài khoản có thật
 
 #### Scenario: Giám đốc đặt lại mật khẩu gỡ tạm khóa
 - **WHEN** `vantung` đang bị tạm khóa và Giám đốc đặt lại mật khẩu cho `vantung`
-- **THEN** `vantung` đăng nhập được ngay bằng mật khẩu tạm mới
+- **THEN** `vantung` đăng nhập được ngay bằng mật khẩu tạm mới trên mọi IP
+
+#### Scenario: Người dùng đăng nhập từ IP khác không bị chặn
+- **WHEN** kẻ xấu nhập sai tên `vantung` 5 lần từ IP `1.2.3.4` lúc 08:00–08:03 khiến `vantung` bị tạm khóa ở IP `1.2.3.4`
+- **THEN** lúc 08:04 người dùng `vantung` thật đăng nhập đúng mật khẩu từ IP `5.6.7.8` thành công và vào hệ thống bình thường
+
+#### Scenario: Lệnh dòng lệnh cứu hộ gỡ tạm khóa
+- **WHEN** Giám đốc duy nhất vô tình nhập sai 5 lần từ IP nhà riêng và chạy lệnh cứu hộ `npm run unlock -- giamdoc` trên server
+- **THEN** bản ghi tạm khóa của `giamdoc` được dọn sạch và Giám đốc đăng nhập lại được ngay
 
 ### Requirement: Giới hạn số lần gọi đăng nhập theo địa chỉ IP
 Hệ thống SHALL giới hạn tối đa 20 lần gọi API đăng nhập mỗi phút từ cùng một địa chỉ IP. Vượt giới hạn SHALL trả 429 với thông báo "Thao tác quá nhanh. Thử lại sau ít phút".
