@@ -29,5 +29,9 @@ tests/e2e/.auth/
 *.log
 .vercel
 
+# claude local files
+.claude/worktrees/
+.claude/launch.json
+
 # copied by scripts/copy-zxing-wasm.mts on install
 public/vendor/
