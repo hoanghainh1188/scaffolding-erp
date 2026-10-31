@@ -16,8 +16,8 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | 04 | `inventory-ledger` | #6 | Sổ kho, giá vốn BQ, tồn kho, thẻ kho, điều chỉnh, tồn đầu | D10, D11 | 03 | ✅ |
 | 05 | `purchase-orders` | #7 | Đơn thu mua, chia chi phí mua hàng | D2, D3, D3b | 04 | ✅ |
 | 06 | `goods-receipt` | #8 | Nhập hàng trên điện thoại, lưu nháp, quét QR, giá sắt vụn | M1, M2, M3, M7 | 05 | ✅ |
-| 07 | `simple-repair` | #12 | Chờ sửa → Tốt / Phế liệu, cộng chi phí sửa | D12 | 04 | **Làm tiếp** |
-| 08 | `stocktake` | #17 | Kiểm kê định kỳ **bãi và xưởng** (0.2 #31), duyệt chênh lệch (**lên MVP**) | M6a, M6, D13 | 04 | |
+| 07 | `simple-repair` | #12 | Chờ sửa → Tốt / Phế liệu, cộng chi phí sửa | D12 | 04 | ✅ |
+| 08 | `stocktake` | #17 | Kiểm kê định kỳ **bãi và xưởng** (0.2 #31), duyệt chênh lệch (**lên MVP**) | M6a, M6, D13 | 04 | ✅ |
 | 09 | `catalog-extensions` | #45 | Mã vật tư cũ, đơn vị mét/bó/sọt, cho thuê theo kg/mét, khu vực công trình, nhân viên phụ trách khách | D9, D16 (sửa) | 03 | 🔒 Q3, Q9, Q10 |
 | 10 | `contracts` | #9 | Hợp đồng bán/thuê, giá theo hợp đồng, **cọc + bảo lãnh**, VAT, phụ lục, báo giá = nháp in ra, tách quyền thuê/bán | D4, D5, D5a, D5b (cần vẽ) | 09 | 🔒 Q4–Q8 |
 | 11 | `deliveries` | #10 | Xuất kho theo đợt, rã bộ, cước vận chuyển | D6, M5 | 10 | |
@@ -26,7 +26,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | 14 | `receivables` | #14 | Công nợ tách loại (thuê, bán, vận chuyển, đền bù, VAT), cọc, bảo lãnh, thanh toán | D14 | 13 | |
 | 15 | `dashboard-basic` | #15 | Việc chờ duyệt, **doanh số ngày/tháng**, công trình rủi ro, tra một công trình, hàng ở ngoài theo khu vực | D1 | 14 | |
 | 16 | `production-orders` | #46 | **Sản xuất** thành phẩm từ nguyên liệu (mới) | cần vẽ | 04 | 🔒 Q11 |
-| 17 | `activity-log` | #47 | Nhật ký thao tác cho Giám đốc (mới) | D18 | 02 | |
+| 17 | `activity-log` | #47 | Nhật ký thao tác cho Giám đốc (mới) | D18 | 02 | ✅ |
 | 18 | `data-migration` | #48 | Chuyển dữ liệu từ Excel khi bắt đầu dùng (mới, **bắt buộc trước khi chạy thật**) | cần vẽ | 14 | |
 
 ## Bản 2
@@ -47,11 +47,11 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | K3 | `login-lockout-hardening` | #25 | Chống cố tình nhập sai để chặn người khác | 02 |
 | K4 | `temp-password-expiry` | #26 | Mật khẩu tạm hết hạn sau 48 giờ | 02 |
 | K5 | `qr-labels` | #40 | In nhãn QR dán lên hàng | 06 |
-| K6 | `stock-value-adjustment` | #42 | Phiếu điều chỉnh giá trị kho | 04 |
+| K6 | `stock-value-adjustment` | #42 | Phiếu điều chỉnh giá trị kho ✅ | 04 |
 | K7 | ô nhập ngày | #37 | Ô ngày chung luôn hiện `dd/mm/yyyy` (`DateInput`, sửa lỗi nhỏ PR #59) ✅ | – |
 
 ## Ghi chú
 
 - Khi chủ trả lời câu hỏi ở #44: ghi quyết định vào `docs/requirements.md` 0.2, gỡ dòng tương ứng ở 0.2b, gỡ nhãn `blocked` của issue.
-- Trong lúc chờ, làm 07 → 08 → 17 (không bị chặn). Song song: xin file Excel tính tiền của 2–3 công trình.
+- Trong lúc chờ câu trả lời ở #44: các change 07, 08, 17 và K6, K7 đã hoàn tất ✅. Có thể làm tiếp các change kỹ thuật K1–K5 (không bị chặn) hoặc kiểm tra tay #33. Song song: xin file Excel tính tiền của 2–3 công trình.
 - 18 `data-migration` làm cuối, nhưng nên xin sớm file mẫu dữ liệu để thiết kế mẫu nhập từ đầu.
