@@ -1,5 +1,5 @@
 // Sign-in with throttling, lock checks and session length (design D1, D3, D9).
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { isAPIError } from "better-auth/api";
 
 import type { Database } from "@/db/client";
@@ -65,7 +65,7 @@ export async function signIn(
   }
 
   const usernameKey = normalizeUsername(input.username);
-  const throttle = await loadThrottle(db, usernameKey);
+  const throttle = await loadThrottle(db, usernameKey, ip);
   if (evaluateLoginThrottle(throttle, now).locked) {
     return { ok: false, status: 429, error: SIGN_IN_MESSAGES.throttled };
   }
@@ -75,7 +75,7 @@ export async function signIn(
     // A name that breaks the D17 rule cannot exist; counting it would only
     // let anyone fill the table with junk keys.
     if (isValidUsername(usernameKey)) {
-      await recordFailedAttempt(db, usernameKey, now);
+      await recordFailedAttempt(db, usernameKey, ip, now);
     }
     return { ok: false, status: 401, error: SIGN_IN_MESSAGES.invalid };
   }
@@ -96,7 +96,9 @@ export async function signIn(
 
   await db
     .delete(loginThrottle)
-    .where(eq(loginThrottle.usernameKey, usernameKey));
+    .where(
+      and(eq(loginThrottle.usernameKey, usernameKey), eq(loginThrottle.ip, ip)),
+    );
   if (!input.remember) {
     await db
       .update(session)
@@ -171,21 +173,25 @@ async function tryPassword(
 async function loadThrottle(
   db: Database,
   usernameKey: string,
+  ip: string,
 ): Promise<ThrottleState | null> {
   const [row] = await db
     .select()
     .from(loginThrottle)
-    .where(eq(loginThrottle.usernameKey, usernameKey));
+    .where(
+      and(eq(loginThrottle.usernameKey, usernameKey), eq(loginThrottle.ip, ip)),
+    );
   return row ?? null;
 }
 
 /**
- * One more wrong password for `usernameKey`. The row is locked while it is
+ * One more wrong password for `(usernameKey, ip)`. The row is locked while it is
  * read and rewritten, so concurrent failures are all counted.
  */
 async function recordFailedAttempt(
   db: Database,
   usernameKey: string,
+  ip: string,
   now: Date,
 ): Promise<void> {
   await db.transaction(async (tx) => {
@@ -194,6 +200,7 @@ async function recordFailedAttempt(
       .insert(loginThrottle)
       .values({
         usernameKey,
+        ip,
         failedCount: 0,
         firstFailedAt: now,
         lockedUntil: null,
@@ -202,12 +209,22 @@ async function recordFailedAttempt(
     const [current] = await tx
       .select()
       .from(loginThrottle)
-      .where(eq(loginThrottle.usernameKey, usernameKey))
+      .where(
+        and(
+          eq(loginThrottle.usernameKey, usernameKey),
+          eq(loginThrottle.ip, ip),
+        ),
+      )
       .for("update");
     await tx
       .update(loginThrottle)
       .set(recordFailure(current ?? null, now))
-      .where(eq(loginThrottle.usernameKey, usernameKey));
+      .where(
+        and(
+          eq(loginThrottle.usernameKey, usernameKey),
+          eq(loginThrottle.ip, ip),
+        ),
+      );
   });
 }
 
