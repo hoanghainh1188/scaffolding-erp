@@ -39,7 +39,7 @@ export function buildCspHeader({
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    !isDev ? "upgrade-insecure-requests" : null,
+    !isDev && process.env.E2E !== "1" ? "upgrade-insecure-requests" : null,
   ]
     .filter(Boolean)
     .join("; ");

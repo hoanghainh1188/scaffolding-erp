@@ -10,7 +10,9 @@ export const metadata: Metadata = { title: "Phiếu nhập" };
 /** Sample detail page (back button, form field near the bottom). Dev only. */
 export default async function DevDetailPage() {
   await requireUser();
-  if (process.env.NODE_ENV === "production") notFound();
+  if (process.env.NODE_ENV === "production" && process.env.E2E !== "1") {
+    notFound();
+  }
   return (
     <MobilePage title="Phiếu nhập" backHref="/m/history">
       <p className="text-body text-muted-foreground">
