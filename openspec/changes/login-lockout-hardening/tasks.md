@@ -24,7 +24,7 @@
 ## 4. Documentation & Verification
 
 - [x] 4.1 Cập nhật `README.md` và `CLAUDE.md` hướng dẫn sử dụng lệnh cứu hộ khi bị khóa.
-- [ ] 4.2 Chạy `npx openspec validate login-lockout-hardening --strict` và toàn bộ test suite `npm run lint && npm run typecheck && npm test && npm run test:e2e`.
+- [x] 4.2 Chạy `npx openspec validate login-lockout-hardening --strict` và toàn bộ test suite `npm run lint && npm run typecheck && npm test && npm run test:e2e`.
 
 ## Workflow follow-up
 
