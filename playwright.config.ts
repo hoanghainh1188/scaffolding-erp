@@ -7,6 +7,7 @@ import { defineConfig, devices } from "@playwright/test";
 if (existsSync(".env")) process.loadEnvFile(".env");
 
 const isCI = Boolean(process.env.CI);
+const isProd = isCI || process.env.PW_PRODUCTION === "1";
 const port = Number(process.env.PW_PORT ?? 3000);
 const baseURL = `http://localhost:${port}`;
 
@@ -94,11 +95,11 @@ export default defineConfig({
       grep: /@basic/,
     },
   ],
-  // Always `next dev` (setup-project design D15; moving to a production
-  // build is its own change). E2E=1 hides Next's dev indicator so it never
-  // covers the page or appears in screenshots.
+  // On CI or when PW_PRODUCTION=1 is set, webServer runs `npm start` (Next.js production build).
+  // In normal local development, it runs `npm run dev`. E2E=1 hides Next's dev indicator
+  // and allows showcase routes during testing.
   webServer: {
-    command: `npm run dev -- -p ${port}`,
+    command: isProd ? `npm start -- -p ${port}` : `npm run dev -- -p ${port}`,
     // Every test browser signs in from localhost: lift the per-IP limit.
     env: {
       E2E: "1",

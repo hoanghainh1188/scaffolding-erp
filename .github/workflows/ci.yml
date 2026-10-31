@@ -77,7 +77,7 @@ jobs:
       - run: npm run typecheck
       # Unit and component, including the tokens.css drift test.
       - run: npm run test:unit
-      # Proves the production build works; E2E runs on `next dev` (design D15).
+      # Proves the production build works; E2E runs on production build (K2).
       - run: npm run build
 
   # Integration files run one at a time against one database, so split them
@@ -167,6 +167,10 @@ jobs:
       - name: Install Edge
         timeout-minutes: 10
         run: npx playwright install --with-deps msedge
+      - name: Build Next.js application
+        env:
+          E2E: "1"
+        run: npm run build
       - name: E2E
         run: >-
           npx playwright test --grep-invert @visual
@@ -211,6 +215,10 @@ jobs:
       - name: Install Edge
         timeout-minutes: 10
         run: npx playwright install --with-deps msedge
+      - name: Build Next.js application
+        env:
+          E2E: "1"
+        run: npm run build
       - name: Visual baselines
         id: visual
         run: npx playwright test --grep @visual --project desktop-1280
@@ -284,6 +292,10 @@ jobs:
       - run: npm ci
       - name: Migrate the database
         run: npm run db:migrate
+      - name: Build Next.js application
+        env:
+          E2E: "1"
+        run: npm run build
       - name: E2E basic
         run: >-
           npx playwright test --grep-invert @visual
