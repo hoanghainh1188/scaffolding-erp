@@ -316,3 +316,82 @@ describe("signIn: locked account", () => {
     expect(await lastLoginOf(ngoclam.id)).toEqual({ at: null, device: null });
   });
 });
+
+describe("signIn: temporary password expiry", () => {
+  const issuedAt = new Date("2026-11-02T10:00:00+07:00");
+  const expiresAt = new Date(issuedAt.getTime() + 48 * 60 * 60 * 1000);
+
+  it("allows sign-in before 48 hours", async () => {
+    const userWithTemp = await createTestUser(ctx, {
+      role: "WAREHOUSE",
+      mustChangePassword: true,
+      tempPasswordExpiresAt: expiresAt,
+    });
+    const beforeExpiry = new Date(expiresAt.getTime() - 1000); // 1 second before
+    const result = await attempt(
+      userWithTemp,
+      userWithTemp.password,
+      beforeExpiry,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      user: {
+        id: userWithTemp.id,
+        role: "WAREHOUSE",
+        mustChangePassword: true,
+      },
+    });
+    expect(await sessionsOf(userWithTemp.id)).toHaveLength(1);
+  });
+
+  it("rejects sign-in at exact 48-hour boundary", async () => {
+    const userWithTemp = await createTestUser(ctx, {
+      role: "WAREHOUSE",
+      mustChangePassword: true,
+      tempPasswordExpiresAt: expiresAt,
+    });
+    const result = await attempt(userWithTemp, userWithTemp.password, expiresAt);
+    expect(result).toEqual({
+      ok: false,
+      status: 401,
+      error: SIGN_IN_MESSAGES.tempPasswordExpired,
+    });
+    expect(await sessionsOf(userWithTemp.id)).toHaveLength(0);
+  });
+
+  it("rejects sign-in after 48 hours and cleans up session", async () => {
+    const userWithTemp = await createTestUser(ctx, {
+      role: "WAREHOUSE",
+      mustChangePassword: true,
+      tempPasswordExpiresAt: expiresAt,
+    });
+    const afterExpiry = new Date(expiresAt.getTime() + 60 * 1000); // 1 minute after
+    const result = await attempt(
+      userWithTemp,
+      userWithTemp.password,
+      afterExpiry,
+    );
+    expect(result).toEqual({
+      ok: false,
+      status: 401,
+      error: SIGN_IN_MESSAGES.tempPasswordExpired,
+    });
+    expect(await sessionsOf(userWithTemp.id)).toHaveLength(0);
+  });
+
+  it("returns generic invalid error for wrong password even if temporary password expired", async () => {
+    const userWithTemp = await createTestUser(ctx, {
+      role: "WAREHOUSE",
+      mustChangePassword: true,
+      tempPasswordExpiresAt: expiresAt,
+    });
+    const afterExpiry = new Date(expiresAt.getTime() + 60 * 1000);
+    const result = await attempt(userWithTemp, "sai-mat-khau", afterExpiry);
+    expect(result).toEqual({
+      ok: false,
+      status: 401,
+      error: SIGN_IN_MESSAGES.invalid,
+    });
+    expect(await sessionsOf(userWithTemp.id)).toHaveLength(0);
+  });
+});

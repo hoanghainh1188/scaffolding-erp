@@ -21,12 +21,16 @@ const row = (
   lastLoginAt: string | null,
   device: UserRow["lastLoginDevice"],
   status: UserRow["status"] = "ACTIVE",
+  mustChangePassword = false,
+  tempPasswordExpiresAt: string | null = null,
 ): UserRow => ({
   id,
   name,
   username,
   role,
   status,
+  mustChangePassword,
+  tempPasswordExpiresAt,
   lastLoginAt,
   lastLoginDevice: device,
 });
@@ -201,5 +205,33 @@ describe("UsersScreen (D17)", () => {
     expect(form.getByRole("radio", { name: "Thủ kho" })).toBeInTheDocument();
     await user.click(form.getByRole("button", { name: "Xem cả 5 vai trò" }));
     expect(form.getAllByRole("radio")).toHaveLength(5);
+  });
+
+  it("displays warning badge and 'Cấp lại mật khẩu tạm' action for expired temporary password", async () => {
+    const user = userEvent.setup();
+    const expiredUser = row(
+      "9",
+      "Tuấn Kiệt",
+      "tuankiet",
+      "WAREHOUSE",
+      null,
+      null,
+      "ACTIVE",
+      true,
+      "2026-10-25T00:00:00.000Z", // Expired relative to NOW (2026-10-27)
+    );
+    renderScreen([...ROWS, expiredUser]);
+
+    const kiotRow = screen.getByText("tuankiet").closest("tr")!;
+    expect(
+      within(kiotRow).getByText("Hết hạn mật khẩu tạm"),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Thao tác với Tuấn Kiệt" }),
+    );
+    expect(
+      screen.getAllByRole("menuitem").map((item) => item.textContent),
+    ).toEqual(["Đổi vai trò", "Cấp lại mật khẩu tạm", "Khóa tài khoản"]);
   });
 });

@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ROLE_LABELS, type Role } from "@/domain/role";
+import { isTempPasswordExpired } from "@/domain/temp-password-expiry";
 import { callApi } from "@/lib/api-client";
 import type { UserRow, WithTempPassword } from "@/lib/users/service";
 
@@ -38,6 +39,7 @@ type Pending = "role" | "reset" | "lock" | "unlock" | null;
 
 interface UserRowActionsProps {
   user: UserRow;
+  now?: Date;
   /** `title` heads the temporary-password dialog when one was issued. */
   onDone: (issued?: WithTempPassword, title?: string) => void;
   onError: (message: string) => void;
@@ -80,11 +82,29 @@ const CONFIRM: Record<
 };
 
 /** Per-row menu of D17 (spec user-management). Not shown on one's own row. */
-export function UserRowActions({ user, onDone, onError }: UserRowActionsProps) {
+export function UserRowActions({
+  user,
+  now,
+  onDone,
+  onError,
+}: UserRowActionsProps) {
   const [open, setOpen] = useState<Pending>(null);
   const [role, setRole] = useState<Role>(user.role);
   const [busy, setBusy] = useState(false);
-  const confirm = open && open !== "role" ? CONFIRM[open] : null;
+  const expired = isTempPasswordExpired(user, now);
+  const confirm =
+    open && open !== "role"
+      ? open === "reset" && expired
+        ? {
+            title: "Cấp lại mật khẩu tạm?",
+            body: (name: string) =>
+              `${name} sẽ được cấp mật khẩu tạm mới có hiệu lực trong 48 giờ.`,
+            action: "Cấp lại",
+            path: "reset-password",
+            issuedTitle: "Đã cấp lại mật khẩu tạm",
+          }
+        : CONFIRM[open]
+      : null;
 
   async function run(
     path: string,
@@ -129,7 +149,7 @@ export function UserRowActions({ user, onDone, onError }: UserRowActionsProps) {
                 Đổi vai trò
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setOpen("reset")}>
-                Đặt lại mật khẩu
+                {expired ? "Cấp lại mật khẩu tạm" : "Đặt lại mật khẩu"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"

@@ -68,3 +68,18 @@ export async function createAccount(
   expect(password).toMatch(/^[a-z]{3,6}-\d{4}$/);
   return password;
 }
+
+export async function expireTempPassword(username: string): Promise<void> {
+  const { createDatabase } = await import("@/db/client");
+  const { sql } = await import("drizzle-orm");
+  const { getEnv } = await import("@/lib/env");
+  const env = getEnv();
+  const { db, close } = createDatabase(env.DATABASE_URL);
+  try {
+    await db.execute(
+      sql`UPDATE "user" SET "temp_password_expires_at" = now() - interval '1 second' WHERE "username" = ${username}`,
+    );
+  } finally {
+    await close();
+  }
+}

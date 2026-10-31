@@ -143,7 +143,7 @@ describe("user API for Giám đốc", () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.data.counts).toMatchObject({ active: 2, locked: 1 });
-    expect(JSON.stringify(body)).not.toMatch(/password|hash/i);
+    expect(JSON.stringify(body)).not.toMatch(/"(?:password|hash)"/i);
   });
 
   it("filters by role and rejects an unknown role", async () => {

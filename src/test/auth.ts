@@ -81,6 +81,7 @@ export interface TestUserOptions {
   name?: string;
   status?: UserStatus;
   mustChangePassword?: boolean;
+  tempPasswordExpiresAt?: Date | null;
   password?: string;
 }
 
@@ -106,6 +107,7 @@ export async function createTestUser(
     password,
     status: options.status,
     mustChangePassword: options.mustChangePassword ?? false,
+    tempPasswordExpiresAt: options.tempPasswordExpiresAt,
   });
   return {
     ...systemActor({ id, role: options.role }),

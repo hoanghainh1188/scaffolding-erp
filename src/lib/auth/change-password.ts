@@ -78,7 +78,11 @@ export async function changePassword(
       );
     await tx
       .update(user)
-      .set({ mustChangePassword: false, updatedAt: new Date() })
+      .set({
+        mustChangePassword: false,
+        tempPasswordExpiresAt: null,
+        updatedAt: new Date(),
+      })
       .where(eq(user.id, input.actor.id));
     await tx
       .delete(session)

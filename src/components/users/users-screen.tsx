@@ -12,6 +12,7 @@ import { ToneBadge } from "@/components/domain/tone-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DEVICE_LABELS, formatLastLogin } from "@/domain/device";
 import { ROLE_LABELS, ROLES, type Role } from "@/domain/role";
+import { isTempPasswordExpired } from "@/domain/temp-password-expiry";
 import { initials } from "@/lib/initials";
 import { cn } from "@/lib/utils";
 import type {
@@ -220,12 +221,15 @@ function buildColumns({
       id: "status",
       header: "Trạng thái",
       accessorFn: (row) => row.status,
-      cell: ({ row }) =>
-        row.original.status === "ACTIVE" ? (
-          <ToneBadge tone="success">Đang dùng</ToneBadge>
-        ) : (
-          <ToneBadge tone="muted">Đã khóa</ToneBadge>
-        ),
+      cell: ({ row }) => {
+        if (row.original.status !== "ACTIVE") {
+          return <ToneBadge tone="muted">Đã khóa</ToneBadge>;
+        }
+        if (isTempPasswordExpired(row.original, now)) {
+          return <ToneBadge tone="warning">Hết hạn mật khẩu tạm</ToneBadge>;
+        }
+        return <ToneBadge tone="success">Đang dùng</ToneBadge>;
+      },
     },
     {
       id: "actions",
@@ -237,6 +241,7 @@ function buildColumns({
         ) : (
           <UserRowActions
             user={row.original}
+            now={now}
             onDone={onDone}
             onError={onError}
           />

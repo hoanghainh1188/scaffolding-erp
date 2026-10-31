@@ -33,12 +33,17 @@ export const USER_MESSAGES = {
   notDirector: "Bạn không có quyền thực hiện thao tác này",
 } as const;
 
+export const TEMP_PASSWORD_TTL_MS = 48 * 60 * 60 * 1000;
+
 export interface UserRow {
   id: string;
   name: string;
   username: string;
   role: Role;
   status: UserStatus;
+  mustChangePassword: boolean;
+  /** ISO time when the temporary password expires, or null if already changed. */
+  tempPasswordExpiresAt: string | null;
   /** ISO time, or null if the user never signed in. */
   lastLoginAt: string | null;
   lastLoginDevice: Device | null;
@@ -105,6 +110,8 @@ const rowColumns = {
   username: user.username,
   role: user.role,
   status: user.status,
+  mustChangePassword: user.mustChangePassword,
+  tempPasswordExpiresAt: user.tempPasswordExpiresAt,
   lastLoginAt: user.lastLoginAt,
   lastLoginDevice: user.lastLoginDevice,
 };
@@ -115,6 +122,8 @@ type StoredRow = {
   username: string;
   role: string;
   status: string;
+  mustChangePassword: boolean;
+  tempPasswordExpiresAt: Date | null;
   lastLoginAt: Date | null;
   lastLoginDevice: string | null;
 };
@@ -126,6 +135,8 @@ function toUserRow(row: StoredRow): UserRow {
     username: row.username,
     role: row.role as Role,
     status: row.status as UserStatus,
+    mustChangePassword: row.mustChangePassword,
+    tempPasswordExpiresAt: row.tempPasswordExpiresAt?.toISOString() ?? null,
     lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
     lastLoginDevice:
       row.lastLoginDevice && isDevice(row.lastLoginDevice)
@@ -190,6 +201,7 @@ export async function createUser(
         ...input,
         password: tempPassword,
         mustChangePassword: true,
+        tempPasswordExpiresAt: new Date(Date.now() + TEMP_PASSWORD_TTL_MS),
       });
       // Never the temporary password (activity-log design D7).
       await logActivity(tx, actor, {
@@ -217,12 +229,13 @@ export async function resetPassword(
   if (targetId === actor.id) return conflict(USER_MESSAGES.selfReset);
   const tempPassword = generateTempPassword();
   const hash = await hashPassword(auth, tempPassword);
+  const expiresAt = new Date(Date.now() + TEMP_PASSWORD_TTL_MS);
   return db.transaction(async (tx) => {
     if (!(await isActiveDirector(tx, actor))) return forbidden();
     const target = await lockRow(tx, targetId);
     if (!target) return notFound();
     if (target.status !== "ACTIVE") return conflict(USER_MESSAGES.resetLocked);
-    await setPassword(tx, target, hash);
+    await setPassword(tx, target, hash, expiresAt);
     await logActivity(tx, actor, {
       action: "UPDATE",
       document: userDocument(target),
@@ -231,7 +244,14 @@ export async function resetPassword(
     });
     return {
       ok: true as const,
-      data: { user: toUserRow(target), tempPassword },
+      data: {
+        user: {
+          ...toUserRow(target),
+          mustChangePassword: true,
+          tempPasswordExpiresAt: expiresAt.toISOString(),
+        },
+        tempPassword,
+      },
     };
   });
 }
@@ -243,6 +263,7 @@ export async function unlockUser(
 ): Promise<ServiceResult<WithTempPassword>> {
   const tempPassword = generateTempPassword();
   const hash = await hashPassword(auth, tempPassword);
+  const expiresAt = new Date(Date.now() + TEMP_PASSWORD_TTL_MS);
   return db.transaction(async (tx) => {
     const directors = await lockActiveDirectors(tx);
     if (!directors.includes(actor.id)) return forbidden();
@@ -251,7 +272,7 @@ export async function unlockUser(
     if (target.status === "ACTIVE")
       return conflict(USER_MESSAGES.alreadyActive);
     // A new password, so the one used before leaving no longer works.
-    await setPassword(tx, target, hash);
+    await setPassword(tx, target, hash, expiresAt);
     await tx
       .update(user)
       .set({ status: "ACTIVE", updatedAt: new Date() })
@@ -265,7 +286,15 @@ export async function unlockUser(
     });
     return {
       ok: true as const,
-      data: { user: { ...toUserRow(target), status: "ACTIVE" }, tempPassword },
+      data: {
+        user: {
+          ...toUserRow(target),
+          status: "ACTIVE",
+          mustChangePassword: true,
+          tempPasswordExpiresAt: expiresAt.toISOString(),
+        },
+        tempPassword,
+      },
     };
   });
 }
@@ -413,6 +442,7 @@ async function setPassword(
   tx: Executor,
   target: StoredRow,
   hash: string,
+  expiresAt: Date = new Date(Date.now() + TEMP_PASSWORD_TTL_MS),
 ): Promise<void> {
   await tx
     .update(account)
@@ -425,7 +455,11 @@ async function setPassword(
     );
   await tx
     .update(user)
-    .set({ mustChangePassword: true, updatedAt: new Date() })
+    .set({
+      mustChangePassword: true,
+      tempPasswordExpiresAt: expiresAt,
+      updatedAt: new Date(),
+    })
     .where(eq(user.id, target.id));
   await tx.delete(session).where(eq(session.userId, target.id));
   await tx
