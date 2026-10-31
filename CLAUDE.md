@@ -54,6 +54,7 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 | `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD`, danh mục mẫu như thiết kế D9/D16 sổ kho mẫu (ví dụ tính tay design D11 của `inventory-ledger`), 5 đơn thu mua mẫu (đơn D3 của `purchase-orders`), giá sắt vụn 7.500 ₫/kg, một đơn đang nhận 2 chuyến như D3b (`goods-receipt`) và một phiếu sửa chữa nháp như D12 (`simple-repair`), một phiên kiểm kê chờ duyệt như D13 (`stocktake`), một phiếu sửa chi phí chuyến `ĐCG` chờ duyệt (`stock-value-adjustment`) và 11 dòng nhật ký mẫu ngày 27–28/10/2026 như D18 (`activity-log`) |
 | `npm run inventory:check` | Đối chiếu giá vốn lưu riêng với sổ kho; lệch thì thoát mã 1 |
 | `npm run auth:create-director -- --username <tên> --name "<Họ tên>"` | Tạo tài khoản Giám đốc đầu tiên, in mật khẩu tạm một lần |
+| `npm run auth:unlock -- --username <tên>` | Gỡ tạm khóa cho tài khoản (do nhập sai mật khẩu nhiều lần) hoặc `--all` cho toàn bộ hệ thống |
 
 Lưu ý:
 

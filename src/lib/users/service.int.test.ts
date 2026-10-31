@@ -217,14 +217,24 @@ describe("resetPassword", () => {
     });
   });
 
-  it("signs the person out, replaces the password and lifts the throttle", async () => {
+  it("signs the person out, replaces the password and lifts the throttle across all IPs", async () => {
     const phone = await signInAs(ctx, vantung);
-    await ctx.db.insert(loginThrottle).values({
-      usernameKey: "vantung",
-      failedCount: 5,
-      firstFailedAt: new Date(),
-      lockedUntil: new Date(Date.now() + 10 * 60 * 1000),
-    });
+    await ctx.db.insert(loginThrottle).values([
+      {
+        usernameKey: "vantung",
+        ip: "1.2.3.4",
+        failedCount: 5,
+        firstFailedAt: new Date(),
+        lockedUntil: new Date(Date.now() + 10 * 60 * 1000),
+      },
+      {
+        usernameKey: "vantung",
+        ip: "5.6.7.8",
+        failedCount: 3,
+        firstFailedAt: new Date(),
+        lockedUntil: null,
+      },
+    ]);
 
     const result = await resetPassword(ctx, minhanh, vantung.id);
     expect(result.ok).toBe(true);

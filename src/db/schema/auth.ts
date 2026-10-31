@@ -9,6 +9,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -127,13 +128,23 @@ export const rateLimit = pgTable("rate_limit", {
   lastRequest: bigint("last_request", { mode: "number" }).notNull(),
 });
 
-/** Failed sign-ins per login name, existing or not (design D3). */
-export const loginThrottle = pgTable("login_throttle", {
-  usernameKey: text("username_key").primaryKey(),
-  failedCount: integer("failed_count").notNull(),
-  firstFailedAt: timestamp("first_failed_at", { withTimezone: true }).notNull(),
-  lockedUntil: timestamp("locked_until", { withTimezone: true }),
-});
+/** Failed sign-ins per (login name, client IP), existing or not (design D3). */
+export const loginThrottle = pgTable(
+  "login_throttle",
+  {
+    usernameKey: text("username_key").notNull(),
+    ip: text("ip").notNull(),
+    failedCount: integer("failed_count").notNull(),
+    firstFailedAt: timestamp("first_failed_at", {
+      withTimezone: true,
+    }).notNull(),
+    lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.usernameKey, table.ip] }),
+    index("login_throttle_username_key_idx").on(table.usernameKey),
+  ],
+);
 
 /** Sign-in attempts per IP address, fixed one-minute windows (design D3). */
 export const authRateLimit = pgTable("auth_rate_limit", {

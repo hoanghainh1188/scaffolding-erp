@@ -25,12 +25,15 @@ const EDGE =
 const at = (time: string) => new Date(`2026-11-02T${time}:00+07:00`);
 
 let ipCounter = 0;
-/** A fresh address per call keeps the per-IP limit out of these tests. */
-const headers = (userAgent = EDGE) => {
-  ipCounter += 1;
+/** A fresh address per call keeps the per-IP limit out of these tests unless fixedIp is passed. */
+const headers = (userAgent = EDGE, ip?: string) => {
+  if (!ip) {
+    ipCounter += 1;
+  }
+  const clientIp = ip ?? `198.51.100.${ipCounter % 250}`;
   return new Headers({
     "user-agent": userAgent,
-    "x-forwarded-for": `198.51.100.${ipCounter % 250}`,
+    "x-forwarded-for": clientIp,
   });
 };
 
@@ -38,13 +41,13 @@ const attempt = (
   who: Pick<TestUser, "username">,
   password: string,
   now: Date,
-  options: { remember?: boolean; userAgent?: string } = {},
+  options: { remember?: boolean; userAgent?: string; ip?: string } = {},
 ) =>
   signIn(ctx, {
     username: who.username,
     password,
     remember: options.remember ?? true,
-    headers: headers(options.userAgent),
+    headers: headers(options.userAgent, options.ip),
     now,
   });
 
@@ -102,11 +105,39 @@ describe("signIn: wrong credentials", () => {
     });
   });
 
-  it("locks the name after 5 wrong tries, even with the right password", async () => {
+  it("locks the name on the attacking IP after 5 wrong tries, but lets another IP sign in", async () => {
+    const ipAttacker = "203.0.113.10";
+    const ipLegit = "203.0.113.20";
+
     for (const time of ["08:00", "08:01", "08:01", "08:02", "08:03"]) {
-      await attempt(thuha, "sai-mat-khau", at(time));
+      await attempt(thuha, "sai-mat-khau", at(time), { ip: ipAttacker });
     }
-    expect(await attempt(thuha, thuha.password, at("08:04"))).toEqual({
+
+    // Attacker IP is locked
+    expect(
+      await attempt(thuha, thuha.password, at("08:04"), { ip: ipAttacker }),
+    ).toEqual({
+      ok: false,
+      status: 429,
+      error: SIGN_IN_MESSAGES.throttled,
+    });
+
+    // Legitimate user from another IP is NOT blocked
+    const legitResult = await attempt(thuha, thuha.password, at("08:04"), {
+      ip: ipLegit,
+    });
+    expect(legitResult.ok).toBe(true);
+    expect(await sessionsOf(thuha.id)).toHaveLength(1);
+  });
+
+  it("locks the name after 5 wrong tries, even with the right password", async () => {
+    const fixedIp = "192.0.2.1";
+    for (const time of ["08:00", "08:01", "08:01", "08:02", "08:03"]) {
+      await attempt(thuha, "sai-mat-khau", at(time), { ip: fixedIp });
+    }
+    expect(
+      await attempt(thuha, thuha.password, at("08:04"), { ip: fixedIp }),
+    ).toEqual({
       ok: false,
       status: 429,
       error: SIGN_IN_MESSAGES.throttled,
@@ -115,46 +146,74 @@ describe("signIn: wrong credentials", () => {
   });
 
   it("lets the right password in once the 15 minutes have passed", async () => {
+    const fixedIp = "192.0.2.2";
     for (const time of ["08:00", "08:01", "08:01", "08:02", "08:03"]) {
-      await attempt(thuha, "sai-mat-khau", at(time));
+      await attempt(thuha, "sai-mat-khau", at(time), { ip: fixedIp });
     }
-    const result = await attempt(thuha, thuha.password, at("08:19"));
+    const result = await attempt(thuha, thuha.password, at("08:19"), {
+      ip: fixedIp,
+    });
     expect(result.ok).toBe(true);
 
     // The counter is back to 0: 4 more failures do not lock.
     for (const time of ["08:20", "08:21", "08:22", "08:23"]) {
-      await attempt(thuha, "sai-mat-khau", at(time));
+      await attempt(thuha, "sai-mat-khau", at(time), { ip: fixedIp });
     }
-    expect((await attempt(thuha, thuha.password, at("08:24"))).ok).toBe(true);
+    expect(
+      (
+        await attempt(thuha, thuha.password, at("08:24"), {
+          ip: fixedIp,
+        })
+      ).ok,
+    ).toBe(true);
   });
 
   it("resets the counter on success after 4 failures", async () => {
+    const fixedIp = "192.0.2.3";
     for (const time of ["08:00", "08:01", "08:02", "08:03"]) {
-      await attempt(thuha, "sai-mat-khau", at(time));
+      await attempt(thuha, "sai-mat-khau", at(time), { ip: fixedIp });
     }
-    expect((await attempt(thuha, thuha.password, at("08:04"))).ok).toBe(true);
-    await attempt(thuha, "sai-mat-khau", at("08:05"));
-    expect((await attempt(thuha, thuha.password, at("08:06"))).ok).toBe(true);
+    expect(
+      (
+        await attempt(thuha, thuha.password, at("08:04"), {
+          ip: fixedIp,
+        })
+      ).ok,
+    ).toBe(true);
+    await attempt(thuha, "sai-mat-khau", at("08:05"), { ip: fixedIp });
+    expect(
+      (
+        await attempt(thuha, thuha.password, at("08:06"), {
+          ip: fixedIp,
+        })
+      ).ok,
+    ).toBe(true);
   });
 
   it("throttles an unknown name like a real one", async () => {
+    const fixedIp = "192.0.2.4";
     const ghost = { username: "khongco" };
     for (const time of ["08:00", "08:01", "08:02", "08:03", "08:04"]) {
-      await attempt(ghost, "bat-ky-1234", at(time));
+      await attempt(ghost, "bat-ky-1234", at(time), { ip: fixedIp });
     }
-    expect(await attempt(ghost, "bat-ky-1234", at("08:05"))).toMatchObject({
+    expect(
+      await attempt(ghost, "bat-ky-1234", at("08:05"), { ip: fixedIp }),
+    ).toMatchObject({
       status: 429,
       error: SIGN_IN_MESSAGES.throttled,
     });
   });
 
   it("keeps the lock when more failures than the limit arrive at once", async () => {
+    const fixedIp = "192.0.2.5";
     await Promise.all(
       Array.from({ length: 8 }, () =>
-        attempt(thuha, "sai-mat-khau", at("08:00")),
+        attempt(thuha, "sai-mat-khau", at("08:00"), { ip: fixedIp }),
       ),
     );
-    expect(await attempt(thuha, thuha.password, at("08:01"))).toMatchObject({
+    expect(
+      await attempt(thuha, thuha.password, at("08:01"), { ip: fixedIp }),
+    ).toMatchObject({
       status: 429,
     });
   });
@@ -166,12 +225,15 @@ describe("signIn: wrong credentials", () => {
   });
 
   it("counts every failure when several arrive at once", async () => {
+    const fixedIp = "192.0.2.6";
     await Promise.all(
       Array.from({ length: 5 }, () =>
-        attempt(thuha, "sai-mat-khau", at("08:00")),
+        attempt(thuha, "sai-mat-khau", at("08:00"), { ip: fixedIp }),
       ),
     );
-    expect(await attempt(thuha, thuha.password, at("08:01"))).toMatchObject({
+    expect(
+      await attempt(thuha, thuha.password, at("08:01"), { ip: fixedIp }),
+    ).toMatchObject({
       status: 429,
     });
   });
