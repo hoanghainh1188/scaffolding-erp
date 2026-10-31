@@ -35,15 +35,23 @@ const ANDROID =
   "Mozilla/5.0 (Linux; Android 14; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
 
 let ip = 0;
-const attempt = (username: string, password: string, now: Date) => {
-  ip += 1;
+const attempt = (
+  username: string,
+  password: string,
+  now: Date,
+  fixedIp?: string,
+) => {
+  if (!fixedIp) {
+    ip += 1;
+  }
+  const clientIp = fixedIp ?? `203.0.113.${ip % 250}`;
   return signIn(ctx, {
     username,
     password,
     remember: true,
     headers: new Headers({
       "user-agent": ANDROID,
-      "x-forwarded-for": `203.0.113.${ip % 250}`,
+      "x-forwarded-for": clientIp,
     }),
     now,
   });
@@ -96,12 +104,13 @@ describe("sign-in in the activity log", () => {
     expect((await attempt("vantung", TEST_PASSWORD, at("08:00:00"))).ok).toBe(
       false,
     );
+    const fixedIp = "203.0.113.99";
     for (let i = 0; i < 5; i += 1) {
-      await attempt("minhanh", "sai-mat-khau", at("08:01:00"));
+      await attempt("minhanh", "sai-mat-khau", at("08:01:00"), fixedIp);
     }
-    expect((await attempt("minhanh", TEST_PASSWORD, at("08:02:00"))).ok).toBe(
-      false,
-    );
+    expect(
+      (await attempt("minhanh", TEST_PASSWORD, at("08:02:00"), fixedIp)).ok,
+    ).toBe(false);
     expect(await signIns()).toEqual([]);
   });
 
