@@ -6,7 +6,9 @@ import { runOnlyIn } from "./helpers";
 test.describe("security headers and CSP", () => {
   test.use({ storageState: SIGNED_OUT });
 
-  test("serves CSP and security headers on /login", async ({ page }, testInfo) => {
+  test("serves CSP and security headers on /login", async ({
+    page,
+  }, testInfo) => {
     test.skip(!runOnlyIn(testInfo, "desktop-1280"), "desktop flow");
 
     const response = await page.goto("/login");

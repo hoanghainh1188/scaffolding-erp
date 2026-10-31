@@ -22,7 +22,9 @@ describe("buildCspHeader", () => {
     const csp = buildCspHeader({ nonce, isDev: false });
 
     expect(csp).toContain("default-src 'self'");
-    expect(csp).toContain(`script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`);
+    expect(csp).toContain(
+      `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    );
     expect(csp).not.toContain("'unsafe-eval'");
     expect(csp).toContain("style-src 'self' 'unsafe-inline'");
     expect(csp).toContain("img-src 'self' blob: data:");
@@ -39,7 +41,9 @@ describe("buildCspHeader", () => {
     const nonce = "dev-nonce-456";
     const csp = buildCspHeader({ nonce, isDev: true });
 
-    expect(csp).toContain(`script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'`);
+    expect(csp).toContain(
+      `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'`,
+    );
     expect(csp).not.toContain("upgrade-insecure-requests");
   });
 });
