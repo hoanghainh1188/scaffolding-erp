@@ -33,7 +33,13 @@ npm run dev              # http://localhost:3000, đăng nhập bằng giamdoc /
 
   Lệnh in mật khẩu tạm **một lần**; đưa cho Giám đốc. Đã có Giám đốc đang dùng thì lệnh từ chối.
 
-- **Production phải chạy sau reverse proxy** (nginx, Caddy...) có thêm địa chỉ người dùng vào `X-Forwarded-For` (nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`). Giới hạn 20 lần đăng nhập/phút/IP dựa vào header này.
+- **Production phải chạy sau reverse proxy** (nginx, Caddy...) có thêm địa chỉ người dùng vào `X-Forwarded-For` (nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`). Giới hạn 20 lần đăng nhập/phút/IP và khóa tạm theo IP dựa vào header này.
+- **Cứu hộ khi tài khoản bị tạm khóa (do nhập sai mật khẩu quá 5 lần):** chạy lệnh server để gỡ tạm khóa ngay lập tức:
+  ```bash
+  npm run auth:unlock -- --username <tên-đăng-nhập>
+  # hoặc gỡ toàn bộ hệ thống:
+  npm run auth:unlock -- --all
+  ```
 - **Cứu hộ khi Giám đốc duy nhất quên mật khẩu:** người quản trị server khóa tài khoản đó bằng SQL (`update "user" set status = 'LOCKED' where username = '...';`), chạy `npm run auth:create-director` để có Giám đốc tạm, đăng nhập bằng tài khoản tạm rồi **Mở khóa** tài khoản cũ (nhận mật khẩu tạm mới) và khóa tài khoản tạm.
 
 ### Cơ sở dữ liệu
