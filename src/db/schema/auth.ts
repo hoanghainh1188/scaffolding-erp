@@ -39,6 +39,9 @@ export const user = pgTable(
     role: text("role").notNull(),
     status: text("status").notNull().default("ACTIVE"),
     mustChangePassword: boolean("must_change_password").notNull().default(true),
+    tempPasswordExpiresAt: timestamp("temp_password_expires_at", {
+      withTimezone: true,
+    }),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     lastLoginDevice: text("last_login_device"),
     ...timestamps,

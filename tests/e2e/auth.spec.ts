@@ -4,6 +4,7 @@ import {
   E2E_PASSWORD,
   SIGNED_OUT,
   createAccount,
+  expireTempPassword,
   signInThroughForm,
   signedOutPage,
   statePath,
@@ -226,5 +227,42 @@ test.describe("D17 and temporary passwords", () => {
       .click();
     await expect(phone).toHaveURL(/\/login/);
     await phone.context().close();
+  });
+
+  test("signing in with an expired temporary password shows error and shows warning badge on D17", async ({
+    page,
+    browser,
+  }, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "desktop flow");
+    const username = tempUsername();
+    const password = await createAccount(page, {
+      name: "Đức Thịnh",
+      username,
+      role: "Thủ kho",
+    });
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Xong" })
+      .click();
+
+    // Expire the temp password
+    await expireTempPassword(username);
+
+    // Attempt sign-in with expired password
+    const newcomer = await signedOutPage(browser);
+    await signInThroughForm(newcomer, username, password);
+    await expect(newcomer.locator("form").getByRole("alert")).toHaveText(
+      "Mật khẩu tạm đã hết hạn. Liên hệ Giám đốc để cấp lại",
+    );
+    await newcomer.context().close();
+
+    // Back to Giám đốc on D17: reload and verify warning badge & action
+    await page.reload();
+    const row = page.getByRole("row", { name: new RegExp(username) });
+    await expect(row).toContainText("Hết hạn mật khẩu tạm");
+    await row.getByRole("button", { name: /Thao tác/ }).click();
+    await expect(
+      page.getByRole("menuitem", { name: "Cấp lại mật khẩu tạm" }),
+    ).toBeVisible();
   });
 });

@@ -69,6 +69,7 @@ export async function seedAccounts(
             role: entry?.role,
             status: "ACTIVE",
             mustChangePassword: false,
+            tempPasswordExpiresAt: null,
             updatedAt: new Date(),
           })
           .where(eq(user.id, row.id));

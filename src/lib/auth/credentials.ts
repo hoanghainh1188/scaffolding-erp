@@ -43,6 +43,7 @@ export interface NewUser {
   /** Plain password; only its hash is stored. */
   password: string;
   mustChangePassword: boolean;
+  tempPasswordExpiresAt?: Date | null;
   status?: UserStatus;
 }
 
@@ -67,6 +68,7 @@ export async function insertUser(
     role: input.role,
     status: input.status ?? "ACTIVE",
     mustChangePassword: input.mustChangePassword,
+    tempPasswordExpiresAt: input.tempPasswordExpiresAt,
   });
   await tx.insert(account).values({
     id: randomUUID(),
