@@ -62,6 +62,7 @@ export async function createFirstDirector(
       ...parsed.data,
       password: tempPassword,
       mustChangePassword: true,
+      tempPasswordExpiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
     });
     return {
       ok: true as const,

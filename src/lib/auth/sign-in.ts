@@ -26,6 +26,7 @@ export const SIGN_IN_MESSAGES = {
     "Nhập sai quá nhiều lần. Thử lại sau 15 phút hoặc nhờ Giám đốc đặt lại mật khẩu",
   rateLimited: "Thao tác quá nhanh. Thử lại sau ít phút",
   locked: "Tài khoản đã bị khóa. Liên hệ Giám đốc",
+  tempPasswordExpired: "Mật khẩu tạm đã hết hạn. Liên hệ Giám đốc để cấp lại",
 } as const;
 
 export interface SignInInput {
@@ -85,6 +86,7 @@ export async function signIn(
       role: user.role,
       status: user.status,
       mustChange: user.mustChangePassword,
+      tempPasswordExpiresAt: user.tempPasswordExpiresAt,
     })
     .from(user)
     .where(eq(user.id, attempt.userId));
@@ -92,6 +94,19 @@ export async function signIn(
   if (!account || account.status !== "ACTIVE") {
     await db.delete(session).where(eq(session.token, attempt.token));
     return { ok: false, status: 403, error: SIGN_IN_MESSAGES.locked };
+  }
+
+  if (
+    account.mustChange &&
+    account.tempPasswordExpiresAt &&
+    now.getTime() >= account.tempPasswordExpiresAt.getTime()
+  ) {
+    await db.delete(session).where(eq(session.token, attempt.token));
+    return {
+      ok: false,
+      status: 401,
+      error: SIGN_IN_MESSAGES.tempPasswordExpired,
+    };
   }
 
   await db
