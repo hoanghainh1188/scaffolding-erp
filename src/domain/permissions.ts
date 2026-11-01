@@ -55,6 +55,10 @@ export const PERMISSIONS = {
   // activity-log design D11: only the director reads the activity log; no
   // permission writes or deletes it (services log through logActivity).
   "activity.view": ["DIRECTOR"],
+  // company-settings spec K10: all roles read profile for print and headers;
+  // only the director updates company info.
+  "company.read": EVERYONE,
+  "company.manage": ["DIRECTOR"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;
