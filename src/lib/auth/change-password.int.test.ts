@@ -142,3 +142,68 @@ describe("first sign-in with a temporary password", () => {
     expect(await canSignIn("ducluc", "bai-sau-kho-9")).toBe(true);
   });
 });
+
+describe("demo account protection (K9)", () => {
+  let giamdoc: TestUser;
+
+  beforeEach(async () => {
+    giamdoc = await createTestUser(ctx, {
+      role: "DIRECTOR",
+      username: "giamdoc",
+      password: "mat-khau-giamdoc-1",
+    });
+  });
+
+  it("blocks password change for demo accounts when DEMO_MODE=true", async () => {
+    process.env.DEMO_MODE = "true";
+    try {
+      const cookie = await signInAs(ctx, giamdoc);
+      const response = await change(
+        cookie,
+        body("mat-khau-giamdoc-1", "mat-khau-moi-123"),
+      );
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        error: "Tài khoản demo dùng chung không được đổi mật khẩu",
+      });
+      expect(await canSignIn("giamdoc", "mat-khau-giamdoc-1")).toBe(true);
+    } finally {
+      delete process.env.DEMO_MODE;
+    }
+  });
+
+  it("allows demo accounts to change password when DEMO_MODE=false", async () => {
+    process.env.DEMO_MODE = "false";
+    try {
+      const cookie = await signInAs(ctx, giamdoc);
+      const response = await change(
+        cookie,
+        body("mat-khau-giamdoc-1", "mat-khau-moi-123"),
+      );
+      expect(response.status).toBe(200);
+      expect(await canSignIn("giamdoc", "mat-khau-moi-123")).toBe(true);
+    } finally {
+      delete process.env.DEMO_MODE;
+    }
+  });
+
+  it("allows non-demo accounts to change password even when DEMO_MODE=true", async () => {
+    process.env.DEMO_MODE = "true";
+    try {
+      const user1 = await createTestUser(ctx, {
+        role: "SALES",
+        username: "user_moi",
+        password: "mat-khau-user-1",
+      });
+      const cookie = await signInAs(ctx, user1);
+      const response = await change(
+        cookie,
+        body("mat-khau-user-1", "mat-khau-moi-123"),
+      );
+      expect(response.status).toBe(200);
+      expect(await canSignIn("user_moi", "mat-khau-moi-123")).toBe(true);
+    } finally {
+      delete process.env.DEMO_MODE;
+    }
+  });
+});
