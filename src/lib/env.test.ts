@@ -209,4 +209,25 @@ describe("parseEnv", () => {
       );
     });
   });
+
+  describe("error monitoring env (K11)", () => {
+    it("parses valid SENTRY_DSN and ERROR_MONITORING_ENABLED", () => {
+      const env = parseEnv({
+        ...valid,
+        SENTRY_DSN: "https://key@o123.ingest.sentry.io/456",
+        ERROR_MONITORING_ENABLED: "true",
+      });
+      expect(env.SENTRY_DSN).toBe("https://key@o123.ingest.sentry.io/456");
+      expect(env.ERROR_MONITORING_ENABLED).toBe(true);
+    });
+
+    it("rejects invalid SENTRY_DSN", () => {
+      expect(() =>
+        parseEnv({
+          ...valid,
+          SENTRY_DSN: "not-a-url",
+        }),
+      ).toThrow(/SENTRY_DSN: phải là URL/);
+    });
+  });
 });

@@ -66,6 +66,14 @@ const envSchema = z.object({
   DB_PREPARE: optional(booleanSchema.default(true)),
   // Public demonstration mode for internet trial deployments (spec K9).
   DEMO_MODE: optional(booleanSchema.default(false)),
+  // Production unhandled error telemetry and monitoring (spec K11).
+  SENTRY_DSN: optional(
+    z
+      .string()
+      .refine((value) => HTTP_URL.test(value) && URL.canParse(value))
+      .optional(),
+  ),
+  ERROR_MONITORING_ENABLED: optional(booleanSchema.optional()),
 });
 
 type ParsedEnv = z.infer<typeof envSchema>;
@@ -90,6 +98,8 @@ const RULES: Readonly<Record<EnvKey, string>> = {
   DB_CONNECT_TIMEOUT_SECONDS: "phải là số nguyên dương",
   DB_PREPARE: "phải là boolean (true hoặc false)",
   DEMO_MODE: "phải là boolean (true hoặc false)",
+  SENTRY_DSN: "phải là URL dạng https://xxx@host/id",
+  ERROR_MONITORING_ENABLED: "phải là boolean (true hoặc false)",
 };
 
 type EnvKey = keyof ParsedEnv;
