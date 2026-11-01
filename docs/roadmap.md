@@ -53,6 +53,11 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | K9 | `demo-environment` | #76 | Môi trường thử nghiệm cho Vercel + Neon ✅ | – |
 | K10 | `company-settings` | #77 | Cài đặt thông tin công ty cho phiếu in ✅ | – |
 | K11 | `error-monitoring` | #79 | Theo dõi lỗi production, che dữ liệu cá nhân ✅ | – |
+| K12 | `db-least-privilege` | #96 | Tách role DB: app không sửa/xóa được sổ kho và nhật ký | – |
+| K13 | `director-mfa` | #97 | Xác thực 2 lớp (TOTP) cho Giám đốc | 02 |
+| K14 | `session-management` | #98 | Xem và đăng xuất thiết bị từ xa (không chặn production) | K13 |
+| K15 | `personal-data-protection` | #99 | Mã hóa CCCD/STK trong DB, lưu giữ và xóa | #78; trước 18 |
+| – | Bảo mật CI và thư viện | #100 | Dependabot, CodeQL, `npm audit`, HSTS (không phải change) | – |
 | – | Hạ tầng demo | #80 | Vercel + Neon, reset hằng đêm ✅ | K8, K9 |
 | – | Hạ tầng production | #81 | Vercel + Neon, backup, giám sát, runbook ✅ | K11 |
 
@@ -60,4 +65,5 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 
 - Khi chủ trả lời câu hỏi ở #44: ghi quyết định vào `docs/requirements.md` 0.2, gỡ dòng tương ứng ở 0.2b, gỡ nhãn `blocked` của issue.
 - Trong lúc chờ câu trả lời ở #44: các change 07, 08, 17 và K6, K7 đã hoàn tất ✅. Có thể làm tiếp các change kỹ thuật K1–K5 (không bị chặn) hoặc kiểm tra tay #33. Song song: xin file Excel tính tiền của 2–3 công trình.
+- K12–K15 và #100 phát sinh từ rà soát bảo mật 01/11/2026. Trước production cần K12, K13, #100; K15 sau khi có câu trả lời #78.
 - 18 `data-migration` làm cuối, nhưng nên xin sớm file mẫu dữ liệu để thiết kế mẫu nhập từ đầu.
