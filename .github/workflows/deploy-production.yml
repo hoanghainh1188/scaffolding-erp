@@ -1,0 +1,104 @@
+name: Deploy Production
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_or_ref:
+        description: "Git tag or ref to deploy (defaults to current commit)"
+        required: false
+        default: ""
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Migrate and deploy to Production
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag_or_ref || github.ref }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create safety pre-deploy branch on Neon
+        id: neon-branch
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+        run: |
+          if [ -n "$NEON_API_KEY" ] && [ -n "$NEON_PROJECT_ID" ]; then
+            TAG_NAME="${{ github.ref_name }}"
+            SAFE_TAG=$(echo "$TAG_NAME" | tr '/' '-' | tr '.' '-')
+            BRANCH_NAME="pre-deploy-${SAFE_TAG}-${{ github.run_id }}"
+            echo "Creating Neon rollback branch: $BRANCH_NAME..."
+            npx --yes neonctl branches create \
+              --name "$BRANCH_NAME" \
+              --parent main \
+              --project-id "$NEON_PROJECT_ID" \
+              --api-key "$NEON_API_KEY"
+            echo "Pre-deploy branch created successfully."
+          else
+            echo "Neon credentials not set; skipping pre-deploy branch creation."
+          fi
+
+      - name: Run database migrations on Production (unpooled direct URL)
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_UNPOOLED }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::PROD_DATABASE_URL_UNPOOLED secret is required to run migrations."
+            exit 1
+          fi
+          echo "Running Drizzle migrations on production database..."
+          npm run db:migrate
+
+      - name: Trigger Vercel Production Deploy Hook
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK secret is required to trigger deployment."
+            exit 1
+          fi
+          echo "Triggering Vercel production deployment..."
+          curl -s -X POST "$VERCEL_DEPLOY_HOOK"
+
+      - name: Wait and verify health check
+        env:
+          PROD_URL: ${{ secrets.PROD_URL }}
+        run: |
+          URL="${PROD_URL:-https://scaffolding-erp-prod.vercel.app}"
+          echo "Waiting 25 seconds for Vercel deployment to propagate..."
+          sleep 25
+          echo "Verifying health endpoint at $URL/api/health..."
+          curl --fail --retry 20 --retry-delay 5 -s "$URL/api/health" | grep -q '"ok":true'
+          echo "Production deployment is healthy."
+
+      - name: Verify inventory ledger consistency post-deploy
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          if [ -n "$DATABASE_URL" ]; then
+            echo "Auditing inventory ledger post-deploy..."
+            npm run inventory:check
+            echo "Inventory ledger is verified clean."
+          else
+            echo "PROD_DATABASE_URL not set; skipping post-deploy inventory audit."
+          fi
