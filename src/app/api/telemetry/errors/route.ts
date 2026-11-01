@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { reportError } from "@/lib/monitoring/reporter";
 import { sanitizeErrorPayload } from "@/lib/monitoring/sanitize";
 
-export const dynamic = "force-dynamic";
-
 const MAX_PAYLOAD_BYTES = 32 * 1024; // 32KB limit
 
 /**
