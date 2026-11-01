@@ -21,9 +21,9 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 1 | Giá vốn | **Bình quân gia quyền** theo *mã hàng + tình trạng*. Không quản lý theo lô |
 | 2 | Đơn vị quản lý | **Theo số lượng**, không quản lý từng chiếc (không serial). Mã QR dán theo mã hàng |
 | 3 | Quy đổi kg ↔ cái | Mỗi mã hàng khai báo **trọng lượng chuẩn** (kg/cái). Phế liệu của mã tính theo cái **vẫn đếm theo cái** (hiện kèm kg quy đổi); mã tính theo kg dùng cho sắt vụn mua về (chốt 27/10/2026) |
-| 4 | Tính tiền thuê | **Tính theo ngày**: tính ngày xuất, không tính ngày trả. Giá tháng quy ra giá ngày (giá tháng ÷ 30) |
+| 4 | Tính tiền thuê | **Tính theo số ngày thực tế**: ngày xuất tính từ ngày hôm sau (N+1) đến ngày trả hàng (số ngày = ngày trả − ngày xuất). Tiền thuê theo tháng/kỳ = **Đơn giá ngày × số ngày thực tế trong tháng** (28/29/30/31 ngày). Hợp đồng có điều khoản **thời gian thuê tối thiểu (mặc định 45 ngày)**: trả sớm vẫn tính đủ 45 ngày (chốt 26/10/2026, sửa 01/11/2026 từ đối soát file kế toán thật) |
 | 4b | Thuê theo bộ | Giá thuê đặt theo **linh kiện**. "Bộ" chỉ dùng để báo giá cho nhanh |
-| 5 | Hợp đồng – công trình | **1 hợp đồng = 1 công trình**. Chuyển công trình = trả về bãi rồi xuất theo hợp đồng mới |
+| 5 | Hợp đồng – công trình | **1 hợp đồng = 1 công trình**. Cho phép **chuyển thẳng vật tư giữa các công trình** mà không cần trả về bãi (chốt 01/11/2026 theo #38) |
 | 6 | Vai trò | Giám đốc, Kế toán, Kinh doanh, Thủ kho, Xưởng. **Giám đốc duyệt** hợp đồng và phiếu đền bù |
 | 7 | Offline | Không hỗ trợ offline ở MVP. PWA **lưu nháp trên máy** khi mất sóng |
 | 8 | Phạm vi kế toán | Chỉ **quản lý công nợ** nội bộ. Không xuất hóa đơn VAT. Có **xuất Excel** cho kế toán |
@@ -58,6 +58,8 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 37 | Luật mã và quy cách vật tư | Mã vật tư **cho phép ký tự thực tế**: dấu phẩy `,`, dấu sao `*`, dấu cộng `+`, gạch ngang `-`, khoảng trắng (`H1,7`, `KU0,5`, `X5*10*3`, `KB+KU34`, `NỐI 34`). Hàng **có đầu / không đầu** (VD `H1,7` và `H1,7KĐ`) là **hai mã vật tư riêng biệt** trong danh mục (cùng trọng lượng chuẩn). Mã ghép (`KB+KU34`, `KB+KU38`) quản lý như một mã riêng. Đơn vị tính mở rộng thêm: `Mét` (M), `Kg`, `Bó`, `Sọt`, `Cuộn`, `Hộp`, `Thùng` (chốt 01/11/2026 từ file thực tế kế toán, change `catalog-extensions`) |
 | 38 | Nghiệp vụ điều chuyển công trình, mua lại và đổi hàng | **Cho phép chuyển hàng thẳng giữa các công trình**: ghi nhận giảm số hàng ở công trình xuất và tăng số hàng ở công trình nhận mà không cần qua bãi trung gian. Nghiệp vụ **"Mua lại"**: vật tư phụ kiện tiêu hao (ty ren, bát chuồn...) khách mua đứt thì ghi nhận thu hồi giảm số lượng phải trả ở hợp đồng thuê và chuyển sang doanh thu bán hàng. Nghiệp vụ **"Đổi hàng"**: đổi quy cách vật tư tại công trình (xuất đổi chéo dài ↔ chéo ngắn, xuất đầu nối rời ghép vào khung không đầu) (chốt 01/11/2026 từ file thực tế kế toán, change `returns-and-compensation`) |
 | 39 | Thời hạn thuê tối thiểu và VAT công nợ | Hợp đồng thuê có điều khoản **thời gian thuê tối thiểu (mặc định 45 ngày)**: trả hàng trước 45 ngày vẫn tính tròn 45 ngày thuê. **Thuế VAT**: tiền thuế VAT chỉ tính và cộng vào công nợ khi khách hàng yêu cầu xuất hóa đơn (chốt 01/11/2026 từ file thực tế kế toán, change `contracts` và `rental-billing`) |
+| 40 | Mã hợp đồng, phụ lục & cấn trừ cọc | Cấu trúc số hợp đồng chuẩn: `MMYYYY/<VIẾT_TẮT_CÔNG_TY>-<TÊN_HOẶC_MÃ_KHÁCH>`, phụ lục đánh số `/01`, `/02`... **Tiền cọc giữ riêng theo từng hợp đồng**: hàng tháng khách vẫn trả đủ tiền thuê; tiền cọc **chỉ cấn trừ vào đợt thanh lý công trình cuối cùng** (sau khi đã tính đủ tiền thuê, vận chuyển và đền bù hư hỏng/mất mát; nếu cọc thừa thì hoàn trả lại cho khách) (chốt 01/11/2026 từ file thực tế kế toán, change `contracts` và `receivables`) |
+| 41 | Đội xe tải, phân khu bãi & nhân viên phụ trách | Công ty vận hành xe tải nội bộ (đã ghi nhận 2 xe biển số `51X-000.01` và `51X-000.02`). Bãi và xưởng được chia thành **11 khu vực lưu trữ (KV 1 đến KV 11)**, phân định rõ **Thiết bị** (hàng kinh doanh giàn giáo) và **Vật tư** (máy móc, dụng cụ xưởng, que hàn...). Khách hàng được phân công theo **nhân viên kinh doanh phụ trách** (Khang, Thảo, Vy...) (chốt 01/11/2026 từ file thực tế kế toán, change `truck-management`, `stocktake`, `catalog-extensions`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 
@@ -65,7 +67,6 @@ Các quyết định dưới đây có thể đổi sau khi chủ trả lời c�
 
 | Quyết định | Điều có thể đổi | Câu hỏi |
 |---|---|---|
-| #4 Tính tiền thuê | Có trừ ngày Tết/lễ không; giá tháng ÷ 30 hay ÷ số ngày của tháng | Q1, Q2 (một phần) |
 | #18 Hạn thanh toán | Có phạt/lãi chậm trả không | Q5 |
 | #20 Đền bù | Bảng giá đền bù lấy từ đâu (cố định toàn công ty hay riêng từng HĐ) | Q6 |
 | Bảo lãnh ngân hàng | Thông tin cần lưu và cơ chế cảnh báo hạn chứng thư | Q7 |
