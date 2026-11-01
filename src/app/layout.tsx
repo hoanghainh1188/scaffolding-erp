@@ -3,6 +3,7 @@ import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DemoBanner } from "@/components/shell/demo-banner";
+import { ErrorReporter } from "@/components/shell/error-reporter";
 import { brandColors } from "@/lib/brand-colors";
 import { isDemoMode } from "@/lib/env";
 
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="vi" className={`${display.variable} ${body.variable}`}>
       <body className="min-h-dvh">
+        <ErrorReporter />
         <DemoBanner />
         <TooltipProvider>{children}</TooltipProvider>
       </body>
