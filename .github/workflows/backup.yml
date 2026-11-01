@@ -1,0 +1,80 @@
+name: Production Database Backup
+
+on:
+  schedule:
+    # 19:00 UTC is 02:00 AM Vietnam time (UTC+7)
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: production-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Nightly encrypted database backup
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Dump production database (custom format)
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_UNPOOLED }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::PROD_DATABASE_URL_UNPOOLED secret is required."
+            exit 1
+          fi
+
+          BACKUP_DATE=$(date -u +"%Y%m%d_%H%M%S")
+          BACKUP_FILE="scaffolding_erp_prod_${BACKUP_DATE}.dump"
+          echo "BACKUP_FILE=$BACKUP_FILE" >> "$GITHUB_ENV"
+
+          echo "Exporting database via pg_dump..."
+          pg_dump -Fc --no-owner --no-privileges -d "$DATABASE_URL" -f "$BACKUP_FILE"
+
+          DUMP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+          echo "Dump completed. Size: $DUMP_SIZE"
+          sha256sum "$BACKUP_FILE" > "${BACKUP_FILE}.sha256"
+
+      - name: Encrypt backup file
+        env:
+          ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          if [ -n "$ENCRYPTION_KEY" ]; then
+            echo "Encrypting backup with AES-256-CBC..."
+            openssl enc -aes-256-cbc -pbkdf2 -salt \
+              -in "$BACKUP_FILE" \
+              -out "${BACKUP_FILE}.enc" \
+              -pass env:ENCRYPTION_KEY
+            rm -f "$BACKUP_FILE"
+            echo "Encrypted file generated: ${BACKUP_FILE}.enc"
+            sha256sum "${BACKUP_FILE}.enc" > "${BACKUP_FILE}.enc.sha256"
+          else
+            echo "BACKUP_ENCRYPTION_KEY not configured; retaining unencrypted dump."
+          fi
+
+      - name: Archive backup as workflow artifact (30-day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: |
+            scaffolding_erp_prod_*
+          retention-days: 30
+
+      - name: Summary of backup execution
+        run: |
+          echo "### Production Backup Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Timestamp**: $(date -u)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Artifacts**: Uploaded to GitHub Actions artifacts (30 days retention)" >> "$GITHUB_STEP_SUMMARY"
+          ls -lh scaffolding_erp_prod_* >> "$GITHUB_STEP_SUMMARY"

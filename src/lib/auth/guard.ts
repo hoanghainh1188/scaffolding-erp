@@ -107,7 +107,7 @@ export function withAuth<P = Record<string, never>>(
  * test Next.js applies to Server Actions). Another site's page cannot fake
  * its Origin header.
  */
-function isSameOrigin(request: Request): boolean {
+export function isSameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
   if (origin === null) return false;
   const baseURL = getAuth().options.baseURL;
