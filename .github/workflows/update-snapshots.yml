@@ -57,7 +57,7 @@ jobs:
       - name: Get the snapshots app token
         id: app-token
         if: env.HAS_APP == 'true'
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.SNAPSHOTS_APP_ID }}
           private-key: ${{ secrets.SNAPSHOTS_APP_PRIVATE_KEY }}
