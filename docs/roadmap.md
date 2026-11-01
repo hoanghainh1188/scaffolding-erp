@@ -19,10 +19,10 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | 07 | `simple-repair` | #12 | Chờ sửa → Tốt / Phế liệu, cộng chi phí sửa | D12 | 04 | ✅ |
 | 08 | `stocktake` | #17 | Kiểm kê định kỳ **bãi và xưởng** (0.2 #31), duyệt chênh lệch (**lên MVP**) | M6a, M6, D13 | 04 | ✅ |
 | 09 | `catalog-extensions` | #45 | Mã vật tư cũ, đơn vị mét/bó/sọt/cây, phân loại nguyên liệu, khu vực công trình, nhân viên phụ trách | D9, D16 (sửa) | 03 | Sẵn sàng (0.2 #37) |
-| 10 | `contracts` | #9 | Hợp đồng bán/thuê, giá theo hợp đồng, **cọc + bảo lãnh**, VAT, phụ lục, báo giá = nháp in ra, tách quyền thuê/bán | D4, D5, D5a, D5b (cần vẽ) | 09 | 🔒 Q4–Q8 |
+| 10 | `contracts` | #9 | Hợp đồng bán/thuê, giá theo hợp đồng, **cọc + bảo lãnh**, VAT, phụ lục, báo giá = nháp in ra, tách quyền thuê/bán | D4, D5, D5a, D5b (cần vẽ) | 09 | 🔒 Q5–Q7 (0.2 #39, #40) |
 | 11 | `deliveries` | #10 | Xuất kho theo đợt, rã bộ, cước vận chuyển | D6, M5 | 10 | |
 | 12 | `returns-and-compensation` | #11 | Thu hồi, đền bù; thêm mua lại, cấn trừ, đổi hàng, chuyển công trình | M4, D8 | 11 | |
-| 13 | `rental-billing` | #13 | Tính tiền thuê theo kỳ (cần file Excel tính tiền của từng công trình) | D7 | 12 | 🔒 Q1–Q3 |
+| 13 | `rental-billing` | #13 | Tính tiền thuê theo kỳ (đã có công thức thực tế 0.2 #4, #39) | D7 | 12 | Đã có công thức |
 | 14 | `receivables` | #14 | Công nợ tách loại (thuê, bán, vận chuyển, đền bù, VAT), cọc, bảo lãnh, thanh toán | D14 | 13 | |
 | 15 | `dashboard-basic` | #15 | Việc chờ duyệt, **doanh số ngày/tháng**, công trình rủi ro, tra một công trình, hàng ở ngoài theo khu vực | D1 | 14 | |
 | 16 | `production-orders` | #46 | **Sản xuất** thành phẩm từ nguyên liệu (mới) | cần vẽ | 04 | 🔒 Q11 |
