@@ -72,6 +72,9 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Production dependencies only; dev tools (drizzle-kit's esbuild) stay
+      # at moderate and are not shipped (#100).
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
