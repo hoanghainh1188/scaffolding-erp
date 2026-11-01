@@ -18,7 +18,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | 06 | `goods-receipt` | #8 | Nhập hàng trên điện thoại, lưu nháp, quét QR, giá sắt vụn | M1, M2, M3, M7 | 05 | ✅ |
 | 07 | `simple-repair` | #12 | Chờ sửa → Tốt / Phế liệu, cộng chi phí sửa | D12 | 04 | ✅ |
 | 08 | `stocktake` | #17 | Kiểm kê định kỳ **bãi và xưởng** (0.2 #31), duyệt chênh lệch (**lên MVP**) | M6a, M6, D13 | 04 | ✅ |
-| 09 | `catalog-extensions` | #45 | Mã vật tư cũ, đơn vị mét/bó/sọt, cho thuê theo kg/mét, khu vực công trình, nhân viên phụ trách khách | D9, D16 (sửa) | 03 | 🔒 Q3, Q9, Q10 |
+| 09 | `catalog-extensions` | #45 | Mã vật tư cũ, đơn vị mét/bó/sọt/cây, phân loại nguyên liệu, khu vực công trình, nhân viên phụ trách | D9, D16 (sửa) | 03 | Sẵn sàng (0.2 #37) |
 | 10 | `contracts` | #9 | Hợp đồng bán/thuê, giá theo hợp đồng, **cọc + bảo lãnh**, VAT, phụ lục, báo giá = nháp in ra, tách quyền thuê/bán | D4, D5, D5a, D5b (cần vẽ) | 09 | 🔒 Q4–Q8 |
 | 11 | `deliveries` | #10 | Xuất kho theo đợt, rã bộ, cước vận chuyển | D6, M5 | 10 | |
 | 12 | `returns-and-compensation` | #11 | Thu hồi, đền bù; thêm mua lại, cấn trừ, đổi hàng, chuyển công trình | M4, D8 | 11 | |
