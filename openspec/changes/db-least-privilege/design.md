@@ -70,7 +70,7 @@ Vì bước 2–4 chạy lại toàn bộ mỗi lần migrate, **không cần `A
 - **Test chống lệch:** integration test đọc `pg_trigger` các bảng có trigger dùng hàm `*_append_only` và so với `APPEND_ONLY_TABLES`. Thêm bảng chỉ ghi thêm mới mà quên danh sách → test đỏ.
 - **`SELECT, INSERT, UPDATE, DELETE`:** mọi bảng còn lại, gồm:
   - Đăng nhập: `user`, `session`, `account`, `verification`, `rate_limit`, `auth_rate_limit`, `login_throttle` (Better Auth và chống dò mật khẩu sửa/xóa liên tục).
-  - Đếm/tổng hợp: `document_counter`, `inventory_cost` (giá vốn lưu riêng, đối chiếu bằng `inventory:check`).
+  - Đếm/tổng hợp: `document_counter`, `inventory_cost` (giá vốn lưu riêng). Role app phải UPDATE được `inventory_cost` khi ghi sổ; ai sửa tay bảng này sẽ bị `npm run inventory:check` bắt (đối chiếu với sổ kho, chạy hằng đêm bằng `inventory-check.yml`).
   - Chứng từ và danh mục: đơn, phiếu nhập, phiếu sửa, kiểm kê, điều chỉnh, `company_profile`, danh mục. Phiếu đã ghi sổ vẫn có trigger khóa riêng (`repair_order_posted_frozen`, `stocktake_done_frozen`); change này không đổi.
 - **Không bảng nào có `TRUNCATE`, `REFERENCES`, `TRIGGER`.** Sequence: `USAGE, SELECT` (bảng dùng `GENERATED ALWAYS AS IDENTITY` cần quyền này khi INSERT).
 - Đã cân nhắc *chỉ cấp UPDATE/DELETE từng bảng theo danh sách cho phép*: chặt hơn nhưng mỗi bảng mới phải thêm tay, quên là app lỗi. Rủi ro chính của issue là sổ kho và nhật ký; danh sách chặn ngắn, có test chống lệch, an toàn hơn trong thực tế.
@@ -132,6 +132,7 @@ Role app không có TRUNCATE, nên `truncateWithLedger` không chạy được b
 - [Thiếu quyền ở luồng ít chạy, chỉ lộ ở demo] → integration + E2E đều chạy bằng role app trên CI; D3 cấp UPDATE/DELETE rộng trừ ba bảng nên rủi ro thấp.
 - [Người vận hành chạy migrate quên tạo role] → migrate báo lỗi rõ kèm đường dẫn runbook; migration đã áp vẫn giữ (bước cấp quyền chạy sau), chạy lại sau khi tạo role là xong.
 - [`REVOKE CONNECT … FROM PUBLIC` chặn công cụ khác (Neon SQL Editor, `pg_dump`)] → các công cụ đó dùng owner (chủ DB, luôn có quyền). Kiểm ở task 6.2.
+- [Khôi phục từ tệp sao lưu làm mất quyền của role app] `backup.yml` chạy `pg_dump --no-owner --no-privileges` và runbook khôi phục bằng `pg_restore --no-owner --no-privileges`: sau khi khôi phục, bảng thuộc role chạy restore và `erp_app` không có quyền gì → app lỗi toàn bộ. → Runbook (task 6.1): restore **bằng owner** (`DATABASE_URL_MIGRATE` của DB đích); bảo đảm role `erp_app` có trên DB/nhánh đích (chưa có thì tạo theo D4); chạy ngay `npm run db:migrate` với `DATABASE_URL_MIGRATE` của DB đích để bước cấp quyền chạy lại; rồi mới trỏ app vào. Integration test 2.3 có ca "bảng do owner tạo, chưa có quyền → chạy bước cấp quyền → role app đọc/ghi được". Khôi phục theo thời điểm (PITR) hay nhánh `pre-deploy-*` của Neon chép cả role và quyền nên không bị ảnh hưởng.
 - [Đánh đổi] Owner vẫn có quyền tắt trigger. Chấp nhận: owner chỉ nằm ở GitHub secret và trình quản lý mật khẩu, không ở server app.
 
 ## Migration Plan

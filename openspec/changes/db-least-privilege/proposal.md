@@ -48,4 +48,5 @@ Rà soát bảo mật 01/11/2026: app kết nối DB bằng **role chủ bảng*
 - Code: `src/db/migrate.mts`, bước cấp quyền mới cạnh `src/db/`, `src/lib/env.ts`, `src/test/` (helper dọn bảng), `tests/e2e/global-setup.ts` (chỉ kiểm tra, không đổi quyền cần dùng), `docker/postgres/`, `package.json` (script `db:roles`).
 - Migration: **không thêm file SQL** trong `drizzle/` (quyền cấp bằng bước chạy lại được, xem design D2).
 - Hạ tầng: Vercel demo đổi `DATABASE_URL` sang role app, xóa `DATABASE_URL_UNPOOLED`; GitHub environment `demo` giữ 8 secret, đổi giá trị `DEMO_DATABASE_URL`; production đổi tên secret `PROD_DATABASE_URL_UNPOOLED` → `PROD_DATABASE_URL_MIGRATE`.
+- Tài liệu: quyết định ghi vào `docs/requirements.md` 0.2 #36 (01/11/2026).
 - Issue: Refs #96; phối hợp #81 (deploy production), #82.
