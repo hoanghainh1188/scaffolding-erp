@@ -51,6 +51,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | K7 | ô nhập ngày | #37 | Ô ngày chung luôn hiện `dd/mm/yyyy` (`DateInput`, sửa lỗi nhỏ PR #59) ✅ | – |
 | K8 | `serverless-db-connection` | #75 | Pool kết nối DB cho Vercel + Neon ✅ | – |
 | K9 | `demo-environment` | #76 | Môi trường thử nghiệm cho Vercel + Neon ✅ | – |
+| K10 | `company-settings` | #77 | Cài đặt thông tin công ty cho phiếu in ✅ | – |
 
 ## Ghi chú
 
