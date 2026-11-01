@@ -46,4 +46,14 @@ describe("buildCspHeader", () => {
     );
     expect(csp).not.toContain("upgrade-insecure-requests");
   });
+
+  it("includes remote monitoring host in connect-src when sentryDsn is specified", () => {
+    const nonce = "dsn-nonce-789";
+    const sentryDsn = "https://publickey@o123456.ingest.sentry.io/78910";
+    const csp = buildCspHeader({ nonce, isDev: false, sentryDsn });
+
+    expect(csp).toContain(
+      "connect-src 'self' https://o123456.ingest.sentry.io",
+    );
+  });
 });

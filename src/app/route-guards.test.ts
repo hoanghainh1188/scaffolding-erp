@@ -16,7 +16,11 @@ function filesNamed(dir: string, name: string): string[] {
 const label = (file: string) => relative(APP, file);
 
 /** Routes that must stay open: monitoring and Better Auth's own handler. */
-const OPEN_ROUTES = ["api/health/route.ts", "api/auth/[...all]/route.ts"];
+const OPEN_ROUTES = [
+  "api/health/route.ts",
+  "api/auth/[...all]/route.ts",
+  "api/telemetry/errors/route.ts",
+];
 
 describe("route guards", () => {
   const desktopPages = filesNamed(join(APP, "(desktop)"), "page.tsx");
