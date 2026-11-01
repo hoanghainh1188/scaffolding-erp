@@ -52,6 +52,9 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | K8 | `serverless-db-connection` | #75 | Pool kết nối DB cho Vercel + Neon ✅ | – |
 | K9 | `demo-environment` | #76 | Môi trường thử nghiệm cho Vercel + Neon ✅ | – |
 | K10 | `company-settings` | #77 | Cài đặt thông tin công ty cho phiếu in ✅ | – |
+| K11 | `error-monitoring` | #79 | Theo dõi lỗi production, che dữ liệu cá nhân ✅ | – |
+| – | Hạ tầng demo | #80 | Vercel + Neon, reset hằng đêm ✅ | K8, K9 |
+| – | Hạ tầng production | #81 | Vercel + Neon, backup, giám sát, runbook ✅ | K11 |
 
 ## Ghi chú
 
