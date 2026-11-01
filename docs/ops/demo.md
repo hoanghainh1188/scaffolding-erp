@@ -29,7 +29,10 @@ Neon Project: scaffolding-erp-demo
    - Tên: `scaffolding-erp-demo`
    - Phiên bản Postgres: **Postgres 17**
    - Vùng: **Asia Pacific (Singapore) - `aws-ap-southeast-1`**
-2. Tạo nhánh cơ sở `seed` từ nhánh chính:
+   - Neon đặt tên nhánh gốc mặc định là `production` (bản cũ là `main`); tên nhánh gốc không quan trọng, chỉ nhánh `demo` phải đúng tên (workflow reset gọi theo tên).
+   - Kiểm tra: host trong chuỗi kết nối có `ap-southeast-1`; `select version();` trong SQL Editor ra `PostgreSQL 17`. Vùng và phiên bản không đổi được sau khi tạo.
+   - Không bật mục **Better Auth** (Neon Auth) của Neon: app có Better Auth riêng.
+2. Tạo nhánh cơ sở `seed` từ nhánh gốc, chọn **Current data** và **tắt hạn tự xóa** (expiration). Nhánh có hạn xóa không làm nhánh cha được và sẽ bị xóa mất dữ liệu mẫu khi đến hạn:
    - Chạy lệnh migration với URL kết nối trực tiếp (unpooled):
      ```bash
      DATABASE_URL="postgres://user:password@ep-seed.aws-ap-southeast-1.neon.tech/neondb?sslmode=require" npm run db:migrate
@@ -38,7 +41,7 @@ Neon Project: scaffolding-erp-demo
      ```bash
      NODE_ENV=development DATABASE_URL="postgres://user:password@ep-seed.aws-ap-southeast-1.neon.tech/neondb?sslmode=require" npm run db:seed:demo
      ```
-3. Tạo nhánh con `demo` tách ra từ nhánh `seed`:
+3. Tạo nhánh con `demo` tách ra từ nhánh `seed`, chọn **Current data**, **tắt hạn tự xóa**:
    - Mọi thao tác ghi của người dùng thử nghiệm sẽ thực hiện trên nhánh `demo`.
    - Nhánh `seed` được giữ nguyên làm bản sao sạch (baseline).
 
