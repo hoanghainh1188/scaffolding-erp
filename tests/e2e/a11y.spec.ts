@@ -26,6 +26,8 @@ test.describe("accessibility", () => {
     page,
   }, testInfo) => {
     test.skip(!runOnlyIn(testInfo, "desktop-1280"), "desktop pages");
+    // Eleven axe scans can pass 30 s on a busy CI runner.
+    test.slow();
     for (const path of [
       "/dashboard",
       "/settings/users",
