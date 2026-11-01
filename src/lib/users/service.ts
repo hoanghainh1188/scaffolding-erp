@@ -20,6 +20,8 @@ import {
   type Executor,
   type UserStatus,
 } from "@/lib/auth/credentials";
+import { isDemoMode } from "@/lib/env";
+import { isDemoAccount } from "@/lib/users/seed";
 
 export const USER_MESSAGES = {
   notFound: "Không tìm thấy người dùng",
@@ -31,6 +33,9 @@ export const USER_MESSAGES = {
   resetLocked: "Mở khóa tài khoản trước khi đặt lại mật khẩu",
   alreadyActive: "Tài khoản này đang dùng",
   notDirector: "Bạn không có quyền thực hiện thao tác này",
+  demoResetBlocked: "Tài khoản demo dùng chung không thể đặt lại mật khẩu",
+  demoLockBlocked: "Tài khoản demo dùng chung không thể khóa",
+  demoRoleBlocked: "Tài khoản demo dùng chung không thể đổi vai trò",
 } as const;
 
 export const TEMP_PASSWORD_TTL_MS = 48 * 60 * 60 * 1000;
@@ -234,6 +239,9 @@ export async function resetPassword(
     if (!(await isActiveDirector(tx, actor))) return forbidden();
     const target = await lockRow(tx, targetId);
     if (!target) return notFound();
+    if (isDemoMode() && isDemoAccount(target.username)) {
+      return conflict(USER_MESSAGES.demoResetBlocked);
+    }
     if (target.status !== "ACTIVE") return conflict(USER_MESSAGES.resetLocked);
     await setPassword(tx, target, hash, expiresAt);
     await logActivity(tx, actor, {
@@ -309,6 +317,9 @@ export async function lockUser(
     const directors = await lockActiveDirectors(tx);
     const target = await lockRow(tx, targetId);
     if (!target) return notFound();
+    if (isDemoMode() && isDemoAccount(target.username)) {
+      return conflict(USER_MESSAGES.demoLockBlocked);
+    }
     if (leavesNoDirector(directors, target)) {
       return conflict(USER_MESSAGES.lastDirector);
     }
@@ -344,6 +355,9 @@ export async function changeRole(
     const directors = await lockActiveDirectors(tx);
     const target = await lockRow(tx, targetId);
     if (!target) return notFound();
+    if (isDemoMode() && isDemoAccount(target.username)) {
+      return conflict(USER_MESSAGES.demoRoleBlocked);
+    }
     if (role !== "DIRECTOR" && leavesNoDirector(directors, target)) {
       return conflict(USER_MESSAGES.lastDirector);
     }

@@ -5,6 +5,8 @@ import { account, session, user } from "@/db/schema";
 import { validateNewPassword } from "@/domain/password";
 import type { ActivityActor } from "@/lib/activity/actor";
 import { logActivity } from "@/lib/activity/log";
+import { isDemoMode } from "@/lib/env";
+import { isDemoAccount } from "@/lib/users/seed";
 
 import type { Auth } from "./auth";
 import {
@@ -15,6 +17,7 @@ import {
 
 export const CHANGE_PASSWORD_MESSAGES = {
   wrongCurrent: "Mật khẩu hiện tại không đúng",
+  demoAccountBlocked: "Tài khoản demo dùng chung không được đổi mật khẩu",
 } as const;
 
 export interface ChangePasswordInput {
@@ -46,6 +49,13 @@ export async function changePassword(
       ),
     )
     .where(eq(user.id, input.actor.id));
+  if (row?.username && isDemoMode() && isDemoAccount(row.username)) {
+    return {
+      ok: false,
+      status: 400,
+      error: CHANGE_PASSWORD_MESSAGES.demoAccountBlocked,
+    };
+  }
   if (
     !row?.hash ||
     !(await verifyPassword(auth, row.hash, input.currentPassword))

@@ -25,6 +25,14 @@ export const DEV_ACCOUNTS: readonly SeedAccount[] = [
   { username: "xuong", name: "Hoàng Nam", role: "WORKSHOP" },
 ];
 
+export const DEMO_USERNAMES: readonly string[] = DEV_ACCOUNTS.map(
+  (entry) => entry.username,
+);
+
+export function isDemoAccount(username: string): boolean {
+  return DEMO_USERNAMES.includes(username);
+}
+
 export interface SeedOptions {
   password: string;
   /**

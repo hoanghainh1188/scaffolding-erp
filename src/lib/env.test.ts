@@ -34,6 +34,7 @@ describe("parseEnv", () => {
       DB_IDLE_TIMEOUT_SECONDS: undefined,
       DB_CONNECT_TIMEOUT_SECONDS: 3,
       DB_PREPARE: true,
+      DEMO_MODE: false,
     });
   });
 
@@ -175,6 +176,37 @@ describe("parseEnv", () => {
       expect(message).toContain("DATABASE_URL_UNPOOLED");
       expect(message).toContain("postgres://");
       expect(message).not.toContain("localhost:5432");
+    });
+  });
+
+  describe("demo environment env (K9)", () => {
+    it("parses DEMO_MODE correctly (true, 1, false, 0)", () => {
+      expect(parseEnv({ ...valid, DEMO_MODE: "true" }).DEMO_MODE).toBe(true);
+      expect(parseEnv({ ...valid, DEMO_MODE: "1" }).DEMO_MODE).toBe(true);
+      expect(parseEnv({ ...valid, DEMO_MODE: "false" }).DEMO_MODE).toBe(false);
+      expect(parseEnv({ ...valid, DEMO_MODE: "0" }).DEMO_MODE).toBe(false);
+      expect(parseEnv({ ...valid, DEMO_MODE: undefined }).DEMO_MODE).toBe(
+        false,
+      );
+    });
+
+    it("rejects invalid DEMO_MODE", () => {
+      expect(() => parseEnv({ ...valid, DEMO_MODE: "maybe" })).toThrow(
+        /DEMO_MODE: phải là boolean/,
+      );
+    });
+
+    it("derives BETTER_AUTH_URL from VERCEL_URL on preview deployments", () => {
+      const env = parseEnv({
+        ...valid,
+        NODE_ENV: "production",
+        VERCEL_ENV: "preview",
+        VERCEL_URL: "scaffolding-erp-pr-42.vercel.app",
+        BETTER_AUTH_URL: undefined,
+      });
+      expect(env.BETTER_AUTH_URL).toBe(
+        "https://scaffolding-erp-pr-42.vercel.app",
+      );
     });
   });
 });
