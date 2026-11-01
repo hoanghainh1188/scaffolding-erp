@@ -33,12 +33,12 @@
 ## 6. Tài liệu và chuyển đổi demo
 
 - [x] 6.1 Cập nhật `docs/ops/demo.md` (tạo `erp_app` bằng SQL trên nhánh `seed`, mục "Chuyển demo sang role app" theo Migration Plan, bảng secret ghi rõ secret nào là owner), `docs/ops/production.md` (biến, secret `PROD_DATABASE_URL_MIGRATE`, đổi mật khẩu `erp_app` bằng `ALTER ROLE`; mục khôi phục từ tệp sao lưu: `pg_restore` bằng owner, bảo đảm có `erp_app` trên DB đích, chạy ngay `npm run db:migrate` với `DATABASE_URL_MIGRATE` của DB đích rồi mới trỏ app vào), `README.md` (cài đặt local, `db:roles`), `CLAUDE.md` (bảng lệnh + quy ước: app chạy bằng role app, migrate bằng `DATABASE_URL_MIGRATE`, bảng chỉ ghi thêm mới phải vào `APPEND_ONLY_TABLES`). Quyết định đã ghi ở `docs/requirements.md` 0.2 #36 (trong PR propose); sửa nếu apply làm khác.
-- [ ] 6.2 Kiểm tay trên Neon nhánh `seed` sau khi tạo `erp_app` và chạy Deploy Demo: `psql` bằng URL pooled `erp_app` → `UPDATE inventory_ledger …`, `DELETE FROM activity_log …`, `ALTER TABLE inventory_ledger DISABLE TRIGGER …`, `SET session_replication_role = replica` đều bị từ chối; `select count(*) from item` chạy được; SQL Editor (owner) vẫn vào được. Ghi kết quả vào PR.
-- [ ] 6.3 Chuyển demo theo Migration Plan bước 4–6; kiểm `/api/health` 200, đăng nhập `giamdoc`, tạo một phiếu nhập trên demo, Demo Reset xanh với `DEMO_DATABASE_URL` mới. Chưa làm được trước merge thì ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33.
+- [x] 6.2 Kiểm tay trên Neon nhánh `seed` sau khi tạo `erp_app` và chạy Deploy Demo: `psql` bằng URL pooled `erp_app` → `UPDATE inventory_ledger …`, `DELETE FROM activity_log …`, `ALTER TABLE inventory_ledger DISABLE TRIGGER …`, `SET session_replication_role = replica` đều bị từ chối; `select count(*) from item` chạy được; SQL Editor (owner) vẫn vào được. Ghi kết quả vào PR.
+- [x] 6.3 Chuyển demo theo Migration Plan bước 4–6; kiểm `/api/health` 200, đăng nhập `giamdoc`, tạo một phiếu nhập trên demo, Demo Reset xanh với `DEMO_DATABASE_URL` mới. Chưa làm được trước merge thì ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33.
 
 ## 7. Kiểm tra cuối
 
-- [ ] 7.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate db-least-privilege --strict` đều xanh.
+- [x] 7.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate db-least-privilege --strict` đều xanh.
 
 ## Workflow follow-up
 
