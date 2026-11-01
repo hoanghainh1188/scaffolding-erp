@@ -13,7 +13,7 @@ import { createFirstDirector } from "./first-director";
 const ctx = createTestContext();
 
 afterAll(ctx.close);
-beforeEach(() => resetAuthTables(ctx));
+beforeEach(() => resetAuthTables());
 
 describe("createFirstDirector", () => {
   it("creates Giám đốc on an empty database", async () => {

@@ -39,8 +39,8 @@ afterAll(ctx.close);
 let actor: Actor;
 
 beforeEach(async () => {
-  await resetAuthTables(ctx);
-  await resetCatalogTables(ctx);
+  await resetAuthTables();
+  await resetCatalogTables();
   actor = await createTestUser(ctx, { role: "SALES", username: "quocbao" });
 });
 

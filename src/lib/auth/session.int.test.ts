@@ -15,7 +15,7 @@ import { SHORT_SESSION_MS } from "./sign-in";
 const ctx = createTestContext();
 
 afterAll(ctx.close);
-beforeEach(() => resetAuthTables(ctx));
+beforeEach(() => resetAuthTables());
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

@@ -30,6 +30,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # PROD_DATABASE_URL is the app role erp_app (read is enough).
       - name: Run inventory ledger verification
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}

@@ -105,6 +105,10 @@ export default defineConfig({
       E2E: "1",
       BETTER_AUTH_URL: baseURL,
       AUTH_SIGN_IN_LIMIT_PER_MINUTE: "1000",
+      // .env holds the owner URL for `npm run db:migrate`; the production
+      // build refuses to start with it (db-least-privilege). An empty value
+      // keeps Next from loading it from .env.
+      DATABASE_URL_MIGRATE: "",
     },
     url: baseURL,
     reuseExistingServer: !isCI,

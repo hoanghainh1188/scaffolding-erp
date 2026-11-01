@@ -16,7 +16,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-beforeEach(() => resetAuthTables(ctx));
+beforeEach(() => resetAuthTables());
 
 function telemetryRequest(
   body: string,

@@ -19,7 +19,7 @@ afterAll(handle.close);
 let groupId = "";
 
 beforeEach(async () => {
-  await resetCatalogTables(handle);
+  await resetCatalogTables();
   const [group] = await db
     .insert(itemGroup)
     .values({ name: "Giàn giáo", nameKey: "gian giao" })

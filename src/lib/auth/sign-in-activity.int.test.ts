@@ -65,7 +65,7 @@ let vantung: TestUser;
 
 beforeEach(async () => {
   failLog.on = false;
-  await resetAuthTables(ctx);
+  await resetAuthTables();
   vantung = await createTestUser(ctx, {
     role: "WAREHOUSE",
     username: "vantung",

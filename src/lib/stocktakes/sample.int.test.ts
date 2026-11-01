@@ -18,7 +18,7 @@ afterAll(ctx.close);
 let fx: InventoryFixture;
 beforeEach(async () => {
   fx = await setupInventoryFixture(ctx);
-  await resetInventoryTables(ctx);
+  await resetInventoryTables();
   await seedInventory(ctx.db, fx.director);
 });
 

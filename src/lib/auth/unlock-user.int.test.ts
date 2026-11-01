@@ -17,7 +17,7 @@ const { db, close } = createDatabase(url);
 
 afterAll(close);
 beforeEach(async () => {
-  await resetAuthTables({ db } as never);
+  await resetAuthTables();
 });
 
 describe("scripts/unlock-user.mts", () => {

@@ -22,7 +22,7 @@ afterAll(async () => {
   uninstall();
   await ctx.close();
 });
-beforeEach(() => resetAuthTables(ctx));
+beforeEach(() => resetAuthTables());
 
 const change = (cookie: string, body: Record<string, string>) =>
   changePasswordRoute(

@@ -16,7 +16,10 @@ const { db, close } = createDatabase(url);
 afterAll(close);
 
 beforeEach(async () => {
-  await truncateWithLedger(db, sql`truncate table "user" cascade`);
+  // Sign-in tests in other files leave throttle rows (no foreign key to user).
+  await truncateWithLedger(
+    sql`truncate table "user", "login_throttle" cascade`,
+  );
 });
 
 const row = (overrides: Partial<typeof user.$inferInsert> = {}) => ({

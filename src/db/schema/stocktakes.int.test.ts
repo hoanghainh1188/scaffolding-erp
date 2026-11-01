@@ -26,9 +26,9 @@ let yardId = "";
 let workshopId = "";
 
 beforeEach(async () => {
-  await truncateWithLedger(db, sql`truncate table "user" cascade`);
-  await resetInventoryTables(handle);
-  await resetCatalogTables(handle);
+  await truncateWithLedger(sql`truncate table "user" cascade`);
+  await resetInventoryTables();
+  await resetCatalogTables();
   await db.insert(user).values({
     id: userId,
     name: "Văn Tùng",

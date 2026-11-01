@@ -37,8 +37,8 @@ let lanphuong: TestUser;
 let director: TestUser;
 
 beforeEach(async () => {
-  await resetAuthTables(ctx);
-  await resetCatalogTables(ctx);
+  await resetAuthTables();
+  await resetCatalogTables();
   lanphuong = await createTestUser(ctx, {
     role: "SALES",
     username: "lanphuong",
