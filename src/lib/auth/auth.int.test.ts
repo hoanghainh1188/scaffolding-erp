@@ -11,7 +11,7 @@ import {
 const ctx = createTestContext();
 
 afterAll(ctx.close);
-beforeEach(() => resetAuthTables(ctx));
+beforeEach(() => resetAuthTables());
 
 async function post(path: string, body: unknown): Promise<Response> {
   return ctx.auth.handler(

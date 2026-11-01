@@ -66,11 +66,10 @@ export function appRequest(
 }
 
 /** Empties every auth table; call in beforeEach. */
-export async function resetAuthTables({ db }: TestContext): Promise<void> {
+export async function resetAuthTables(): Promise<void> {
   // CASCADE reaches the inventory ledger (created_by), which only a test may
   // empty.
   await truncateWithLedger(
-    db,
     sql`truncate table "activity_log", "user", "session", "account", "verification", "rate_limit", "login_throttle", "auth_rate_limit" cascade`,
   );
 }

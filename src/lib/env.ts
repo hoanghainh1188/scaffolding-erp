@@ -33,12 +33,6 @@ const envSchema = z.object({
       .string()
       .refine((value) => POSTGRES_URL.test(value) && URL.canParse(value)),
   ),
-  DATABASE_URL_UNPOOLED: optional(
-    z
-      .string()
-      .refine((value) => POSTGRES_URL.test(value) && URL.canParse(value))
-      .optional(),
-  ),
   BETTER_AUTH_SECRET: optional(z.string().min(MIN_SECRET_LENGTH)),
   BETTER_AUTH_URL: optional(
     z
@@ -86,8 +80,6 @@ export type Env = Omit<ParsedEnv, "BETTER_AUTH_URL"> & {
 const RULES: Readonly<Record<EnvKey, string>> = {
   NODE_ENV: `phải là một trong ${NODE_ENVS.join(", ")}`,
   DATABASE_URL: "phải là URL dạng postgres://user:password@host:port/database",
-  DATABASE_URL_UNPOOLED:
-    "phải là URL dạng postgres://user:password@host:port/database",
   BETTER_AUTH_SECRET: `phải dài ít nhất ${MIN_SECRET_LENGTH} ký tự (tạo bằng: openssl rand -base64 32)`,
   BETTER_AUTH_URL: "phải là URL dạng https://ten-mien (bắt buộc ở production)",
   DEV_SEED_PASSWORD: `phải dài ít nhất ${MIN_SEED_PASSWORD_LENGTH} ký tự`,
@@ -120,13 +112,24 @@ export function parseEnv(
   if (result.success && !authUrl && result.data.NODE_ENV === "production") {
     keys.push("BETTER_AUTH_URL");
   }
-  if (result.success && keys.length === 0) {
+  // The owner URL runs migrations only; on the app server it would undo the
+  // least-privilege app role (db-least-privilege D1).
+  const ownerUrlOnServer =
+    result.success &&
+    result.data.NODE_ENV === "production" &&
+    Boolean(source.DATABASE_URL_MIGRATE);
+  if (result.success && keys.length === 0 && !ownerUrlOnServer) {
     return { ...result.data, BETTER_AUTH_URL: authUrl ?? DEFAULT_AUTH_URL };
   }
   const lines = keys.map((key) => {
     const missing = source[key] === undefined || source[key] === "";
     return `- ${key}: ${missing ? "thiếu biến này" : RULES[key]}`;
   });
+  if (ownerUrlOnServer) {
+    lines.push(
+      "- DATABASE_URL_MIGRATE: không được đặt trên server app (chỉ dùng khi chạy migration)",
+    );
+  }
   throw new ConfigError(`Cấu hình môi trường sai:\n${lines.join("\n")}`);
 }
 

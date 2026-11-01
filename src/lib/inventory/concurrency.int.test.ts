@@ -89,7 +89,7 @@ async function settle(promises: Promise<unknown>[]) {
 }
 
 async function restart() {
-  await resetInventoryTables(ctx);
+  await resetInventoryTables();
 }
 
 describe("two postings at once", () => {

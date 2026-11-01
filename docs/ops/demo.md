@@ -33,9 +33,14 @@ Neon Project: scaffolding-erp-demo
    - Kiểm tra: host trong chuỗi kết nối có `ap-southeast-1`; `select version();` trong SQL Editor ra `PostgreSQL 17`. Vùng và phiên bản không đổi được sau khi tạo.
    - Không bật mục **Better Auth** (Neon Auth) của Neon: app có Better Auth riêng.
 2. Tạo nhánh cơ sở `seed` từ nhánh gốc, chọn **Current data** và **tắt hạn tự xóa** (expiration). Nhánh có hạn xóa không làm nhánh cha được và sẽ bị xóa mất dữ liệu mẫu khi đến hạn:
-   - Chạy lệnh migration với URL kết nối trực tiếp (unpooled):
+   - Tạo role app `erp_app` **bằng SQL** trên nhánh `seed`: SQL Editor, chọn nhánh `seed`, role `neondb_owner`:
+     ```sql
+     CREATE ROLE erp_app LOGIN PASSWORD '<≥12 ký tự, có hoa, thường, số, ký hiệu>';
+     ```
+     Không tạo qua Console → Roles: role tạo ở đó tự có `neon_superuser` (đọc/ghi mọi bảng). Nhánh `demo` nhận role này khi tạo/reset từ `seed`; tạo trên `demo` thì reset sẽ mất.
+   - Chạy lệnh migration bằng **owner** (`neondb_owner`), URL kết nối trực tiếp (unpooled). Migrate cấp luôn quyền cho `erp_app`:
      ```bash
-     DATABASE_URL="postgres://user:password@ep-seed.aws-ap-southeast-1.neon.tech/neondb?sslmode=require" npm run db:migrate
+     DATABASE_URL_MIGRATE="postgres://neondb_owner:password@ep-seed.aws-ap-southeast-1.neon.tech/neondb?sslmode=require" npm run db:migrate
      ```
    - Chạy lệnh nạp dữ liệu mẫu ban đầu:
      ```bash
@@ -54,8 +59,8 @@ Neon Project: scaffolding-erp-demo
    - **Serverless Function Region**: `sin1` (Singapore)
    - **Vercel Toolbar**: Tắt (Off) ở cả Production và Preview để tránh vi phạm chính sách CSP.
 3. Cấu hình Biến Môi trường (Environment Variables) cho Production:
-   - `DATABASE_URL`: URL dạng pooled của nhánh `demo` (chứa `-pooler` trong hostname, có `sslmode=require`).
-   - `DATABASE_URL_UNPOOLED`: URL kết nối trực tiếp không qua pooler của nhánh `demo`.
+   - `DATABASE_URL`: URL dạng pooled của nhánh `demo` **với role `erp_app`** (chứa `-pooler` trong hostname, có `sslmode=require`).
+   - Không đặt `DATABASE_URL_UNPOOLED` hay `DATABASE_URL_MIGRATE` (URL owner) trên Vercel.
    - `BETTER_AUTH_SECRET`: Chuỗi ngẫu nhiên bảo mật 32 byte (`openssl rand -base64 32`).
    - `BETTER_AUTH_URL`: `https://demo.<tên-miền-công-ty>` hoặc `https://<project-name>.vercel.app`.
    - `DEMO_MODE`: `true`.
@@ -70,12 +75,27 @@ Trên GitHub repository, vào **Settings → Environments**, tạo environment t
 |---|---|
 | `NEON_API_KEY` | API Key cá nhân từ Neon Console (Account Settings → API Keys) |
 | `NEON_PROJECT_ID` | Project ID của project `scaffolding-erp-demo` trên Neon |
-| `DEMO_SEED_DATABASE_URL` | URL kết nối trực tiếp (unpooled) của nhánh `seed` để migrate |
-| `DEMO_DATABASE_URL_UNPOOLED` | URL kết nối trực tiếp (unpooled) của nhánh `demo` |
-| `DEMO_DATABASE_URL` | URL kết nối của nhánh `demo` để kiểm tra toàn vẹn sổ kho |
+| `DEMO_SEED_DATABASE_URL` | **Owner** (`neondb_owner`), URL trực tiếp (unpooled) của nhánh `seed`: migrate và seed |
+| `DEMO_DATABASE_URL_UNPOOLED` | **Owner** (`neondb_owner`), URL trực tiếp (unpooled) của nhánh `demo`: migrate khi không reset |
+| `DEMO_DATABASE_URL` | **Role app `erp_app`**, URL pooled của nhánh `demo`: kiểm tra toàn vẹn sổ kho |
 | `DEV_SEED_PASSWORD` | Mật khẩu mẫu khởi tạo cho các tài khoản demo |
 | `DEMO_URL` | Đường dẫn ứng dụng demo (ví dụ: `https://scaffolding-erp-demo.vercel.app`) |
 | `VERCEL_DEPLOY_HOOK` | Deploy Hook URL tạo từ Vercel (Project Settings → Git → Deploy Hooks) |
+
+### Bước 4: Chuyển demo đang chạy sang role app (change `db-least-privilege`, làm một lần)
+
+Demo dựng trước 01/11/2026 chạy bằng `neondb_owner`. Làm đúng thứ tự, demo không bị ngắt cho tới bước 5:
+
+1. SQL Editor, nhánh **`seed`**, role `neondb_owner`: `CREATE ROLE erp_app LOGIN PASSWORD '<mạnh>';`.
+2. Merge PR có change `db-least-privilege`. Vercel deploy code mới; `DATABASE_URL` vẫn là owner nên app vẫn chạy.
+3. Actions → **Deploy Demo**, bật `reset_demo_branch`: migrate + cấp quyền trên `seed`, rồi reset `demo` từ `seed` (nhận role + quyền). Dữ liệu người thử trên `demo` mất như reset hằng đêm.
+4. Lấy URL pooled của `erp_app` trên nhánh `demo` (Neon Console → Connect, chọn role `erp_app`, bật Connection pooling; hoặc thay user/mật khẩu trong URL owner). Kiểm bằng `psql "<URL>"`:
+   - `UPDATE inventory_ledger SET quantity = quantity;`, `DELETE FROM activity_log;`, `ALTER TABLE inventory_ledger DISABLE TRIGGER ALL;`, `SET session_replication_role = replica;` → đều báo `permission denied` hoặc `must be owner`.
+   - `SELECT count(*) FROM item;` → chạy được.
+5. Vercel: đổi `DATABASE_URL` sang URL đó, xóa `DATABASE_URL_UNPOOLED`, Redeploy. Kiểm `/api/health` trả 200 và đăng nhập `giamdoc`.
+6. GitHub environment `demo`: đổi giá trị `DEMO_DATABASE_URL` sang URL `erp_app`. Chạy tay **Demo Reset** để kiểm `inventory:check` bằng role app.
+
+**Quay lui:** đổi `DATABASE_URL` trên Vercel về URL owner cũ và Redeploy. Role và quyền để nguyên không hại gì.
 
 ---
 
@@ -108,7 +128,7 @@ Khi có thay đổi mã nguồn hoặc migration mới trên nhánh `main`:
    - `reseed`: Chọn `true` nếu có bảng mới cần nạp lại dữ liệu mẫu vào nhánh `seed`.
    - `reset_demo_branch`: Chọn `true` nếu muốn làm mới nhánh `demo` theo schema mới của `seed`.
 4. Bấm **Run workflow**. Quy trình sẽ chạy tuần tự:
-   - Chạy `db:migrate` trên nhánh `seed`.
+   - Chạy `db:migrate` bằng owner trên nhánh `seed` (cấp lại quyền cho `erp_app`; thiếu role thì dừng, xem Bước 1).
    - Cập nhật nhánh `demo`.
    - Kích hoạt Vercel Deploy Hook để cập nhật mã nguồn mới.
    - Kiểm tra `/api/health` sau khi hoàn tất.

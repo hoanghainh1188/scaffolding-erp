@@ -53,8 +53,8 @@ let fixture: Fixture;
 const cookies = new Map<Role, string>();
 
 beforeEach(async () => {
-  await resetAuthTables(ctx);
-  await resetCatalogTables(ctx);
+  await resetAuthTables();
+  await resetCatalogTables();
   cookies.clear();
   for (const role of ROLES) {
     const person = await createTestUser(ctx, {

@@ -37,8 +37,8 @@ let scaffold = "";
 let fittings = "";
 
 beforeEach(async () => {
-  await resetAuthTables(ctx);
-  await resetCatalogTables(ctx);
+  await resetAuthTables();
+  await resetCatalogTables();
   actor = await createTestUser(ctx, { role: "SALES", username: "quocbao" });
   scaffold = await groupId("Giàn giáo");
   fittings = await groupId("Phụ kiện");

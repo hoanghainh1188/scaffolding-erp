@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase } from "@/db/client";
+import { getAdminDatabase } from "@/test/admin";
 import { resetCatalogTables } from "@/test/catalog";
 import { resetInventoryTables, truncateWithLedger } from "@/test/inventory";
 
@@ -29,6 +30,10 @@ const { db } = handle;
 
 afterAll(handle.close);
 
+// The app role is refused scrap_price changes by its privileges
+// (src/db/privileges.int.test.ts); the owner shows the trigger still holds.
+const admin = getAdminDatabase();
+
 const userId = "receiving-schema-user";
 let orderId = "";
 let orderLineId = "";
@@ -36,9 +41,9 @@ let itemId = "";
 let yardId = "";
 
 beforeEach(async () => {
-  await truncateWithLedger(db, sql`truncate table "user" cascade`);
-  await resetInventoryTables(handle);
-  await resetCatalogTables(handle);
+  await truncateWithLedger(sql`truncate table "user" cascade`);
+  await resetInventoryTables();
+  await resetCatalogTables();
   await db.insert(user).values({
     id: userId,
     name: "Văn Tùng",
@@ -270,10 +275,10 @@ describe("scrap_price", () => {
       .values({ pricePerKg: 7_500, createdBy: userId });
     expect(
       await errorMessage(() =>
-        db.update(scrapPrice).set({ pricePerKg: 8_000 }),
+        admin.update(scrapPrice).set({ pricePerKg: 8_000 }),
       ),
     ).toContain("Giá sắt vụn chỉ ghi thêm");
-    expect(await errorMessage(() => db.delete(scrapPrice))).toContain(
+    expect(await errorMessage(() => admin.delete(scrapPrice))).toContain(
       "Giá sắt vụn chỉ ghi thêm",
     );
     const rows = await db.select().from(scrapPrice);

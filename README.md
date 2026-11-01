@@ -17,7 +17,7 @@ Cần: Node 24 (xem `.nvmrc`), Docker Desktop.
 npm ci
 cp .env.example .env     # chỉnh nếu cần
 npm run db:up            # bật PostgreSQL 17 trong Docker, chờ tới khi sẵn sàng
-npm run db:migrate       # chạy migration trong drizzle/ vào DATABASE_URL
+npm run db:migrate       # chạy migration trong drizzle/ bằng owner (DATABASE_URL_MIGRATE), cấp quyền cho erp_app
 npm run db:seed:dev      # 5 tài khoản mẫu, mật khẩu là DEV_SEED_PASSWORD trong .env
 npm run dev              # http://localhost:3000, đăng nhập bằng giamdoc / ketoan / kinhdoanh / thukho / xuong
 ```
@@ -25,7 +25,7 @@ npm run dev              # http://localhost:3000, đăng nhập bằng giamdoc /
 ### Đăng nhập và tài khoản
 
 - Mọi trang đều cần đăng nhập. Tài khoản do Giám đốc tạo ở **Cài đặt › Người dùng**; người mới nhận mật khẩu tạm và phải đổi ở lần đăng nhập đầu.
-- **Cài đặt lần đầu (kể cả production):** đặt `DATABASE_URL`, `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), `BETTER_AUTH_URL` (địa chỉ công khai, ví dụ `https://erp.congty.vn`), chạy `npm run db:migrate`, rồi:
+- **Cài đặt lần đầu (kể cả production):** tạo role app `erp_app` (xem mục Cơ sở dữ liệu), đặt `DATABASE_URL` (role `erp_app`), `DATABASE_URL_MIGRATE` (owner, chỉ ở máy chạy migration, không đặt trên server app), `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), `BETTER_AUTH_URL` (địa chỉ công khai, ví dụ `https://erp.congty.vn`), chạy `npm run db:migrate`, rồi:
 
   ```bash
   npm run auth:create-director -- --username minhanh --name "Minh Anh"
@@ -47,6 +47,11 @@ npm run dev              # http://localhost:3000, đăng nhập bằng giamdoc /
 - `npm run db:up` tạo 2 DB trong cùng container:
   - `scaffolding_erp` — dùng khi chạy app (`DATABASE_URL`).
   - `scaffolding_erp_test` — chỉ cho integration test (`TEST_DATABASE_URL`).
+- **Hai role** (change `db-least-privilege`, 0.2 #36):
+  - `erp` — owner (chủ bảng): chỉ dùng cho `npm run db:migrate` (`DATABASE_URL_MIGRATE`) và dọn bảng trong integration test (`TEST_DATABASE_URL_MIGRATE`).
+  - `erp_app` — app, script, E2E, code trong integration test (`DATABASE_URL`, `TEST_DATABASE_URL`). Không sửa/xóa được `inventory_ledger`, `activity_log`, `scrap_price`; không TRUNCATE, không đổi cấu trúc bảng.
+  - Volume Docker mới tự có `erp_app`. Volume tạo trước change này: chạy `npm run db:roles` một lần, cập nhật `.env` theo `.env.example`, rồi migrate lại cả 2 DB (lệnh dưới).
+  - `npm run db:migrate` cấp lại quyền cho `erp_app` mỗi lần chạy (bảng mới tự có quyền). Thêm bảng chỉ ghi thêm mới thì thêm tên vào `APPEND_ONLY_TABLES` (`src/db/grants.ts`); test sẽ đỏ nếu quên.
 - Cổng mặc định `5432`. Máy đã có Postgres chiếm cổng này thì đặt `POSTGRES_PORT=5433` trong `.env` và sửa cổng trong 2 URL.
 - `npm run db:down` tắt container, **giữ** dữ liệu. Muốn xoá sạch: `docker compose down -v`.
 - Thêm bảng: sửa `src/db/schema/`, chạy `npm run db:generate`, xem lại file SQL mới trong `drizzle/`, rồi `npm run db:migrate`. Không dùng `drizzle-kit push`.
@@ -54,10 +59,11 @@ npm run dev              # http://localhost:3000, đăng nhập bằng giamdoc /
 
 ### Test
 
-- `npm test` — unit, component và integration. Integration cần `TEST_DATABASE_URL`; thiếu thì được bỏ qua kèm thông báo (trên CI thì bắt buộc).
-- `npm run test:int` — chỉ integration test. Chạy migration vào DB test trước nếu test cần bảng: `DATABASE_URL=$TEST_DATABASE_URL npm run db:migrate`.
+- `npm test` — unit, component và integration. Integration cần `TEST_DATABASE_URL` (role `erp_app`) và `TEST_DATABASE_URL_MIGRATE` (owner, để dọn bảng); thiếu thì được bỏ qua kèm thông báo (trên CI thì bắt buộc).
+- `npm run test:int` — chỉ integration test. Chạy migration vào DB test trước nếu test cần bảng: `DATABASE_URL_MIGRATE=postgres://erp:erp@localhost:5432/scaffolding_erp_test npm run db:migrate`.
 - `npm run test:e2e` — Playwright trên Microsoft Edge, tự bật `next dev` ở local (trên CI hoặc khi chạy `npm run test:e2e:prod` sẽ chạy trên bản production build). Cần DB dev đã migrate và `E2E_PASSWORD` trong `.env`; global setup tạo lại các tài khoản `e2e.*` mỗi lần chạy. Máy không có Edge: `PW_CHANNEL=chromium npm run test:e2e`. Đang chạy `npm run dev` ở cổng khác thì đặt `PW_PORT` trùng cổng đó để dùng lại, đừng chạy hai server cùng lúc.
 - `npm run test:e2e:prod` — Build production với `E2E=1` rồi chạy Playwright E2E trên bản production build.
+- Bản production build từ chối khởi động khi có `DATABASE_URL_MIGRATE`. Chạy `npm start` ở local với `.env` có biến này thì để trống nó: `DATABASE_URL_MIGRATE= npm start` (Playwright tự làm vậy).
 - Test ảnh mốc (`@visual`) chỉ chạy trên CI. Muốn tạo hoặc cập nhật ảnh mốc: GitHub → Actions → **Update Playwright snapshots** → chọn nhánh → Run workflow. Workflow commit ảnh vào nhánh rồi tự chạy lại CI.
 
 ### Design token

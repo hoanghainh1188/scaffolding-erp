@@ -530,7 +530,7 @@ describe("refusals roll everything back", () => {
   });
 
   it("needs a scrap price only when there is scrap", async () => {
-    await truncateWithLedger(ctx.db, sql`truncate table scrap_price cascade`);
+    await truncateWithLedger(sql`truncate table scrap_price cascade`);
     const withScrap = await draft();
     expect(
       await postRepairOrder(ctx.db, fx.accountant, withScrap, {}, OCT_28),

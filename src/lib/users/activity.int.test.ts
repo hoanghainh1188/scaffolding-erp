@@ -26,7 +26,7 @@ let minhanh: TestUser;
 let thuha: TestUser;
 
 beforeEach(async () => {
-  await resetAuthTables(ctx);
+  await resetAuthTables();
   minhanh = await createTestUser(ctx, {
     role: "DIRECTOR",
     username: "minhanh",

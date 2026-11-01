@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase } from "@/db/client";
+import { getAdminDatabase } from "@/test/admin";
 import { resetCatalogTables } from "@/test/catalog";
 import { resetInventoryTables, truncateWithLedger } from "@/test/inventory";
 
@@ -19,6 +20,10 @@ const { db } = handle;
 
 afterAll(handle.close);
 
+// The app role is refused by its privileges before the trigger runs
+// (src/db/privileges.int.test.ts); the owner shows the trigger still holds.
+const admin = getAdminDatabase();
+
 const APPEND_ONLY = "Sổ kho chỉ ghi thêm, sai thì lập phiếu điều chỉnh";
 
 let itemId = "";
@@ -27,9 +32,9 @@ const userId = "inventory-schema-user";
 
 beforeEach(async () => {
   // "user" first: its CASCADE also empties the catalog tables.
-  await truncateWithLedger(db, sql`truncate table "user" cascade`);
-  await resetInventoryTables(handle);
-  await resetCatalogTables(handle);
+  await truncateWithLedger(sql`truncate table "user" cascade`);
+  await resetInventoryTables();
+  await resetCatalogTables();
   await db.insert(user).values({
     id: userId,
     name: "Thu Hà",
@@ -99,7 +104,7 @@ describe("inventory_ledger is append-only", () => {
   it("refuses UPDATE", async () => {
     await db.insert(inventoryLedger).values(line());
     const error = await failure(
-      db.update(inventoryLedger).set({ quantity: "200.000" }),
+      admin.update(inventoryLedger).set({ quantity: "200.000" }),
     );
     expect(error.message).toBe(APPEND_ONLY);
     const [row] = await db
@@ -110,7 +115,7 @@ describe("inventory_ledger is append-only", () => {
 
   it("refuses DELETE", async () => {
     await db.insert(inventoryLedger).values(line());
-    const error = await failure(db.delete(inventoryLedger));
+    const error = await failure(admin.delete(inventoryLedger));
     expect(error.message).toBe(APPEND_ONLY);
     expect(await countLines()).toBe(1);
   });
@@ -118,7 +123,7 @@ describe("inventory_ledger is append-only", () => {
   it("refuses TRUNCATE without the test flag", async () => {
     await db.insert(inventoryLedger).values(line());
     const error = await failure(
-      db.execute(sql`truncate table "inventory_ledger"`),
+      admin.execute(sql`truncate table "inventory_ledger"`),
     );
     expect(error.message).toBe(APPEND_ONLY);
     expect(await countLines()).toBe(1);
@@ -213,7 +218,9 @@ describe("inventory_ledger checks", () => {
         documentCode: "ĐCG-2026-001",
       }),
     );
-    const error = await failure(db.update(inventoryLedger).set({ amount: 1 }));
+    const error = await failure(
+      admin.update(inventoryLedger).set({ amount: 1 }),
+    );
     expect(error.message).toContain(APPEND_ONLY);
   });
 

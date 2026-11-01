@@ -3,17 +3,23 @@ import { loadEnv } from "vite";
 import { defineConfig, type TestProjectConfiguration } from "vitest/config";
 
 // Vitest does not put .env values on process.env by itself; read them here so
-// TEST_DATABASE_URL from .env / .env.local reaches the integration project.
+// the test database URLs from .env / .env.local reach the integration project.
+// Code under test connects as the app role, table resets as the owner
+// (db-least-privilege D5).
 const env = { ...loadEnv("test", process.cwd(), ""), ...process.env };
 const isCI = env.CI === "true";
-const hasTestDatabase = Boolean(env.TEST_DATABASE_URL);
+const DATABASE_VARIABLES = ["TEST_DATABASE_URL", "TEST_DATABASE_URL_MIGRATE"];
+const missing = DATABASE_VARIABLES.filter((name) => !env[name]);
+const hasTestDatabase = missing.length === 0;
 
 if (!hasTestDatabase && isCI) {
-  throw new Error("TEST_DATABASE_URL is required on CI for integration tests.");
+  throw new Error(
+    `${missing.join(" and ")} required on CI for integration tests.`,
+  );
 }
 if (!hasTestDatabase) {
   console.warn(
-    "[vitest] TEST_DATABASE_URL is not set: skipping the integration project. Run `npm run db:up` and copy .env.example to .env.",
+    `[vitest] ${missing.join(" and ")} not set: skipping the integration project. Run \`npm run db:up\` and copy .env.example to .env.`,
   );
 }
 
@@ -43,7 +49,11 @@ const integration: TestProjectConfiguration = {
     name: "integration",
     environment: "node",
     include: ["src/**/*.int.test.ts"],
-    env: { TEST_DATABASE_URL: env.TEST_DATABASE_URL ?? "" },
+    env: {
+      TEST_DATABASE_URL: env.TEST_DATABASE_URL ?? "",
+      TEST_DATABASE_URL_MIGRATE: env.TEST_DATABASE_URL_MIGRATE ?? "",
+    },
+    setupFiles: ["./src/test/setup-integration.ts"],
     // Tests share one database; run files one at a time.
     fileParallelism: false,
   },
