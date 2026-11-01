@@ -9,8 +9,9 @@ services:
       POSTGRES_PASSWORD: erp
       POSTGRES_DB: scaffolding_erp
       TZ: UTC
+    # Loopback only: the local password is not meant for the office network.
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro

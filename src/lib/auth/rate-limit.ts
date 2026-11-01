@@ -22,20 +22,34 @@ export function clientIp(headers: Headers): string {
 }
 
 /**
- * Counts one sign-in attempt for `ip` in fixed one-minute windows, in a
- * single statement so concurrent attempts never lose a count. Returns
+ * Counts one sign-in attempt for `ip` in fixed one-minute windows. Returns
  * whether this attempt is within the limit.
  */
-export async function consumeSignInAttempt(
+export function consumeSignInAttempt(
   db: Executor,
   ip: string,
   now: Date,
   limit: number = SIGN_IN_LIMIT_PER_WINDOW,
 ): Promise<boolean> {
-  const key = `sign-in:${ip}`;
+  return consumeRateLimit(db, `sign-in:${ip}`, now, limit);
+}
+
+/**
+ * Counts one hit for `key` in fixed windows, in a single statement so
+ * concurrent hits never lose a count. Returns whether this hit is within the
+ * limit. Prefix `key` with the feature ("sign-in:", "telemetry:") so budgets
+ * stay separate.
+ */
+export async function consumeRateLimit(
+  db: Executor,
+  key: string,
+  now: Date,
+  limit: number,
+  windowSeconds: number = SIGN_IN_WINDOW_SECONDS,
+): Promise<boolean> {
   // Raw sql`` params are not mapped by column type: pass ISO text.
   const nowParam = sql`${now.toISOString()}::timestamptz`;
-  const fresh = sql`${authRateLimit.windowStart} <= ${nowParam} - make_interval(secs => ${SIGN_IN_WINDOW_SECONDS})`;
+  const fresh = sql`${authRateLimit.windowStart} <= ${nowParam} - make_interval(secs => ${windowSeconds})`;
   const [row] = await db
     .insert(authRateLimit)
     .values({ key, windowStart: now, count: 1 })
