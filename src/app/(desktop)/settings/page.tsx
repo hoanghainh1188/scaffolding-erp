@@ -22,7 +22,8 @@ export default async function Page() {
         <span className="flex flex-1 flex-col gap-1">
           <span className="text-label">Thông tin công ty</span>
           <span className="text-body text-muted-foreground">
-            Tên doanh nghiệp, mã số thuế, địa chỉ, hotline, ngân hàng và logo cho phiếu in.
+            Tên doanh nghiệp, mã số thuế, địa chỉ, hotline, ngân hàng và logo
+            cho phiếu in.
           </span>
         </span>
         <ChevronRight aria-hidden className="size-5 text-muted-foreground" />

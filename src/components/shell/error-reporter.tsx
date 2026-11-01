@@ -74,7 +74,9 @@ export function ErrorReporter(): null {
       const reason = event.reason;
       const isError = reason instanceof Error;
       sendReport({
-        message: isError ? reason.message : String(reason || "Unhandled promise rejection"),
+        message: isError
+          ? reason.message
+          : String(reason || "Unhandled promise rejection"),
         name: isError ? reason.name : "UnhandledRejection",
         stack: isError ? reason.stack : undefined,
         url: window.location.href,

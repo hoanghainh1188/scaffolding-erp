@@ -27,8 +27,8 @@ export default async function CompanySettingsPage() {
       <div className="flex flex-col gap-1">
         <h1 className="text-h1">Thông tin công ty</h1>
         <p className="text-body text-muted-foreground">
-          Cài đặt tên doanh nghiệp, mã số thuế, địa chỉ, số điện thoại, tài khoản ngân hàng
-          và logo cho các biểu mẫu in ấn và tiêu đề hệ thống.
+          Cài đặt tên doanh nghiệp, mã số thuế, địa chỉ, số điện thoại, tài
+          khoản ngân hàng và logo cho các biểu mẫu in ấn và tiêu đề hệ thống.
         </p>
       </div>
 
