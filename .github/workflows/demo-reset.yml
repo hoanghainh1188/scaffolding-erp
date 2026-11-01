@@ -49,7 +49,7 @@ jobs:
         run: |
           URL="${DEMO_URL:-https://scaffolding-erp-demo.vercel.app}"
           echo "Checking health endpoint at $URL/api/health..."
-          curl --fail --retry 10 --retry-delay 3 -s "$URL/api/health" | grep -q '"ok":true'
+          curl --fail --retry 10 --retry-delay 3 -s "$URL/api/health" | grep -q '"status":"ok"'
           echo "Health check succeeded."
 
       - name: Verify inventory ledger integrity
