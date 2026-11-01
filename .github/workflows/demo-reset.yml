@@ -1,0 +1,64 @@
+name: Demo Reset
+
+on:
+  schedule:
+    # 17:00 UTC is 00:00 midnight in Vietnam (UTC+7)
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: demo-ops
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  reset:
+    name: Reset demo branch from seed
+    runs-on: ubuntu-latest
+    environment: demo
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Reset Neon demo branch to clean seed state
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+        run: |
+          if [ -z "$NEON_API_KEY" ] || [ -z "$NEON_PROJECT_ID" ]; then
+            echo "::error::NEON_API_KEY and NEON_PROJECT_ID secrets are required."
+            exit 1
+          fi
+          npx --yes neonctl branches reset demo --parent \
+            --project-id "$NEON_PROJECT_ID" \
+            --api-key "$NEON_API_KEY"
+
+      - name: Wait for database compute and check health endpoint
+        env:
+          DEMO_URL: ${{ secrets.DEMO_URL }}
+        run: |
+          URL="${DEMO_URL:-https://scaffolding-erp-demo.vercel.app}"
+          echo "Checking health endpoint at $URL/api/health..."
+          curl --fail --retry 10 --retry-delay 3 -s "$URL/api/health" | grep -q '"ok":true'
+          echo "Health check succeeded."
+
+      - name: Verify inventory ledger integrity
+        env:
+          DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL }}
+        run: |
+          if [ -n "$DATABASE_URL" ]; then
+            echo "Running inventory ledger integrity check..."
+            npm run inventory:check
+          else
+            echo "DEMO_DATABASE_URL not set; skipping direct inventory check."
+          fi

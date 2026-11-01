@@ -1,0 +1,99 @@
+name: Deploy Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      reseed:
+        description: "Re-seed demo data on seed branch after migration"
+        type: boolean
+        default: false
+      reset_demo_branch:
+        description: "Reset demo branch from seed branch using neonctl"
+        type: boolean
+        default: false
+
+concurrency:
+  group: demo-ops
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Migrate database and deploy demo
+    runs-on: ubuntu-latest
+    environment: demo
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Migrate Neon seed branch (unpooled direct URL)
+        env:
+          DATABASE_URL: ${{ secrets.DEMO_SEED_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DEMO_SEED_DATABASE_URL is required to run migrations."
+            exit 1
+          fi
+          echo "Running migrations on seed branch..."
+          npm run db:migrate
+
+      - name: Optionally re-seed clean baseline data
+        if: ${{ inputs.reseed }}
+        env:
+          NODE_ENV: development
+          DATABASE_URL: ${{ secrets.DEMO_SEED_DATABASE_URL }}
+          DEV_SEED_PASSWORD: ${{ secrets.DEV_SEED_PASSWORD }}
+        run: |
+          echo "Seeding updated demo data..."
+          npm run db:seed:demo
+
+      - name: Update demo branch schema (migrate or reset from seed)
+        env:
+          DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL_UNPOOLED }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+          RESET_DEMO: ${{ inputs.reset_demo_branch }}
+        run: |
+          if [ "$RESET_DEMO" = "true" ] && [ -n "$NEON_API_KEY" ] && [ -n "$NEON_PROJECT_ID" ]; then
+            echo "Resetting demo branch directly from updated seed branch..."
+            npx --yes neonctl branches reset demo --parent \
+              --project-id "$NEON_PROJECT_ID" \
+              --api-key "$NEON_API_KEY"
+          elif [ -n "$DATABASE_URL" ]; then
+            echo "Running direct migrations on demo branch..."
+            npm run db:migrate
+          else
+            echo "No demo unpooled URL or reset option specified; skipping demo branch migration."
+          fi
+
+      - name: Trigger Vercel Deploy Hook
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK is required to trigger deployment."
+            exit 1
+          fi
+          echo "Triggering Vercel deployment hook..."
+          curl -s -X POST "$VERCEL_DEPLOY_HOOK"
+
+      - name: Wait and verify health check
+        env:
+          DEMO_URL: ${{ secrets.DEMO_URL }}
+        run: |
+          URL="${DEMO_URL:-https://scaffolding-erp-demo.vercel.app}"
+          echo "Waiting 20 seconds for deployment to begin..."
+          sleep 20
+          echo "Verifying health endpoint at $URL/api/health..."
+          curl --fail --retry 15 --retry-delay 5 -s "$URL/api/health" | grep -q '"ok":true'
+          echo "Demo deployment verified healthy."
