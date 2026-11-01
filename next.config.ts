@@ -2,16 +2,34 @@ import type { NextConfig } from "next";
 
 // Applied to every response. Content-Security-Policy (CSP) with a per-request
 // nonce is handled dynamically in src/proxy.ts.
-export const securityHeaders = [
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  // Camera stays allowed for this origin: QR scanning and damage photos later.
-  {
-    key: "Permissions-Policy",
-    value: "camera=(self), microphone=(), geolocation=()",
-  },
-];
+export function buildSecurityHeaders(
+  isDev: boolean,
+): { key: string; value: string }[] {
+  return [
+    { key: "X-Content-Type-Options", value: "nosniff" },
+    { key: "X-Frame-Options", value: "DENY" },
+    { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+    // Camera stays allowed for this origin: QR scanning and damage photos later.
+    {
+      key: "Permissions-Policy",
+      value: "camera=(self), microphone=(), geolocation=()",
+    },
+    // Vercel adds HSTS on its own domains; this covers self-hosting (#100).
+    // Browsers ignore it over plain http, so local production builds are safe.
+    ...(isDev
+      ? []
+      : [
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains",
+          },
+        ]),
+  ];
+}
+
+export const securityHeaders = buildSecurityHeaders(
+  process.env.NODE_ENV === "development",
+);
 
 const nextConfig: NextConfig = {
   // Playwright runs on `next dev` (design D15); hide the dev indicator there.
