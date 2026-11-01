@@ -495,3 +495,99 @@ describe("protecting the last director", () => {
     expect((await statusOf(lanphuong.id))?.role).toBe("ACCOUNTANT");
   });
 });
+
+describe("demo account protection in service (K9)", () => {
+  let director: TestUser;
+  let demoSales: TestUser;
+  let normalUser: TestUser;
+
+  beforeEach(async () => {
+    director = await createTestUser(ctx, {
+      role: "DIRECTOR",
+      username: "director_boss",
+    });
+    demoSales = await createTestUser(ctx, {
+      role: "SALES",
+      username: "kinhdoanh",
+    });
+    normalUser = await createTestUser(ctx, {
+      role: "SALES",
+      username: "regular_user",
+    });
+  });
+
+  it("blocks resetPassword, lockUser, changeRole on demo accounts when DEMO_MODE=true", async () => {
+    process.env.DEMO_MODE = "true";
+    try {
+      const resetRes = await resetPassword(ctx, director, demoSales.id);
+      expect(resetRes).toEqual({
+        ok: false,
+        status: 409,
+        error: USER_MESSAGES.demoResetBlocked,
+      });
+
+      const lockRes = await lockUser(ctx, director, demoSales.id);
+      expect(lockRes).toEqual({
+        ok: false,
+        status: 409,
+        error: USER_MESSAGES.demoLockBlocked,
+      });
+
+      const roleRes = await changeRole(
+        ctx,
+        director,
+        demoSales.id,
+        "ACCOUNTANT",
+      );
+      expect(roleRes).toEqual({
+        ok: false,
+        status: 409,
+        error: USER_MESSAGES.demoRoleBlocked,
+      });
+    } finally {
+      delete process.env.DEMO_MODE;
+    }
+  });
+
+  it("allows operations on demo accounts when DEMO_MODE=false", async () => {
+    process.env.DEMO_MODE = "false";
+    try {
+      const resetRes = await resetPassword(ctx, director, demoSales.id);
+      expect(resetRes.ok).toBe(true);
+
+      const roleRes = await changeRole(
+        ctx,
+        director,
+        demoSales.id,
+        "ACCOUNTANT",
+      );
+      expect(roleRes.ok).toBe(true);
+
+      const lockRes = await lockUser(ctx, director, demoSales.id);
+      expect(lockRes.ok).toBe(true);
+    } finally {
+      delete process.env.DEMO_MODE;
+    }
+  });
+
+  it("allows operations on non-demo accounts even when DEMO_MODE=true", async () => {
+    process.env.DEMO_MODE = "true";
+    try {
+      const resetRes = await resetPassword(ctx, director, normalUser.id);
+      expect(resetRes.ok).toBe(true);
+
+      const roleRes = await changeRole(
+        ctx,
+        director,
+        normalUser.id,
+        "ACCOUNTANT",
+      );
+      expect(roleRes.ok).toBe(true);
+
+      const lockRes = await lockUser(ctx, director, normalUser.id);
+      expect(lockRes.ok).toBe(true);
+    } finally {
+      delete process.env.DEMO_MODE;
+    }
+  });
+});

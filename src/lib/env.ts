@@ -64,6 +64,8 @@ const envSchema = z.object({
     z.coerce.number().int().positive().default(3),
   ),
   DB_PREPARE: optional(booleanSchema.default(true)),
+  // Public demonstration mode for internet trial deployments (spec K9).
+  DEMO_MODE: optional(booleanSchema.default(false)),
 });
 
 type ParsedEnv = z.infer<typeof envSchema>;
@@ -87,6 +89,7 @@ const RULES: Readonly<Record<EnvKey, string>> = {
   DB_IDLE_TIMEOUT_SECONDS: "phải là số nguyên không âm",
   DB_CONNECT_TIMEOUT_SECONDS: "phải là số nguyên dương",
   DB_PREPARE: "phải là boolean (true hoặc false)",
+  DEMO_MODE: "phải là boolean (true hoặc false)",
 };
 
 type EnvKey = keyof ParsedEnv;
@@ -98,8 +101,12 @@ export function parseEnv(
   const keys = result.success
     ? []
     : [...new Set(result.error.issues.map((issue) => issue.path[0] as EnvKey))];
+  // In Vercel Preview deployments, derive BETTER_AUTH_URL from VERCEL_URL if not set.
+  let authUrl = result.success ? result.data.BETTER_AUTH_URL : undefined;
+  if (!authUrl && source.VERCEL_ENV === "preview" && source.VERCEL_URL) {
+    authUrl = `https://${source.VERCEL_URL}`;
+  }
   // The auth URL has a local default, but production must name its own.
-  const authUrl = result.success ? result.data.BETTER_AUTH_URL : undefined;
   if (result.success && !authUrl && result.data.NODE_ENV === "production") {
     keys.push("BETTER_AUTH_URL");
   }
@@ -119,4 +126,17 @@ let cached: Env | undefined;
 export function getEnv(): Env {
   cached ??= parseEnv(process.env);
   return cached;
+}
+
+/** Whether the app runs in public demonstration mode (spec K9). */
+export function isDemoMode(): boolean {
+  if (process.env.DEMO_MODE !== undefined) {
+    const raw = process.env.DEMO_MODE.trim().toLowerCase();
+    return ["true", "1", "yes"].includes(raw);
+  }
+  try {
+    return getEnv().DEMO_MODE;
+  } catch {
+    return false;
+  }
 }

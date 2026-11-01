@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { DemoBanner } from "@/components/shell/demo-banner";
 import { brandColors } from "@/lib/brand-colors";
+import { isDemoMode } from "@/lib/env";
 
 import "./globals.css";
 
@@ -22,12 +24,15 @@ const body = Be_Vietnam_Pro({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: { default: "Scaffolding ERP", template: "%s · Scaffolding ERP" },
-  description: "Quản lý thu mua, kho, sửa chữa, bán và cho thuê giàn giáo.",
-  appleWebApp: { capable: true, title: "Kho", statusBarStyle: "default" },
-  icons: { apple: "/icons/icon-192.png" },
-};
+export function generateMetadata(): Metadata {
+  return {
+    title: { default: "Scaffolding ERP", template: "%s · Scaffolding ERP" },
+    description: "Quản lý thu mua, kho, sửa chữa, bán và cho thuê giàn giáo.",
+    appleWebApp: { capable: true, title: "Kho", statusBarStyle: "default" },
+    icons: { apple: "/icons/icon-192.png" },
+    robots: isDemoMode() ? { index: false, follow: false } : undefined,
+  };
+}
 
 // viewport-fit=cover lets the phone layout reach under the notch and home
 // indicator; AppBar and BottomNav pad themselves with safe-area insets.
@@ -42,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="vi" className={`${display.variable} ${body.variable}`}>
       <body className="min-h-dvh">
+        <DemoBanner />
         <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>
