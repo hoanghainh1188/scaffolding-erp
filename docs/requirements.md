@@ -55,6 +55,9 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 34 | Nhật ký thao tác | Mọi thao tác làm đổi dữ liệu và mỗi lần đăng nhập thành công ghi vào **nhật ký chỉ ghi thêm** (D18), cùng transaction với thao tác; **không ai sửa, xóa được**, kể cả Giám đốc; **giữ mãi** ở MVP. Chỉ Giám đốc xem. **Giờ làm việc 06:00–21:00 giờ VN**: thao tác trước 06:00 hoặc từ 21:00 trở đi gắn cờ "Ngoài giờ". CCCD, số tài khoản chỉ lưu dạng đã che; không ghi mật khẩu. Xuất Excel trong MVP, tối đa 10.000 dòng một lần. Không ghi lại dữ liệu trước khi có nhật ký (chốt 29/10/2026, change `activity-log`) |
 | 35 | Điều chỉnh giá trị kho | Sửa giá trị đã ghi sai bằng **phiếu điều chỉnh giá trị** (`ĐCG`): mỗi dòng là (mã hàng + tình trạng) + chênh lệch giá trị, **không đổi số lượng**; **Giám đốc duyệt** mới ghi sổ. Sổ kho ghi một dòng `REVALUE` **số lượng 0, không có vị trí**; giá BQ mới = (tồn × giá BQ + chênh lệch) ÷ tồn, tồn gộp mọi vị trí **kể cả công trình** (#24), tính theo số **lúc duyệt**, làm tròn 1 ₫ (#10). Tồn bằng 0 thì **chặn**; còn tồn thì **toàn bộ** chênh lệch vào hàng đang tồn (tổng giá vốn công ty vẫn đúng); giá trị sau âm thì chặn. **Lý do và chứng từ gốc bắt buộc** (chứng từ phải có dòng sổ của từng mã + tình trạng trên phiếu). Chia lại tự động theo phiếu gốc **chỉ cho chi phí chuyến của phiếu nhập**, và chỉ khi dựng lại ra đúng số đã ghi; trường hợp khác nhập dòng tay (chốt 29/10/2026, change `stock-value-adjustment`) |
 | 36 | Quyền kết nối cơ sở dữ liệu | Ứng dụng kết nối DB bằng **role quyền tối thiểu** (`erp_app`): không là chủ bảng, không đổi cấu trúc, không TRUNCATE. Ba bảng chỉ ghi thêm (`inventory_ledger`, `activity_log`, `scrap_price`) role app chỉ có `SELECT, INSERT`. **Chỉ role owner** được chạy migration và sao lưu/khôi phục; URL owner (`DATABASE_URL_MIGRATE`) **không bao giờ nằm trên server app**. Trigger chỉ ghi thêm vẫn giữ làm lớp chặn thứ hai. Lý do: rà soát bảo mật 01/11/2026 — lộ `DATABASE_URL` hoặc lỗi chèn SQL không được sửa/xóa được sổ kho và nhật ký (chốt 01/11/2026, change `db-least-privilege`) |
+| 37 | Luật mã và quy cách vật tư | Mã vật tư **cho phép ký tự thực tế**: dấu phẩy `,`, dấu sao `*`, dấu cộng `+`, gạch ngang `-`, khoảng trắng (`H1,7`, `KU0,5`, `X5*10*3`, `KB+KU34`, `NỐI 34`). Hàng **có đầu / không đầu** (VD `H1,7` và `H1,7KĐ`) là **hai mã vật tư riêng biệt** trong danh mục (cùng trọng lượng chuẩn). Mã ghép (`KB+KU34`, `KB+KU38`) quản lý như một mã riêng. Đơn vị tính mở rộng thêm: `Mét` (M), `Kg`, `Bó`, `Sọt`, `Cuộn`, `Hộp`, `Thùng` (chốt 01/11/2026 từ file thực tế kế toán, change `catalog-extensions`) |
+| 38 | Nghiệp vụ điều chuyển công trình, mua lại và đổi hàng | **Cho phép chuyển hàng thẳng giữa các công trình**: ghi nhận giảm số hàng ở công trình xuất và tăng số hàng ở công trình nhận mà không cần qua bãi trung gian. Nghiệp vụ **"Mua lại"**: vật tư phụ kiện tiêu hao (ty ren, bát chuồn...) khách mua đứt thì ghi nhận thu hồi giảm số lượng phải trả ở hợp đồng thuê và chuyển sang doanh thu bán hàng. Nghiệp vụ **"Đổi hàng"**: đổi quy cách vật tư tại công trình (xuất đổi chéo dài ↔ chéo ngắn, xuất đầu nối rời ghép vào khung không đầu) (chốt 01/11/2026 từ file thực tế kế toán, change `returns-and-compensation`) |
+| 39 | Thời hạn thuê tối thiểu và VAT công nợ | Hợp đồng thuê có điều khoản **thời gian thuê tối thiểu (mặc định 45 ngày)**: trả hàng trước 45 ngày vẫn tính tròn 45 ngày thuê. **Thuế VAT**: tiền thuế VAT chỉ tính và cộng vào công nợ khi khách hàng yêu cầu xuất hóa đơn (chốt 01/11/2026 từ file thực tế kế toán, change `contracts` và `rental-billing`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 
@@ -62,12 +65,11 @@ Các quyết định dưới đây có thể đổi sau khi chủ trả lời c�
 
 | Quyết định | Điều có thể đổi | Câu hỏi |
 |---|---|---|
-| #4 Tính tiền thuê | Có trừ ngày Tết/lễ không; giá tháng ÷ 30 hay ÷ số ngày của tháng; thuê tối thiểu | Q1, Q2 |
-| #5 Hợp đồng – công trình | Có cho chuyển hàng thẳng công trình → công trình | Q8 |
-| #8 Phạm vi kế toán | Không xuất hóa đơn, nhưng **tiền VAT có trong công nợ** theo từng hợp đồng | Q4 |
+| #4 Tính tiền thuê | Có trừ ngày Tết/lễ không; giá tháng ÷ 30 hay ÷ số ngày của tháng | Q1, Q2 (một phần) |
 | #18 Hạn thanh toán | Có phạt/lãi chậm trả không | Q5 |
-| #20 Đền bù | Bảng giá đền bù lấy từ đâu | Q6 |
-| Danh mục (`master-data`) | Luật mã vật tư (mã cũ có dấu phẩy, `*`, `+`); cho thuê mã tính theo kg/mét; đơn vị bó, sọt, mét | Q3, Q9, Q10 |
+| #20 Đền bù | Bảng giá đền bù lấy từ đâu (cố định toàn công ty hay riêng từng HĐ) | Q6 |
+| Bảo lãnh ngân hàng | Thông tin cần lưu và cơ chế cảnh báo hạn chứng thư | Q7 |
+| Sản xuất (`production-orders`) | Chi phí công thợ tính khoán theo thành phẩm hay chi phí chung | Q11 |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 
