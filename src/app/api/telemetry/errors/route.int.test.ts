@@ -4,7 +4,9 @@ import * as reporterModule from "@/lib/monitoring/reporter";
 
 describe("POST /api/telemetry/errors", () => {
   it("accepts valid error report and returns 200", async () => {
-    const reportSpy = vi.spyOn(reporterModule, "reportError").mockResolvedValue(undefined);
+    const reportSpy = vi
+      .spyOn(reporterModule, "reportError")
+      .mockResolvedValue(undefined);
 
     const request = new Request("http://localhost:3000/api/telemetry/errors", {
       method: "POST",
@@ -27,7 +29,9 @@ describe("POST /api/telemetry/errors", () => {
     const call1 = reportSpy.mock.calls[0];
     expect(call1).toBeDefined();
     const callArg = call1![0];
-    expect(callArg.message).toBe("Uncaught TypeError: Cannot read properties of undefined");
+    expect(callArg.message).toBe(
+      "Uncaught TypeError: Cannot read properties of undefined",
+    );
     expect(callArg.name).toBe("TypeError");
     expect(callArg.source).toBe("client");
 
@@ -35,7 +39,9 @@ describe("POST /api/telemetry/errors", () => {
   });
 
   it("sanitizes sensitive fields in client error context before reporting", async () => {
-    const reportSpy = vi.spyOn(reporterModule, "reportError").mockResolvedValue(undefined);
+    const reportSpy = vi
+      .spyOn(reporterModule, "reportError")
+      .mockResolvedValue(undefined);
 
     const request = new Request("http://localhost:3000/api/telemetry/errors", {
       method: "POST",

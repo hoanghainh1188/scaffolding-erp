@@ -110,7 +110,8 @@ describe("PUT /api/settings/company", () => {
       website: "https://anphat.vn",
       bankAccount: "1903123456789",
       bankName: "Techcombank",
-      logoUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      logoUrl:
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
     };
 
     const res = await PUT(

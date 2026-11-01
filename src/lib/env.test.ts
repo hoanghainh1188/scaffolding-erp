@@ -129,7 +129,9 @@ describe("parseEnv", () => {
       expect(parseEnv({ ...valid, DB_PREPARE: "0" }).DB_PREPARE).toBe(false);
       expect(parseEnv({ ...valid, DB_PREPARE: "1" }).DB_PREPARE).toBe(true);
       expect(parseEnv({ ...valid, DB_PREPARE: "true" }).DB_PREPARE).toBe(true);
-      expect(parseEnv({ ...valid, DB_PREPARE: "false" }).DB_PREPARE).toBe(false);
+      expect(parseEnv({ ...valid, DB_PREPARE: "false" }).DB_PREPARE).toBe(
+        false,
+      );
     });
 
     it("allows DB_IDLE_TIMEOUT_SECONDS to be 0", () => {

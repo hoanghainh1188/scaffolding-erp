@@ -29,7 +29,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
-    const message = typeof payload.message === "string" ? payload.message.trim() : "";
+    const message =
+      typeof payload.message === "string" ? payload.message.trim() : "";
     if (!message) {
       return NextResponse.json(
         { error: "Missing error message" },

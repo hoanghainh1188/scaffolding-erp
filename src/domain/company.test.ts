@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  COMPANY_MESSAGES,
-  companyProfileInputSchema,
-} from "./company";
+import { COMPANY_MESSAGES, companyProfileInputSchema } from "./company";
 
 describe("companyProfileInputSchema", () => {
   it("accepts valid full company profile input", () => {
@@ -85,7 +82,8 @@ describe("companyProfileInputSchema", () => {
   });
 
   it("accepts small base64 logo and rejects oversized logo (>500KB)", () => {
-    const smallLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    const smallLogo =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
     expect(
       companyProfileInputSchema.parse({
         name: "Công ty A",

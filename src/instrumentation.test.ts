@@ -4,7 +4,9 @@ import * as reporterModule from "./lib/monitoring/reporter";
 
 describe("instrumentation.ts onRequestError", () => {
   it("captures server Error instance with digest, request and context", async () => {
-    const reportSpy = vi.spyOn(reporterModule, "reportError").mockResolvedValue(undefined);
+    const reportSpy = vi
+      .spyOn(reporterModule, "reportError")
+      .mockResolvedValue(undefined);
 
     const error = new Error("Failed to render page");
     (error as unknown as { digest: string }).digest = "DIGEST_XYZ_123";
@@ -43,7 +45,9 @@ describe("instrumentation.ts onRequestError", () => {
   });
 
   it("handles non-Error objects safely", async () => {
-    const reportSpy = vi.spyOn(reporterModule, "reportError").mockResolvedValue(undefined);
+    const reportSpy = vi
+      .spyOn(reporterModule, "reportError")
+      .mockResolvedValue(undefined);
 
     await onRequestError(
       "Direct string exception thrown",

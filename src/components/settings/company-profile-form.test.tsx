@@ -50,7 +50,9 @@ describe("CompanyProfileForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Lưu thông tin" }));
 
-    expect(screen.getByText("Tên công ty không được để trống")).toBeInTheDocument();
+    expect(
+      screen.getByText("Tên công ty không được để trống"),
+    ).toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

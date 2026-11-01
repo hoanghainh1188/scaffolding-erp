@@ -39,7 +39,9 @@ describe("reporter.ts reportError", () => {
     process.env.ERROR_MONITORING_ENABLED = "true";
     process.env.SENTRY_DSN = "https://publickey@o123456.ingest.sentry.io/78910";
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response());
 
     await reportError({
       message: "Critical DB failure",
@@ -51,7 +53,9 @@ describe("reporter.ts reportError", () => {
     const call = fetchSpy.mock.calls[0];
     expect(call).toBeDefined();
     const [url, init] = call!;
-    expect(String(url)).toContain("https://o123456.ingest.sentry.io/api/78910/store/");
+    expect(String(url)).toContain(
+      "https://o123456.ingest.sentry.io/api/78910/store/",
+    );
     expect(String(url)).toContain("sentry_key=publickey");
     expect(init?.method).toBe("POST");
 
@@ -67,7 +71,9 @@ describe("reporter.ts reportError", () => {
 
     vi.spyOn(console, "error").mockImplementation(() => {});
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network timeout"));
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      new Error("Network timeout"),
+    );
 
     await expect(
       reportError({

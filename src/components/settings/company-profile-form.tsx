@@ -18,7 +18,9 @@ interface CompanyProfileFormProps {
   initialProfile: CompanyProfile;
 }
 
-export function CompanyProfileForm({ initialProfile }: CompanyProfileFormProps) {
+export function CompanyProfileForm({
+  initialProfile,
+}: CompanyProfileFormProps) {
   const router = useRouter();
 
   const [name, setName] = useState(initialProfile.name || "");
@@ -28,7 +30,9 @@ export function CompanyProfileForm({ initialProfile }: CompanyProfileFormProps) 
   const [phone, setPhone] = useState(initialProfile.phone || "");
   const [email, setEmail] = useState(initialProfile.email || "");
   const [website, setWebsite] = useState(initialProfile.website || "");
-  const [bankAccount, setBankAccount] = useState(initialProfile.bankAccount || "");
+  const [bankAccount, setBankAccount] = useState(
+    initialProfile.bankAccount || "",
+  );
   const [bankName, setBankName] = useState(initialProfile.bankName || "");
   const [logoUrl, setLogoUrl] = useState(initialProfile.logoUrl || "");
 
@@ -199,7 +203,9 @@ export function CompanyProfileForm({ initialProfile }: CompanyProfileFormProps) 
             placeholder="VD: 123 Đường Giải Phóng, Phường Phương Mai, Hà Nội"
             aria-invalid={Boolean(fieldErrors.address)}
           />
-          {fieldErrors.address && <FieldMessage message={fieldErrors.address} />}
+          {fieldErrors.address && (
+            <FieldMessage message={fieldErrors.address} />
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -243,7 +249,9 @@ export function CompanyProfileForm({ initialProfile }: CompanyProfileFormProps) 
             placeholder="VD: https://anphat.vn"
             aria-invalid={Boolean(fieldErrors.website)}
           />
-          {fieldErrors.website && <FieldMessage message={fieldErrors.website} />}
+          {fieldErrors.website && (
+            <FieldMessage message={fieldErrors.website} />
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -280,7 +288,9 @@ export function CompanyProfileForm({ initialProfile }: CompanyProfileFormProps) 
       </div>
 
       <div className="flex flex-col gap-2 border-t pt-4">
-        <label className="text-sm font-medium">Logo công ty (in trên phiếu)</label>
+        <label className="text-sm font-medium">
+          Logo công ty (in trên phiếu)
+        </label>
         <div className="flex items-center gap-4">
           {logoUrl ? (
             <div className="relative size-20 overflow-hidden rounded-md border bg-card p-1">
