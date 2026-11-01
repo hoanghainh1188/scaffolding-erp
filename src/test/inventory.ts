@@ -1,29 +1,26 @@
 // Integration-test helpers for the inventory tables (inventory-ledger D1).
 import { sql } from "drizzle-orm";
 
-import type { Database, DatabaseHandle } from "@/db/client";
+import { getAdminDatabase } from "./admin";
 
 /**
  * Runs a TRUNCATE that may reach inventory_ledger (directly or through
- * CASCADE). The ledger trigger lets it through only on a *_test database
- * and only with this flag set for the transaction.
+ * CASCADE) as the table owner: the app role has no TRUNCATE. The ledger
+ * trigger lets it through only on a *_test database and only with this
+ * flag set for the transaction.
  */
 export async function truncateWithLedger(
-  db: Database,
   statement: ReturnType<typeof sql>,
 ): Promise<void> {
-  await db.transaction(async (tx) => {
+  await getAdminDatabase().transaction(async (tx) => {
     await tx.execute(sql`set local inventory.allow_truncate = 'on'`);
     await tx.execute(statement);
   });
 }
 
 /** Empties the ledger, costs, adjustments and document numbers. */
-export async function resetInventoryTables({
-  db,
-}: Pick<DatabaseHandle, "db">): Promise<void> {
+export async function resetInventoryTables(): Promise<void> {
   await truncateWithLedger(
-    db,
     sql`truncate table "inventory_ledger", "inventory_cost", "stock_adjustment_line", "stock_adjustment", "document_counter"`,
   );
 }
@@ -51,9 +48,9 @@ export async function setupInventoryFixture(
   const { createSite } = await import("@/lib/catalog/places");
   const schema = await import("@/db/schema");
 
-  await resetAuthTables(ctx);
-  await resetCatalogTables(ctx);
-  await resetInventoryTables(ctx);
+  await resetAuthTables();
+  await resetCatalogTables();
+  await resetInventoryTables();
   const director = await createTestUser(ctx, {
     role: "DIRECTOR",
     username: "minhanh",

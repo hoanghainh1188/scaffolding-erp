@@ -27,9 +27,8 @@ let accountant: TestUser;
 let warehouse: TestUser;
 
 beforeEach(async () => {
-  await resetAuthTables(ctx);
+  await resetAuthTables();
   await truncateWithLedger(
-    ctx.db,
     sql`truncate table "activity_log", "company_profile" cascade`,
   );
 

@@ -34,7 +34,7 @@ afterAll(async () => {
   uninstall();
   await ctx.close();
 });
-beforeEach(() => resetAuthTables(ctx));
+beforeEach(() => resetAuthTables());
 
 /** The digest Next.js puts on redirect()/forbidden() errors. */
 async function interruption(run: () => Promise<unknown>): Promise<string> {

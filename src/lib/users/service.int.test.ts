@@ -41,7 +41,7 @@ const otherDeps = {
 afterAll(async () => {
   await Promise.all([ctx.close(), other.close()]);
 });
-beforeEach(() => resetAuthTables(ctx));
+beforeEach(() => resetAuthTables());
 
 async function canSignIn(username: string, password: string) {
   try {

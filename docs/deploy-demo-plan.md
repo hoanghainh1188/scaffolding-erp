@@ -34,12 +34,12 @@ Cấu hình đề xuất:
 
 | Thành phần | Chọn | Ghi chú |
 |---|---|---|
-| Vercel | **Pro** (~20 USD/người/tháng) | Gói Hobby chỉ cho dùng cá nhân, phi thương mại; demo cho khách là dùng thương mại → nên dùng Pro (đọc lại điều khoản trước khi chọn) |
+| Vercel | **Hobby** (miễn phí) cho demo — chốt 01/11/2026 | Đủ tính năng cho demo (vùng `sin1`, CSP, deploy hook). Hobby chỉ cho dùng phi thương mại: dùng để thử nội bộ / cho vài người xem; mở demo rộng cho khách hoặc chạy production thì lên **Pro** (~20 USD/người/tháng) |
 | Vùng function | `sin1` (Singapore) | Gần Việt Nam; đặt trong Project Settings hoặc `vercel.json` |
 | Neon | Gói **Free** cho demo, lên gói trả phí theo mức dùng nếu thiếu | Vùng `aws-ap-southeast-1` (Singapore), Postgres **17**. Free có giới hạn dung lượng và giờ chạy: kiểm tra lại trên trang giá Neon |
 | Fluid compute | Bật (mặc định cho project mới) | Một instance phục vụ nhiều request cùng lúc → pool kết nối được dùng lại |
 
-Chi phí ước lượng: **~20–40 USD/tháng** (Vercel Pro + Neon Free hoặc gói thấp nhất), tên miền riêng tính thêm nếu có.
+Chi phí ước lượng: **0 USD/tháng** (Vercel Hobby + Neon Free + GitHub Actions cho reset hằng đêm; repo private có 2.000 phút Actions/tháng miễn phí). Link dạng `<tên>.vercel.app`; tên miền riêng tính thêm nếu có. Lên Vercel Pro thì ~20–40 USD/tháng.
 
 So với VPS (phương án đã cân nhắc): đắt hơn ~2–4 lần và cần một change nhỏ cho kết nối DB, nhưng ít việc vận hành hơn.
 

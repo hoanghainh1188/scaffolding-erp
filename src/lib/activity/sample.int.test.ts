@@ -15,7 +15,7 @@ afterAll(ctx.close);
 let actors: SampleActors;
 
 beforeEach(async () => {
-  await resetAuthTables(ctx);
+  await resetAuthTables();
   actors = {
     director: await createTestUser(ctx, { role: "DIRECTOR" }),
     accountant: await createTestUser(ctx, { role: "ACCOUNTANT" }),

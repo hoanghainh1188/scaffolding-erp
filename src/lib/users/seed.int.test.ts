@@ -9,7 +9,7 @@ import { DEV_ACCOUNTS, seedAccounts } from "./seed";
 const ctx = createTestContext();
 
 afterAll(ctx.close);
-beforeEach(() => resetAuthTables(ctx));
+beforeEach(() => resetAuthTables());
 
 describe("seedAccounts", () => {
   it("creates the 5 sample accounts once", async () => {

@@ -58,12 +58,12 @@ jobs:
             echo "Neon credentials not set; skipping pre-deploy branch creation."
           fi
 
-      - name: Run database migrations on Production (unpooled direct URL)
+      - name: Run database migrations on Production (owner, unpooled direct URL)
         env:
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_UNPOOLED }}
+          DATABASE_URL_MIGRATE: ${{ secrets.PROD_DATABASE_URL_MIGRATE }}
         run: |
-          if [ -z "$DATABASE_URL" ]; then
-            echo "::error::PROD_DATABASE_URL_UNPOOLED secret is required to run migrations."
+          if [ -z "$DATABASE_URL_MIGRATE" ]; then
+            echo "::error::PROD_DATABASE_URL_MIGRATE secret is required to run migrations."
             exit 1
           fi
           echo "Running Drizzle migrations on production database..."
@@ -88,9 +88,10 @@ jobs:
           echo "Waiting 25 seconds for Vercel deployment to propagate..."
           sleep 25
           echo "Verifying health endpoint at $URL/api/health..."
-          curl --fail --retry 20 --retry-delay 5 -s "$URL/api/health" | grep -q '"ok":true'
+          curl --fail --retry 20 --retry-delay 5 -s "$URL/api/health" | grep -q '"status":"ok"'
           echo "Production deployment is healthy."
 
+      # PROD_DATABASE_URL is the app role erp_app, not the owner.
       - name: Verify inventory ledger consistency post-deploy
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}

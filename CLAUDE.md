@@ -29,6 +29,7 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 - **Next.js 16** (App Router, Cache Components bật sẵn) + **TypeScript** (strict, `noUncheckedIndexedAccess`) — làm cả giao diện và API. Node 24, quản lý gói bằng `npm`.
 - **PostgreSQL 17** chạy local bằng **Docker Compose**.
 - ORM: **Drizzle** (`drizzle-orm` + driver `postgres`). Migration là file SQL trong `drizzle/`, chạy bằng `npm run db:migrate`; không dùng `drizzle-kit push`.
+- **Hai role DB** (0.2 #36): app chạy bằng role quyền tối thiểu `erp_app` (`DATABASE_URL`); migration chạy bằng owner (`DATABASE_URL_MIGRATE`, không bao giờ đặt trên server app: production từ chối khởi động). `db:migrate` tự cấp lại quyền (`src/db/grants.ts`); không viết `GRANT` trong `drizzle/`.
 - Đăng nhập: **Better Auth** (tên đăng nhập + mật khẩu), mọi chỗ gọi thư viện nằm trong `src/lib/auth/`. Không có người dùng giả lập: dev và test đăng nhập bằng tài khoản thật. Bảng quyền duy nhất: `src/domain/permissions.ts`; trang gọi `requirePermission`, API bọc `withAuth` (test `src/app/route-guards.test.ts` bắt chỗ quên).
 - Test: **Vitest** (unit, component, integration) + **Playwright** (E2E trên Edge; ảnh mốc chỉ chạy trên CI).
 - **Tailwind CSS 4** + **shadcn/ui**. Design system: **Bright Blue Base** (token sinh từ `docs/design-system/tokens.json`).
@@ -44,13 +45,14 @@ Khi `docs/` và `openspec/specs/` khác nhau: **`openspec/specs/` thắng**.
 | `npm run lint` | ESLint + `scripts/check-colors.mts` (chặn màu Tailwind cứng, mã hex) |
 | `npm run typecheck` | `next typegen` + `tsc --noEmit` |
 | `npm run format` / `format:check` | Prettier |
-| `npm test` | Vitest: unit, component, integration (integration cần `TEST_DATABASE_URL`) |
+| `npm test` | Vitest: unit, component, integration (integration cần `TEST_DATABASE_URL` = `erp_app` và `TEST_DATABASE_URL_MIGRATE` = owner) |
 | `npm run test:unit` / `test:int` / `test:coverage` | Từng nhóm test; coverage ≥ 80% cho `src/domain`, `src/lib` |
 | `npm run test:e2e` | Playwright trên Edge (`next dev` mặc định; trên CI hoặc khi có `PW_PRODUCTION=1` dùng bản production build); ở local bỏ qua `@visual` |
 | `npm run test:e2e:prod` | Build production với `E2E=1` rồi chạy Playwright kiểm thử trên bản build |
 | `npm run tokens` | Sinh `src/styles/tokens.css` từ `docs/design-system/tokens.json` |
 | `npm run db:up` / `db:down` | Bật / tắt PostgreSQL trong Docker |
-| `npm run db:generate` / `db:migrate` / `db:studio` | Sinh migration SQL / chạy migration / xem dữ liệu |
+| `npm run db:generate` / `db:migrate` / `db:studio` | Sinh migration SQL / chạy migration bằng owner (`DATABASE_URL_MIGRATE`) rồi cấp quyền cho `erp_app` / xem dữ liệu |
+| `npm run db:roles` | Tạo role `erp_app` trên Postgres local/CI (volume Docker cũ); Neon tạo bằng SQL theo `docs/ops/demo.md` |
 | `npm run db:seed:dev` | Tạo 5 tài khoản mẫu cho dev (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`), mật khẩu `DEV_SEED_PASSWORD`, danh mục mẫu như thiết kế D9/D16 sổ kho mẫu (ví dụ tính tay design D11 của `inventory-ledger`), 5 đơn thu mua mẫu (đơn D3 của `purchase-orders`), giá sắt vụn 7.500 ₫/kg, một đơn đang nhận 2 chuyến như D3b (`goods-receipt`) và một phiếu sửa chữa nháp như D12 (`simple-repair`), một phiên kiểm kê chờ duyệt như D13 (`stocktake`), một phiếu sửa chi phí chuyến `ĐCG` chờ duyệt (`stock-value-adjustment`) và 11 dòng nhật ký mẫu ngày 27–28/10/2026 như D18 (`activity-log`) |
 | `npm run inventory:check` | Đối chiếu giá vốn lưu riêng với sổ kho; lệch thì thoát mã 1 |
 | `npm run auth:create-director -- --username <tên> --name "<Họ tên>"` | Tạo tài khoản Giám đốc đầu tiên, in mật khẩu tạm một lần |
@@ -119,6 +121,7 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 - **CCCD và số tài khoản** của nhà cung cấp là dữ liệu cá nhân: chỉ trả số đã che, trừ dữ liệu form sửa (`partners.manage`).
 - Lệnh sửa trong service đọc lại bản ghi **trong** transaction bằng `FOR UPDATE` trước khi kiểm tra và ghi; bản ghi được tham chiếu (vật tư trong bộ, nhà thầu của công trình) giữ `FOR SHARE`.
 - **Sổ kho** (`src/lib/inventory/`): mọi biến động ghi qua `postMovements` trong transaction của chứng từ; không INSERT thẳng vào `inventory_ledger` (DB chặn UPDATE/DELETE/TRUNCATE). Giá BQ theo (mã + tình trạng) gộp **mọi vị trí** kể cả công trình (0.2 #24); chỉ `OPENING`, `PURCHASE_IN`, `REPAIR_IN`, `REVALUE` đổi giá. Dòng `REVALUE` có số lượng 0 và **`location_id` trống** (0.2 #35): truy vấn theo vị trí phải `inner join location` hoặc lọc `location_id is not null`; thẻ kho lọc vị trí thì thêm `or location_id is null`. Không ghi lùi ngày nghiệp vụ; ngày tính thuê lấy ngày giao/trả thực tế trên phiếu, không lấy ngày ghi sổ. Đối chiếu bằng `npm run inventory:check`.
+- **Quyền DB** (`src/db/grants.ts`): role app chỉ có `SELECT, INSERT` trên bảng chỉ ghi thêm (`APPEND_ONLY_TABLES`: `inventory_ledger`, `activity_log`, `scrap_price`), CRUD trên bảng khác, không TRUNCATE/DDL. Bảng chỉ ghi thêm mới (trigger `*_append_only`) phải thêm vào `APPEND_ONLY_TABLES` (test chống lệch). Integration test chạy code bằng `erp_app`; dọn bảng và kiểm trigger bằng owner qua `getAdminDatabase()` (`src/test/admin.ts`); `truncateWithLedger(statement)` đã dùng owner.
 - **Đơn thu mua** (`src/lib/purchasing/`): đơn chỉ lưu số và chi phí **dự kiến**, **không ghi sổ kho** (`PURCHASE_IN` thuộc phiếu nhập). Chia chi phí mua hàng và chia giá lô hàng cũ theo tình trạng dùng hàm thuần `src/domain/landed-cost.ts` (phần dư lớn nhất, tổng khớp từng đồng; phế liệu theo giá sắt vụn, 0.2 #27). Chuyển trạng thái đơn qua `transition()` ở `src/domain/purchase-order.ts`; "đơn đã có phiếu nhập chưa" đọc qua `src/lib/purchasing/receipts.ts`. Sửa đơn gửi kèm `updatedAt`, lệch thì 409.
 - Trang dùng giờ hiện tại (`new Date()`) phải `await connection()` trước (Cache Components).
 - **Giữ đường lui cho SaaS** (0.2 #33, mỗi công ty một DB): (1) mã tự sinh mới dùng bảng đếm kiểu `document_counter`, không tạo thêm `CREATE SEQUENCE`; (2) mọi truy cập DB đi qua `src/db/client.ts`, không tự mở kết nối khác; (3) không cache dữ liệu nghiệp vụ ở biến cấp module; khóa của `"use cache"` phải gồm được công ty sau này; (4) không viết cứng thông tin công ty (tên, MST, địa chỉ, logo trên phiếu in): để trong bảng cài đặt; (5) hằng số nghiệp vụ (×30 ngày, ngưỡng 10 %...) đặt một chỗ trong `src/domain` và truyền làm tham số, không rải số cố định.

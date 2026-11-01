@@ -14,7 +14,7 @@ import { SHORT_SESSION_MS, SIGN_IN_MESSAGES, signIn } from "./sign-in";
 const ctx = createTestContext();
 
 afterAll(ctx.close);
-beforeEach(() => resetAuthTables(ctx));
+beforeEach(() => resetAuthTables());
 
 const ANDROID =
   "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/130.0 Mobile Safari/537.36";

@@ -36,11 +36,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Migrate Neon seed branch (unpooled direct URL)
+      # DEMO_SEED_DATABASE_URL and DEMO_DATABASE_URL_UNPOOLED are the owner
+      # role (neondb_owner); migrate also grants the app role erp_app.
+      - name: Migrate Neon seed branch (owner, unpooled direct URL)
         env:
-          DATABASE_URL: ${{ secrets.DEMO_SEED_DATABASE_URL }}
+          DATABASE_URL_MIGRATE: ${{ secrets.DEMO_SEED_DATABASE_URL }}
         run: |
-          if [ -z "$DATABASE_URL" ]; then
+          if [ -z "$DATABASE_URL_MIGRATE" ]; then
             echo "::error::DEMO_SEED_DATABASE_URL is required to run migrations."
             exit 1
           fi
@@ -59,7 +61,7 @@ jobs:
 
       - name: Update demo branch schema (migrate or reset from seed)
         env:
-          DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL_UNPOOLED }}
+          DATABASE_URL_MIGRATE: ${{ secrets.DEMO_DATABASE_URL_UNPOOLED }}
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
           RESET_DEMO: ${{ inputs.reset_demo_branch }}
@@ -69,7 +71,7 @@ jobs:
             npx --yes neonctl branches reset demo --parent \
               --project-id "$NEON_PROJECT_ID" \
               --api-key "$NEON_API_KEY"
-          elif [ -n "$DATABASE_URL" ]; then
+          elif [ -n "$DATABASE_URL_MIGRATE" ]; then
             echo "Running direct migrations on demo branch..."
             npm run db:migrate
           else
@@ -95,5 +97,5 @@ jobs:
           echo "Waiting 20 seconds for deployment to begin..."
           sleep 20
           echo "Verifying health endpoint at $URL/api/health..."
-          curl --fail --retry 15 --retry-delay 5 -s "$URL/api/health" | grep -q '"ok":true'
+          curl --fail --retry 15 --retry-delay 5 -s "$URL/api/health" | grep -q '"status":"ok"'
           echo "Demo deployment verified healthy."

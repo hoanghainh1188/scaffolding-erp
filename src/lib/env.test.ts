@@ -24,7 +24,6 @@ describe("parseEnv", () => {
     expect(parseEnv(valid)).toEqual({
       NODE_ENV: "development",
       DATABASE_URL: valid.DATABASE_URL,
-      DATABASE_URL_UNPOOLED: undefined,
       BETTER_AUTH_SECRET: SECRET,
       BETTER_AUTH_URL: "http://localhost:3000",
       DEV_SEED_PASSWORD: undefined,
@@ -107,22 +106,18 @@ describe("parseEnv", () => {
   });
 
   describe("serverless db connection env", () => {
-    it("accepts valid custom pool settings and unpooled url", () => {
+    it("accepts valid custom pool settings", () => {
       const env = parseEnv({
         ...valid,
         DB_POOL_MAX: "5",
         DB_IDLE_TIMEOUT_SECONDS: "15",
         DB_CONNECT_TIMEOUT_SECONDS: "10",
         DB_PREPARE: "false",
-        DATABASE_URL_UNPOOLED: "postgres://erp:secret@direct-host:5432/erp",
       });
       expect(env.DB_POOL_MAX).toBe(5);
       expect(env.DB_IDLE_TIMEOUT_SECONDS).toBe(15);
       expect(env.DB_CONNECT_TIMEOUT_SECONDS).toBe(10);
       expect(env.DB_PREPARE).toBe(false);
-      expect(env.DATABASE_URL_UNPOOLED).toBe(
-        "postgres://erp:secret@direct-host:5432/erp",
-      );
     });
 
     it("parses DB_PREPARE flexibly (1, 0, true, false)", () => {
@@ -171,13 +166,43 @@ describe("parseEnv", () => {
       ).toThrow(/DB_PREPARE: phải là boolean/);
     });
 
-    it("rejects malformed DATABASE_URL_UNPOOLED without printing value", () => {
+    it("ignores the retired DATABASE_URL_UNPOOLED", () => {
+      const env = parseEnv({
+        ...valid,
+        DATABASE_URL_UNPOOLED: "localhost:5432",
+      });
+      expect(env).not.toHaveProperty("DATABASE_URL_UNPOOLED");
+    });
+  });
+
+  describe("owner URL on the app server (db-least-privilege)", () => {
+    const owner = "postgres://erp:owner-secret@direct-host:5432/erp";
+    const production = {
+      ...valid,
+      NODE_ENV: "production",
+      BETTER_AUTH_URL: "https://erp.example.vn",
+    };
+
+    it("refuses to start in production with DATABASE_URL_MIGRATE", () => {
       const message = messageOf(() =>
-        parseEnv({ ...valid, DATABASE_URL_UNPOOLED: "localhost:5432" }),
+        parseEnv({ ...production, DATABASE_URL_MIGRATE: owner }),
       );
-      expect(message).toContain("DATABASE_URL_UNPOOLED");
-      expect(message).toContain("postgres://");
-      expect(message).not.toContain("localhost:5432");
+      expect(message).toContain("DATABASE_URL_MIGRATE");
+      expect(message).toContain("không được đặt trên server app");
+      expect(message).not.toContain("owner-secret");
+    });
+
+    it("starts in production without DATABASE_URL_MIGRATE", () => {
+      expect(parseEnv(production).NODE_ENV).toBe("production");
+      expect(
+        parseEnv({ ...production, DATABASE_URL_MIGRATE: "" }).NODE_ENV,
+      ).toBe("production");
+    });
+
+    it("allows it in development, where .env holds both URLs", () => {
+      expect(parseEnv({ ...valid, DATABASE_URL_MIGRATE: owner }).NODE_ENV).toBe(
+        "development",
+      );
     });
   });
 
