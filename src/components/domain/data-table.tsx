@@ -1,15 +1,23 @@
 "use client";
 
 import {
+  createPaginatedRowModel,
+  createSortedRowModel,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  rowPaginationFeature,
+  rowSortingFeature,
+  sortFn_alphanumeric,
+  sortFn_basic,
+  sortFn_datetime,
+  sortFn_text,
+  tableFeatures,
+  useTable,
+  type CellData,
   type Column,
   type ColumnDef,
   type RowData,
   type SortingState,
+  type TableFeatures,
 } from "@tanstack/react-table";
 import {
   ArrowDown,
@@ -29,8 +37,13 @@ import { cn } from "@/lib/utils";
 export type Breakpoint = "md" | "lg" | "xl";
 
 declare module "@tanstack/react-table" {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends RowData, TValue> {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  interface ColumnMeta<
+    TFeatures extends TableFeatures,
+    TData extends RowData,
+    TValue extends CellData = CellData,
+  > {
+    /* eslint-enable @typescript-eslint/no-unused-vars */
     /** Numbers are right-aligned. */
     align?: "left" | "right";
     /** Hide the column below this width. Not allowed on the first column. */
@@ -45,9 +58,30 @@ const HIDE_BELOW: Readonly<Record<Breakpoint, string>> = {
   xl: "hidden xl:table-cell",
 };
 
+// Stable module-level object: v9 registers each feature and row model it uses.
+// The sort functions are the ones v8 picked automatically by value type.
+const features = tableFeatures({
+  rowSortingFeature,
+  rowPaginationFeature,
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  sortFns: {
+    alphanumeric: sortFn_alphanumeric,
+    basic: sortFn_basic,
+    datetime: sortFn_datetime,
+    text: sortFn_text,
+  },
+});
+
+type Features = typeof features;
+
 // ColumnDef's value type differs per column; `any` is the library's own idiom.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type DataTableColumn<TData> = ColumnDef<TData, any>;
+export type DataTableColumn<TData extends RowData> = ColumnDef<
+  Features,
+  TData,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
+>;
 
 export interface EmptyStateAction {
   label: string;
@@ -61,7 +95,7 @@ export interface EmptyState {
   action?: EmptyStateAction;
 }
 
-interface DataTableProps<TData> {
+interface DataTableProps<TData extends RowData> {
   columns: DataTableColumn<TData>[];
   data: TData[];
   emptyState: EmptyState;
@@ -71,7 +105,9 @@ interface DataTableProps<TData> {
   className?: string;
 }
 
-function columnClasses<TData>(column: Column<TData, unknown>): string {
+function columnClasses<TData extends RowData>(
+  column: Column<Features, TData, unknown>,
+): string {
   const meta = column.columnDef.meta;
   return cn(
     meta?.align === "right" && "text-right",
@@ -82,11 +118,12 @@ function columnClasses<TData>(column: Column<TData, unknown>): string {
 const ARIA_SORT = { asc: "ascending", desc: "descending" } as const;
 
 /**
- * In development TanStack Table v8 times its memos with Date.now(), which
- * Cache Components rejects while prerendering. Suspense lets the table stream
- * instead; production builds never call Date.now() and render inline.
+ * TanStack Table v8 timed its memos with Date.now() in development, which
+ * Cache Components rejects while prerendering, so the table streams behind
+ * Suspense. v9 no longer does; the boundary stays so the loading skeleton
+ * and visual baselines are unchanged.
  */
-export function DataTable<TData>(props: DataTableProps<TData>) {
+export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
   return (
     <Suspense fallback={<DataTableSkeleton className={props.className} />}>
       <DataTableContent {...props} />
@@ -109,7 +146,7 @@ function DataTableSkeleton({ className }: { className?: string }) {
   );
 }
 
-function DataTableContent<TData>({
+function DataTableContent<TData extends RowData>({
   columns,
   data,
   emptyState,
@@ -124,10 +161,8 @@ function DataTableContent<TData>({
   }
 
   const [sorting, setSorting] = useState<SortingState>([]);
-  // TanStack Table v8 returns mutable objects the React Compiler cannot
-  // memoize; it skips this component, which is the documented behaviour.
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
+  const table = useTable({
+    features,
     data,
     columns,
     state: { sorting },
@@ -135,14 +170,11 @@ function DataTableContent<TData>({
     // Ascending first for every column, then descending, then unsorted.
     sortDescFirst: false,
     enableSortingRemoval: true,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize } },
+    initialState: { pagination: { pageIndex: 0, pageSize } },
   });
 
   const rows = table.getRowModel().rows;
-  const { pageIndex } = table.getState().pagination;
+  const { pageIndex } = table.state.pagination;
   const total = data.length;
   const from = pageIndex * pageSize + 1;
   const to = Math.min(total, from + pageSize - 1);
@@ -216,7 +248,7 @@ function DataTableContent<TData>({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id} className="group/row">
-                  {row.getVisibleCells().map((cell, index) => (
+                  {row.getAllCells().map((cell, index) => (
                     <td
                       key={cell.id}
                       className={cn(
