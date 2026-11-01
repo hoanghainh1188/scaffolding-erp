@@ -79,8 +79,8 @@ Vì bước 2–4 chạy lại toàn bộ mỗi lần migrate, **không cần `A
 
 | Môi trường | Owner | Tạo `erp_app` |
 |---|---|---|
-| Local Docker | `erp` (superuser container) | File `docker/postgres/roles.sql` (idempotent: `CREATE ROLE erp_app LOGIN PASSWORD 'erp_app'` nếu chưa có). Mount vào `docker-entrypoint-initdb.d` cho volume mới; volume cũ chạy `npm run db:roles` (`docker compose exec -T postgres psql -U erp -d postgres < docker/postgres/roles.sql`). Mật khẩu chỉ dùng local, như `erp`. |
-| CI (service container) | `erp` | Bước `psql -f docker/postgres/roles.sql` trước `db:migrate` trong mọi job có Postgres (`ci.yml`, `update-snapshots.yml`). |
+| Local Docker | `erp` (superuser container) | File `docker/postgres/roles.sql` (idempotent: `CREATE ROLE erp_app LOGIN PASSWORD 'erp_app'` nếu chưa có). Mount vào `docker-entrypoint-initdb.d` cho volume mới; volume cũ chạy `npm run db:roles` (script Node `scripts/db-roles.mts` chạy file đó bằng `DATABASE_URL_MIGRATE`; chỉ nhận host `localhost`/`127.0.0.1`/`postgres` để không tạo role mật khẩu yếu trên Neon). Mật khẩu chỉ dùng local, như `erp`. |
+| CI (service container) | `erp` | `npm run db:roles` trước `db:migrate` trong mọi job có Postgres (`ci.yml`, `update-snapshots.yml`); dùng Node nên chạy được cả trong job container Playwright không có `psql`. Chỉ bước migrate có `DATABASE_URL_MIGRATE`, vì bản production build (E2E) từ chối khởi động khi thấy biến này. |
 | Neon demo | `neondb_owner` | Một lần, trong SQL Editor trên nhánh **`seed`**: `CREATE ROLE erp_app LOGIN PASSWORD '<mạnh>'`. Nhánh `demo` nhận role khi reset từ `seed`. |
 | Neon production | `neondb_owner` | Như demo, trên nhánh gốc production, khi dựng production (#82). |
 

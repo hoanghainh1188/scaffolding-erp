@@ -52,6 +52,7 @@ jobs:
           curl --fail --retry 10 --retry-delay 3 -s "$URL/api/health" | grep -q '"status":"ok"'
           echo "Health check succeeded."
 
+      # DEMO_DATABASE_URL is the app role erp_app (pooled), not the owner.
       - name: Verify inventory ledger integrity
         env:
           DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL }}

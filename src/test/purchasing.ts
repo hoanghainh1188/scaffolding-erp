@@ -23,9 +23,9 @@ export async function setupPurchasingFixture(
   const { resetCatalogTables } = await import("./catalog");
   const { resetInventoryTables } = await import("./inventory");
   const { seedCatalog } = await import("@/lib/catalog/seed");
-  await resetAuthTables(ctx);
-  await resetCatalogTables(ctx);
-  await resetInventoryTables(ctx);
+  await resetAuthTables();
+  await resetCatalogTables();
+  await resetInventoryTables();
   const director = await createTestUser(ctx, {
     role: "DIRECTOR",
     username: "minhanh",

@@ -33,8 +33,8 @@ let actor: Actor;
 let groupId = "";
 
 beforeEach(async () => {
-  await resetAuthTables(ctx);
-  await resetCatalogTables(ctx);
+  await resetAuthTables();
+  await resetCatalogTables();
   actor = await createTestUser(ctx, { role: "SALES", username: "quocbao" });
   const group = await createGroup(ctx.db, actor, { name: "Giàn giáo" });
   groupId = group.ok ? group.data.id : "";

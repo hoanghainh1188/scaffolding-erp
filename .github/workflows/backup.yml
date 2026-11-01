@@ -29,10 +29,12 @@ jobs:
 
       - name: Dump production database (custom format)
         env:
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_UNPOOLED }}
+          # Owner role: pg_dump also reads the drizzle schema, which the
+          # app role cannot (db-least-privilege).
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_MIGRATE }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
-            echo "::error::PROD_DATABASE_URL_UNPOOLED secret is required."
+            echo "::error::PROD_DATABASE_URL_MIGRATE secret is required."
             exit 1
           fi
 

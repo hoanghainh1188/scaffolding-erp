@@ -19,17 +19,28 @@ Tài liệu quy chuẩn vận hành, bảo mật và quy trình ứng phó khẩ
 #### Vercel Production Environment Variables
 | Biến | Ý nghĩa | Ghi chú |
 |---|---|---|
-| `DATABASE_URL` | URL kết nối có Pooler của Neon | Chứa `-pooler`, `sslmode=require` |
-| `DATABASE_URL_UNPOOLED` | URL kết nối trực tiếp không qua Pooler | Phục vụ migration |
+| `DATABASE_URL` | URL có Pooler của Neon, **role app `erp_app`** | Chứa `-pooler`, `sslmode=require`. Không dùng `neondb_owner` |
 | `BETTER_AUTH_SECRET` | Khóa ký phiên đăng nhập (32 bytes) | Độc lập, không trùng Demo |
 | `BETTER_AUTH_URL` | `https://erp.<tên-miền-công-ty>` | Bắt buộc ở Production |
 | `DEMO_MODE` | `false` | Giữ nguyên mặc định |
 | `DB_POOL_MAX` | `5` | Tối ưu tài nguyên serverless |
 | `DB_CONNECT_TIMEOUT_SECONDS` | `10` | Chống timeout khi mạng chập chờn |
 
+**Không bao giờ** đặt `DATABASE_URL_MIGRATE` (hay URL của `neondb_owner`) trên Vercel: app production từ chối khởi động khi thấy biến này (change `db-least-privilege`, 0.2 #36). Bỏ `DATABASE_URL_UNPOOLED` nếu còn.
+
+#### Hai role DB (change `db-least-privilege`)
+| Role | Dùng cho | Tạo thế nào |
+|---|---|---|
+| `neondb_owner` (owner) | Migration, sao lưu, khôi phục | Có sẵn khi tạo project Neon |
+| `erp_app` (app) | App, `inventory:check`, `auth:unlock`, `auth:create-director` | **Bằng SQL**, một lần, trên nhánh gốc: SQL Editor (role `neondb_owner`) → `CREATE ROLE erp_app LOGIN PASSWORD '<≥12 ký tự, có hoa, thường, số, ký hiệu>';`. Không tạo qua Console/Roles: role tạo ở đó tự có `neon_superuser` (đọc/ghi mọi bảng) |
+
+- Quyền của `erp_app` do `npm run db:migrate` cấp lại mỗi lần chạy: đọc/ghi mọi bảng, **chỉ `SELECT, INSERT`** trên `inventory_ledger`, `activity_log`, `scrap_price`; không TRUNCATE, không đổi cấu trúc bảng. Role chưa có thì migrate báo lỗi.
+- Lấy URL `erp_app`: Neon Console → **Connect** → chọn role `erp_app` (bật Connection pooling cho `PROD_DATABASE_URL`/Vercel), hoặc thay user/mật khẩu trong URL của owner.
+- Kiểm tay sau khi tạo (bằng URL `erp_app`): `UPDATE inventory_ledger SET quantity = quantity`, `DELETE FROM activity_log`, `ALTER TABLE inventory_ledger DISABLE TRIGGER ALL`, `SET session_replication_role = replica` đều phải báo `permission denied` / `must be owner`; `SELECT count(*) FROM item` chạy được.
+
 #### GitHub Secrets (Environment: `production`)
-- `PROD_DATABASE_URL_UNPOOLED`: URL trực tiếp chạy migration & sao lưu.
-- `PROD_DATABASE_URL`: URL kiểm tra số dư kho hằng đêm.
+- `PROD_DATABASE_URL_MIGRATE`: URL trực tiếp (không pooler) của **owner** `neondb_owner`, chạy migration & sao lưu.
+- `PROD_DATABASE_URL`: URL của **`erp_app`**, kiểm tra số dư kho hằng đêm.
 - `NEON_API_KEY`: API Key quyền quản trị project Neon.
 - `NEON_PROJECT_ID`: Project ID của `scaffolding-erp-prod`.
 - `VERCEL_DEPLOY_HOOK`: Webhook kích hoạt deploy Production trên Vercel.
@@ -52,7 +63,7 @@ Tài liệu quy chuẩn vận hành, bảo mật và quy trình ứng phó khẩ
    - Người phụ trách kỹ thuật hoặc Giám đốc kiểm tra changelog và bấm **Approve and deploy**.
 3. **Các bước tự động**:
    - Tạo nhánh sao lưu tức thời trên Neon: `pre-deploy-<tag>-<run_id>`.
-   - Chạy migration an toàn trên `DATABASE_URL_UNPOOLED`.
+   - Chạy migration bằng owner (`PROD_DATABASE_URL_MIGRATE` → biến `DATABASE_URL_MIGRATE`), rồi cấp lại quyền cho `erp_app`.
    - Kích hoạt Vercel Deploy Hook để cập nhật mã nguồn mới.
    - Xác thực trạng thái ứng dụng qua endpoint `/api/health`.
    - Kiểm tra tính toàn vẹn sổ kho sau deploy bằng `npm run inventory:check`.
@@ -124,19 +135,24 @@ Tài liệu quy chuẩn vận hành, bảo mật và quy trình ứng phó khẩ
   openssl enc -d -aes-256-cbc -pbkdf2 -in scaffolding_erp_prod_*.dump.enc \
     -out restore.dump -pass env:BACKUP_ENCRYPTION_KEY
 
-  # 2. Phục hồi vào PostgreSQL
-  pg_restore -v --clean --no-owner --no-privileges -d "<TARGET_DATABASE_URL>" restore.dump
+  # 2. Phục hồi vào PostgreSQL bằng role OWNER của DB đích
+  pg_restore -v --clean --no-owner --no-privileges -d "<URL owner của DB đích>" restore.dump
+
+  # 3. Cấp lại quyền cho erp_app (bản sao lưu không mang theo quyền)
+  DATABASE_URL_MIGRATE="<URL owner của DB đích>" npm run db:migrate
   ```
+- Bản sao lưu chạy `--no-privileges`: khôi phục xong, `erp_app` **không có quyền gì** cho tới khi chạy bước 3. DB/nhánh đích phải có sẵn role `erp_app` (chưa có thì tạo bằng SQL như mục 1.2). Chỉ trỏ `DATABASE_URL` trên Vercel vào DB đích sau bước 3.
+- Cách 1 (PITR) và nhánh `pre-deploy-*` chép cả role lẫn quyền, không cần bước 3.
 
 ### Sự cố 5: Khóa tài khoản do nhập sai mật khẩu quá 5 lần
 - **Cách xử lý**:
   Quản trị viên chạy lệnh mở khóa tài khoản:
   ```bash
   # Mở khóa cho một tài khoản cụ thể
-  DATABASE_URL="<PROD_DATABASE_URL_UNPOOLED>" npm run auth:unlock -- --username <tên_đăng_nhập>
+  DATABASE_URL="<PROD_DATABASE_URL>" npm run auth:unlock -- --username <tên_đăng_nhập>
 
   # Mở khóa toàn bộ hệ thống
-  DATABASE_URL="<PROD_DATABASE_URL_UNPOOLED>" npm run auth:unlock -- --all
+  DATABASE_URL="<PROD_DATABASE_URL>" npm run auth:unlock -- --all
   ```
 
 ### Sự cố 6: Quy trình Xoay vòng Khóa bảo mật (Secret Rotation)
@@ -146,8 +162,8 @@ Khi có sự cố rò rỉ secret hoặc nhân sự quản trị rời khỏi d�
    - Cập nhật biến môi trường trên Vercel Production và Redeploy.
    - *Hệ quả*: Toàn bộ phiên đăng nhập của người dùng sẽ hết hạn và buộc phải đăng nhập lại.
 2. **Đổi Mật khẩu Database trên Neon**:
-   - Vào Neon Console → **Roles** → Chọn user `erp_prod` → Bấm **Reset Password**.
-   - Cập nhật `DATABASE_URL` và `DATABASE_URL_UNPOOLED` trên Vercel và GitHub Secrets.
+   - Role app: SQL Editor (owner) → `ALTER ROLE erp_app PASSWORD '<mật khẩu mới>';` → cập nhật `DATABASE_URL` trên Vercel và secret `PROD_DATABASE_URL`, Redeploy.
+   - Role owner: Neon Console → **Roles** → `neondb_owner` → **Reset Password** → cập nhật secret `PROD_DATABASE_URL_MIGRATE`. Vercel không chứa URL owner nên không cần redeploy.
 3. **Đổi `NEON_API_KEY`**: Neon Console → Account settings → **API keys** → tạo khóa mới, cập nhật GitHub Secret, rồi **Revoke** khóa cũ.
 4. **Đổi `VERCEL_DEPLOY_HOOK`**: Vercel → Project → Settings → Git → **Deploy Hooks** → tạo hook mới, cập nhật GitHub Secret, xóa hook cũ.
 5. **Đổi `BACKUP_ENCRYPTION_KEY`**: sinh khóa mới (`openssl rand -base64 32`), cập nhật GitHub Secret. **Giữ khóa cũ** ở nơi an toàn cho tới khi các bản sao lưu mã hóa bằng nó hết hạn lưu giữ, nếu không sẽ không giải mã được.
@@ -157,7 +173,7 @@ Khi có sự cố rò rỉ secret hoặc nhân sự quản trị rời khỏi d�
 | Secret | Chu kỳ | Ghi chú |
 |---|---|---|
 | `BETTER_AUTH_SECRET` | 12 tháng | Mọi người phải đăng nhập lại: làm ngoài giờ làm việc |
-| Mật khẩu DB `erp_prod` | 6 tháng | |
+| Mật khẩu DB `erp_app` và `neondb_owner` | 6 tháng | |
 | `NEON_API_KEY` | 6 tháng | |
 | `VERCEL_DEPLOY_HOOK` | 12 tháng | |
 | `BACKUP_ENCRYPTION_KEY` | 12 tháng | Giữ khóa cũ như bước 5 |

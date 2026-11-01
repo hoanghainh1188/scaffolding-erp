@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase } from "@/db/client";
+import { getAdminDatabase } from "@/test/admin";
 import { truncateWithLedger } from "@/test/inventory";
 
 import { activityLog } from "./activity";
@@ -58,7 +59,7 @@ async function errorOf(run: () => Promise<unknown>): Promise<string> {
 }
 
 beforeEach(async () => {
-  await truncateWithLedger(db, sql`truncate table "user" cascade`);
+  await truncateWithLedger(sql`truncate table "user" cascade`);
   await db.insert(user).values({
     id: userId,
     name: "Thu Hà",
@@ -116,6 +117,10 @@ describe("activity_log checks", () => {
   });
 });
 
+// The app role is refused by its privileges before the trigger runs
+// (src/db/privileges.int.test.ts); the owner shows the trigger still holds.
+const admin = getAdminDatabase();
+
 describe("activity_log is append only", () => {
   beforeEach(async () => {
     await db.insert(activityLog).values(row());
@@ -124,7 +129,7 @@ describe("activity_log is append only", () => {
   it("blocks UPDATE", async () => {
     expect(
       await errorOf(() =>
-        db
+        admin
           .update(activityLog)
           .set({ summary: "x" })
           .where(sql`true`),
@@ -135,7 +140,7 @@ describe("activity_log is append only", () => {
   });
 
   it("blocks DELETE", async () => {
-    expect(await errorOf(() => db.delete(activityLog))).toBe(
+    expect(await errorOf(() => admin.delete(activityLog))).toBe(
       "P0001 Nhật ký thao tác chỉ ghi thêm",
     );
     expect(await db.$count(activityLog)).toBe(1);
@@ -143,13 +148,13 @@ describe("activity_log is append only", () => {
 
   it("blocks TRUNCATE without the test flag", async () => {
     expect(
-      await errorOf(() => db.execute(sql`truncate table "activity_log"`)),
+      await errorOf(() => admin.execute(sql`truncate table "activity_log"`)),
     ).toBe("P0001 Nhật ký thao tác chỉ ghi thêm");
     expect(await db.$count(activityLog)).toBe(1);
   });
 
   it("lets TRUNCATE through on a _test database with the flag", async () => {
-    await truncateWithLedger(db, sql`truncate table "activity_log"`);
+    await truncateWithLedger(sql`truncate table "activity_log"`);
     expect(await db.$count(activityLog)).toBe(0);
   });
 });

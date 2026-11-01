@@ -43,8 +43,8 @@ const notFound = { ok: false, status: 404, error: "Không tìm thấy bản ghi"
 let actor: Actor;
 
 beforeEach(async () => {
-  await resetAuthTables(ctx);
-  await resetCatalogTables(ctx);
+  await resetAuthTables();
+  await resetCatalogTables();
   actor = await createTestUser(ctx, { role: "DIRECTOR", username: "minhanh" });
 });
 

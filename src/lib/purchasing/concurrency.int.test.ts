@@ -34,7 +34,7 @@ beforeEach(async () => {
 describe("purchase orders under concurrency", () => {
   it("two creates get two codes in a row", async () => {
     for (let round = 0; round < ROUNDS; round += 1) {
-      await resetInventoryTables(ctx);
+      await resetInventoryTables();
       const [a, b] = await Promise.all([
         createOrder(ctx.db, fx.sales, d3Order(fx), { now: OCT }),
         createOrder(other.db, fx.director, d3Order(fx), { now: OCT }),

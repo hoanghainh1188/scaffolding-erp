@@ -7,7 +7,7 @@ import { clientIp, consumeSignInAttempt } from "./rate-limit";
 const ctx = createTestContext();
 
 afterAll(ctx.close);
-beforeEach(() => resetAuthTables(ctx));
+beforeEach(() => resetAuthTables());
 
 const at = (seconds: number) => new Date(Date.UTC(2026, 10, 2, 1, 0, seconds));
 

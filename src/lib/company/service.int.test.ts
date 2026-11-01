@@ -23,7 +23,6 @@ afterAll(close);
 
 beforeEach(async () => {
   await truncateWithLedger(
-    db,
     sql`truncate table "activity_log", "company_profile", "user" cascade`,
   );
 });
