@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetDraftRuntime } from "@/lib/drafts/runtime";
 import { memoryDraftStore, setDraftStore } from "@/lib/drafts/store";
 import type { OpenStocktake } from "@/lib/stocktakes/queries";
-import { STOCKTAKE_MESSAGES } from "@/domain/stocktake";
 
 import { StocktakeCount } from "./stocktake-count";
 import { StocktakeHome } from "./stocktake-home";
@@ -113,7 +112,7 @@ describe("M6a", () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     await user.click(screen.getByRole("button", { name: /Bắt đầu đếm/ }));
     expect(
-      screen.getByText(STOCKTAKE_MESSAGES.offlineStart),
+      screen.getByText("Cần có mạng để bắt đầu phiên kiểm kê"),
     ).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -192,7 +191,7 @@ describe("M6", () => {
       within(counting).getByRole("button", { name: /Xong mã này/ }),
     );
     expect(within(counting).getByRole("alert")).toHaveTextContent(
-      STOCKTAKE_MESSAGES.missingCondition("NEEDS_REPAIR"),
+      "Nhập số cho Chờ sửa (0 nếu không có)",
     );
     await user.click(
       within(counting).getAllByRole("button", {
@@ -240,7 +239,7 @@ describe("M6", () => {
       within(counting).getByRole("button", { name: /Xong mã này/ }),
     );
     expect(within(counting).getByRole("alert")).toHaveTextContent(
-      STOCKTAKE_MESSAGES.wholePieces("GG-K17"),
+      "GG-K17 tính theo cái, số lượng phải là số nguyên",
     );
     await user.clear(within(counting).getByRole("textbox"));
     await user.type(within(counting).getByRole("textbox"), "1226");

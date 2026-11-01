@@ -17,10 +17,7 @@ interface ArrivalListProps {
   userId: string;
 }
 
-const KIND_SHORT = {
-  NEW: dict.purchasing.kind.NEW.toLowerCase(),
-  USED: dict.purchasing.kind.USED.toLowerCase(),
-} as const;
+const KIND_SHORT = dict.receiving.home.kindShort;
 
 export function ArrivalList({ cards, later, userId }: ArrivalListProps) {
   const drafts = useDrafts(userId) ?? [];
@@ -79,11 +76,11 @@ export function ArrivalList({ cards, later, userId }: ArrivalListProps) {
                     ? draftHref(draft)
                     : `/m/receive/${encodeURIComponent(card.code)}`
                 }
-                aria-label={`${draft ? dict.receiving.form.continueReceiving : dict.receiving.form.startReceiving} ${card.code}`}
+                aria-label={`${draft ? dict.receiving.home.continueReceiving : dict.receiving.home.startReceiving} ${card.code}`}
               >
                 {draft
-                  ? dict.receiving.form.continueReceiving
-                  : dict.receiving.form.startReceiving}
+                  ? dict.receiving.home.continueReceiving
+                  : dict.receiving.home.startReceiving}
               </Link>
             </Button>
           </article>

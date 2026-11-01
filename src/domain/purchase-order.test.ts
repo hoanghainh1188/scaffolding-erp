@@ -93,31 +93,31 @@ describe("checkOrderLines", () => {
           itemUnit: "KG",
         },
       ],
-      PURCHASE_MESSAGES.kgOnly("PL-SAT"),
+      "PL-SAT tính theo kg, chỉ đặt được theo kg",
       "lines.0.unit",
     ],
     [
       "half a piece",
       [{ ...frame, itemCode: "GG-CH", quantityMilli: 2_500 }],
-      PURCHASE_MESSAGES.wholePieces("GG-CH"),
+      "GG-CH tính theo cái, số lượng phải là số nguyên",
       "lines.0.quantity",
     ],
     [
       "a zero quantity",
       [{ ...frame, quantityMilli: 0 }],
-      PURCHASE_MESSAGES.quantity,
+      "Số lượng phải lớn hơn 0",
       "lines.0.quantity",
     ],
     [
       "a negative price",
       [{ ...frame, unitPrice: -1 }],
-      PURCHASE_MESSAGES.price,
+      "Đơn giá phải là số nguyên không âm",
       "lines.0.unitPrice",
     ],
     [
       "the same item twice",
       [frame, frame],
-      PURCHASE_MESSAGES.duplicate("GG-K17"),
+      "GG-K17 đã có trong đơn, sửa số lượng ở dòng cũ",
       "lines.1.itemId",
     ],
   ])("refuses %s", (_name, lines, message, field) => {
@@ -135,17 +135,17 @@ describe("checkOrderCosts", () => {
   it.each([
     [
       { label: " ", amount: 500_000 },
-      PURCHASE_MESSAGES.costLabel,
+      "Nhập tên khoản chi phí",
       "costs.0.label",
     ],
     [
       { label: "Bốc xếp", amount: 0 },
-      PURCHASE_MESSAGES.costAmount,
+      "Chi phí phải lớn hơn 0",
       "costs.0.amount",
     ],
     [
       { label: "x".repeat(61), amount: 1 },
-      PURCHASE_MESSAGES.costLabelLong,
+      "Tên khoản chi phí dài tối đa 60 ký tự",
       "costs.0.label",
     ],
   ])("refuses %o", (cost, message, field) => {
@@ -209,19 +209,22 @@ describe("transition", () => {
         draft,
         {
           PLACE: { status: "IN_PROGRESS", outcome: null },
-          CANCEL: PURCHASE_MESSAGES.notPlaced(draft.code),
-          CLOSE: PURCHASE_MESSAGES.notPlaced(draft.code),
-          RECEIVE_FULL: PURCHASE_MESSAGES.notPlaced(draft.code),
-          RECEIVE_SHORT: PURCHASE_MESSAGES.notPlaced(draft.code),
-          RECEIVE_SHORT_WAIT: PURCHASE_MESSAGES.notPlaced(draft.code),
+          CANCEL: "Đơn PO-2026-054 chưa đặt, xóa đơn nháp nếu không cần nữa",
+          CLOSE: "Đơn PO-2026-054 chưa đặt, xóa đơn nháp nếu không cần nữa",
+          RECEIVE_FULL:
+            "Đơn PO-2026-054 chưa đặt, xóa đơn nháp nếu không cần nữa",
+          RECEIVE_SHORT:
+            "Đơn PO-2026-054 chưa đặt, xóa đơn nháp nếu không cần nữa",
+          RECEIVE_SHORT_WAIT:
+            "Đơn PO-2026-054 chưa đặt, xóa đơn nháp nếu không cần nữa",
         },
       ],
       waiting: [
         waiting,
         {
-          PLACE: PURCHASE_MESSAGES.placed(waiting.code),
+          PLACE: "Đơn PO-2026-055 đã đặt rồi",
           CANCEL: { status: "DONE", outcome: "CANCELLED" },
-          CLOSE: PURCHASE_MESSAGES.closeNoReceipts,
+          CLOSE: "Đơn chưa có phiếu nhập, dùng Hủy đơn",
           RECEIVE_FULL: { status: "DONE", outcome: "RECEIVED" },
           RECEIVE_SHORT: { status: "DONE", outcome: "CLOSED" },
           RECEIVE_SHORT_WAIT: { status: "IN_PROGRESS", outcome: null },
@@ -230,7 +233,7 @@ describe("transition", () => {
       receiving: [
         receiving,
         {
-          PLACE: PURCHASE_MESSAGES.placed(receiving.code),
+          PLACE: "Đơn PO-2026-051 đã đặt rồi",
           CANCEL: PURCHASE_MESSAGES.cancelReceived,
           CLOSE: { status: "DONE", outcome: "CLOSED" },
           RECEIVE_FULL: { status: "DONE", outcome: "RECEIVED" },
@@ -243,7 +246,7 @@ describe("transition", () => {
         Object.fromEntries(
           PURCHASE_COMMANDS.map((command) => [
             command,
-            PURCHASE_MESSAGES.done(done.code),
+            "Đơn PO-2026-050 đã xong, không đổi được nữa",
           ]),
         ) as Record<PurchaseCommand, Expected>,
       ],
@@ -263,22 +266,22 @@ describe("transition", () => {
   it("refuses to place an order without lines or a date", () => {
     expect(
       fieldOf(() => transition({ ...draft, lineCount: 0 }, "PLACE")),
-    ).toEqual({ message: PURCHASE_MESSAGES.noLines, field: "lines" });
+    ).toEqual({ message: "Đơn cần ít nhất một dòng hàng", field: "lines" });
     expect(
       fieldOf(() => transition({ ...draft, expectedDate: null }, "PLACE")),
-    ).toEqual({ message: PURCHASE_MESSAGES.noDate, field: "expectedDate" });
+    ).toEqual({ message: "Nhập ngày dự kiến nhập", field: "expectedDate" });
   });
 
   it("needs a reason to cancel, not to close", () => {
     expect(() => transition(waiting, "CANCEL", "  ")).toThrow(
-      PURCHASE_MESSAGES.cancelReason,
+      "Nhập lý do hủy đơn",
     );
     expect(transition(receiving, "CLOSE", null)).toEqual({
       status: "DONE",
       outcome: "CLOSED",
     });
     expect(() => transition(waiting, "CANCEL", "x".repeat(501))).toThrow(
-      PURCHASE_MESSAGES.reasonTooLong,
+      "Lý do dài tối đa 500 ký tự",
     );
   });
 });

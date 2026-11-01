@@ -64,7 +64,7 @@ export function AdjustmentActions({
               }
               title={dict.inventory.adjustments.deleteDraftTitle(code)}
               description={dict.inventory.adjustments.confirmDeleteDraft}
-              confirmLabel={dict.inventory.adjustments.deleteDraft}
+              confirmLabel={dict.inventory.adjustments.deleteConfirm}
               destructive
               error={action.error}
               onConfirm={async () => {

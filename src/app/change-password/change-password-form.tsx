@@ -74,7 +74,7 @@ export function ChangePasswordForm({ doneHref }: ChangePasswordFormProps) {
           />
           {field.name === "newPassword" ? (
             <p id="password-hint" className="text-sm text-muted-foreground">
-              {dict.auth.changePassword.minChars}. Nên dùng cụm từ dễ nhớ nhưng bảo mật cao.
+              {dict.auth.changePassword.hint}
             </p>
           ) : null}
         </div>
@@ -89,7 +89,9 @@ export function ChangePasswordForm({ doneHref }: ChangePasswordFormProps) {
       </div>
 
       <Button type="submit" size="lg" className="h-12" disabled={pending}>
-        {pending ? dict.auth.changePassword.submitting : dict.auth.changePassword.submit}
+        {pending
+          ? dict.auth.changePassword.submitting
+          : dict.auth.changePassword.submit}
       </Button>
     </form>
   );

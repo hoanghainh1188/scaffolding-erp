@@ -2,7 +2,7 @@
 // the ledger is append-only and a value booked wrong cannot be corrected
 // yet (#42), so a stray zero on the phone must be confirmed first. The same
 // pure check runs on the phone and again on the server.
-import { dict } from "@/locales";
+import { dict } from "../locales";
 
 import {
   needsWeighing,
@@ -73,8 +73,16 @@ function lineAnomaly(
   return {
     key: lineAnomalyKey(open.orderLineId),
     field,
-    question: dict.receiving.anomalies.quantityOver(got, rest, unitLabel),
-    note: dict.receiving.anomalies.noteOver(open.itemCode, got, rest, unitLabel),
+    question:
+      unit === "PIECE"
+        ? dict.receiving.anomalies.piecesOver(got, rest)
+        : dict.receiving.anomalies.kgOver(got, rest),
+    note: dict.receiving.anomalies.noteOver(
+      open.itemCode,
+      got,
+      rest,
+      unitLabel,
+    ),
   };
 }
 

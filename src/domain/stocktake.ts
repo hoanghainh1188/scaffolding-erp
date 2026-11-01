@@ -53,7 +53,10 @@ export const STOCKTAKE_MESSAGES = {
   negative: dict.stocktake.messages.negative,
   duplicateItem: dict.stocktake.messages.duplicateItem,
   duplicateCondition: (code: string, condition: Condition) =>
-    dict.stocktake.messages.duplicateCondition(code, CONDITION_LABELS[condition]),
+    dict.stocktake.messages.duplicateCondition(
+      code,
+      CONDITION_LABELS[condition],
+    ),
   noRecount: dict.stocktake.messages.noRecount,
   noLines: dict.stocktake.messages.noLines,
   recountMissing: dict.stocktake.messages.recountMissing,

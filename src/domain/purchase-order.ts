@@ -1,7 +1,7 @@
 // Purchase orders (purchase-orders spec, design D2, D4, D6): line and cost
 // rules, expected totals, status labels and the one table of allowed status
 // changes. goods-receipt calls transition() with the RECEIVE_* commands.
-import { dict } from "@/locales";
+import { dict } from "../locales";
 
 import { lineAmount } from "./average-cost";
 import { DomainValueError } from "./errors";
@@ -64,8 +64,8 @@ export const PURCHASE_MESSAGES = {
   reasonTooLong: dict.purchasing.messages.reasonTooLong(END_REASON_MAX),
   closeNoReceipts: dict.purchasing.messages.closeNoReceipts,
   deletePlaced: dict.purchasing.messages.deletePlaced,
-  editLocked: dict.purchasing.messages.supplierLocked,
-  stale: dict.common.alerts.staleData,
+  editLocked: dict.purchasing.messages.editLocked,
+  stale: dict.purchasing.messages.stale,
 } as const;
 
 /** A domain error that belongs to one form field ("lines.0.quantity"). */

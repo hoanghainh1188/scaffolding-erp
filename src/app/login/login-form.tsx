@@ -93,7 +93,11 @@ export function LoginForm({ next }: { next: string | null }) {
       </Button>
 
       <p className="rounded-lg bg-secondary px-4 py-3.5 text-sm leading-5">
-        {dict.auth.login.forgotPasswordHelp}
+        {dict.auth.login.forgotPassword}{" "}
+        <strong className="font-semibold">
+          {dict.auth.login.forgotPasswordPlace}
+        </strong>
+        .
       </p>
     </form>
   );

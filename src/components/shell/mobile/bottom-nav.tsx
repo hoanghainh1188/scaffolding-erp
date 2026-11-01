@@ -23,7 +23,11 @@ const TABS: readonly Tab[] = [
   { href: "/m", label: dict.navigation.mobile.todayWork, icon: ClipboardList },
   { href: "/m/scan", label: dict.navigation.mobile.scan, icon: ScanLine },
   { href: "/m/history", label: dict.navigation.mobile.history, icon: History },
-  { href: "/m/profile", label: dict.navigation.mobile.profile, icon: UserRound },
+  {
+    href: "/m/profile",
+    label: dict.navigation.mobile.profile,
+    icon: UserRound,
+  },
 ];
 
 function isCurrent(pathname: string, href: string): boolean {

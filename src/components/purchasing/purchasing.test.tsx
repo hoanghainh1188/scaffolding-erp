@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { toMoney } from "@/domain/money";
-import { PURCHASE_MESSAGES } from "@/domain/purchase-order";
 import type { OrderListRow } from "@/lib/purchasing/queries";
 
 import { OrderActions } from "./order-actions";
@@ -272,7 +271,7 @@ describe("D3 form", () => {
         JSON.stringify({
           success: false,
           data: null,
-          error: PURCHASE_MESSAGES.stale,
+          error: "Đơn vừa được người khác sửa, tải lại trang",
         }),
         { status: 409 },
       ),
@@ -280,7 +279,7 @@ describe("D3 form", () => {
     render(<OrderForm suppliers={SUPPLIERS} items={ITEMS} order={D3} />);
     await userEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
     expect(
-      await screen.findByText(PURCHASE_MESSAGES.stale),
+      await screen.findByText("Đơn vừa được người khác sửa, tải lại trang"),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Tải lại trang" }),

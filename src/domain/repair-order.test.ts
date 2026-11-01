@@ -71,11 +71,11 @@ describe("checkRepairLines", () => {
     expect(
       fieldError(() => checkRepairLines([line("GG-K17", 40, 30, 4)])),
     ).toEqual({
-      message: REPAIR_MESSAGES.sumMismatch("GG-K17", 34 * K, 40 * K),
+      message: "GG-K17: sửa xong + phế liệu (34) phải bằng số lấy ra (40)",
       field: "lines.0.quantityGood",
     });
     expect(sumMismatchText(34 * K, 40 * K)).toBe(
-      "Tổng số lượng sửa đạt và phế liệu (34) phải bằng số lượng xuất sửa (40)",
+      "sửa xong + phế liệu (34) phải bằng số lấy ra (40)",
     );
   });
 
@@ -83,7 +83,7 @@ describe("checkRepairLines", () => {
     expect(
       fieldError(() => checkRepairLines([line("GG-CH", 0, 0, 0)])),
     ).toEqual({
-      message: REPAIR_MESSAGES.takenZero("GG-CH"),
+      message: "GG-CH: số lấy ra phải lớn hơn 0",
       field: "lines.0.quantityTaken",
     });
     expect(
@@ -91,7 +91,7 @@ describe("checkRepairLines", () => {
         checkRepairLines([line("GG-CH", 0, 0, 0, 0, { takenMilli: 20_500 })]),
       ),
     ).toEqual({
-      message: REPAIR_MESSAGES.wholePieces("GG-CH"),
+      message: "GG-CH tính theo cái, số lượng phải là số nguyên",
       field: "lines.0.quantityTaken",
     });
     expect(
@@ -104,14 +104,14 @@ describe("checkRepairLines", () => {
       fieldError(() =>
         checkRepairLines([line("PL-SAT", 10, 10, 0, 0, { unit: "KG" })]),
       ).message,
-    ).toBe(REPAIR_MESSAGES.kgItem("PL-SAT"));
+    ).toBe("PL-SAT tính theo kg, không lập phiếu sửa được");
     expect(
       fieldError(() =>
         checkRepairLines([line("GG-K17", 40, 36, 4), line("GG-K17", 1, 1, 0)]),
       ),
-    ).toEqual({ message: REPAIR_MESSAGES.duplicate("GG-K17"), field: "lines.1.itemId" });
+    ).toEqual({ message: "GG-K17 đã có trên phiếu", field: "lines.1.itemId" });
     expect(fieldError(() => checkRepairLines([])).message).toBe(
-      REPAIR_MESSAGES.noLines,
+      "Thêm ít nhất một mã hàng",
     );
   });
 
@@ -120,14 +120,14 @@ describe("checkRepairLines", () => {
       expect(
         fieldError(() => checkRepairLines([line("GG-CH", 20, 20, 0, cost)])),
       ).toEqual({
-        message: REPAIR_MESSAGES.cost,
+        message: "Chi phí sửa phải là số đồng không âm",
         field: "lines.0.repairCost",
       });
     }
     expect(
       fieldError(() => checkRepairLines([line("GG-M16", 5, 0, 5, 300_000)]))
         .message,
-    ).toBe(REPAIR_MESSAGES.costWithoutGood("GG-M16"));
+    ).toBe("GG-M16: không có hàng sửa xong để tính chi phí sửa");
   });
 
   it("adds the slip totals", () => {
@@ -226,10 +226,10 @@ describe("scrapValue and damage", () => {
 
   it("refuses a missing scrap price or weight", () => {
     expect(() => scrap("GG-K17", 4, "13.500", 160_000, null)).toThrow(
-      REPAIR_MESSAGES.noScrapPrice,
+      "Chưa có giá sắt vụn tham khảo, nhờ Giám đốc nhập ở Cài đặt",
     );
     expect(() => scrap("GG-XX", 4, null, 160_000)).toThrow(
-      REPAIR_MESSAGES.noWeight("GG-XX"),
+      "GG-XX chưa có trọng lượng chuẩn, không tính được giá phế liệu",
     );
   });
 });

@@ -12,7 +12,7 @@ import {
   type ReceiptLineInput,
   type ReceivingLine,
 } from "./goods-receipt";
-import { PurchaseFieldError, PURCHASE_MESSAGES } from "./purchase-order";
+import { PurchaseFieldError } from "./purchase-order";
 
 const K = 1000;
 
@@ -164,7 +164,7 @@ describe("checkReceiptLines", () => {
     expect(
       failure(() => checkReceiptLines("PO-2026-052", "USED", OPEN, lines)),
     ).toEqual({
-      message: PURCHASE_MESSAGES.wholePieces("GG-CH"),
+      message: "GG-CH tính theo cái, số lượng phải là số nguyên",
       field: "lines.1.quantity",
     });
   });

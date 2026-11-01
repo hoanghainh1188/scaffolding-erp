@@ -30,12 +30,15 @@ export const REVALUE_MESSAGES = {
   negative: (code: string, condition: Condition, value: number) =>
     dict.inventory.revalueMessages.negative(
       pairLabel(code, condition),
-      signedMoney(value).replace("+", "")
+      signedMoney(value).replace("+", ""),
     ),
   relatedMissing: dict.inventory.revalueMessages.relatedMissing,
   relatedNotFound: dict.inventory.revalueMessages.relatedNotFound,
   pairNotInRelated: (related: string, code: string, condition: Condition) =>
-    dict.inventory.revalueMessages.pairNotInRelated(related, pairLabel(code, condition)),
+    dict.inventory.revalueMessages.pairNotInRelated(
+      related,
+      pairLabel(code, condition),
+    ),
   tripCost: dict.inventory.revalueMessages.tripCost,
   tripUnchanged: dict.inventory.revalueMessages.tripUnchanged,
   tripNotReproducible: dict.inventory.revalueMessages.tripNotReproducible,

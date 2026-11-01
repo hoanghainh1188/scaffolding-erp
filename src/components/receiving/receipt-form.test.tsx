@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { toMoney } from "@/domain/money";
-import { dict } from "@/locales";
 import { resetDraftRuntime } from "@/lib/drafts/runtime";
 import { memoryDraftStore, setDraftStore } from "@/lib/drafts/store";
 import type { ReceivingOrder } from "@/lib/receiving/receiving-order";
@@ -238,7 +237,7 @@ describe("ReceiptFormView (M3)", () => {
     await user.click(confirmButton());
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent(
-      dict.receiving.anomalies.quantityOver("4.000", "400", "cái"),
+      "Nhận 4.000 cái, đơn chỉ còn 400. Đúng không?",
     );
     await user.click(within(dialog).getByRole("button", { name: "Sửa lại" }));
     expect(fetchMock).not.toHaveBeenCalled();
@@ -272,7 +271,7 @@ describe("ReceiptFormView (M3)", () => {
     await user.type(amount, "35000000");
     await user.click(confirmButton());
     expect(await screen.findByRole("alertdialog")).toHaveTextContent(
-      dict.receiving.anomalies.costsOver("36.380.000 ₫", "4.880.000 ₫"),
+      "Chi phí chuyến 36.380.000 ₫, cả đơn dự kiến 4.880.000 ₫. Đúng không?",
     );
   });
 

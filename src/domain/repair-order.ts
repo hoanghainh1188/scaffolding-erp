@@ -30,7 +30,7 @@ export const REPAIR_MESSAGES = {
   negative: dict.repairs.messages.quantityNegative,
   takenZero: dict.repairs.messages.takenZero,
   sumMismatch: (code: string, sum: number, taken: number) =>
-    dict.repairs.messages.sumMismatch(code, pieces(sum), pieces(taken)),
+    `${code}: ${sumMismatchText(sum, taken)}`,
   cost: dict.repairs.messages.cost,
   costWithoutGood: dict.repairs.messages.costWithoutGood,
   futureDate: dict.repairs.messages.futureDate,
@@ -40,9 +40,9 @@ export const REPAIR_MESSAGES = {
   noteTooLong: dict.repairs.messages.noteTooLong(REPAIR_NOTE_MAX),
 } as const;
 
-/** For the D12 row. */
+/** "sửa xong + phế liệu (34) phải bằng số lấy ra (40)", for the D12 row. */
 export function sumMismatchText(sum: number, taken: number): string {
-  return dict.repairs.messages.sumMismatch("", pieces(sum), pieces(taken));
+  return dict.repairs.messages.sumMismatch(pieces(sum), pieces(taken));
 }
 
 const groupFormatter = new Intl.NumberFormat("vi-VN", {

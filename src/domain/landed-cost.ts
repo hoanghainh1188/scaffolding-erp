@@ -3,7 +3,7 @@
 // over the conditions it is sorted into. Every split sums to the exact đồng:
 // largest remainder, computed in bigint. Pure: purchase orders use it for the
 // D3 preview, goods-receipt for the cost that goes into the ledger.
-import { dict } from "@/locales";
+import { dict } from "../locales";
 
 import { lineAmount, unitCostOf } from "./average-cost";
 import { DomainValueError } from "./errors";
@@ -23,7 +23,7 @@ export const ALLOCATION_METHOD_LABELS: Readonly<
 };
 
 export const LANDED_COST_MESSAGES = {
-  zeroValue: dict.purchasing.costs.zeroValueWarning,
+  zeroValue: dict.purchasing.costs.zeroValue,
   noGoods: dict.purchasing.costs.noGoods,
   noScrapPrice: dict.purchasing.costs.noScrapPrice,
   noWeight: dict.purchasing.costs.noWeight,

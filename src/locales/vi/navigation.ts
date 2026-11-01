@@ -1,11 +1,11 @@
-// Navigation menu items, header titles, and mobile bottom tabs.
+// Desktop sidebar and mobile bottom tabs.
 export const navigation = {
   desktop: {
     dashboard: "Tổng quan",
-    purchasing: "Mua hàng",
+    purchasing: "Thu mua",
     inventory: "Kho",
     repairs: "Sửa chữa",
-    sales: "Cho thuê & Bán",
+    sales: "Bán & Thuê",
     receivables: "Công nợ",
     reports: "Báo cáo",
     catalog: "Danh mục",
