@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { STOCKTAKE_MESSAGES } from "@/domain/stocktake";
 import {
   alignDraft,
   emptyPayload,
@@ -57,11 +58,11 @@ describe("stocktake model", () => {
     if (!chItem) throw new Error("no item");
     expect(chItem.conditions).toEqual(["GOOD", "NEEDS_REPAIR"]);
     expect(finishError(chItem, counted({ GOOD: "2450" }, null), false)).toBe(
-      "Nhập số cho Chờ sửa (0 nếu không có)",
+      STOCKTAKE_MESSAGES.missingCondition("NEEDS_REPAIR"),
     );
     expect(
       finishError(chItem, counted({ GOOD: "12,5", NEEDS_REPAIR: "0" }), false),
-    ).toBe("GG-CH tính theo cái, số lượng phải là số nguyên");
+    ).toBe(STOCKTAKE_MESSAGES.wholePieces("GG-CH"));
     expect(
       finishError(chItem, counted({ GOOD: "2450", NEEDS_REPAIR: "0" }), false),
     ).toBeNull();

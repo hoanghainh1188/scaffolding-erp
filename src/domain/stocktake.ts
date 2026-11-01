@@ -1,6 +1,7 @@
 // Stocktakes (stocktake design D2, D3, D6, D7, D9, D13; requirements 0.2
 // #31, #32): blind counts at a yard or workshop, compared with the book at
 // "Xong mã này". Pure functions shared by the phone, D13 and the server.
+import { dict } from "../locales";
 import { lineAmount } from "./average-cost";
 import { CONDITION_LABELS, type Condition } from "./condition";
 import { DomainValueError } from "./errors";
@@ -28,12 +29,7 @@ export type StocktakeStatus = (typeof STOCKTAKE_STATUSES)[number];
 
 export const STOCKTAKE_STATUS_LABELS: Readonly<
   Record<StocktakeStatus, string>
-> = {
-  COUNTING: "Đang đếm",
-  SUBMITTED: "Chờ duyệt",
-  DONE: "Đã ghi sổ",
-  CANCELLED: "Đã hủy",
-};
+> = dict.stocktake.statuses;
 
 export const STOCKTAKE_FLAGS = ["MOVED", "OVER_PCT", "CONDITION_SWAP"] as const;
 export type StocktakeFlag = (typeof STOCKTAKE_FLAGS)[number];
@@ -47,33 +43,30 @@ const percentFormatter = new Intl.NumberFormat("vi-VN", {
 });
 
 export const STOCKTAKE_MESSAGES = {
-  siteRefused: "Chỉ kiểm kê bãi và xưởng",
-  emptyScope: (place: string) => `Phạm vi đã chọn không có hàng nào ở ${place}`,
-  openSession: (place: string, code: string) =>
-    `${place} đang có phiên ${code} chưa xong`,
-  nothingCounted: "Đếm ít nhất một mã trước khi gửi",
+  siteRefused: dict.stocktake.messages.siteRefused,
+  emptyScope: dict.stocktake.messages.emptyScope,
+  openSession: dict.stocktake.messages.openSession,
+  nothingCounted: dict.stocktake.messages.nothingCounted,
   missingCondition: (condition: Condition) =>
-    `Nhập số cho ${CONDITION_LABELS[condition]} (0 nếu không có)`,
-  wholePieces: (code: string) =>
-    `${code} tính theo cái, số lượng phải là số nguyên`,
-  negative: (code: string) => `${code}: số lượng không được âm`,
-  duplicateItem: (code: string) => `${code} gửi hai lần trong một lần gửi`,
+    dict.stocktake.messages.missingCondition(CONDITION_LABELS[condition]),
+  wholePieces: dict.stocktake.messages.wholePieces,
+  negative: dict.stocktake.messages.negative,
+  duplicateItem: dict.stocktake.messages.duplicateItem,
   duplicateCondition: (code: string, condition: Condition) =>
-    `${code} ${CONDITION_LABELS[condition]} nhập hai lần`,
-  noRecount: (code: string) => `${code} không cần đếm lại`,
-  noLines: (code: string) => `${code}: nhập số cho ít nhất một tình trạng`,
-  recountMissing: (lines: number) =>
-    `Còn ${lines} dòng văn phòng yêu cầu đếm lại, đếm xong mới gửi được`,
-  alreadySubmitted: "Phiên đã gửi văn phòng",
-  cancelAfterSubmit: "Phiên đã gửi văn phòng, nhờ Giám đốc hủy",
-  alreadyPosted: "Phiên kiểm kê đã được ghi sổ",
-  cancelled: "Phiên kiểm kê đã hủy",
-  notSubmitted: "Phiên chưa gửi văn phòng",
-  notCounting: "Phiên không ở trạng thái đang đếm",
-  recountNothing: "Chọn ít nhất một dòng đã đếm để đếm lại",
-  recountUncounted: "Chỉ yêu cầu đếm lại dòng đã đếm",
-  cancelReason: "Nhập lý do hủy",
-  offlineStart: "Cần có mạng để bắt đầu phiên kiểm kê",
+    dict.stocktake.messages.duplicateCondition(code, CONDITION_LABELS[condition]),
+  noRecount: dict.stocktake.messages.noRecount,
+  noLines: dict.stocktake.messages.noLines,
+  recountMissing: dict.stocktake.messages.recountMissing,
+  alreadySubmitted: dict.stocktake.messages.alreadySubmitted,
+  cancelAfterSubmit: dict.stocktake.messages.cancelAfterSubmit,
+  alreadyPosted: dict.stocktake.messages.alreadyPosted,
+  cancelled: dict.stocktake.messages.cancelled,
+  notSubmitted: dict.stocktake.messages.notSubmitted,
+  notCounting: dict.stocktake.messages.notCounting,
+  recountNothing: dict.stocktake.messages.recountNothing,
+  recountUncounted: dict.stocktake.messages.recountUncounted,
+  cancelReason: dict.stocktake.messages.cancelReason,
+  offlineStart: dict.stocktake.messages.offlineStart,
 } as const;
 
 /** A rule broken by one field of a submission ("items.0.lines.1.quantity"). */

@@ -4,6 +4,7 @@
 // the scrap loses is carried by the repaired pieces, or booked as a damage
 // loss when nothing was repaired. Pure functions, shared by D12 and the
 // server.
+import { dict } from "../locales";
 import { averageAfterInflow, lineAmount, roundHalfUp } from "./average-cost";
 import type { BusinessDate } from "./business-date";
 import { DomainValueError } from "./errors";
@@ -21,30 +22,27 @@ export const REPAIR_NOTE_MAX = 500;
 const K = 1000;
 
 export const REPAIR_MESSAGES = {
-  noLines: "Thêm ít nhất một mã hàng",
-  tooManyLines: "Phiếu tối đa 200 mã hàng",
-  kgItem: (code: string) => `${code} tính theo kg, không lập phiếu sửa được`,
-  duplicate: (code: string) => `${code} đã có trên phiếu`,
-  wholePieces: (code: string) =>
-    `${code} tính theo cái, số lượng phải là số nguyên`,
-  negative: (code: string) => `${code}: số lượng không được âm`,
-  takenZero: (code: string) => `${code}: số lấy ra phải lớn hơn 0`,
+  noLines: dict.repairs.messages.noLines,
+  tooManyLines: dict.repairs.messages.tooManyLines,
+  kgItem: dict.repairs.messages.kgItem,
+  duplicate: dict.repairs.messages.duplicateItem,
+  wholePieces: dict.repairs.messages.wholePieces,
+  negative: dict.repairs.messages.quantityNegative,
+  takenZero: dict.repairs.messages.takenZero,
   sumMismatch: (code: string, sum: number, taken: number) =>
-    `${code}: ${sumMismatchText(sum, taken)}`,
-  cost: "Chi phí sửa phải là số đồng không âm",
-  costWithoutGood: (code: string) =>
-    `${code}: không có hàng sửa xong để tính chi phí sửa`,
-  futureDate: "Ngày sửa xong không được sau hôm nay",
+    dict.repairs.messages.sumMismatch(code, pieces(sum), pieces(taken)),
+  cost: dict.repairs.messages.cost,
+  costWithoutGood: dict.repairs.messages.costWithoutGood,
+  futureDate: dict.repairs.messages.futureDate,
   noScrapPrice: LANDED_COST_MESSAGES.noScrapPrice,
-  noWeight: (code: string) =>
-    `${code} chưa có trọng lượng chuẩn, không tính được giá phế liệu`,
-  repairedByTooLong: `Người/tổ sửa dài tối đa ${REPAIRED_BY_MAX} ký tự`,
-  noteTooLong: `Ghi chú dài tối đa ${REPAIR_NOTE_MAX} ký tự`,
+  noWeight: dict.repairs.messages.noWeight,
+  repairedByTooLong: dict.repairs.messages.repairedByTooLong(REPAIRED_BY_MAX),
+  noteTooLong: dict.repairs.messages.noteTooLong(REPAIR_NOTE_MAX),
 } as const;
 
-/** "sửa xong + phế liệu (34) phải bằng số lấy ra (40)", for the D12 row. */
+/** For the D12 row. */
 export function sumMismatchText(sum: number, taken: number): string {
-  return `sửa xong + phế liệu (${pieces(sum)}) phải bằng số lấy ra (${pieces(taken)})`;
+  return dict.repairs.messages.sumMismatch("", pieces(sum), pieces(taken));
 }
 
 const groupFormatter = new Intl.NumberFormat("vi-VN", {

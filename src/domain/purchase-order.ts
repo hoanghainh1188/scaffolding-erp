@@ -1,6 +1,8 @@
 // Purchase orders (purchase-orders spec, design D2, D4, D6): line and cost
 // rules, expected totals, status labels and the one table of allowed status
 // changes. goods-receipt calls transition() with the RECEIVE_* commands.
+import { dict } from "@/locales";
+
 import { lineAmount } from "./average-cost";
 import { DomainValueError } from "./errors";
 import { toMoney, type Money } from "./money";
@@ -10,8 +12,8 @@ export const PURCHASE_KINDS = ["NEW", "USED"] as const;
 export type PurchaseKind = (typeof PURCHASE_KINDS)[number];
 
 export const PURCHASE_KIND_LABELS: Readonly<Record<PurchaseKind, string>> = {
-  NEW: "Hàng mới",
-  USED: "Đã qua sử dụng",
+  NEW: dict.purchasing.kind.NEW,
+  USED: dict.purchasing.kind.USED,
 };
 
 /** Stored statuses: the domain-values set without PENDING_APPROVAL. */
@@ -39,36 +41,31 @@ export const COST_LABEL_SUGGESTIONS = [
 ] as const;
 
 export const PURCHASE_MESSAGES = {
-  notFound: "Không tìm thấy đơn thu mua",
-  supplier: "Chọn nhà cung cấp",
-  supplierArchived: (code: string) => `Nhà cung cấp ${code} đã ngừng dùng`,
-  itemMissing: "Chọn mã hàng",
-  itemArchived: (code: string) => `Vật tư ${code} đã ngừng dùng`,
-  duplicate: (code: string) =>
-    `${code} đã có trong đơn, sửa số lượng ở dòng cũ`,
-  kgOnly: (code: string) => `${code} tính theo kg, chỉ đặt được theo kg`,
-  wholePieces: (code: string) =>
-    `${code} tính theo cái, số lượng phải là số nguyên`,
-  quantity: "Số lượng phải lớn hơn 0",
-  price: "Đơn giá phải là số nguyên không âm",
-  costLabel: "Nhập tên khoản chi phí",
-  costLabelLong: `Tên khoản chi phí dài tối đa ${COST_LABEL_MAX} ký tự`,
-  costAmount: "Chi phí phải lớn hơn 0",
-  noLines: "Đơn cần ít nhất một dòng hàng",
-  noDate: "Nhập ngày dự kiến nhập",
-  placed: (code: string) => `Đơn ${code} đã đặt rồi`,
-  notPlaced: (code: string) =>
-    `Đơn ${code} chưa đặt, xóa đơn nháp nếu không cần nữa`,
-  done: (code: string) => `Đơn ${code} đã xong, không đổi được nữa`,
-  cancelReceived:
-    "Đơn đã có phiếu nhập thì không hủy được. Hàng nhập sai thì lập phiếu điều chỉnh kho.",
-  cancelReason: "Nhập lý do hủy đơn",
-  reasonTooLong: `Lý do dài tối đa ${END_REASON_MAX} ký tự`,
-  closeNoReceipts: "Đơn chưa có phiếu nhập, dùng Hủy đơn",
-  deletePlaced: "Đơn đã đặt không xóa được, dùng Hủy đơn",
-  editLocked:
-    "Đơn đã có phiếu nhập, chỉ sửa được ngày dự kiến, phương tiện và ghi chú",
-  stale: "Đơn vừa được người khác sửa, tải lại trang",
+  notFound: dict.purchasing.messages.notFound,
+  supplier: dict.purchasing.messages.supplierRequired,
+  supplierArchived: dict.purchasing.messages.supplierArchived,
+  itemMissing: dict.purchasing.messages.itemRequired,
+  itemArchived: dict.purchasing.messages.itemArchived,
+  duplicate: dict.purchasing.messages.duplicateItem,
+  kgOnly: dict.purchasing.messages.kgOnly,
+  wholePieces: dict.purchasing.messages.wholePieces,
+  quantity: dict.purchasing.messages.quantityPositive,
+  price: dict.purchasing.messages.pricePositive,
+  costLabel: dict.purchasing.messages.costLabelRequired,
+  costLabelLong: dict.purchasing.messages.costLabelTooLong(COST_LABEL_MAX),
+  costAmount: dict.purchasing.messages.costAmountPositive,
+  noLines: dict.purchasing.messages.noLines,
+  noDate: dict.purchasing.messages.noDate,
+  placed: dict.purchasing.messages.alreadyPlaced,
+  notPlaced: dict.purchasing.messages.notPlaced,
+  done: dict.purchasing.messages.alreadyDone,
+  cancelReceived: dict.purchasing.messages.cancelWithReceipts,
+  cancelReason: dict.purchasing.messages.cancelReasonRequired,
+  reasonTooLong: dict.purchasing.messages.reasonTooLong(END_REASON_MAX),
+  closeNoReceipts: dict.purchasing.messages.closeNoReceipts,
+  deletePlaced: dict.purchasing.messages.deletePlaced,
+  editLocked: dict.purchasing.messages.supplierLocked,
+  stale: dict.common.alerts.staleData,
 } as const;
 
 /** A domain error that belongs to one form field ("lines.0.quantity"). */

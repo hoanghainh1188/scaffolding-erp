@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { dict } from "@/locales";
 import { NAV_ITEMS, navItemsForRole } from "./navigation";
 
 const labels = (role: Parameters<typeof navItemsForRole>[0]) =>
@@ -8,15 +9,15 @@ const labels = (role: Parameters<typeof navItemsForRole>[0]) =>
 describe("navigation", () => {
   it("lists nine desktop items in order", () => {
     expect(NAV_ITEMS.map((item) => [item.label, item.href])).toEqual([
-      ["Tổng quan", "/dashboard"],
-      ["Thu mua", "/purchasing"],
-      ["Kho", "/inventory"],
-      ["Sửa chữa", "/repairs"],
-      ["Bán & Thuê", "/sales"],
-      ["Công nợ", "/receivables"],
-      ["Báo cáo", "/reports"],
-      ["Danh mục", "/catalog"],
-      ["Cài đặt", "/settings"],
+      [dict.navigation.desktop.dashboard, "/dashboard"],
+      [dict.navigation.desktop.purchasing, "/purchasing"],
+      [dict.navigation.desktop.inventory, "/inventory"],
+      [dict.navigation.desktop.repairs, "/repairs"],
+      [dict.navigation.desktop.sales, "/sales"],
+      [dict.navigation.desktop.receivables, "/receivables"],
+      [dict.navigation.desktop.reports, "/reports"],
+      [dict.navigation.desktop.catalog, "/catalog"],
+      [dict.navigation.desktop.settings, "/settings"],
     ]);
   });
 
@@ -26,12 +27,12 @@ describe("navigation", () => {
 
   it("hides receivables, reports and settings from sales", () => {
     expect(labels("SALES")).toEqual([
-      "Tổng quan",
-      "Thu mua",
-      "Kho",
-      "Sửa chữa",
-      "Bán & Thuê",
-      "Danh mục",
+      dict.navigation.desktop.dashboard,
+      dict.navigation.desktop.purchasing,
+      dict.navigation.desktop.inventory,
+      dict.navigation.desktop.repairs,
+      dict.navigation.desktop.sales,
+      dict.navigation.desktop.catalog,
     ]);
   });
 

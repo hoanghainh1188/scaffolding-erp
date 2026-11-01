@@ -4,7 +4,9 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LANDED_COST_MESSAGES } from "@/domain/landed-cost";
 import { toMoney } from "@/domain/money";
+import { sumMismatchText } from "@/domain/repair-order";
 import type {
   AwaitingItem,
   AwaitingRepair,
@@ -260,7 +262,7 @@ describe("Giá vốn sau sửa", () => {
       ),
     ).toEqual({
       ok: false,
-      reason: "Chưa có giá sắt vụn tham khảo, nhờ Giám đốc nhập ở Cài đặt",
+      reason: LANDED_COST_MESSAGES.noScrapPrice,
     });
   });
 });
@@ -303,7 +305,7 @@ describe("RepairForm", () => {
     await user.clear(good);
     await user.type(good, "30");
     expect(
-      screen.getByText("Sửa xong + phế liệu (34) phải bằng số lấy ra (40)"),
+      screen.getByText(sumMismatchText(34 * K, 40 * K)),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ghi sổ kho" })).toBeDisabled();
   });

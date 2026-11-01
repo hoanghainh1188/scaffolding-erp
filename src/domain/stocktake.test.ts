@@ -10,6 +10,7 @@ import {
   flagLabel,
   isCountableLocation,
   lineDifference,
+  STOCKTAKE_MESSAGES,
   stocktakeAdjustmentLines,
   stocktakeFlags,
   stocktakeMovements,
@@ -30,7 +31,7 @@ describe("countable places", () => {
     expect(isCountableLocation("WORKSHOP")).toBe(true);
     expect(isCountableLocation("SITE")).toBe(false);
     expect(() => assertCountableLocation("SITE")).toThrow(
-      "Chỉ kiểm kê bãi và xưởng",
+      STOCKTAKE_MESSAGES.siteRefused,
     );
     expect(() => assertCountableLocation("YARD")).not.toThrow();
   });
@@ -383,7 +384,7 @@ describe("assertSubmission", () => {
         ]),
       ),
     ).toEqual({
-      message: "Nhập số cho Chờ sửa (0 nếu không có)",
+      message: STOCKTAKE_MESSAGES.missingCondition("NEEDS_REPAIR"),
       field: "items.0",
     });
     expect(
@@ -400,15 +401,15 @@ describe("assertSubmission", () => {
 
   it("refuses part pieces, negatives and repeats", () => {
     expect(failure(() => assertSubmission(session, [k17(12_500)]))).toEqual({
-      message: "GG-K17 tính theo cái, số lượng phải là số nguyên",
+      message: STOCKTAKE_MESSAGES.wholePieces("GG-K17"),
       field: "items.0.lines.0.quantity",
     });
     expect(failure(() => assertSubmission(session, [k17(-K)])).message).toBe(
-      "GG-K17: số lượng không được âm",
+      STOCKTAKE_MESSAGES.negative("GG-K17"),
     );
     expect(
       failure(() => assertSubmission(session, [k17(K), k17(2 * K)])).message,
-    ).toBe("GG-K17 gửi hai lần trong một lần gửi");
+    ).toBe(STOCKTAKE_MESSAGES.duplicateItem("GG-K17"));
     expect(
       failure(() =>
         assertSubmission(session, [
@@ -418,15 +419,15 @@ describe("assertSubmission", () => {
           ]),
         ]),
       ).message,
-    ).toBe("GG-CH Tốt nhập hai lần");
+    ).toBe(STOCKTAKE_MESSAGES.duplicateCondition("GG-CH", "GOOD"));
     expect(failure(() => assertSubmission(session, [ch([])])).message).toBe(
-      "GG-CH: nhập số cho ít nhất một tình trạng",
+      STOCKTAKE_MESSAGES.noLines("GG-CH"),
     );
   });
 
   it("needs at least one counted item", () => {
     expect(failure(() => assertSubmission(session, [])).message).toBe(
-      "Đếm ít nhất một mã trước khi gửi",
+      STOCKTAKE_MESSAGES.nothingCounted,
     );
     const returned = session.map((line) => ({ ...line, counted: true }));
     expect(failure(() => assertSubmission(returned, [])).message).toBe("none");
@@ -471,7 +472,7 @@ describe("assertSubmission", () => {
       ).message,
     ).toBe("none");
     expect(failure(() => assertSubmission(recount, [k17(K)]))).toEqual({
-      message: "GG-K17 không cần đếm lại",
+      message: STOCKTAKE_MESSAGES.noRecount("GG-K17"),
       field: "items.0.lines.0.quantity",
     });
     expect(
@@ -480,9 +481,9 @@ describe("assertSubmission", () => {
           ch([{ condition: "GOOD", quantityMilli: K }]),
         ]),
       ).message,
-    ).toBe("GG-CH không cần đếm lại");
+    ).toBe(STOCKTAKE_MESSAGES.noRecount("GG-CH"));
     expect(failure(() => assertSubmission(recount, []))).toEqual({
-      message: "Còn 1 dòng văn phòng yêu cầu đếm lại, đếm xong mới gửi được",
+      message: STOCKTAKE_MESSAGES.recountMissing(1),
       field: "items",
     });
     expect(

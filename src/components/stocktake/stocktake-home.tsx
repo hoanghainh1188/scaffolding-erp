@@ -8,6 +8,7 @@ import { ToneBadge } from "@/components/domain/tone-badge";
 import { Button } from "@/components/ui/button";
 import { useDrafts } from "@/hooks/use-drafts";
 import type { OpenStocktake } from "@/lib/stocktakes/queries";
+import { dict } from "@/locales";
 
 interface StocktakeHomeProps {
   sessions: OpenStocktake[];
@@ -23,7 +24,7 @@ export function StocktakeHome({ sessions, userId }: StocktakeHomeProps) {
       className="flex flex-col gap-3"
     >
       <h2 id="stocktake-title" className="text-h3">
-        Kiểm kê
+        {dict.stocktake.title}
       </h2>
       {sessions.map((session) => {
         const href = `/m/stocktake/${encodeURIComponent(session.code)}`;
@@ -45,26 +46,28 @@ export function StocktakeHome({ sessions, userId }: StocktakeHomeProps) {
               </p>
               {session.status === "SUBMITTED" ? (
                 <p className="text-body text-muted-foreground">
-                  Chờ Giám đốc duyệt
+                  {dict.stocktake.home.waitingApproval}
                 </p>
               ) : session.recountLines > 0 ? (
                 <ToneBadge tone="warning" className="self-start">
-                  Cần đếm lại {session.recountLines} dòng
+                  {dict.stocktake.home.recountNeeded(session.recountLines)}
                 </ToneBadge>
               ) : session.returnedReason ? (
                 <p className="text-body text-warning">
-                  Bị trả lại: {session.returnedReason}
+                  {dict.stocktake.home.returnedNotice(session.returnedReason)}
                 </p>
               ) : (
                 <p className="text-body text-muted-foreground">
-                  Đang đếm · {progress}
+                  {dict.stocktake.statuses.COUNTING} · {progress}
                 </p>
               )}
             </div>
             {session.status === "COUNTING" && (
               <Button asChild className="h-12">
                 <Link href={href}>
-                  {session.recountLines > 0 ? "Đếm lại" : "Tiếp tục đếm"}
+                  {session.recountLines > 0
+                    ? dict.stocktake.home.recountAction
+                    : dict.stocktake.home.continueCount}
                 </Link>
               </Button>
             )}
@@ -72,7 +75,7 @@ export function StocktakeHome({ sessions, userId }: StocktakeHomeProps) {
         );
       })}
       <Button asChild variant="outline" className="h-12">
-        <Link href="/m/stocktake/new">Bắt đầu kiểm kê</Link>
+        <Link href="/m/stocktake/new">{dict.stocktake.startNew}</Link>
       </Button>
     </section>
   );

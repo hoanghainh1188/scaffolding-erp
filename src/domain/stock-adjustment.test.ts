@@ -10,6 +10,7 @@ import {
   normalizeReason,
   type AdjustmentLineInput,
 } from "./stock-adjustment";
+import { REVALUE_MESSAGES } from "./stock-revaluation";
 
 const line = (
   overrides: Partial<AdjustmentLineInput>,
@@ -174,13 +175,13 @@ describe("assertAdjustmentLine", () => {
       assertAdjustmentLine("ADJUSTMENT", valueLine(-1_500_000)),
     ).toThrow("Dòng không hợp với loại phiếu");
     expect(() => assertAdjustmentLine("REVALUE", valueLine(0))).toThrow(
-      "Chênh lệch giá trị phải khác 0",
+      REVALUE_MESSAGES.deltaZero,
     );
     expect(() => assertAdjustmentLine("REVALUE", valueLine(null))).toThrow(
-      "Chênh lệch giá trị phải khác 0",
+      REVALUE_MESSAGES.deltaZero,
     );
     expect(() => assertAdjustmentLine("REVALUE", valueLine(-1.5))).toThrow(
-      "Chênh lệch giá trị phải là số nguyên đồng",
+      REVALUE_MESSAGES.deltaWhole,
     );
   });
 

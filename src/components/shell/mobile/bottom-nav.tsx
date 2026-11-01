@@ -11,6 +11,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
+import { dict } from "@/locales";
 
 interface Tab {
   href: string;
@@ -19,10 +20,10 @@ interface Tab {
 }
 
 const TABS: readonly Tab[] = [
-  { href: "/m", label: "Việc hôm nay", icon: ClipboardList },
-  { href: "/m/scan", label: "Quét mã", icon: ScanLine },
-  { href: "/m/history", label: "Lịch sử", icon: History },
-  { href: "/m/profile", label: "Cá nhân", icon: UserRound },
+  { href: "/m", label: dict.navigation.mobile.todayWork, icon: ClipboardList },
+  { href: "/m/scan", label: dict.navigation.mobile.scan, icon: ScanLine },
+  { href: "/m/history", label: dict.navigation.mobile.history, icon: History },
+  { href: "/m/profile", label: dict.navigation.mobile.profile, icon: UserRound },
 ];
 
 function isCurrent(pathname: string, href: string): boolean {

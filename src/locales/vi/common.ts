@@ -1,0 +1,47 @@
+// Common UI phrases, action buttons, pagination, and shared empty states.
+export const common = {
+  actions: {
+    save: "Lưu",
+    saveChanges: "Lưu thay đổi",
+    saving: "Đang lưu…",
+    cancel: "Hủy",
+    delete: "Xóa",
+    deleting: "Đang xóa…",
+    confirm: "Xác nhận",
+    confirming: "Đang xác nhận…",
+    close: "Đóng",
+    back: "Quay lại",
+    continue: "Tiếp tục",
+    retry: "Thử lại",
+    edit: "Chỉnh sửa",
+    search: "Tìm kiếm",
+    filter: "Lọc",
+    clearFilter: "Xóa bộ lọc",
+    viewAll: "Xem tất cả",
+    viewDetails: "Xem chi tiết",
+    hideDetails: "Ẩn chi tiết",
+    exportExcel: "Xuất Excel",
+    exporting: "Đang xuất…",
+    copy: "Sao chép",
+    copied: "Đã sao chép",
+    loadMore: "Xem thêm",
+    loading: "Đang tải…",
+  },
+  pagination: {
+    previous: "Trước",
+    next: "Sau",
+    page: "Trang",
+    of: "/",
+    range: (first: number, last: number, total: number) =>
+      `${first}–${last} / ${total}`,
+  },
+  empty: {
+    noData: "Chưa có dữ liệu",
+    noMatch: "Không tìm thấy dữ liệu phù hợp",
+  },
+  alerts: {
+    staleData: "Dữ liệu vừa được người khác cập nhật. Vui lòng tải lại trang để xem số mới nhất.",
+    reloadPage: "Tải lại trang",
+    networkError: "Không thể kết nối máy chủ. Vui lòng kiểm tra mạng và thử lại.",
+  },
+} as const;

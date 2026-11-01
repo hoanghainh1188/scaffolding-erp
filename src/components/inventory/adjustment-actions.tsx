@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import type { AdjustmentStatus } from "@/lib/inventory/adjustments";
+import { dict } from "@/locales";
 
 interface AdjustmentActionsProps {
   id: string;
@@ -56,10 +57,14 @@ export function AdjustmentActions({
         {status === "DRAFT" && canAdjust ? (
           <>
             <ConfirmAction
-              trigger={<Button variant="outline">Xóa nháp</Button>}
-              title={`Xóa ${code}?`}
-              description="Phiếu nháp bị xóa hẳn. Sổ kho không đổi."
-              confirmLabel="Xóa"
+              trigger={
+                <Button variant="outline">
+                  {dict.inventory.adjustments.deleteDraft}
+                </Button>
+              }
+              title={dict.inventory.adjustments.deleteDraftTitle(code)}
+              description={dict.inventory.adjustments.confirmDeleteDraft}
+              confirmLabel={dict.inventory.adjustments.deleteDraft}
               destructive
               error={action.error}
               onConfirm={async () => {
@@ -72,7 +77,7 @@ export function AdjustmentActions({
               disabled={action.pending}
               onClick={() => action.run(`${base}/submit`, { method: "POST" })}
             >
-              Gửi duyệt
+              {dict.inventory.adjustments.submitForApproval}
             </Button>
           </>
         ) : null}
@@ -80,18 +85,24 @@ export function AdjustmentActions({
           <>
             <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline">Trả lại</Button>
+                <Button variant="outline">
+                  {dict.inventory.adjustments.returnAction}
+                </Button>
               </DialogTrigger>
               <DialogContent>
                 <form onSubmit={giveBack} className="flex flex-col gap-4">
                   <DialogHeader>
-                    <DialogTitle>Trả lại {code}</DialogTitle>
+                    <DialogTitle>
+                      {dict.inventory.adjustments.returnTitle(code)}
+                    </DialogTitle>
                     <DialogDescription>
-                      Phiếu về Nháp để người lập sửa. Ghi rõ cần sửa gì.
+                      {dict.inventory.adjustments.returnHelp}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="return-reason">Lý do trả lại</Label>
+                    <Label htmlFor="return-reason">
+                      {dict.inventory.adjustments.returnReasonLabel}
+                    </Label>
                     <textarea
                       id="return-reason"
                       value={why}
@@ -104,17 +115,19 @@ export function AdjustmentActions({
                   <FormError message={action.error} />
                   <DialogFooter>
                     <Button type="submit" disabled={action.pending}>
-                      Trả lại
+                      {dict.inventory.adjustments.returnAction}
                     </Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
             </Dialog>
             <ConfirmAction
-              trigger={<Button>Duyệt và ghi sổ</Button>}
-              title={`Duyệt ${code}?`}
-              description="Các dòng của phiếu được ghi vào sổ kho ngay và không sửa được nữa."
-              confirmLabel="Duyệt và ghi sổ"
+              trigger={
+                <Button>{dict.inventory.adjustments.approveAndPost}</Button>
+              }
+              title={dict.inventory.adjustments.approveTitle(code)}
+              description={dict.inventory.adjustments.confirmPost}
+              confirmLabel={dict.inventory.adjustments.approveAndPost}
               error={action.error}
               onConfirm={async () =>
                 Boolean(await action.run(`${base}/approve`, { method: "POST" }))
