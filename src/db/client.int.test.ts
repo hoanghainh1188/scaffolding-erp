@@ -23,4 +23,21 @@ describe("database client", () => {
     const rows = await db.execute<{ TimeZone: string }>(sql`show timezone`);
     expect(rows[0]?.TimeZone).toBe("UTC");
   });
+
+  it("accepts custom pool options and executes queries with prepare: false", async () => {
+    const custom = createDatabase(url, {
+      max: 2,
+      idleTimeoutSeconds: 1,
+      connectTimeoutSeconds: 5,
+      prepare: false,
+    });
+    try {
+      const rows = await custom.db.execute<{ answer: number }>(
+        sql`select 42 as answer`,
+      );
+      expect(rows[0]?.answer).toBe(42);
+    } finally {
+      await custom.close();
+    }
+  });
 });
