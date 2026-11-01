@@ -6,7 +6,8 @@ Tài liệu hướng dẫn thiết lập, vận hành, kiểm tra và khắc ph�
 
 ## 1. Kiến trúc & Đặc tả hạ tầng
 
-- **Ứng dụng Web / API**: Vercel (khuyến nghị gói Pro), Node.js 24.x, vùng serverless function `sin1` (Singapore).
+- **Chi phí**: 0 USD — Vercel **Hobby** + Neon **Free** + GitHub Actions (chốt 01/11/2026). Hobby chỉ cho dùng phi thương mại: thử nội bộ / vài người xem; mở rộng cho khách hoặc production thì lên Vercel Pro.
+- **Ứng dụng Web / API**: Vercel (gói Hobby), Node.js 24.x, vùng serverless function `sin1` (Singapore).
 - **Cơ sở dữ liệu**: Neon Serverless Postgres 17, vùng `aws-ap-southeast-1` (Singapore), tính năng phân nhánh (Database Branching).
 - **Bảo vệ chỉ mục**: Header `X-Robots-Tag: noindex, nofollow` được cấu hình trong `vercel.json` và metadata robots (`isDemoMode()`) chặn 100% bot tìm kiếm.
 - **Bảo vệ quyền truy cập**: Chế độ `DEMO_MODE=true` khóa tính năng đổi mật khẩu, xóa/khóa tài khoản quản trị viên và gắn banner cảnh báo trên giao diện.
