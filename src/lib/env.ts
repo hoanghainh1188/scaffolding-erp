@@ -16,12 +16,28 @@ const DEFAULT_AUTH_URL = "http://localhost:3000";
 const optional = <T extends z.ZodType>(schema: T) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema);
 
+const booleanSchema = z.preprocess((val) => {
+  if (typeof val === "boolean") return val;
+  if (typeof val === "string") {
+    const lower = val.trim().toLowerCase();
+    if (["true", "1", "yes"].includes(lower)) return true;
+    if (["false", "0", "no"].includes(lower)) return false;
+  }
+  return val;
+}, z.boolean());
+
 const envSchema = z.object({
   NODE_ENV: optional(z.enum(NODE_ENVS).default("development")),
   DATABASE_URL: optional(
     z
       .string()
       .refine((value) => POSTGRES_URL.test(value) && URL.canParse(value)),
+  ),
+  DATABASE_URL_UNPOOLED: optional(
+    z
+      .string()
+      .refine((value) => POSTGRES_URL.test(value) && URL.canParse(value))
+      .optional(),
   ),
   BETTER_AUTH_SECRET: optional(z.string().min(MIN_SECRET_LENGTH)),
   BETTER_AUTH_URL: optional(
@@ -39,6 +55,15 @@ const envSchema = z.object({
   AUTH_SIGN_IN_LIMIT_PER_MINUTE: optional(
     z.coerce.number().int().positive().default(20),
   ),
+  // Database connection pool and timeouts for serverless / Neon (spec K8).
+  DB_POOL_MAX: optional(z.coerce.number().int().positive().default(10)),
+  DB_IDLE_TIMEOUT_SECONDS: optional(
+    z.coerce.number().int().nonnegative().optional(),
+  ),
+  DB_CONNECT_TIMEOUT_SECONDS: optional(
+    z.coerce.number().int().positive().default(3),
+  ),
+  DB_PREPARE: optional(booleanSchema.default(true)),
 });
 
 type ParsedEnv = z.infer<typeof envSchema>;
@@ -51,11 +76,17 @@ export type Env = Omit<ParsedEnv, "BETTER_AUTH_URL"> & {
 const RULES: Readonly<Record<EnvKey, string>> = {
   NODE_ENV: `phải là một trong ${NODE_ENVS.join(", ")}`,
   DATABASE_URL: "phải là URL dạng postgres://user:password@host:port/database",
+  DATABASE_URL_UNPOOLED:
+    "phải là URL dạng postgres://user:password@host:port/database",
   BETTER_AUTH_SECRET: `phải dài ít nhất ${MIN_SECRET_LENGTH} ký tự (tạo bằng: openssl rand -base64 32)`,
   BETTER_AUTH_URL: "phải là URL dạng https://ten-mien (bắt buộc ở production)",
   DEV_SEED_PASSWORD: `phải dài ít nhất ${MIN_SEED_PASSWORD_LENGTH} ký tự`,
   E2E_PASSWORD: `phải dài ít nhất ${MIN_SEED_PASSWORD_LENGTH} ký tự`,
   AUTH_SIGN_IN_LIMIT_PER_MINUTE: "phải là số nguyên dương",
+  DB_POOL_MAX: "phải là số nguyên dương",
+  DB_IDLE_TIMEOUT_SECONDS: "phải là số nguyên không âm",
+  DB_CONNECT_TIMEOUT_SECONDS: "phải là số nguyên dương",
+  DB_PREPARE: "phải là boolean (true hoặc false)",
 };
 
 type EnvKey = keyof ParsedEnv;
