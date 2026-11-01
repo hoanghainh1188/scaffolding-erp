@@ -30,7 +30,7 @@
     "postinstall": "node scripts/copy-zxing-wasm.mts"
   },
   "dependencies": {
-    "@tanstack/react-table": "8.21.3",
+    "@tanstack/react-table": "9.3.1",
     "barcode-detector": "3.2.3",
     "better-auth": "1.7.14",
     "class-variance-authority": "0.7.1",
