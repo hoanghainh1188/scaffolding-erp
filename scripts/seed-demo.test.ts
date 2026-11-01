@@ -34,10 +34,15 @@ describe("seed-demo logic (K9)", () => {
       const res1 = canRunDemoSeed({ NODE_ENV: "production", DEMO_MODE: false });
       expect(res1.ok).toBe(false);
       if (!res1.ok) {
-        expect(res1.reason).toContain("từ chối chạy ở production khi DEMO_MODE tắt");
+        expect(res1.reason).toContain(
+          "từ chối chạy ở production khi DEMO_MODE tắt",
+        );
       }
 
-      const res2 = canRunDemoSeed({ NODE_ENV: "production", DEMO_MODE: undefined });
+      const res2 = canRunDemoSeed({
+        NODE_ENV: "production",
+        DEMO_MODE: undefined,
+      });
       expect(res2.ok).toBe(false);
     });
   });

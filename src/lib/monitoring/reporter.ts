@@ -40,7 +40,12 @@ export async function reportError(report: ErrorReport): Promise<void> {
       process.env.ERROR_MONITORING_ENABLED !== "false");
 
   // In test environment, do not attempt remote network dispatches unless explicitly forced
-  if (!isEnabled || !dsn || (process.env.NODE_ENV === "test" && process.env.ERROR_MONITORING_FORCE !== "1")) {
+  if (
+    !isEnabled ||
+    !dsn ||
+    (process.env.NODE_ENV === "test" &&
+      process.env.ERROR_MONITORING_FORCE !== "1")
+  ) {
     return;
   }
 

@@ -43,7 +43,9 @@ describe("ErrorReporter component", () => {
   it("captures unhandled promise rejection event and dispatches report", () => {
     const { unmount } = render(<ErrorReporter />);
 
-    const rejectionEvent = new Event("unhandledrejection") as PromiseRejectionEvent;
+    const rejectionEvent = new Event(
+      "unhandledrejection",
+    ) as PromiseRejectionEvent;
     Object.defineProperty(rejectionEvent, "reason", {
       value: new Error("Unhandled async rejection"),
     });

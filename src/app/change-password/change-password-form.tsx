@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,6 @@ const FIELDS = [
 ] as const;
 
 export function ChangePasswordForm({ doneHref }: ChangePasswordFormProps) {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -44,8 +42,9 @@ export function ChangePasswordForm({ doneHref }: ChangePasswordFormProps) {
       ),
     });
     if (result.ok) {
-      router.replace(doneHref);
-      router.refresh();
+      // Full load: a refresh right after router.replace could cancel the
+      // navigation and leave the user here with a stale session view.
+      window.location.replace(doneHref);
       return;
     }
     setPending(false);

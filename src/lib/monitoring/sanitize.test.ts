@@ -32,7 +32,8 @@ describe("sanitize.ts", () => {
 
   describe("sanitizeUrl", () => {
     it("redacts sensitive query parameters in URLs", () => {
-      const url = "https://example.com/api/test?token=secret123&code=456&name=alice";
+      const url =
+        "https://example.com/api/test?token=secret123&code=456&name=alice";
       const sanitized = sanitizeUrl(url);
       expect(sanitized).toBe(
         "https://example.com/api/test?token=%5BREDACTED%5D&code=%5BREDACTED%5D&name=alice",
@@ -90,7 +91,10 @@ describe("sanitize.ts", () => {
       const err = new Error("Database connection timed out");
       (err as unknown as { digest: string }).digest = "NEXT_DIGEST_12345";
 
-      const sanitized = sanitizeErrorPayload(err) as unknown as Record<string, unknown>;
+      const sanitized = sanitizeErrorPayload(err) as unknown as Record<
+        string,
+        unknown
+      >;
 
       expect(sanitized.name).toBe("Error");
       expect(sanitized.message).toBe("Database connection timed out");

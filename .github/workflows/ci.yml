@@ -184,7 +184,7 @@ jobs:
           path: |
             playwright-report/
             test-results/
-          retention-days: 14
+          retention-days: 7
 
   visual:
     name: E2E visual (Edge)
@@ -238,7 +238,7 @@ jobs:
           path: |
             playwright-report/
             test-results/
-          retention-days: 14
+          retention-days: 7
 
   gate-e2e:
     name: E2E (Edge)
@@ -308,4 +308,4 @@ jobs:
           path: |
             playwright-report/
             test-results/
-          retention-days: 14
+          retention-days: 7

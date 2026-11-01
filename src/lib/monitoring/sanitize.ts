@@ -83,7 +83,9 @@ export function sanitizeErrorPayload<T>(input: T): T {
     if (currentKey && SENSITIVE_KEY_PATTERN.test(currentKey)) {
       if (typeof val === "string" && currentKey.toLowerCase() === "cookie") {
         const hasSession = /better-auth|session|auth/i.test(val);
-        return hasSession ? `${REDACTED_VALUE}; hasSession=true` : REDACTED_VALUE;
+        return hasSession
+          ? `${REDACTED_VALUE}; hasSession=true`
+          : REDACTED_VALUE;
       }
       return REDACTED_VALUE;
     }
@@ -105,7 +107,12 @@ export function sanitizeErrorPayload<T>(input: T): T {
 
     if (typeof val === "string") {
       // If it looks like a URL with query params
-      if (val.includes("?") && (val.startsWith("http://") || val.startsWith("https://") || val.startsWith("/"))) {
+      if (
+        val.includes("?") &&
+        (val.startsWith("http://") ||
+          val.startsWith("https://") ||
+          val.startsWith("/"))
+      ) {
         return sanitizeUrl(val);
       }
       return val;

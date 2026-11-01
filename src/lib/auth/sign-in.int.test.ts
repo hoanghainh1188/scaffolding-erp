@@ -350,7 +350,11 @@ describe("signIn: temporary password expiry", () => {
       mustChangePassword: true,
       tempPasswordExpiresAt: expiresAt,
     });
-    const result = await attempt(userWithTemp, userWithTemp.password, expiresAt);
+    const result = await attempt(
+      userWithTemp,
+      userWithTemp.password,
+      expiresAt,
+    );
     expect(result).toEqual({
       ok: false,
       status: 401,
