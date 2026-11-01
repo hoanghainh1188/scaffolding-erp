@@ -148,6 +148,30 @@ Khi có sự cố rò rỉ secret hoặc nhân sự quản trị rời khỏi d�
 2. **Đổi Mật khẩu Database trên Neon**:
    - Vào Neon Console → **Roles** → Chọn user `erp_prod` → Bấm **Reset Password**.
    - Cập nhật `DATABASE_URL` và `DATABASE_URL_UNPOOLED` trên Vercel và GitHub Secrets.
+3. **Đổi `NEON_API_KEY`**: Neon Console → Account settings → **API keys** → tạo khóa mới, cập nhật GitHub Secret, rồi **Revoke** khóa cũ.
+4. **Đổi `VERCEL_DEPLOY_HOOK`**: Vercel → Project → Settings → Git → **Deploy Hooks** → tạo hook mới, cập nhật GitHub Secret, xóa hook cũ.
+5. **Đổi `BACKUP_ENCRYPTION_KEY`**: sinh khóa mới (`openssl rand -base64 32`), cập nhật GitHub Secret. **Giữ khóa cũ** ở nơi an toàn cho tới khi các bản sao lưu mã hóa bằng nó hết hạn lưu giữ, nếu không sẽ không giải mã được.
+
+#### Lịch xoay vòng định kỳ (kể cả khi không có sự cố)
+
+| Secret | Chu kỳ | Ghi chú |
+|---|---|---|
+| `BETTER_AUTH_SECRET` | 12 tháng | Mọi người phải đăng nhập lại: làm ngoài giờ làm việc |
+| Mật khẩu DB `erp_prod` | 6 tháng | |
+| `NEON_API_KEY` | 6 tháng | |
+| `VERCEL_DEPLOY_HOOK` | 12 tháng | |
+| `BACKUP_ENCRYPTION_KEY` | 12 tháng | Giữ khóa cũ như bước 5 |
+
+Ngay lập tức (không chờ chu kỳ) khi: nghi lộ secret, người có quyền quản trị nghỉ việc, hoặc secret lỡ xuất hiện trong log, chat, commit.
+
+### Tự host (không chạy trên Vercel)
+
+Nếu chuyển sang máy chủ riêng, phải có đủ các điều kiện sau trước khi mở cho người dùng:
+
+- **Reverse proxy bắt buộc** (Nginx, Caddy...) đứng trước `next start`. Proxy phải **ghi đè** header `X-Forwarded-For` bằng địa chỉ thật của máy khách (vd. Nginx `proxy_set_header X-Forwarded-For $remote_addr;`), không nối thêm vào giá trị trình duyệt gửi lên.
+  - Lý do: giới hạn đăng nhập (`src/lib/auth/rate-limit.ts`) và báo lỗi lấy IP từ **phần tử cuối** của `X-Forwarded-For`. Không có proxy, hoặc qua nhiều lớp proxy mà lớp ngoài cùng không ghi đè, thì người ngoài giả được IP và lách giới hạn.
+- **HTTPS** ở proxy. App đã gửi `Strict-Transport-Security` (HSTS: trình duyệt nhớ chỉ dùng https cho tên miền trong 1 năm) ở mọi bản không phải dev; chỉ bật tên miền khi chứng chỉ đã ổn định.
+- Cổng của `next start` và PostgreSQL **không** mở ra internet, chỉ proxy gọi được.
 
 ---
 
