@@ -49,6 +49,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | K5 | `qr-labels` | #40 | In nhãn QR dán lên hàng | 06 |
 | K6 | `stock-value-adjustment` | #42 | Phiếu điều chỉnh giá trị kho ✅ | 04 |
 | K7 | ô nhập ngày | #37 | Ô ngày chung luôn hiện `dd/mm/yyyy` (`DateInput`, sửa lỗi nhỏ PR #59) ✅ | – |
+| K8 | `serverless-db-connection` | #75 | Pool kết nối DB cho Vercel + Neon ✅ | – |
 
 ## Ghi chú
 
