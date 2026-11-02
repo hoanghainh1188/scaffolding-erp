@@ -1,4 +1,5 @@
 // Who is signed in, read fresh from the database on every request (D5).
+import { parseContractScope, type ContractScope } from "@/domain/permissions";
 import type { Role } from "@/domain/role";
 
 import type { Auth } from "./auth";
@@ -9,6 +10,8 @@ export interface CurrentUser {
   name: string;
   username: string;
   role: Role;
+  /** Which contract types a SALES account works on (0.2 #51). */
+  contractScope: ContractScope;
   mustChangePassword: boolean;
   sessionId: string;
 }
@@ -38,6 +41,7 @@ export async function resolveCurrentUser(
     name: user.name,
     username: user.username ?? "",
     role: user.role as Role,
+    contractScope: parseContractScope(user.contractScope),
     mustChangePassword: user.mustChangePassword,
     sessionId: session.id,
   };

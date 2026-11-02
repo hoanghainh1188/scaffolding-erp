@@ -128,6 +128,7 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 - **Phiếu nhập** (`src/lib/receiving/`): ghi qua `postReceipt` (khóa đơn `FOR UPDATE`, một transaction: phiếu + `PURCHASE_IN` + trạng thái đơn + lịch sử). Mã nháp `client_draft_id` chống tạo trùng. Không lưu tiền trên phiếu: tiền hàng = số × đơn giá dòng đơn, chi phí phân bổ đọc từ sổ kho. Nháp điện thoại ở `src/lib/drafts/` (IndexedDB), file `.wasm` quét QR chép vào `public/vendor/` khi `npm install`.
 - **Phiếu sửa chữa** (`src/lib/repairs/`): ghi sổ qua `postRepairOrder` (khóa phiếu, rồi `lockForPosting` vật tư → vị trí → giá, cùng thứ tự với `postMovements`). Giá phế liệu, phần hỏng, giá vào Tốt tính bằng hàm thuần `src/domain/repair-order.ts` (0.2 #23). Ngày sổ = ngày ghi sổ; ngày sửa xong chỉ là thông tin. Phiếu đã ghi sổ bị trigger khóa.
 - **Phiếu điều chỉnh giá trị** (`ĐCG`, loại `REVALUE` của `stock_adjustment`): mỗi dòng (mã + tình trạng) + chênh lệch, không đổi số lượng; giá BQ mới tính bằng hàm thuần `src/domain/stock-revaluation.ts` theo tồn lúc duyệt. Chứng từ gốc bắt buộc và phải có dòng sổ của từng (mã + tình trạng). Sửa chi phí chuyến phiếu nhập qua `buildTripRevaluation` (`src/lib/inventory/revaluations.ts`): chia lại như phiếu gốc, dựng lại không khớp số đã ghi thì buộc nhập tay.
+- **Hợp đồng** (`src/lib/contracts/`): bảng `contract` giữ số, loại, nhà thầu (khóa từ lần lưu đầu); mọi thứ đổi được nằm trong `contract_revision`: bản gốc số 0, phụ lục `/01`, `/02`..., **mỗi bản là bộ đầy đủ** (dòng hàng, bộ, giá đền bù, cọc, kế hoạch giao). Bản đã duyệt bị trigger khóa (cả dòng con). Giá tại một ngày đọc qua `contractTermsAt` (bản đã duyệt có ngày hiệu lực lớn nhất ≤ ngày đó, trùng ngày thì số lớn hơn thắng). Quyền hợp đồng qua `canContract` (`src/domain/permissions.ts`: quyền vai trò + `user.contract_scope` của tài khoản Kinh doanh, 0.2 #51), không gọi `can` thẳng cho hợp đồng. Số ngày thuê tối thiểu chỉ đặt ở `DEFAULT_MIN_RENTAL_DAYS` (`src/domain/rental.ts`). Hai hàm chờ: `overdueDebt` (`src/lib/contracts/overdue.ts`, thay ở `receivables`) và `lastClosedPeriodEnd` (`src/lib/contracts/billing-lock.ts`, thay ở `rental-billing`).
 - **Nhật ký thao tác** (`src/lib/activity/`): mọi hàm ghi gọi `logActivity(tx, actor, …)` trong transaction của thao tác (`actor` lấy từ `withAuth`, có vai trò + thiết bị); sửa không đổi trường nào thì không ghi; CCCD/STK chỉ lưu dạng che (`diffFields`); không bao giờ ghi mật khẩu. Bảng `activity_log` chỉ ghi thêm (trigger). Test tĩnh `src/lib/activity/coverage.test.ts` bắt hàm ghi quên gọi `logActivity`.
 
 ## Từ điển (tiếng Việt ↔ tên trong code)
@@ -143,6 +144,7 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 | Chi phí mua hàng phân bổ | `landed_cost` |
 | Phiếu nhập | `goods_receipt` |
 | Hợp đồng | `contract` |
+| Phụ lục hợp đồng | `contract_revision` (kind `AMENDMENT`) |
 | Phiếu xuất | `delivery_note` |
 | Phiếu thu hồi | `return_note` |
 | Phiếu đền bù | `compensation_note` |

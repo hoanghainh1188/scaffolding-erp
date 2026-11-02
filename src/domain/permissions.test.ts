@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { PERMISSIONS, can, type Permission } from "./permissions";
+import {
+  PERMISSIONS,
+  can,
+  canContract,
+  parseContractScope,
+  viewableContractTypes,
+  type ContractScope,
+  type Permission,
+} from "./permissions";
 import { ROLES, type Role } from "./role";
 
 // Expected table, written out by hand so a typo in PERMISSIONS shows up.
@@ -30,6 +38,11 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "activity.view": ["DIRECTOR"],
   "company.read": ["DIRECTOR", "ACCOUNTANT", "SALES", "WAREHOUSE", "WORKSHOP"],
   "company.manage": ["DIRECTOR"],
+  "contracts.rental.view": ["DIRECTOR", "ACCOUNTANT", "SALES"],
+  "contracts.sale.view": ["DIRECTOR", "ACCOUNTANT", "SALES"],
+  "contracts.rental.manage": ["DIRECTOR", "SALES"],
+  "contracts.sale.manage": ["DIRECTOR", "SALES"],
+  "contracts.approve": ["DIRECTOR"],
 };
 
 const PAIRS = (Object.keys(PERMISSIONS) as Permission[]).flatMap((permission) =>
@@ -66,5 +79,57 @@ describe("can", () => {
       );
       expect(can("WORKSHOP", permission)).toBe(false);
     }
+  });
+});
+
+describe("canContract", () => {
+  const sales = (contractScope: ContractScope) =>
+    ({ role: "SALES", contractScope }) as const;
+
+  it("lets a rental-only seller view and edit rental, nothing of sale", () => {
+    expect(canContract(sales("RENTAL"), "RENTAL", "view")).toBe(true);
+    expect(canContract(sales("RENTAL"), "RENTAL", "manage")).toBe(true);
+    expect(canContract(sales("RENTAL"), "SALE", "view")).toBe(false);
+    expect(canContract(sales("RENTAL"), "SALE", "manage")).toBe(false);
+  });
+
+  it("lets a sale-only seller do the opposite", () => {
+    expect(canContract(sales("SALE"), "SALE", "manage")).toBe(true);
+    expect(canContract(sales("SALE"), "RENTAL", "view")).toBe(false);
+  });
+
+  it("lets a seller with both scopes work on both", () => {
+    expect(viewableContractTypes(sales("ALL"))).toEqual(["RENTAL", "SALE"]);
+    expect(canContract(sales("ALL"), "SALE", "manage")).toBe(true);
+  });
+
+  it("ignores the scope for the accountant: views both, edits none", () => {
+    const accountant = { role: "ACCOUNTANT", contractScope: "SALE" } as const;
+    expect(viewableContractTypes(accountant)).toEqual(["RENTAL", "SALE"]);
+    expect(canContract(accountant, "RENTAL", "manage")).toBe(false);
+  });
+
+  it("gives the director everything, whatever the stored scope", () => {
+    const director = { role: "DIRECTOR", contractScope: "RENTAL" } as const;
+    expect(canContract(director, "SALE", "manage")).toBe(true);
+  });
+
+  it.each(["WAREHOUSE", "WORKSHOP"] as const)(
+    "gives %s no contract access",
+    (role) => {
+      expect(viewableContractTypes({ role, contractScope: "ALL" })).toEqual([]);
+    },
+  );
+
+  it("lets only the director approve", () => {
+    expect(ROLES.filter((role) => can(role, "contracts.approve"))).toEqual([
+      "DIRECTOR",
+    ]);
+  });
+
+  it("reads an unknown stored scope as ALL", () => {
+    expect(parseContractScope("RENTAL")).toBe("RENTAL");
+    expect(parseContractScope("ANY")).toBe("ALL");
+    expect(parseContractScope(null)).toBe("ALL");
   });
 });

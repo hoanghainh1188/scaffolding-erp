@@ -85,6 +85,12 @@ export function createAuth({ db, secret, baseURL }: AuthConfig) {
         },
         lastLoginAt: { type: "date", required: false, input: false },
         lastLoginDevice: { type: "string", required: false, input: false },
+        contractScope: {
+          type: "string",
+          required: true,
+          defaultValue: "ALL",
+          input: false,
+        },
       },
     },
     session: {
