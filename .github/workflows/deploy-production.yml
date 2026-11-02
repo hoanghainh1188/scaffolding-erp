@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_or_ref:
-        description: "Git tag or ref to deploy (defaults to current commit)"
+        description: "Tag v* or main to deploy (defaults to current commit)"
         required: false
         default: ""
 
@@ -25,9 +25,34 @@ jobs:
     environment: production
     timeout-minutes: 20
     steps:
+      # The environment only allows runs from main or v* tags, but a manual run
+      # could still check out any ref; accept only those two as full refs so a
+      # branch named like a tag cannot slip through.
+      - name: Resolve ref to deploy
+        id: ref
+        env:
+          INPUT_REF: ${{ inputs.tag_or_ref }}
+          RUN_REF: ${{ github.ref }}
+        run: |
+          case "$INPUT_REF" in
+            "") REF="$RUN_REF" ;;
+            main | refs/heads/main) REF="refs/heads/main" ;;
+            v* | refs/tags/v*) REF="refs/tags/${INPUT_REF#refs/tags/}" ;;
+            *)
+              echo "::error::tag_or_ref must be a v* tag or main, got '$INPUT_REF'."
+              exit 1
+              ;;
+          esac
+          if ! printf '%s' "$REF" | grep -Eq '^refs/(heads/main|tags/v[0-9A-Za-z._-]+)$'; then
+            echo "::error::Refusing to deploy '$REF': only main or v* tags."
+            exit 1
+          fi
+          echo "Deploying $REF"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag_or_ref || github.ref }}
+          ref: ${{ steps.ref.outputs.ref }}
 
       - uses: actions/setup-node@v7
         with:
