@@ -16,26 +16,29 @@ export const stocktake = {
     recountAction: "Đếm lại",
   },
   messages: {
-    siteRefused: "Chỉ kiểm kê bãi và xưởng",
+    siteRefused: "Chỉ hỗ trợ kiểm kê tại Bãi và Xưởng",
     emptyScope: (place: string) =>
-      `Phạm vi đã chọn không có hàng nào ở ${place}`,
+      `Phạm vi kiểm kê đã chọn không có hàng hóa nào tại ${place}`,
     openSession: (place: string, code: string) =>
-      `${place} đang có phiên ${code} chưa xong`,
-    nothingCounted: "Đếm ít nhất một mã trước khi gửi",
+      `Kho/vị trí ${place} đang có phiên kiểm kê ${code} chưa hoàn thành`,
+    nothingCounted:
+      "Vui lòng nhập số liệu kiểm đếm cho ít nhất một mã hàng trước khi gửi duyệt",
     missingCondition: (conditionName: string) =>
-      `Nhập số cho ${conditionName} (0 nếu không có)`,
+      `Vui lòng nhập số lượng cho tình trạng ${conditionName} (nhập 0 nếu không có)`,
     wholePieces: (code: string) =>
-      `${code} tính theo cái, số lượng phải là số nguyên`,
+      `${code} quản lý theo cái, số lượng phải là số nguyên`,
     negative: (code: string) => `${code}: số lượng không được âm`,
     duplicateItem: (code: string) => `${code} gửi hai lần trong một lần gửi`,
     duplicateCondition: (code: string, conditionName: string) =>
       `${code} ${conditionName} nhập hai lần`,
-    noRecount: (code: string) => `${code} không cần đếm lại`,
+    noRecount: (code: string) =>
+      `Mã hàng ${code} không nằm trong danh sách cần đếm lại`,
     noLines: (code: string) => `${code}: nhập số cho ít nhất một tình trạng`,
     recountMissing: (lines: number) =>
-      `Còn ${lines} dòng văn phòng yêu cầu đếm lại, đếm xong mới gửi được`,
+      `Còn ${lines} dòng cần đếm lại theo yêu cầu. Vui lòng hoàn thành trước khi gửi duyệt.`,
     alreadySubmitted: "Phiên đã gửi văn phòng",
-    cancelAfterSubmit: "Phiên đã gửi văn phòng, nhờ Giám đốc hủy",
+    cancelAfterSubmit:
+      "Phiên kiểm kê đã gửi duyệt lên văn phòng. Vui lòng liên hệ Giám đốc để hủy phiên.",
     alreadyPosted: "Phiên kiểm kê đã được ghi sổ",
     cancelled: "Phiên kiểm kê đã hủy",
     notSubmitted: "Phiên chưa gửi văn phòng",
@@ -43,6 +46,6 @@ export const stocktake = {
     recountNothing: "Chọn ít nhất một dòng đã đếm để đếm lại",
     recountUncounted: "Chỉ yêu cầu đếm lại dòng đã đếm",
     cancelReason: "Nhập lý do hủy",
-    offlineStart: "Cần có mạng để bắt đầu phiên kiểm kê",
+    offlineStart: "Cần có kết nối mạng để bắt đầu phiên kiểm kê",
   },
 } as const;

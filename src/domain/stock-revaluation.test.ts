@@ -9,6 +9,7 @@ import {
   assertValueLines,
   averageAfterRevalue,
   poolValue,
+  REVALUE_MESSAGES,
   revaluationFromTrip,
   revaluationMovements,
   signedMoney,
@@ -60,10 +61,10 @@ describe("averageAfterRevalue", () => {
   it("refuses an empty pool", () => {
     const ku = { code: "PK-KU", condition: "NEW" as const };
     expect(() => averageAfterRevalue(pool(0, 52_000), m(300_000), ku)).toThrow(
-      "PK-KU Mới đã hết hàng, không điều chỉnh giá trị được",
+      REVALUE_MESSAGES.soldOut(ku.code, ku.condition),
     );
     expect(() => averageAfterRevalue(pool(0, null), m(300_000), ku)).toThrow(
-      "đã hết hàng",
+      "không còn tồn kho",
     );
   });
 
@@ -71,7 +72,7 @@ describe("averageAfterRevalue", () => {
     const scrap = { code: "GG-K17", condition: "SCRAP" as const };
     expect(() =>
       averageAfterRevalue(pool(42, 160_000), m(-7_000_000), scrap),
-    ).toThrow("Giá trị sau điều chỉnh của GG-K17 Phế liệu bị âm (−280.000 ₫)");
+    ).toThrow(REVALUE_MESSAGES.negative(scrap.code, scrap.condition, -280_000));
     expect(averageAfterRevalue(pool(42, 160_000), m(-6_720_000), scrap)).toBe(
       0,
     );
@@ -93,9 +94,9 @@ describe("averageAfterRevalue", () => {
 
 describe("value lines", () => {
   it("wants a whole, non-zero change", () => {
-    expect(() => assertValueDelta(0)).toThrow("Chênh lệch giá trị phải khác 0");
+    expect(() => assertValueDelta(0)).toThrow(REVALUE_MESSAGES.deltaZero);
     expect(() => assertValueDelta(-1_500_000.5)).toThrow(
-      "Chênh lệch giá trị phải là số nguyên đồng",
+      REVALUE_MESSAGES.deltaWhole,
     );
     expect(assertValueDelta(-1_500_000)).toBe(-1_500_000);
   });
@@ -303,9 +304,9 @@ describe("revaluationFromTrip", () => {
   it("refuses an unchanged cost and a bad cost", () => {
     expect(() =>
       revaluationFromTrip(newTrip({ correctedCost: 35_000_000 })),
-    ).toThrow("Chi phí chuyến không đổi, không có gì để điều chỉnh");
+    ).toThrow(REVALUE_MESSAGES.tripUnchanged);
     expect(() => revaluationFromTrip(newTrip({ correctedCost: -1 }))).toThrow(
-      "Chi phí chuyến phải là số nguyên không âm",
+      REVALUE_MESSAGES.tripCost,
     );
   });
 
@@ -319,6 +320,6 @@ describe("revaluationFromTrip", () => {
           ]),
         }),
       ),
-    ).toThrow("Không dựng lại được cách chia của PN-2026-094, lập dòng tay");
+    ).toThrow(REVALUE_MESSAGES.tripNotReproducible("PN-2026-094"));
   });
 });

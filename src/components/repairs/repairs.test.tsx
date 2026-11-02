@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { toMoney } from "@/domain/money";
+import { REPAIR_MESSAGES, sumMismatchText } from "@/domain/repair-order";
 import type {
   AwaitingItem,
   AwaitingRepair,
@@ -260,7 +261,7 @@ describe("Giá vốn sau sửa", () => {
       ),
     ).toEqual({
       ok: false,
-      reason: "Chưa có giá sắt vụn tham khảo, nhờ Giám đốc nhập ở Cài đặt",
+      reason: REPAIR_MESSAGES.noScrapPrice,
     });
   });
 });
@@ -302,8 +303,11 @@ describe("RepairForm", () => {
     const good = screen.getByLabelText("Sửa xong GG-K17");
     await user.clear(good);
     await user.type(good, "30");
+    const expectedMismatch = sumMismatchText(34 * K, 40 * K);
     expect(
-      screen.getByText("Sửa xong + phế liệu (34) phải bằng số lấy ra (40)"),
+      screen.getByText(
+        expectedMismatch.charAt(0).toUpperCase() + expectedMismatch.slice(1),
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ghi sổ kho" })).toBeDisabled();
   });

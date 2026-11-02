@@ -138,7 +138,7 @@ test("receives an order in two trips; the office sees both on D3b", async ({
   await page.getByRole("button", { name: "Xác nhận nhập kho" }).click();
   const dialog = page.getByRole("alertdialog");
   await expect(dialog).toContainText(
-    "Nhận 100 cái, đơn chỉ còn 12. Đúng không?",
+    "Số lượng nhận (100 cái) vượt quá số lượng còn lại trên đơn (12 cái). Bạn có chắc chắn muốn nhập không?",
   );
   await dialog.getByRole("button", { name: "Sửa lại" }).click();
   await count(page, "Vật tư kho thử 1", "10", ["0", "8", "2"], true);

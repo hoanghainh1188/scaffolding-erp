@@ -37,10 +37,10 @@ test.describe("desktop shell", () => {
     await page.goto("/dashboard");
     for (const label of [
       "Tổng quan",
-      "Thu mua",
+      "Mua hàng",
       "Kho",
       "Sửa chữa",
-      "Bán & Thuê",
+      "Cho thuê & Bán",
       "Công nợ",
       "Báo cáo",
       "Danh mục",

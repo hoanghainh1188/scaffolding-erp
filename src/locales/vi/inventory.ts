@@ -3,7 +3,8 @@ export const inventory = {
   adjustments: {
     deleteDraft: "Xóa nháp",
     deleteDraftTitle: (code: string) => `Xóa ${code}?`,
-    confirmDeleteDraft: "Phiếu nháp bị xóa hẳn. Sổ kho không đổi.",
+    confirmDeleteDraft:
+      "Bản nháp sẽ bị xóa vĩnh viễn và không làm thay đổi sổ kho.",
     deleteConfirm: "Xóa",
     submitForApproval: "Gửi duyệt",
     returnAction: "Trả lại",
@@ -13,25 +14,26 @@ export const inventory = {
     approveAndPost: "Duyệt và ghi sổ",
     approveTitle: (code: string) => `Duyệt ${code}?`,
     confirmPost:
-      "Các dòng của phiếu được ghi vào sổ kho ngay và không sửa được nữa.",
+      "Số liệu sẽ được ghi chính thức vào sổ kho và không thể chỉnh sửa sau khi duyệt.",
   },
   revalueMessages: {
-    deltaZero: "Chênh lệch giá trị phải khác 0",
+    deltaZero: "Chênh lệch giá trị điều chỉnh phải khác 0",
     deltaWhole: "Chênh lệch giá trị phải là số nguyên đồng",
     duplicate: (pair: string) => `${pair} đã có trên phiếu`,
     soldOut: (pair: string) =>
-      `${pair} đã hết hàng, không điều chỉnh giá trị được`,
+      `Mã hàng ${pair} hiện không còn tồn kho, không thể điều chỉnh giá trị`,
     negative: (pair: string, value: string) =>
-      `Giá trị sau điều chỉnh của ${pair} bị âm (${value})`,
-    relatedMissing: "Nhập mã chứng từ bị sửa",
+      `Giá trị tồn kho sau điều chỉnh của ${pair} không được âm (${value})`,
+    relatedMissing: "Vui lòng nhập mã chứng từ gốc cần điều chỉnh",
     relatedNotFound: (code: string) =>
-      `Không tìm thấy chứng từ ${code} trong sổ kho`,
+      `Không tìm thấy chứng từ gốc ${code} trong sổ kho`,
     pairNotInRelated: (related: string, pair: string) =>
       `${related} không có dòng sổ của ${pair}`,
     tripCost: "Chi phí chuyến phải là số nguyên không âm",
-    tripUnchanged: "Chi phí chuyến không đổi, không có gì để điều chỉnh",
+    tripUnchanged:
+      "Chi phí chuyến không thay đổi, không có phát sinh để điều chỉnh",
     tripNotReproducible: (receipt: string) =>
-      `Không dựng lại được cách chia của ${receipt}, lập dòng tay`,
+      `Không thể tự động phân bổ lại chi phí theo phiếu ${receipt}. Vui lòng nhập dòng điều chỉnh thủ công.`,
     tripOpen: (receipt: string, adjustment: string) =>
       `${receipt} đã có phiếu điều chỉnh giá ${adjustment} chưa ghi sổ`,
   },

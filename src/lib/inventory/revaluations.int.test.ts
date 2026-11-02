@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import type { Condition } from "@/domain/condition";
+import { REVALUE_MESSAGES } from "@/domain/stock-revaluation";
 import { updateItem } from "@/lib/catalog/items";
 import { postReceipt } from "@/lib/receiving/post";
 import { activityRows } from "@/test/activity";
@@ -232,7 +233,7 @@ describe("value adjustment typed by hand", () => {
           TODAY,
         ),
       ),
-    ).toBe("Nhập mã chứng từ bị sửa");
+    ).toBe(REVALUE_MESSAGES.relatedMissing);
     expect(
       await error(
         createAdjustment(
@@ -242,7 +243,7 @@ describe("value adjustment typed by hand", () => {
           TODAY,
         ),
       ),
-    ).toBe("Không tìm thấy chứng từ PN-2026-999 trong sổ kho");
+    ).toBe(REVALUE_MESSAGES.relatedNotFound("PN-2026-999"));
     expect(
       await error(
         createAdjustment(
@@ -288,7 +289,7 @@ describe("value adjustment typed by hand", () => {
           TODAY,
         ),
       ),
-    ).toBe("PK-KU Mới đã hết hàng, không điều chỉnh giá trị được");
+    ).toBe(REVALUE_MESSAGES.soldOut("PK-KU", "NEW"));
     expect(
       await error(
         createAdjustment(
@@ -298,7 +299,7 @@ describe("value adjustment typed by hand", () => {
           TODAY,
         ),
       ),
-    ).toBe("Giá trị sau điều chỉnh của GG-K17 Phế liệu bị âm (−280.000 ₫)");
+    ).toBe(REVALUE_MESSAGES.negative("GG-K17", "SCRAP", -280_000));
   });
 
   it("prices at approval when stock changed, and refuses once sold out", async () => {
@@ -341,7 +342,7 @@ describe("value adjustment typed by hand", () => {
     );
     expect(
       await error(approveAdjustment(ctx.db, ids.director, m16.id, TODAY)),
-    ).toBe("GG-M16 Tốt đã hết hàng, không điều chỉnh giá trị được");
+    ).toBe(REVALUE_MESSAGES.soldOut("GG-M16", "GOOD"));
     const [row] = await ctx.db
       .select({ status: stockAdjustment.status })
       .from(stockAdjustment)
@@ -466,7 +467,7 @@ describe("value adjustment typed by hand", () => {
       }),
     ).toMatchObject({
       newAvg: null,
-      error: "PK-KU Mới đã hết hàng, không điều chỉnh giá trị được",
+      error: REVALUE_MESSAGES.soldOut("PK-KU", "NEW"),
     });
   });
 });
@@ -626,7 +627,7 @@ describe("trip-cost fix of a goods receipt", () => {
       await error(
         createTripAdjustment(ctx.db, ids.accountant, fix(4_880_000), TODAY),
       ),
-    ).toBe("Chi phí chuyến không đổi, không có gì để điều chỉnh");
+    ).toBe(REVALUE_MESSAGES.tripUnchanged);
     const draft = await data(
       createTripAdjustment(ctx.db, ids.accountant, fix(488_000), TODAY),
     );
@@ -660,7 +661,7 @@ describe("trip-cost fix of a goods receipt", () => {
       standardWeightKg: "14",
     });
     expect(changed.ok).toBe(true);
-    const message = `Không dựng lại được cách chia của ${receiptCode}, lập dòng tay`;
+    const message = REVALUE_MESSAGES.tripNotReproducible(receiptCode);
     expect(
       await error(approveAdjustment(ctx.db, ids.director, draft.id, TODAY)),
     ).toBe(message);

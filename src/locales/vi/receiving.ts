@@ -10,11 +10,11 @@ export const receiving = {
   },
   anomalies: {
     piecesOver: (got: string, rest: string) =>
-      `Nhận ${got} cái, đơn chỉ còn ${rest}. Đúng không?`,
+      `Số lượng nhận (${got} cái) vượt quá số lượng còn lại trên đơn (${rest} cái). Bạn có chắc chắn muốn nhập không?`,
     kgOver: (got: string, rest: string) =>
-      `Nhận ${got} kg, đơn chỉ còn ${rest} kg. Đúng không?`,
+      `Khối lượng nhận (${got} kg) vượt quá số lượng còn lại trên đơn (${rest} kg). Bạn có chắc chắn muốn nhập không?`,
     costsOver: (trip: string, expected: string) =>
-      `Chi phí chuyến ${trip}, cả đơn dự kiến ${expected}. Đúng không?`,
+      `Chi phí chuyến này (${trip}) vượt quá tổng chi phí dự kiến cả đơn (${expected}). Bạn có muốn tiếp tục ghi nhận không?`,
     noteOver: (code: string, got: string, rest: string, unit: string) =>
       `nhận dư ${code} ${got}/${rest} ${unit}`,
     noteCostHigh: (cost: string) => `chi phí cao ${cost}`,

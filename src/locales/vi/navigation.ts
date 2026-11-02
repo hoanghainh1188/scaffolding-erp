@@ -2,10 +2,10 @@
 export const navigation = {
   desktop: {
     dashboard: "Tổng quan",
-    purchasing: "Thu mua",
+    purchasing: "Mua hàng",
     inventory: "Kho",
     repairs: "Sửa chữa",
-    sales: "Bán & Thuê",
+    sales: "Cho thuê & Bán",
     receivables: "Công nợ",
     reports: "Báo cáo",
     catalog: "Danh mục",

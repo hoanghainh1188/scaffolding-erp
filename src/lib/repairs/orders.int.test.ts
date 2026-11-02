@@ -14,6 +14,7 @@ import {
 } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import type { Condition } from "@/domain/condition";
+import { REPAIR_MESSAGES } from "@/domain/repair-order";
 import { lockForPosting, postMovements } from "@/lib/inventory/post";
 import { reconcileInventory } from "@/lib/inventory/reconcile";
 import { setScrapPrice } from "@/lib/receiving/scrap-price";
@@ -242,7 +243,7 @@ describe("drafts", () => {
       ),
     ).toMatchObject({
       status: 422,
-      error: "Ngày sửa xong không được sau hôm nay",
+      error: REPAIR_MESSAGES.futureDate,
     });
     expect(
       await createRepairDraft(
@@ -253,7 +254,7 @@ describe("drafts", () => {
       ),
     ).toMatchObject({
       status: 422,
-      error: "GG-K17: sửa xong + phế liệu (34) phải bằng số lấy ra (40)",
+      error: REPAIR_MESSAGES.sumMismatch("GG-K17", 34_000, 40_000),
       field: "lines.0.quantityGood",
     });
   });
@@ -537,7 +538,7 @@ describe("refusals roll everything back", () => {
     ).toMatchObject({
       ok: false,
       status: 400,
-      error: "Chưa có giá sắt vụn tham khảo, nhờ Giám đốc nhập ở Cài đặt",
+      error: REPAIR_MESSAGES.noScrapPrice,
     });
     await untouched(withScrap);
     const noScrap = await draft([["GG-CH", 20, 20, 0, 240_000]]);
