@@ -17,9 +17,34 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
+import { UNIT_SQL } from "./units";
 
-/** Same rule as src/domain/item-code.ts (item, kit, yard and workshop codes). */
-const CODE_PATTERN = "^[A-Z0-9]+(-[A-Z0-9]+)*$";
+// Item, kit and old codes (catalog-extensions design D1). The full rule
+// (Unicode letters and digits only) lives in src/domain/item-code.ts: the
+// character classes of Postgres follow the DB collation. Here only the
+// collation-free part: length, upper case, no leading/trailing/double joiner.
+// Uniqueness key of an item, kit or old code: no Vietnamese accents
+// (Đ → D), no spaces, lower case. NỐI 34 and NOI34 share "noi34". Computed by
+// the DB so no writer can forget it; codes are upper case, so translate()
+// only needs upper-case letters and lower() only meets ASCII (no collation).
+// Same rule as itemCodeKey in src/domain/item-code.ts.
+const ACCENTED =
+  "ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ ";
+const PLAIN =
+  "AAAAAAAAAAAAAAAAAEEEEEEEEEEEIIIIIOOOOOOOOOOOOOOOOOUUUUUUUUUUUYYYYYD";
+const codeKey = (column: string) =>
+  text("code_key")
+    .notNull()
+    .unique()
+    .generatedAlwaysAs(
+      sql.raw(`lower(translate("${column}", '${ACCENTED}', '${PLAIN}'))`),
+    );
+
+const itemCodeCheck = (name: string, column: unknown) =>
+  check(
+    name,
+    sql`char_length(${column}) between 2 and 30 and ${column} = upper(${column}) and ${column} = btrim(${column}) and ${column} !~ '[,*+ -]{2}' and ${column} !~ '^[,*+ -]|[,*+ -]$'`,
+  );
 
 const id = () =>
   uuid("id")
@@ -59,9 +84,18 @@ export const itemGroup = pgTable(
     // Name without accents, lower case: "Giàn giáo" and "giàn giáo" clash.
     nameKey: text("name_key").notNull().unique(),
     sortOrder: integer("sort_order").notNull().default(0),
+    // Thiết bị (goods the company trades) or Vật tư (raw materials, workshop
+    // supplies); items take it from their group (design D3).
+    category: text("category").notNull().default("EQUIPMENT"),
     ...audit(),
   },
-  (table) => [statusCheck("item_group_status_check", table.status)],
+  (table) => [
+    statusCheck("item_group_status_check", table.status),
+    check(
+      "item_group_category_check",
+      sql`${table.category} in ('EQUIPMENT', 'MATERIAL')`,
+    ),
+  ],
 );
 
 export const item = pgTable(
@@ -69,6 +103,8 @@ export const item = pgTable(
   {
     id: id(),
     code: text("code").notNull().unique(),
+    // Shared space with kit.code_key and item_alias.code_key (design D1).
+    codeKey: codeKey("code"),
     name: text("name").notNull(),
     groupId: uuid("group_id")
       .notNull()
@@ -85,25 +121,44 @@ export const item = pgTable(
     ...audit(),
   },
   (table) => [
-    check("item_unit_check", sql`${table.unit} in ('PIECE', 'KG')`),
+    check("item_unit_check", sql`${table.unit} in ${UNIT_SQL}`),
     check(
       "item_weight_check",
-      sql`(${table.unit} = 'PIECE' and ${table.standardWeightKg} is not null and ${table.standardWeightKg} > 0) or (${table.unit} = 'KG' and ${table.standardWeightKg} is null)`,
-    ),
-    check(
-      "item_rental_unit_check",
-      sql`${table.unit} = 'PIECE' or ${table.dailyRentalPrice} is null`,
+      sql`(${table.unit} = 'KG' and ${table.standardWeightKg} is null) or (${table.unit} <> 'KG' and ${table.standardWeightKg} is not null and ${table.standardWeightKg} > 0)`,
     ),
     check(
       "item_prices_check",
       sql`coalesce(${table.dailyRentalPrice}, 0) >= 0 and coalesce(${table.lostPrice}, 0) >= 0 and coalesce(${table.damagePrice}, 0) >= 0`,
     ),
-    check(
-      "item_code_check",
-      sql`${table.code} ~ ${sql.raw(`'${CODE_PATTERN}'`)} and length(${table.code}) between 2 and 20`,
-    ),
+    itemCodeCheck("item_code_check", table.code),
     statusCheck("item_status_check", table.status),
     index("item_group_idx").on(table.groupId),
+  ],
+);
+
+/**
+ * Old codes (other names) of an item, up to 5, for search and typing
+ * (design D1). Never referenced by documents, so they go with the item.
+ */
+export const itemAlias = pgTable(
+  "item_alias",
+  {
+    id: id(),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => item.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    codeKey: codeKey("code"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdBy: text("created_by").references(() => user.id, {
+      onDelete: "restrict",
+    }),
+  },
+  (table) => [
+    itemCodeCheck("item_alias_code_check", table.code),
+    index("item_alias_item_idx").on(table.itemId),
   ],
 );
 
@@ -112,15 +167,13 @@ export const kit = pgTable(
   {
     id: id(),
     code: text("code").notNull().unique(),
+    codeKey: codeKey("code"),
     name: text("name").notNull(),
     searchText: text("search_text").notNull(),
     ...audit(),
   },
   (table) => [
-    check(
-      "kit_code_check",
-      sql`${table.code} ~ ${sql.raw(`'${CODE_PATTERN}'`)} and length(${table.code}) between 2 and 20`,
-    ),
+    itemCodeCheck("kit_code_check", table.code),
     statusCheck("kit_status_check", table.status),
   ],
 );
@@ -159,11 +212,17 @@ export const customer = pgTable(
     address: text("address"),
     paymentTermsDays: integer("payment_terms_days").notNull().default(30),
     note: text("note"),
+    // Sales staff in charge (design D5); only for filters and reports, never
+    // limits who sees the customer.
+    salesUserId: text("sales_user_id").references(() => user.id, {
+      onDelete: "restrict",
+    }),
     searchText: text("search_text").notNull(),
     ...audit(),
   },
   (table) => [
     partnerKindCheck("customer_kind_check", table.kind),
+    index("customer_sales_user_idx").on(table.salesUserId),
     check(
       "customer_payment_terms_check",
       sql`${table.paymentTermsDays} between 0 and 365`,
@@ -225,6 +284,9 @@ export const site = pgTable(
     code: text("code").notNull().unique(),
     name: text("name").notNull(),
     address: text("address"),
+    // Province code from src/domain/province.ts; the region follows from it.
+    // No CHECK: the list may change with the administration (design D4).
+    province: text("province"),
     customerId: uuid("customer_id")
       .notNull()
       .references(() => customer.id, { onDelete: "restrict" }),
@@ -238,5 +300,6 @@ export const site = pgTable(
   (table) => [
     statusCheck("site_status_check", table.status),
     index("site_customer_idx").on(table.customerId),
+    index("site_province_idx").on(table.province),
   ],
 );

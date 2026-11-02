@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DomainValueError } from "@/domain/errors";
-import { normalizeCatalogCode } from "@/domain/item-code";
+import { normalizeItemCode } from "@/domain/item-code";
 import { itemCodeFromQr } from "@/domain/qr-payload";
 import { createQrDetector, type QrDetector } from "@/lib/scan/detector";
 
@@ -124,7 +124,7 @@ export function QrScanner({
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    const code = normalizeCatalogCode(typed);
+    const code = normalizeItemCode(typed);
     if (code) onCode(code);
   }
 

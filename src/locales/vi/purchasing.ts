@@ -21,8 +21,10 @@ export const purchasing = {
       `Mã hàng ${code} đã có trong đơn, vui lòng điều chỉnh số lượng ở dòng hiện có`,
     kgOnly: (code: string) =>
       `Mã hàng ${code} quản lý theo kg, vui lòng đặt theo đơn vị kg`,
-    wholePieces: (code: string) =>
-      `${code} quản lý theo cái, số lượng phải là số nguyên`,
+    wholePieces: (code: string, unitLabel = "cái") =>
+      `${code} quản lý theo ${unitLabel}, số lượng phải là số nguyên`,
+    unitNotAllowed: (code: string, unitLabel: string) =>
+      `Mã hàng ${code} chỉ đặt theo ${unitLabel} hoặc kg`,
     quantityPositive: "Số lượng phải lớn hơn 0",
     pricePositive: "Đơn giá phải là số nguyên không âm",
     costLabelRequired:

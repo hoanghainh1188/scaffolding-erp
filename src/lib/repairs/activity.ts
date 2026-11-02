@@ -13,13 +13,20 @@ import {
 } from "@/domain/activity-changes";
 import { countText, joinParts } from "@/domain/activity-summary";
 import { formatBusinessDate } from "@/domain/business-date";
-import { formatQuantity, quantityFromDb } from "@/domain/quantity";
+import {
+  formatQuantity,
+  QUANTITY_UNIT_LABELS,
+  quantityFromDb,
+  type QuantityUnit,
+} from "@/domain/quantity";
+import { unitFromDb } from "@/lib/inventory/unit";
 import { moneyText } from "@/lib/activity/fields";
 
 type Executor = Pick<Database, "select">;
 
 export interface RepairLineView {
   code: string;
+  unit: QuantityUnit;
   taken: string;
   good: string;
   scrap: string;
@@ -35,8 +42,12 @@ export interface RepairView {
   lines: RepairLineView[];
 }
 
-const pieces = (value: string) =>
-  `${formatQuantity(quantityFromDb(value, "KG"))} cái`;
+const amount = (value: string, unit: QuantityUnit) =>
+  formatQuantity(quantityFromDb(value, unit));
+
+/** "40 cái", "5 bó": a line quantity in the item's own unit. */
+const withUnit = (value: string, unit: QuantityUnit) =>
+  `${amount(value, unit)} ${QUANTITY_UNIT_LABELS[unit]}`;
 
 const HEAD: readonly FieldSpec<RepairView>[] = [
   {
@@ -55,15 +66,23 @@ const LINES: LineSpec<RepairLineView> = {
   key: (line) => line.code,
   whole: (line) =>
     joinParts(
-      `lấy ${pieces(line.taken)}`,
-      `${pieces(line.good)} Tốt`,
-      `${pieces(line.scrap)} phế liệu`,
+      `lấy ${withUnit(line.taken, line.unit)}`,
+      `${withUnit(line.good, line.unit)} Tốt`,
+      `${withUnit(line.scrap, line.unit)} phế liệu`,
       `chi phí ${moneyText(line.repairCost)}`,
     ),
   columns: [
-    { field: "taken", label: "Số lấy ra", value: (l) => pieces(l.taken) },
-    { field: "good", label: "Về Tốt", value: (l) => pieces(l.good) },
-    { field: "scrap", label: "Phế liệu", value: (l) => pieces(l.scrap) },
+    {
+      field: "taken",
+      label: "Số lấy ra",
+      value: (l) => withUnit(l.taken, l.unit),
+    },
+    { field: "good", label: "Về Tốt", value: (l) => withUnit(l.good, l.unit) },
+    {
+      field: "scrap",
+      label: "Phế liệu",
+      value: (l) => withUnit(l.scrap, l.unit),
+    },
     {
       field: "repairCost",
       label: "Chi phí sửa",
@@ -95,6 +114,7 @@ export async function repairView(
     tx
       .select({
         code: item.code,
+        unit: item.unit,
         taken: repairOrderLine.quantityTaken,
         good: repairOrderLine.quantityGood,
         scrap: repairOrderLine.quantityScrap,
@@ -106,7 +126,10 @@ export async function repairView(
       .orderBy(asc(repairOrderLine.position)),
   ]);
   if (!head) throw new Error(`repair order ${orderId} not found`);
-  return { ...head, lines };
+  return {
+    ...head,
+    lines: lines.map((line) => ({ ...line, unit: unitFromDb(line.unit) })),
+  };
 }
 
 export function repairChanges(
@@ -119,17 +142,38 @@ export function repairChanges(
   ];
 }
 
-const sumPieces = (values: readonly string[]) =>
-  formatQuantity({
-    unit: "KG",
-    milli: values.reduce((sum, v) => sum + quantityFromDb(v, "KG").milli, 0),
+type LineQuantity = "taken" | "good" | "scrap";
+
+/**
+ * Σ of one quantity per unit, never adding cái to bó: "60 cái",
+ * "40 cái, 5 bó". `bare` drops the label when every line shares one unit
+ * ("4 phế liệu").
+ */
+function sumByUnit(
+  lines: readonly RepairLineView[],
+  pick: LineQuantity,
+  bare = false,
+): string {
+  const totals = new Map<QuantityUnit, number>();
+  for (const line of lines) {
+    const milli = quantityFromDb(line[pick], line.unit).milli;
+    totals.set(line.unit, (totals.get(line.unit) ?? 0) + milli);
+  }
+  if (totals.size === 0) return bare ? "0" : `0 ${QUANTITY_UNIT_LABELS.PIECE}`;
+  const parts = [...totals].map(([unit, milli]) => {
+    const text = formatQuantity({ unit, milli });
+    return bare && totals.size === 1
+      ? text
+      : `${text} ${QUANTITY_UNIT_LABELS[unit]}`;
   });
+  return parts.join(", ");
+}
 
 /** "2 mã hàng · lấy 60 cái từ XUONG-01". */
 export function draftSummary(view: RepairView): string {
   return joinParts(
     countText(view.lines.length, "mã hàng"),
-    `lấy ${sumPieces(view.lines.map((line) => line.taken))} cái từ ${view.from}`,
+    `lấy ${sumByUnit(view.lines, "taken")} từ ${view.from}`,
   );
 }
 
@@ -137,7 +181,7 @@ export function draftSummary(view: RepairView): string {
 export function postedSummary(view: RepairView, confirmed: string | null) {
   const cost = view.lines.reduce((sum, line) => sum + line.repairCost, 0);
   return joinParts(
-    `${sumPieces(view.lines.map((l) => l.good))} cái về Tốt, ${sumPieces(view.lines.map((l) => l.scrap))} phế liệu`,
+    `${sumByUnit(view.lines, "good")} về Tốt, ${sumByUnit(view.lines, "scrap", true)} phế liệu`,
     `chi phí ${moneyText(cost)}`,
     confirmed,
   );

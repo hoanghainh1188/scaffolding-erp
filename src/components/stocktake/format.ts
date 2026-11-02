@@ -3,6 +3,7 @@
 import { formatMoney, toMoney } from "@/domain/money";
 import {
   QUANTITY_UNIT_LABELS,
+  QUANTITY_UNITS,
   formatQuantity,
   toQuantity,
   type QuantityUnit,
@@ -28,14 +29,12 @@ export function signedQuantity(milli: number, unit: QuantityUnit): string {
 
 /** "-42 cái", "+12 cái · +2,25 kg", "0 cái". */
 export function signedQuantities(
-  byUnit: Readonly<Record<QuantityUnit, number>>,
+  byUnit: Readonly<Partial<Record<QuantityUnit, number>>>,
 ): string {
-  const parts = (["PIECE", "KG"] as const)
-    .filter((unit) => byUnit[unit] !== 0)
-    .map(
-      (unit) =>
-        `${signedQuantity(byUnit[unit], unit)} ${QUANTITY_UNIT_LABELS[unit]}`,
-    );
+  const parts = QUANTITY_UNITS.filter((unit) => (byUnit[unit] ?? 0) !== 0).map(
+    (unit) =>
+      `${signedQuantity(byUnit[unit] ?? 0, unit)} ${QUANTITY_UNIT_LABELS[unit]}`,
+  );
   return parts.length ? parts.join(" · ") : `0 ${QUANTITY_UNIT_LABELS.PIECE}`;
 }
 

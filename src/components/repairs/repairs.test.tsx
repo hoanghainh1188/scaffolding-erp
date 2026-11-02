@@ -41,6 +41,7 @@ const K17: AwaitingItem = {
   itemId: "k17",
   itemCode: "GG-K17",
   itemName: "Khung giàn giáo 1,7m",
+  unit: "PIECE",
   standardWeightKg: "13.500",
   onHandMilli: 201 * K,
   needsRepairAvg: m(160_000),
@@ -53,6 +54,7 @@ const CH: AwaitingItem = {
   itemId: "ch",
   itemCode: "GG-CH",
   itemName: "Chéo giàn giáo",
+  unit: "PIECE",
   standardWeightKg: "2.800",
   onHandMilli: 63 * K,
   needsRepairAvg: m(30_000),
@@ -65,6 +67,7 @@ const M16: AwaitingItem = {
   itemId: "m16",
   itemCode: "GG-M16",
   itemName: "Mâm giàn giáo 1,6m",
+  unit: "PIECE",
   standardWeightKg: "12.000",
   onHandMilli: 9 * K,
   needsRepairAvg: m(210_000),
@@ -180,6 +183,7 @@ describe("Giá vốn sau sửa", () => {
       {
         itemCode: "GG-K17",
         itemName: "Khung giàn giáo 1,7m",
+        unit: "PIECE",
         goodMilli: 36 * K,
         scrapMilli: 4 * K,
         repairCost: 1_980_000,
@@ -214,6 +218,7 @@ describe("Giá vốn sau sửa", () => {
       {
         itemCode: "GG-M16",
         itemName: "Mâm giàn giáo 1,6m",
+        unit: "PIECE",
         goodMilli: 0,
         scrapMilli: 5 * K,
         repairCost: 0,
@@ -236,6 +241,7 @@ describe("Giá vốn sau sửa", () => {
       {
         itemCode: "GG-CH",
         itemName: "Chéo giàn giáo",
+        unit: "PIECE",
         goodMilli: 20 * K,
         scrapMilli: 0,
         repairCost: 240_000,
@@ -252,6 +258,7 @@ describe("Giá vốn sau sửa", () => {
         {
           itemCode: "GG-K17",
           itemName: "Khung",
+          unit: "PIECE",
           goodMilli: 36 * K,
           scrapMilli: 4 * K,
           repairCost: 0,

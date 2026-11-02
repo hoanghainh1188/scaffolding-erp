@@ -51,7 +51,22 @@ describe("validateKitComponents", () => {
         line("gg-k17", 2),
         line("pl-sat", 1, { unit: "KG" }),
       ]),
-    ).toBe("Bộ chỉ gồm vật tư tính theo cái");
+    ).toBe("Bộ chỉ gồm vật tư đếm được (cái, cây, bó...)");
+  });
+
+  it("refuses metre items and accepts bars (catalog-extensions D2)", () => {
+    expect(
+      validateKitComponents([
+        line("gg-k17", 2),
+        line("ong-49", 1, { unit: "METER" }),
+      ]),
+    ).toBe(KIT_MESSAGES.pieceOnly);
+    expect(
+      validateKitComponents([
+        line("ong-6m", 4, { unit: "BAR" }),
+        line("ku0,5", 8),
+      ]),
+    ).toBeNull();
   });
 
   it("refuses archived items by code", () => {

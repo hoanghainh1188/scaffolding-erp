@@ -26,7 +26,9 @@ import {
 } from "@/db/schema";
 import type { Condition } from "@/domain/condition";
 import { toMoney, type Money } from "@/domain/money";
-import { quantityFromDb } from "@/domain/quantity";
+import { quantityFromDb, type QuantityUnit } from "@/domain/quantity";
+import { REPAIRABLE_UNITS } from "@/domain/repair-order";
+import { unitFromDb } from "@/lib/inventory/unit";
 import { currentScrapPrice } from "@/lib/receiving/scrap-price";
 
 import type { RepairStatus } from "./labels";
@@ -121,7 +123,7 @@ export interface RepairLineRow {
   itemId: string;
   itemCode: string;
   itemName: string;
-  unit: "PIECE" | "KG";
+  unit: QuantityUnit;
   standardWeightKg: string | null;
   takenMilli: number;
   goodMilli: number;
@@ -305,7 +307,7 @@ export async function getRepairOrder(
       itemId: line.itemId,
       itemCode: line.itemCode,
       itemName: line.itemName,
-      unit: line.unit === "KG" ? "KG" : "PIECE",
+      unit: unitFromDb(line.unit),
       standardWeightKg: line.standardWeightKg,
       takenMilli: milli(line.taken),
       goodMilli: milli(line.good),
@@ -321,8 +323,9 @@ export interface AwaitingItem {
   itemId: string;
   itemCode: string;
   itemName: string;
+  unit: QuantityUnit;
   standardWeightKg: string | null;
-  /** Chờ sửa at the chosen place, in thousandths of a piece. */
+  /** Chờ sửa at the chosen place, in thousandths of its unit. */
   onHandMilli: number;
   needsRepairAvg: Money | null;
   goodPoolMilli: number;
@@ -366,6 +369,7 @@ export async function awaitingRepair(
       itemId: item.id,
       itemCode: item.code,
       itemName: item.name,
+      unit: item.unit,
       standardWeightKg: item.standardWeightKg,
       quantity: onHand.quantity,
     })
@@ -373,7 +377,7 @@ export async function awaitingRepair(
     .leftJoin(onHand, eq(onHand.itemId, item.id))
     .where(
       and(
-        eq(item.unit, "PIECE"),
+        inArray(item.unit, [...REPAIRABLE_UNITS]),
         or(
           sql`${onHand.quantity} > 0`,
           alsoItemIds.length ? inArray(item.id, [...alsoItemIds]) : sql`false`,
@@ -406,6 +410,7 @@ export async function awaitingRepair(
       itemId: row.itemId,
       itemCode: row.itemCode,
       itemName: row.itemName,
+      unit: unitFromDb(row.unit),
       standardWeightKg: row.standardWeightKg,
       onHandMilli: milli(row.quantity),
       needsRepairAvg: money(cost(row.itemId, "NEEDS_REPAIR")?.avgCost ?? null),

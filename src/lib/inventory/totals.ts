@@ -8,17 +8,22 @@ import type { Database } from "@/db/client";
 import { inventoryLedger, item } from "@/db/schema";
 import {
   QUANTITY_UNIT_LABELS,
+  QUANTITY_UNITS,
   formatQuantity,
   quantityFromDb,
   toQuantity,
+  type QuantityUnit,
 } from "@/domain/quantity";
+
+import { unitFromDb } from "./unit";
 
 type Executor = Pick<Database, "select">;
 
-export interface StockTotal {
-  pieceMilli: number;
-  kgMilli: number;
-}
+/**
+ * Stock in thousandths per unit, non-zero units only: cái, bó, m and kg are
+ * never added together.
+ */
+export type StockTotal = Readonly<Partial<Record<QuantityUnit, number>>>;
 
 async function totals(
   tx: Executor,
@@ -33,13 +38,13 @@ async function totals(
     .innerJoin(item, eq(item.id, inventoryLedger.itemId))
     .where(where)
     .groupBy(item.unit);
-  const total: StockTotal = { pieceMilli: 0, kgMilli: 0 };
-  for (const row of rows) {
-    const milli = quantityFromDb(row.total, "KG").milli;
-    if (row.unit === "KG") total.kgMilli += milli;
-    else total.pieceMilli += milli;
-  }
-  return total;
+  const entries = rows
+    .map((row) => {
+      const unit = unitFromDb(row.unit);
+      return [unit, quantityFromDb(row.total, unit).milli] as const;
+    })
+    .filter(([, milli]) => milli !== 0);
+  return Object.fromEntries(entries);
 }
 
 /** Stock of one item, every condition and location. */
@@ -56,21 +61,19 @@ export function locationStock(
 }
 
 export function isEmpty(total: StockTotal): boolean {
-  return total.pieceMilli === 0 && total.kgMilli === 0;
+  return QUANTITY_UNITS.every((unit) => (total[unit] ?? 0) === 0);
 }
 
-/** "1.840 cái", "12.850,5 kg", "60 cái và 12,5 kg". */
+/** "1.840 cái", "12.850,5 kg", "60 cái và 12,5 kg", "60 cái, 5 bó và 12 m". */
 export function describeStock(total: StockTotal): string {
-  const parts: string[] = [];
-  if (total.pieceMilli !== 0) {
-    parts.push(
-      `${formatQuantity(toQuantity(total.pieceMilli, "PIECE"))} ${QUANTITY_UNIT_LABELS.PIECE}`,
-    );
-  }
-  if (total.kgMilli !== 0) {
-    parts.push(
-      `${formatQuantity(toQuantity(total.kgMilli, "KG"))} ${QUANTITY_UNIT_LABELS.KG}`,
-    );
-  }
-  return parts.join(" và ");
+  const parts = QUANTITY_UNITS.flatMap((unit) => {
+    const milli = total[unit] ?? 0;
+    return milli === 0
+      ? []
+      : [
+          `${formatQuantity(toQuantity(milli, unit))} ${QUANTITY_UNIT_LABELS[unit]}`,
+        ];
+  });
+  if (parts.length <= 1) return parts.join("");
+  return `${parts.slice(0, -1).join(", ")} và ${parts.at(-1)}`;
 }

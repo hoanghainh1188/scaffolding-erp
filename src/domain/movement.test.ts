@@ -67,6 +67,19 @@ describe("assertMovementLine", () => {
     ).toThrow("Dòng xuất phải có số lượng âm");
   });
 
+  it("wants whole bundles but allows metre decimals", () => {
+    expect(() =>
+      assertMovementLine(
+        line({ unit: "BUNDLE", itemCode: "TC-BO", quantityMilli: 2500 }),
+      ),
+    ).toThrow("TC-BO tính theo bó, số lượng phải là số nguyên");
+    expect(() =>
+      assertMovementLine(
+        line({ unit: "METER", itemCode: "ONG-49", quantityMilli: 120_500 }),
+      ),
+    ).not.toThrow();
+  });
+
   it("wants whole pieces but allows kg decimals", () => {
     expect(() => assertMovementLine(line({ quantityMilli: 2500 }))).toThrow(
       "GG-K17 tính theo cái, số lượng phải là số nguyên",

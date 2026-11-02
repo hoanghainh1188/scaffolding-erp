@@ -2,11 +2,12 @@ import { CONDITION_LABELS, type Condition } from "@/domain/condition";
 import { formatMoney, toMoney } from "@/domain/money";
 import {
   QUANTITY_UNIT_LABELS,
+  hasStandardWeight,
   toQuantity,
   type QuantityUnit,
   quantityFromDb,
 } from "@/domain/quantity";
-import { piecesToKg } from "@/domain/weight-conversion";
+import { unitsToKg } from "@/domain/weight-conversion";
 import type { StockCard } from "@/lib/inventory/card";
 
 import { formatStock } from "./format";
@@ -39,9 +40,11 @@ function Figure({
 export function StockCardSummary({ card, condition }: StockCardSummaryProps) {
   const unit: QuantityUnit = card.item.unit;
   const scrapKg =
-    condition === "SCRAP" && unit === "PIECE" && card.item.standardWeightKg
-      ? piecesToKg(
-          toQuantity(card.closing, "PIECE"),
+    condition === "SCRAP" &&
+    hasStandardWeight(unit) &&
+    card.item.standardWeightKg
+      ? unitsToKg(
+          toQuantity(card.closing, unit),
           quantityFromDb(card.item.standardWeightKg, "KG"),
         ).milli
       : null;

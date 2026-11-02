@@ -4,7 +4,15 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createDatabase } from "@/db/client";
 import { resetCatalogTables } from "@/test/catalog";
 
-import { item, itemGroup, kit, kitComponent, location } from "./catalog";
+import {
+  customer,
+  item,
+  itemAlias,
+  itemGroup,
+  kit,
+  kitComponent,
+  location,
+} from "./catalog";
 
 const url = process.env.TEST_DATABASE_URL;
 if (!url) {
@@ -94,28 +102,140 @@ describe("catalog tables", () => {
     ).toMatchObject({ constraint: "item_weight_check" });
   });
 
-  it("refuses a rental price on a kg item and negative prices", async () => {
-    expect(
-      await rejection(
-        db
-          .insert(item)
-          .values(
-            piece({ code: "PL-SAT", unit: "KG", standardWeightKg: null }),
-          ),
-      ),
-    ).toMatchObject({ constraint: "item_rental_unit_check" });
+  it("refuses negative prices", async () => {
     expect(
       await rejection(db.insert(item).values(piece({ lostPrice: -1 }))),
     ).toMatchObject({ constraint: "item_prices_check" });
   });
 
   it("refuses a lower-case or malformed code", async () => {
-    for (const code of ["gg-k17", "GG--K17", "G"]) {
+    for (const code of [
+      "gg-k17",
+      "nối 34",
+      "GG--K17",
+      "H1,,7",
+      " H1,7",
+      "G",
+      "A".repeat(31),
+    ]) {
       expect(
         await rejection(db.insert(item).values(piece({ code }))),
         code,
       ).toMatchObject({ constraint: "item_code_check" });
     }
+  });
+
+  it("stores the company's real codes (catalog-extensions D1)", async () => {
+    await db
+      .insert(item)
+      .values([
+        piece({ code: "NỐI 34" }),
+        piece({ code: "KB+KU34" }),
+        piece({ code: "X5*10*3" }),
+      ]);
+    const rows = await db
+      .select({ code: item.code, codeKey: item.codeKey })
+      .from(item)
+      .orderBy(item.codeKey);
+    expect(rows).toEqual([
+      { code: "KB+KU34", codeKey: "kb+ku34" },
+      { code: "NỐI 34", codeKey: "noi34" },
+      { code: "X5*10*3", codeKey: "x5*10*3" },
+    ]);
+  });
+
+  it("refuses a code that only differs by accents or spaces", async () => {
+    const [joint] = await db
+      .insert(item)
+      .values(piece({ code: "NỐI 34" }))
+      .returning({ id: item.id });
+    const itemId = joint?.id ?? "";
+    expect(
+      await rejection(db.insert(item).values(piece({ code: "NOI34" }))),
+    ).toMatchObject({ code: "23505", constraint: "item_code_key_unique" });
+    await db.insert(itemAlias).values({ itemId, code: "N34" });
+    expect(
+      await rejection(db.insert(itemAlias).values({ itemId, code: "N 34" })),
+    ).toMatchObject({
+      code: "23505",
+      constraint: "item_alias_code_key_unique",
+    });
+  });
+
+  it("requires a weight for metres and none for kg (D2)", async () => {
+    expect(
+      await rejection(
+        db
+          .insert(item)
+          .values(
+            piece({ code: "ONG-49", unit: "METER", standardWeightKg: null }),
+          ),
+      ),
+    ).toMatchObject({ constraint: "item_weight_check" });
+    expect(
+      await rejection(
+        db
+          .insert(item)
+          .values(
+            piece({ code: "PL-TON", unit: "KG", standardWeightKg: "1.000" }),
+          ),
+      ),
+    ).toMatchObject({ constraint: "item_weight_check" });
+  });
+
+  it("stores a rental price for kg and metre items (D2)", async () => {
+    await db.insert(item).values([
+      piece({
+        code: "ONG-49",
+        unit: "METER",
+        standardWeightKg: "3.560",
+        dailyRentalPrice: 150,
+      }),
+      piece({
+        code: "PL-TON",
+        unit: "KG",
+        standardWeightKg: null,
+        dailyRentalPrice: 40,
+      }),
+    ]);
+    const rows = await db
+      .select({ code: item.code, price: item.dailyRentalPrice })
+      .from(item)
+      .orderBy(item.codeKey);
+    expect(rows).toEqual([
+      { code: "ONG-49", price: 150 },
+      { code: "PL-TON", price: 40 },
+    ]);
+  });
+
+  it("gives groups the EQUIPMENT category by default (D3)", async () => {
+    const [row] = await db
+      .select({ category: itemGroup.category })
+      .from(itemGroup)
+      .where(eq(itemGroup.id, groupId));
+    expect(row?.category).toBe("EQUIPMENT");
+    expect(
+      await rejection(
+        db
+          .update(itemGroup)
+          .set({ category: "TOOL" })
+          .where(eq(itemGroup.id, groupId)),
+      ),
+    ).toMatchObject({ constraint: "item_group_category_check" });
+  });
+
+  it("refuses a sales user that does not exist (D5)", async () => {
+    expect(
+      await rejection(
+        db.insert(customer).values({
+          code: "NT-9999",
+          kind: "COMPANY",
+          name: "Công ty thử",
+          searchText: "cong ty thu",
+          salesUserId: "no-such-user",
+        }),
+      ),
+    ).toMatchObject({ code: "23503" });
   });
 
   it("refuses a kit line with quantity 0", async () => {

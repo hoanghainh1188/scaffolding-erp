@@ -11,6 +11,7 @@ import { DomainValueError } from "@/domain/errors";
 import {
   formatQuantity,
   formatQuantityForInput,
+  isCountUnit,
   parseQuantity,
   type Quantity,
 } from "@/domain/quantity";
@@ -61,7 +62,7 @@ export function QuantityInput({
     <div className="flex min-w-0 flex-col gap-1">
       <input
         type="text"
-        inputMode={value.unit === "KG" ? "decimal" : "numeric"}
+        inputMode={isCountUnit(value.unit) ? "numeric" : "decimal"}
         autoComplete="off"
         value={draft ?? formatQuantity(value)}
         aria-invalid={error ? true : undefined}

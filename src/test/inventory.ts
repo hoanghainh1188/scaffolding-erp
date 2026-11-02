@@ -77,6 +77,7 @@ export async function setupInventoryFixture(
     }
     const created = await createSite(ctx.db, director, {
       name,
+      province: "HN",
       customerId: owner?.id ?? "",
     });
     if (!created.ok) throw new Error(created.error);

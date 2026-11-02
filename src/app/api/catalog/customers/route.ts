@@ -18,6 +18,7 @@ export const GET = withAuth(
       await listCustomers(catalogDb(), {
         q: textParam(url, "q"),
         status: statusParam(url),
+        sales: textParam(url, "sales"),
       }),
     );
   },

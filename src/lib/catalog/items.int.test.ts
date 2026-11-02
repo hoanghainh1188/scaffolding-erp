@@ -157,27 +157,17 @@ describe("items", () => {
     });
   });
 
-  it("explains missing weight, kg rent, bad code and a fraction price", async () => {
+  it("explains missing weight, bad code and a fraction price", async () => {
     const attempt = (input: ItemInput) =>
       createItem(ctx.db, actor, { groupId: scaffold, ...input });
     expect(await attempt({ ...frame, standardWeightKg: "0" })).toMatchObject({
       status: 400,
       error: "Nhập trọng lượng chuẩn lớn hơn 0 kg",
     });
-    expect(
-      await attempt({
-        code: "PL-SAT",
-        name: "Phế liệu",
-        unit: "KG",
-        dailyRentalPrice: 100,
-      }),
-    ).toMatchObject({
+    expect(await attempt({ ...frame, code: "H1/7" })).toMatchObject({
       status: 400,
-      error: "Vật tư tính theo kg không cho thuê",
-    });
-    expect(await attempt({ ...frame, code: "GG K17" })).toMatchObject({
-      status: 400,
-      error: "Mã chỉ gồm chữ in hoa không dấu, số và dấu gạch ngang",
+      error:
+        "Mã chỉ gồm chữ in hoa, số và các dấu , * + - hoặc khoảng trắng; không bắt đầu, kết thúc hay lặp hai dấu liền nhau",
     });
     expect(await attempt({ ...frame, dailyRentalPrice: 1200.5 })).toMatchObject(
       {

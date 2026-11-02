@@ -8,10 +8,16 @@ import { ItemsTable } from "@/components/catalog/items-table";
 import { KitEditorDialog } from "@/components/catalog/kit-editor-dialog";
 import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
+import { normalizeItemCode } from "@/domain/item-code";
 import { can } from "@/domain/permissions";
+import { isCountUnit } from "@/domain/quantity";
 import { requirePermission } from "@/lib/auth/guard";
 import { listGroups } from "@/lib/catalog/item-groups";
-import { listItems } from "@/lib/catalog/items";
+import {
+  ITEM_CATEGORIES,
+  listItems,
+  type ItemCategory,
+} from "@/lib/catalog/items";
 import { listKits } from "@/lib/catalog/kits";
 
 export const metadata: Metadata = { title: "Danh mục vật tư" };
@@ -29,11 +35,18 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const db = getDatabase();
   const q = one(params.q);
   const groupId = one(params.group);
+  const categoryParam = one(params.category);
+  const category = (ITEM_CATEGORIES as readonly string[]).includes(
+    categoryParam ?? "",
+  )
+    ? (categoryParam as ItemCategory)
+    : undefined;
   const status = one(params.status) === "archived" ? "ARCHIVED" : "ACTIVE";
-  const selectedCode = one(params.item)?.toUpperCase() ?? null;
+  const item = one(params.item);
+  const selectedCode = item ? normalizeItemCode(item) : null;
 
   const [{ items, counts }, groups, allPieces] = await Promise.all([
-    listItems(db, { q, groupId, status }),
+    listItems(db, { q, category, groupId, status }),
     listGroups(db),
     listItems(db),
   ]);
@@ -45,11 +58,15 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
     ? await listKits(db, { containsItemId: selected.id, status: "ACTIVE" })
     : [];
   const activeGroups = groups.filter((group) => group.status === "ACTIVE");
-  const parts = allPieces.items.filter((row) => row.unit === "PIECE");
+  // Kits hold counted items only (catalog-extensions D2).
+  const parts = allPieces.items.filter((row) => isCountUnit(row.unit));
   const query = new URLSearchParams(
-    Object.entries({ q, group: groupId, status: one(params.status) }).filter(
-      (entry): entry is [string, string] => entry[1] !== undefined,
-    ),
+    Object.entries({
+      q,
+      category,
+      group: groupId,
+      status: one(params.status),
+    }).filter((entry): entry is [string, string] => entry[1] !== undefined),
   ).toString();
 
   return (

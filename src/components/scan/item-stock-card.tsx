@@ -3,7 +3,13 @@ import Link from "next/link";
 
 import { stockCardHref } from "@/components/inventory/links";
 import { Button } from "@/components/ui/button";
-import { formatQuantity, quantityFromDb, toQuantity } from "@/domain/quantity";
+import {
+  QUANTITY_UNIT_LABELS,
+  formatQuantity,
+  hasStandardWeight,
+  quantityFromDb,
+  toQuantity,
+} from "@/domain/quantity";
 import type { StockLookup } from "@/lib/receiving/queries";
 
 interface ItemStockCardProps {
@@ -13,9 +19,6 @@ interface ItemStockCardProps {
   canViewCard: boolean;
 }
 
-const unitLabel = (unit: StockLookup["unit"]) =>
-  unit === "PIECE" ? "cái" : "kg";
-
 export function ItemStockCard({
   item,
   scannedAt,
@@ -23,9 +26,12 @@ export function ItemStockCard({
 }: ItemStockCardProps) {
   const number = (milli: number) =>
     formatQuantity(toQuantity(milli, item.unit));
-  const weight = item.standardWeightKg
-    ? ` · ${formatQuantity(quantityFromDb(item.standardWeightKg, "KG"))} kg/cái`
-    : "";
+  const label = QUANTITY_UNIT_LABELS[item.unit];
+  // "ONG-49 · m · 3,56 kg/m", "GG-K17 · cái · 13,5 kg/cái".
+  const weight =
+    hasStandardWeight(item.unit) && item.standardWeightKg
+      ? ` · ${formatQuantity(quantityFromDb(item.standardWeightKg, "KG"))} kg/${label}`
+      : "";
   const figures: [string, number][] = [
     ...(item.yard.NEW > 0 ? [["Mới", item.yard.NEW] as [string, number]] : []),
     ["Tốt", item.yard.GOOD],
@@ -43,8 +49,7 @@ export function ItemStockCard({
       <div className="flex flex-col gap-1">
         <h2 className="text-h3">{item.name}</h2>
         <p className="text-body text-muted-foreground">
-          {item.code} · {unitLabel(item.unit)}
-          {weight}
+          {`${item.code} · ${label}${weight}`}
         </p>
       </div>
       <dl className="grid grid-cols-3 gap-2 has-[>div:nth-child(4)]:grid-cols-2">

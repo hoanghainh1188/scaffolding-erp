@@ -1,3 +1,4 @@
+import { parseProvinceFilter, parseRegionFilter } from "@/domain/province";
 import { ok } from "@/lib/api-response";
 import { withAuth } from "@/lib/auth/guard";
 import { createSite, listSites } from "@/lib/catalog/places";
@@ -19,6 +20,8 @@ export const GET = withAuth(
         q: textParam(url, "q"),
         status: statusParam(url),
         customerId: textParam(url, "customer"),
+        region: parseRegionFilter(textParam(url, "region")),
+        province: parseProvinceFilter(textParam(url, "province")),
       }),
     );
   },

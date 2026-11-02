@@ -71,6 +71,11 @@ async function removeTestCatalogRows(db: Database): Promise<void> {
     .update(customer)
     .set({ paymentTermsDays: 30 })
     .where(eq(customer.code, "NT-0001"));
+  // catalog-extensions: the person in charge catalog.spec.ts puts on NT-0002.
+  await db
+    .update(customer)
+    .set({ salesUserId: null })
+    .where(eq(customer.code, "NT-0002"));
 }
 
 /**

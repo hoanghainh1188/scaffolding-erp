@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { ConditionBadge } from "@/components/domain/condition-badge";
 import { CONDITIONS, type Condition } from "@/domain/condition";
 import { formatMoney, toMoney } from "@/domain/money";
-import { QUANTITY_UNIT_LABELS } from "@/domain/quantity";
+import { QUANTITY_UNIT_LABELS, hasStandardWeight } from "@/domain/quantity";
 import type { SiteStock, StockRow } from "@/lib/inventory/stock";
 import { cn } from "@/lib/utils";
 
@@ -105,7 +105,8 @@ export function StockTable({ rows, sites, showValue }: StockTableProps) {
         </thead>
         <tbody>
           {rows.map((row) => {
-            const kg = row.unit === "KG";
+            // Kg items (no standard weight) only ever sit in Scrap.
+            const kg = !hasStandardWeight(row.unit);
             const yardCell = (condition: Condition) =>
               kg && condition !== "SCRAP" ? (
                 <span className="text-muted-foreground">–</span>

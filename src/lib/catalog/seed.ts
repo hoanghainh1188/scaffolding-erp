@@ -1,19 +1,48 @@
 // Sample catalog for `npm run db:seed:dev`: the numbers drawn in D9 and D16,
 // so screens look like their designs. Running it again adds nothing.
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
-import { customer, item, itemGroup, kit, supplier } from "@/db/schema";
+import {
+  customer,
+  item,
+  itemGroup,
+  kit,
+  site,
+  supplier,
+  user,
+} from "@/db/schema";
 import { toSearchText } from "@/domain/search-text";
 
 import type { Actor } from "./common";
 import { createGroup } from "./item-groups";
-import { createItem, type ItemInput } from "./items";
+import { createItem, getItem, updateItem, type ItemInput } from "./items";
 import { createKit } from "./kits";
-import { createCustomer, createSupplier } from "./partners";
-import { createSite } from "./places";
+import { createCustomer, createSupplier, updateCustomer } from "./partners";
+import { createSite, updateSite } from "./places";
 
-const GROUPS = ["Giàn giáo", "Phụ kiện", "Ống thép", "Phế liệu"] as const;
+const GROUPS = [
+  "Giàn giáo",
+  "Phụ kiện",
+  "Ống thép",
+  "Phế liệu",
+  "Que hàn",
+] as const;
+
+/** Groups that hold raw materials (catalog-extensions D3). */
+const MATERIAL_GROUPS: readonly string[] = ["Que hàn"];
+
+/** Old codes of sample items (catalog-extensions D1). */
+const OLD_CODES: Readonly<Record<string, string[]>> = { "GG-K17": ["K1,7"] };
+
+/** Provinces of the sample sites, by name (catalog-extensions D4). */
+const SITE_PROVINCES: Readonly<Record<string, string>> = {
+  "Chung cư An Phú – Block B": "HN",
+  "Trường THCS Dương Nội": "HN",
+  "Nhà phố Lê Văn Lương": "HN",
+  "Cầu vượt Mai Dịch": "HN",
+  "Nhà xưởng KCN Quang Minh": "HN",
+};
 
 const ITEMS: (ItemInput & { group: (typeof GROUPS)[number] })[] = [
   {
@@ -87,6 +116,61 @@ const ITEMS: (ItemInput & { group: (typeof GROUPS)[number] })[] = [
     damagePrice: 8_000,
   },
   { code: "PL-SAT", name: "Phế liệu sắt lẫn", group: "Phế liệu", unit: "KG" },
+  // The company's real codes and units (catalog-extensions, 0.2 #37).
+  {
+    code: "H1,7",
+    name: "Khung H 1,7m có đầu",
+    group: "Giàn giáo",
+    unit: "PIECE",
+    standardWeightKg: "13.2",
+    dailyRentalPrice: 1200,
+  },
+  {
+    code: "H1,7KĐ",
+    name: "Khung H 1,7m không đầu",
+    group: "Giàn giáo",
+    unit: "PIECE",
+    standardWeightKg: "13.2",
+    dailyRentalPrice: 1100,
+  },
+  {
+    code: "KB+KU34",
+    name: "Kích bát kèm kích U 34",
+    group: "Phụ kiện",
+    unit: "PIECE",
+    standardWeightKg: "4.1",
+    dailyRentalPrice: 300,
+  },
+  {
+    code: "NỐI 34",
+    name: "Ống nối 34",
+    group: "Phụ kiện",
+    unit: "PIECE",
+    standardWeightKg: "0.8",
+    dailyRentalPrice: 50,
+  },
+  {
+    code: "ONG-49",
+    name: "Thép ống D49",
+    group: "Ống thép",
+    unit: "METER",
+    standardWeightKg: "3.56",
+    dailyRentalPrice: 150,
+  },
+  {
+    code: "TY-REN",
+    name: "Ty ren",
+    group: "Phụ kiện",
+    unit: "BUNDLE",
+    standardWeightKg: "25",
+  },
+  {
+    code: "QH-2,5",
+    name: "Que hàn 2,5 ly",
+    group: "Que hàn",
+    unit: "BOX",
+    standardWeightKg: "5",
+  },
 ];
 
 async function groupIds(db: Database, actor: Actor) {
@@ -100,7 +184,11 @@ async function groupIds(db: Database, actor: Actor) {
       ids.set(name, found.id);
       continue;
     }
-    const created = await createGroup(db, actor, { name, sortOrder: index });
+    const created = await createGroup(db, actor, {
+      name,
+      sortOrder: index,
+      category: MATERIAL_GROUPS.includes(name) ? "MATERIAL" : "EQUIPMENT",
+    });
     if (!created.ok) throw new Error(created.error);
     ids.set(name, created.data.id);
   }
@@ -139,6 +227,14 @@ export async function seedCatalog(db: Database, actor: Actor): Promise<number> {
     if (!result.ok) throw new Error(`${code}: ${result.error}`);
     ids.set(code, result.data.id);
     created += 1;
+  }
+
+  for (const [code, aliases] of Object.entries(OLD_CODES)) {
+    const id = ids.get(code);
+    const current = id ? await getItem(db, id) : null;
+    if (!id || !current || current.aliases.length > 0) continue;
+    const result = await updateItem(db, actor, id, { aliases });
+    if (!result.ok) throw new Error(`${code}: ${result.error}`);
   }
 
   if (!(await exists(db, kit, "BO-17"))) {
@@ -182,6 +278,7 @@ export async function seedCatalog(db: Database, actor: Actor): Promise<number> {
         await createSite(db, actor, {
           name,
           address,
+          province: "HN",
           customerId: minhPhat.data.id,
         });
       }
@@ -207,5 +304,45 @@ export async function seedCatalog(db: Database, actor: Actor): Promise<number> {
     });
     created += 2;
   }
+  await placeSampleSites(db, actor);
+  await assignSalesStaff(db, actor);
   return created;
+}
+
+/** Sample sites made before provinces existed get theirs. */
+async function placeSampleSites(db: Database, actor: Actor): Promise<void> {
+  const rows = await db
+    .select({ id: site.id, name: site.name })
+    .from(site)
+    .where(isNull(site.province));
+  for (const row of rows) {
+    const province = SITE_PROVINCES[row.name];
+    if (!province) continue;
+    const result = await updateSite(db, actor, row.id, { province });
+    if (!result.ok) throw new Error(`${row.name}: ${result.error}`);
+  }
+}
+
+/** The sample sales account takes care of Minh Phát (catalog-extensions D5). */
+async function assignSalesStaff(db: Database, actor: Actor): Promise<void> {
+  const [sales] = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(and(eq(user.username, "kinhdoanh"), eq(user.status, "ACTIVE")));
+  if (!sales) return;
+  const rows = await db
+    .select({ id: customer.id })
+    .from(customer)
+    .where(
+      and(
+        eq(customer.name, "Cty TNHH Xây dựng Minh Phát"),
+        isNull(customer.salesUserId),
+      ),
+    );
+  for (const row of rows) {
+    const result = await updateCustomer(db, actor, row.id, {
+      salesUserId: sales.id,
+    });
+    if (!result.ok) throw new Error(result.error);
+  }
 }

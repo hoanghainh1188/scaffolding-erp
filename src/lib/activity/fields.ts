@@ -5,7 +5,12 @@
 import type { FieldSpec, LineSpec } from "@/domain/activity-changes";
 import { formatMoney, toMoney } from "@/domain/money";
 import { formatPhone } from "@/domain/partner-fields";
-import { formatQuantity, quantityFromDb } from "@/domain/quantity";
+import {
+  QUANTITY_UNIT_LABELS,
+  formatQuantity,
+  quantityFromDb,
+  type QuantityUnit,
+} from "@/domain/quantity";
 
 export const STATUS_LABELS: Readonly<Record<string, string>> = {
   ACTIVE: "Đang dùng",
@@ -30,11 +35,16 @@ export function moneyText(value: number | null | undefined): string | null {
     : formatMoney(toMoney(value));
 }
 
-/** "13,5 kg/cái", or null. */
-function weightText(value: string | null): string | null {
+/** "13,5 kg/cái", "3,56 kg/m", or null. */
+function weightText(value: string | null, unit: QuantityUnit): string | null {
   return value === null
     ? null
-    : `${formatQuantity(quantityFromDb(value, "KG"))} kg/cái`;
+    : `${formatQuantity(quantityFromDb(value, "KG"))} kg/${QUANTITY_UNIT_LABELS[unit]}`;
+}
+
+/** "K1,7, KHUNG 1M7", or null. */
+function codesText(codes: readonly string[]): string | null {
+  return codes.length === 0 ? null : codes.join(", ");
 }
 
 function phoneText(value: string | null): string | null {
@@ -53,6 +63,9 @@ const status = <T extends { status: string }>(): FieldSpec<T> => ({
 export interface ItemView {
   name: string;
   groupName: string;
+  unit: QuantityUnit;
+  /** Old codes, in the order the user gave them. */
+  aliases: readonly string[];
   standardWeightKg: string | null;
   dailyRentalPrice: number | null;
   lostPrice: number | null;
@@ -63,10 +76,11 @@ export interface ItemView {
 export const ITEM_FIELDS: readonly FieldSpec<ItemView>[] = [
   { field: "name", label: "Tên vật tư", value: (r) => r.name },
   { field: "group", label: "Nhóm", value: (r) => r.groupName },
+  { field: "aliases", label: "Mã cũ", value: (r) => codesText(r.aliases) },
   {
     field: "standardWeightKg",
     label: "Trọng lượng chuẩn",
-    value: (r) => weightText(r.standardWeightKg),
+    value: (r) => weightText(r.standardWeightKg, r.unit),
   },
   {
     field: "dailyRentalPrice",
@@ -86,14 +100,25 @@ export const ITEM_FIELDS: readonly FieldSpec<ItemView>[] = [
   status<ItemView>(),
 ];
 
+export const CATEGORY_LABELS: Readonly<Record<string, string>> = {
+  EQUIPMENT: "Thiết bị",
+  MATERIAL: "Vật tư",
+};
+
 export interface GroupView {
   name: string;
+  category: string;
   sortOrder: number;
   status: string;
 }
 
 export const GROUP_FIELDS: readonly FieldSpec<GroupView>[] = [
   { field: "name", label: "Tên nhóm", value: (r) => r.name },
+  {
+    field: "category",
+    label: "Phân loại",
+    value: (r) => CATEGORY_LABELS[r.category] ?? r.category,
+  },
   { field: "sortOrder", label: "Thứ tự", value: (r) => String(r.sortOrder) },
   status<GroupView>(),
 ];
@@ -131,6 +156,8 @@ export interface CustomerView {
   address: string | null;
   paymentTermsDays: number;
   note: string | null;
+  /** Name of the sales staff in charge, never the user id (design D5). */
+  salesUserName: string | null;
   status: string;
 }
 
@@ -155,6 +182,11 @@ export const CUSTOMER_FIELDS: readonly FieldSpec<CustomerView>[] = [
     value: (r) => `${r.paymentTermsDays} ngày`,
   },
   { field: "note", label: "Ghi chú", value: (r) => text(r.note) },
+  {
+    field: "salesUser",
+    label: "Nhân viên phụ trách",
+    value: (r) => text(r.salesUserName),
+  },
   status<CustomerView>(),
 ];
 
@@ -201,12 +233,19 @@ export const SUPPLIER_FIELDS: readonly FieldSpec<SupplierView>[] = [
 export interface SiteView {
   name: string;
   address: string | null;
+  /** Province name, e.g. "Bắc Ninh". */
+  provinceName: string | null;
   status: string;
 }
 
 export const SITE_FIELDS: readonly FieldSpec<SiteView>[] = [
   { field: "name", label: "Tên công trình", value: (r) => r.name },
   { field: "address", label: "Địa chỉ", value: (r) => text(r.address) },
+  {
+    field: "province",
+    label: "Tỉnh/thành",
+    value: (r) => text(r.provinceName),
+  },
   status<SiteView>(),
 ];
 

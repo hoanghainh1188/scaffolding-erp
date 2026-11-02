@@ -11,7 +11,13 @@ import { DomainValueError } from "./errors";
 import { LANDED_COST_MESSAGES, lineWeightKgMilli } from "./landed-cost";
 import { formatMoney, toMoney, type Money } from "./money";
 import type { MovementDraft } from "./movement";
-import type { QuantityUnit } from "./quantity";
+import {
+  hasStandardWeight,
+  isCountUnit,
+  QUANTITY_UNIT_LABELS,
+  QUANTITY_UNITS,
+  type QuantityUnit,
+} from "./quantity";
 import type { Anomaly } from "./receipt-anomalies";
 
 export const REPAIR_PREFIX = "PSC";
@@ -25,6 +31,7 @@ export const REPAIR_MESSAGES = {
   noLines: dict.repairs.messages.noLines,
   tooManyLines: dict.repairs.messages.tooManyLines,
   kgItem: dict.repairs.messages.kgItem,
+  measureItem: dict.repairs.messages.measureItem,
   duplicate: dict.repairs.messages.duplicateItem,
   wholePieces: dict.repairs.messages.wholePieces,
   negative: dict.repairs.messages.quantityNegative,
@@ -84,7 +91,10 @@ function assertWhole(
   const field = `lines.${index}.${name}`;
   if (!Number.isInteger(milli) || milli % K !== 0) {
     throw new RepairFieldError(
-      REPAIR_MESSAGES.wholePieces(line.itemCode),
+      REPAIR_MESSAGES.wholePieces(
+        line.itemCode,
+        QUANTITY_UNIT_LABELS[line.unit],
+      ),
       field,
     );
   }
@@ -93,10 +103,28 @@ function assertWhole(
   }
 }
 
+/**
+ * Repairs work on whole units that have a standard weight (cái, cây, bó...),
+ * so scrap converts to kg. Kg items have no weight; metre items (cut to
+ * length) are kept out until the repair rules for them are decided.
+ */
+export function isRepairableUnit(unit: QuantityUnit): boolean {
+  return isCountUnit(unit) && hasStandardWeight(unit);
+}
+
+/** Units of the items D12 lists as repairable. */
+export const REPAIRABLE_UNITS: readonly QuantityUnit[] =
+  QUANTITY_UNITS.filter(isRepairableUnit);
+
 function checkLine(line: RepairLineInput, index: number): void {
-  if (line.unit !== "PIECE") {
+  if (!isRepairableUnit(line.unit)) {
     throw new RepairFieldError(
-      REPAIR_MESSAGES.kgItem(line.itemCode),
+      hasStandardWeight(line.unit)
+        ? REPAIR_MESSAGES.measureItem(
+            line.itemCode,
+            QUANTITY_UNIT_LABELS[line.unit],
+          )
+        : REPAIR_MESSAGES.kgItem(line.itemCode),
       `lines.${index}.itemId`,
     );
   }

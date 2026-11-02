@@ -1,13 +1,31 @@
 // The blue "Tổng chi phí sửa" card of D12.
 import { formatMoney, type Money } from "@/domain/money";
-import { formatQuantity, toQuantity } from "@/domain/quantity";
+import {
+  QUANTITY_UNIT_LABELS,
+  formatQuantity,
+  toQuantity,
+  type QuantityUnit,
+} from "@/domain/quantity";
 
-const pieces = (milli: number) => formatQuantity(toQuantity(milli, "PIECE"));
+const whole = (milli: number) => formatQuantity(toQuantity(milli, "PIECE"));
+
+/**
+ * " cái" when every line shares one unit (or there is none yet); nothing
+ * when the slip mixes units, so cái and bó are never labelled as one.
+ */
+function unitSuffix(units: readonly QuantityUnit[]): string {
+  const distinct = new Set(units);
+  if (distinct.size > 1) return "";
+  const [unit = "PIECE"] = distinct;
+  return ` ${QUANTITY_UNIT_LABELS[unit]}`;
+}
 
 interface RepairSummaryProps {
   cost: Money;
   goodMilli: number;
   scrapMilli: number;
+  /** Units of the lines in the totals. */
+  units: readonly QuantityUnit[];
   loss: Money;
 }
 
@@ -15,8 +33,10 @@ export function RepairSummary({
   cost,
   goodMilli,
   scrapMilli,
+  units,
   loss,
 }: RepairSummaryProps) {
+  const suffix = unitSuffix(units);
   return (
     <section
       aria-label="Tổng chi phí sửa"
@@ -25,7 +45,7 @@ export function RepairSummary({
       <h2 className="text-sm font-semibold">Tổng chi phí sửa</h2>
       <p className="font-display text-h1 tabular-nums">{formatMoney(cost)}</p>
       <p className="text-sm">
-        {pieces(goodMilli)} cái về Tốt · {pieces(scrapMilli)} cái thành phế liệu
+        {`${whole(goodMilli)}${suffix} về Tốt · ${whole(scrapMilli)}${suffix} thành phế liệu`}
       </p>
       {loss > 0 ? (
         <p className="text-sm font-semibold">

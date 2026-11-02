@@ -4,6 +4,8 @@ import { quantityFromNumber as q } from "./quantity";
 import {
   WEIGHT_MESSAGES,
   kgToPieces,
+  kgToUnits,
+  unitsToKg,
   pieceWeight,
   piecesToKg,
 } from "./weight-conversion";
@@ -70,9 +72,37 @@ describe("errors", () => {
 
   it("has no conversion for items counted in kg", () => {
     expect(() => pieceWeight("KG", null)).toThrow(
-      "Vật tư tính theo kg, không quy đổi sang cái",
+      "Vật tư tính theo kg, không quy đổi",
     );
     expect(() => pieceWeight("PIECE", null)).toThrow(WEIGHT_MESSAGES.noWeight);
     expect(pieceWeight("PIECE", frame)).toBe(frame);
+  });
+});
+
+describe("other units (catalog-extensions D2)", () => {
+  const pipe = q(3.56, "KG");
+
+  it("turns 120,5 m into 428,98 kg and 100 kg into 28,090 m", () => {
+    expect(unitsToKg(q(120.5, "METER"), pipe)).toEqual(q(428.98, "KG"));
+    expect(kgToUnits(q(100, "KG"), pipe, "METER")).toEqual(q(28.09, "METER"));
+  });
+
+  it("rounds bundles to whole bundles", () => {
+    expect(kgToUnits(q(60, "KG"), q(25, "KG"), "BUNDLE")).toEqual(
+      q(2, "BUNDLE"),
+    );
+    expect(unitsToKg(q(3, "BUNDLE"), q(25, "KG"))).toEqual(q(75, "KG"));
+  });
+
+  it("gives 0 for 0", () => {
+    expect(kgToUnits(q(0, "KG"), pipe, "METER").milli).toBe(0);
+    expect(unitsToKg(q(0, "METER"), pipe).milli).toBe(0);
+  });
+
+  it("refuses items counted in kg", () => {
+    expect(() => kgToUnits(q(1, "KG"), pipe, "KG")).toThrow(
+      WEIGHT_MESSAGES.kgItem,
+    );
+    expect(WEIGHT_MESSAGES.kgItem).toBe("Vật tư tính theo kg, không quy đổi");
   });
 });

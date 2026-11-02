@@ -811,6 +811,57 @@ describe("reading", () => {
   });
 });
 
+describe("repairs of other units (catalog-extensions 3.3)", () => {
+  async function setUnit(code: string, unit: "BUNDLE" | "METER") {
+    await ctx.db
+      .update(item)
+      .set({ unit, dailyRentalPrice: null })
+      .where(eq(item.id, fx.item(code)));
+  }
+
+  it("repairs a bundle item like pieces and labels it in bó", async () => {
+    await setUnit("GG-M16", "BUNDLE");
+    const waiting = await awaitingRepair(ctx.db, fx.place("BAI-01"));
+    expect(waiting.items.find((i) => i.itemCode === "GG-M16")).toMatchObject({
+      unit: "BUNDLE",
+      onHandMilli: 9 * K,
+    });
+
+    const code = await draft([
+      ["GG-K17", 40, 36, 4, 1_980_000],
+      ["GG-M16", 9, 7, 2, 0],
+    ]);
+    expect(
+      (await postRepairOrder(ctx.db, fx.accountant, code, {}, OCT_28)).ok,
+    ).toBe(true);
+    const rows = await activityRows(ctx.db, code);
+    expect(rows.map((entry) => entry.summary)).toEqual([
+      "2 mã hàng · lấy 40 cái, 9 bó từ BAI-01",
+      "36 cái, 7 bó về Tốt, 4 cái, 2 bó phế liệu · chi phí 1.980.000 ₫",
+    ]);
+    // 2 bó × 12 kg × 7.500 ₫ = 180.000 ₫ < 2 × 210.000 ₫.
+    expect((await pool("GG-M16", "SCRAP"))?.poolQuantity).toBe("2.000");
+    expect(await reconcileInventory(ctx.db)).toEqual([]);
+  });
+
+  it("keeps metre items out of D12 and refuses them on a slip", async () => {
+    await setUnit("GG-M16", "METER");
+    const waiting = await awaitingRepair(ctx.db, fx.place("BAI-01"));
+    expect(waiting.items.map((i) => i.itemCode)).not.toContain("GG-M16");
+    expect(
+      await createRepairDraft(
+        ctx.db,
+        fx.accountant,
+        slip([["GG-M16", 9, 9, 0, 0]]),
+        OCT_28,
+      ),
+    ).toMatchObject({
+      status: 422,
+      error: REPAIR_MESSAGES.measureItem("GG-M16", "m"),
+    });
+  });
+});
+
 describe("repair slips in the activity log (activity-log 5.4)", () => {
   it("logs the draft, an edit, and the posting like D18", async () => {
     const code = await draft();

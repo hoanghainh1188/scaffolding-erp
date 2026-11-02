@@ -22,6 +22,7 @@ import {
   parseQuantity,
   quantityToDb,
   toQuantity,
+  type QuantityUnit,
 } from "@/domain/quantity";
 import { callApi } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -59,7 +60,7 @@ export interface EditedOrder {
   allocationMethod: AllocationMethod;
   lines: {
     itemId: string;
-    unit: "PIECE" | "KG";
+    unit: QuantityUnit;
     quantity: number;
     unitPrice: number;
   }[];

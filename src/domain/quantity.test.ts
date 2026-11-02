@@ -3,9 +3,13 @@ import { describe, expect, it } from "vitest";
 import { DomainValueError } from "./errors";
 import {
   MAX_QUANTITY_MILLI,
+  QUANTITY_UNITS,
+  QUANTITY_UNIT_LABELS,
   addQuantity,
   formatQuantity,
   formatQuantityForInput,
+  hasStandardWeight,
+  isCountUnit,
   parseQuantity,
   quantityFromDb,
   quantityFromNumber,
@@ -195,5 +199,44 @@ describe("database numeric(14,3)", () => {
     expect(quantityToDb(kg(250.5))).toBe("250.500");
     expect(quantityToDb(pcs(0))).toBe("0.000");
     expect(quantityToDb(kg(-0.001))).toBe("-0.001");
+  });
+});
+
+describe("units (catalog-extensions D2)", () => {
+  it("has 7 count units and 2 measure units with labels", () => {
+    expect(QUANTITY_UNITS).toHaveLength(9);
+    expect(QUANTITY_UNITS.filter(isCountUnit)).toEqual([
+      "PIECE",
+      "BAR",
+      "BUNDLE",
+      "BASKET",
+      "ROLL",
+      "BOX",
+      "CARTON",
+    ]);
+    expect(QUANTITY_UNIT_LABELS.BUNDLE).toBe("bó");
+    expect(QUANTITY_UNIT_LABELS.METER).toBe("m");
+  });
+
+  it("gives a standard weight to every unit but kg", () => {
+    expect(QUANTITY_UNITS.filter((unit) => !hasStandardWeight(unit))).toEqual([
+      "KG",
+    ]);
+  });
+
+  it("refuses 2,5 bó", () => {
+    expect(() => parseQuantity("2,5", "BUNDLE")).toThrow(
+      "Số lượng bó phải là số nguyên",
+    );
+    expect(() => quantityFromNumber(2.5, "BUNDLE")).toThrow(
+      "Số lượng bó phải là số nguyên",
+    );
+  });
+
+  it("accepts 12,345 m", () => {
+    expect(parseQuantity("12,345", "METER")).toEqual({
+      unit: "METER",
+      milli: 12345,
+    });
   });
 });

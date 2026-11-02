@@ -4,6 +4,7 @@
 import { DomainValueError } from "@/domain/errors";
 import { lineAmount } from "@/domain/average-cost";
 import { toMoney, type Money } from "@/domain/money";
+import type { QuantityUnit } from "@/domain/quantity";
 import {
   costRepairLine,
   previewAverage,
@@ -18,6 +19,7 @@ import type {
 export interface LineFigures {
   itemCode: string;
   itemName: string;
+  unit: QuantityUnit;
   goodMilli: number;
   scrapMilli: number;
   repairCost: Money;
@@ -36,6 +38,7 @@ export interface LineFigures {
 export interface PreviewLine {
   itemCode: string;
   itemName: string;
+  unit: QuantityUnit;
   goodMilli: number;
   scrapMilli: number;
   repairCost: number;
@@ -79,6 +82,7 @@ export function previewLine(
       figures: {
         itemCode: line.itemCode,
         itemName: line.itemName,
+        unit: line.unit,
         goodMilli: line.goodMilli,
         scrapMilli: line.scrapMilli,
         repairCost: toMoney(line.repairCost),
@@ -112,6 +116,7 @@ export function postedLine(
   return {
     itemCode: line.itemCode,
     itemName: line.itemName,
+    unit: line.unit,
     goodMilli: line.goodMilli,
     scrapMilli: line.scrapMilli,
     repairCost: line.repairCost,

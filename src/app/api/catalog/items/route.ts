@@ -1,6 +1,11 @@
 import { ok } from "@/lib/api-response";
 import { withAuth } from "@/lib/auth/guard";
-import { createItem, listItems } from "@/lib/catalog/items";
+import {
+  ITEM_CATEGORIES,
+  createItem,
+  listItems,
+  type ItemCategory,
+} from "@/lib/catalog/items";
 import {
   catalogDb,
   itemBody,
@@ -14,9 +19,15 @@ import { readJson } from "@/lib/read-json";
 export const GET = withAuth(
   async (request) => {
     const url = new URL(request.url);
+    const category = textParam(url, "category");
     return ok(
       await listItems(catalogDb(), {
         q: textParam(url, "q"),
+        category: (ITEM_CATEGORIES as readonly string[]).includes(
+          category ?? "",
+        )
+          ? (category as ItemCategory)
+          : undefined,
         groupId: textParam(url, "group"),
         status: statusParam(url),
       }),

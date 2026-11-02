@@ -6,7 +6,13 @@ import { dict } from "../locales";
 import { lineAmount } from "./average-cost";
 import { DomainValueError } from "./errors";
 import { toMoney, type Money } from "./money";
-import { quantityFromDb, type QuantityUnit } from "./quantity";
+import {
+  hasStandardWeight,
+  isCountUnit,
+  QUANTITY_UNIT_LABELS,
+  quantityFromDb,
+  type QuantityUnit,
+} from "./quantity";
 
 export const PURCHASE_KINDS = ["NEW", "USED"] as const;
 export type PurchaseKind = (typeof PURCHASE_KINDS)[number];
@@ -49,6 +55,7 @@ export const PURCHASE_MESSAGES = {
   duplicate: dict.purchasing.messages.duplicateItem,
   kgOnly: dict.purchasing.messages.kgOnly,
   wholePieces: dict.purchasing.messages.wholePieces,
+  unitNotAllowed: dict.purchasing.messages.unitNotAllowed,
   quantity: dict.purchasing.messages.quantityPositive,
   price: dict.purchasing.messages.pricePositive,
   costLabel: dict.purchasing.messages.costLabelRequired,
@@ -88,6 +95,21 @@ export interface OrderLineCheck {
   unitPrice: number;
 }
 
+/**
+ * Units a line may be ordered in: the item's own unit, plus kg when the item
+ * has a standard weight (buy by kg, receive in the item's unit; D2).
+ */
+export function orderUnitsFor(itemUnit: QuantityUnit): QuantityUnit[] {
+  return hasStandardWeight(itemUnit) ? [itemUnit, "KG"] : [itemUnit];
+}
+
+export function orderUnitAllowed(
+  itemUnit: QuantityUnit,
+  unit: QuantityUnit,
+): boolean {
+  return orderUnitsFor(itemUnit).includes(unit);
+}
+
 /** Line rules (spec "Đơn vị đặt hàng", "Nội dung đơn thu mua"). */
 export function checkOrderLines(lines: readonly OrderLineCheck[]): void {
   const seen = new Set<string>();
@@ -100,9 +122,14 @@ export function checkOrderLines(lines: readonly OrderLineCheck[]): void {
       );
     }
     seen.add(line.itemCode);
-    if (line.itemUnit === "KG" && line.unit !== "KG") {
+    if (!orderUnitAllowed(line.itemUnit, line.unit)) {
       throw new PurchaseFieldError(
-        PURCHASE_MESSAGES.kgOnly(line.itemCode),
+        hasStandardWeight(line.itemUnit)
+          ? PURCHASE_MESSAGES.unitNotAllowed(
+              line.itemCode,
+              QUANTITY_UNIT_LABELS[line.itemUnit],
+            )
+          : PURCHASE_MESSAGES.kgOnly(line.itemCode),
         `${field}.unit`,
       );
     }
@@ -112,9 +139,12 @@ export function checkOrderLines(lines: readonly OrderLineCheck[]): void {
         `${field}.quantity`,
       );
     }
-    if (line.unit === "PIECE" && line.quantityMilli % 1000 !== 0) {
+    if (isCountUnit(line.unit) && line.quantityMilli % 1000 !== 0) {
       throw new PurchaseFieldError(
-        PURCHASE_MESSAGES.wholePieces(line.itemCode),
+        PURCHASE_MESSAGES.wholePieces(
+          line.itemCode,
+          QUANTITY_UNIT_LABELS[line.unit],
+        ),
         `${field}.quantity`,
       );
     }
@@ -202,6 +232,28 @@ export function estimatedPieces(
   const weight = quantityFromDb(standardWeightKg, "KG").milli;
   if (weight <= 0) return null;
   return Math.floor(kgMilli / weight);
+}
+
+/**
+ * Units in a kg line of a weighted item, in thousandths of the item unit:
+ * kg ÷ standard weight, rounded down to a whole unit for count units and to
+ * 0,001 for metres ("≈ 148 cái", "≈ 61,797 m"). Display only; null when
+ * there is no weight or the item is counted in kg.
+ */
+export function estimatedUnitsMilli(
+  kgMilli: number,
+  standardWeightKg: string | null,
+  itemUnit: QuantityUnit,
+): number | null {
+  if (!hasStandardWeight(itemUnit)) return null;
+  if (isCountUnit(itemUnit)) {
+    const whole = estimatedPieces(kgMilli, standardWeightKg);
+    return whole === null ? null : whole * 1000;
+  }
+  if (!standardWeightKg) return null;
+  const weight = quantityFromDb(standardWeightKg, "KG").milli;
+  if (weight <= 0) return null;
+  return Math.floor((kgMilli * 1000) / weight);
 }
 
 export interface StatusLabel {

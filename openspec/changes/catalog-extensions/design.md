@@ -60,7 +60,7 @@ Hiện trạng code cần biết:
 | So trùng trên mã nguyên văn (không `code_key`) | `NỐI 34` / `NOI 34` / `NOI34` thành ba mã khác nhau, quét và gõ nhầm sang hàng khác. |
 | Cho cả bãi/xưởng dùng luật mới | Không có nhu cầu từ dữ liệu thật; mã vị trí nằm trong URL và chứng từ, giữ đơn giản. |
 
-**DB:** CHECK `item_code_check` / `kit_code_check` đổi thành: `char_length(code) between 2 and 30 and code = upper(code) and code = btrim(code) and code !~ '[,*+ -]{2}' and code !~ '^[,*+ -]|[,*+ -]$'`. CHECK chỉ là lớp chặn thứ hai; luật đầy đủ (chỉ chữ/số Unicode) nằm ở domain vì lớp ký tự `[:upper:]` của Postgres phụ thuộc collation của DB (local, CI, Neon có thể khác). Migration điền `code_key` cho dòng cũ bằng cùng phép biến đổi (mã cũ chỉ có `A-Z0-9-` nên `lower(replace(code,' ',''))` là đủ, dấu `-` vẫn giữ trong khóa).
+**DB:** CHECK `item_code_check` / `kit_code_check` đổi thành: `char_length(code) between 2 and 30 and code = upper(code) and code = btrim(code) and code !~ '[,*+ -]{2}' and code !~ '^[,*+ -]|[,*+ -]$'`. CHECK chỉ là lớp chặn thứ hai; luật đầy đủ (chỉ chữ/số Unicode) nằm ở domain vì lớp ký tự `[:upper:]` của Postgres phụ thuộc collation của DB (local, CI, Neon có thể khác). `code_key` là **cột sinh tự động** (`generated always as (lower(translate(code, '<chữ in hoa có dấu và khoảng trắng>', '<chữ không dấu>'))) stored`): DB tự tính cho dòng cũ và mọi dòng mới, không chỗ ghi nào quên được. Mã đã in hoa nên `translate` chỉ cần chữ in hoa và `lower` chỉ gặp chữ ASCII, không phụ thuộc collation. `itemCodeKey` ở domain dùng cùng quy tắc để so trước khi ghi. (Đổi khi apply: bản propose định điền bằng `UPDATE` trong migration.)
 
 > Ghi chú: `code_key` **giữ** các dấu `,` `*` `+` `-`, chỉ bỏ dấu tiếng Việt và khoảng trắng. `H1,7` và `H17` là hai mã khác nhau.
 
@@ -182,9 +182,9 @@ Hiện trạng code cần biết:
 
 | Bảng | Thay đổi |
 |---|---|
-| `item` | thêm `code_key text not null unique` (điền từ `code`); đổi `item_code_check`; `item_unit_check` nhận 9 đơn vị; `item_weight_check` = `(unit = 'KG' and standard_weight_kg is null) or (unit <> 'KG' and standard_weight_kg > 0)`; **bỏ** `item_rental_unit_check` |
-| `item_alias` (mới) | `id uuid pk`, `item_id uuid not null references item on delete cascade`, `code text not null`, `code_key text not null unique`, `created_at`, `created_by`; index `item_id`; CHECK mã như `item` |
-| `kit` | thêm `code_key text not null unique`; đổi `kit_code_check` |
+| `item` | thêm `code_key` (cột sinh tự động từ `code`, unique); đổi `item_code_check`; `item_unit_check` nhận 9 đơn vị; `item_weight_check` = `(unit = 'KG' and standard_weight_kg is null) or (unit <> 'KG' and standard_weight_kg > 0)`; **bỏ** `item_rental_unit_check` |
+| `item_alias` (mới) | `id uuid pk`, `item_id uuid not null references item on delete cascade`, `code text not null`, `code_key` (cột sinh, unique), `created_at`, `created_by`; index `item_id`; CHECK mã như `item` |
+| `kit` | thêm `code_key` (cột sinh, unique); đổi `kit_code_check` |
 | `item_group` | thêm `category text not null default 'EQUIPMENT'` + CHECK |
 | `site` | thêm `province text null`; index `province` |
 | `customer` | thêm `sales_user_id text null` FK `user(id)` restrict; index |
@@ -234,7 +234,7 @@ Không có bảng chỉ ghi thêm mới, không đổi `APPEND_ONLY_TABLES`; `sr
 ## Migration Plan
 
 1. Migration chạy bằng owner (`npm run db:migrate`), sau đó `src/db/grants.ts` cấp quyền `item_alias` cho `erp_app`.
-2. Điền dữ liệu trong cùng migration: `item.code_key`, `kit.code_key` từ mã hiện có; `item_group.category = 'EQUIPMENT'` (mặc định cột). `site.province`, `customer.sales_user_id` để trống.
+2. Điền dữ liệu trong cùng migration: `item.code_key`, `kit.code_key` do DB tự sinh từ mã hiện có; `item_group.category = 'EQUIPMENT'` (mặc định cột). `site.province`, `customer.sales_user_id` để trống.
 3. Không đổi dòng sổ kho, giá BQ, đơn mua, phiếu nhập đã có; `npm run inventory:check` vẫn xanh trước và sau.
 4. Rollback: migration ngược bỏ cột/bảng mới và dựng lại CHECK cũ — chỉ làm được khi chưa có vật tư dùng luật mã hoặc đơn vị mới (nếu có thì phải xóa/ngừng dùng chúng trước). Ghi chú điều này ở đầu file migration.
 5. Seed dev (`npm run db:seed:dev`): thêm `H1,7`, `H1,7KĐ`, `KB+KU34`, `NỐI 34`, `ONG-49` (mét), `TY-REN` (bó), `QH-2,5` (hộp, nhóm "Que hàn" – Vật tư); mã cũ `K1,7` cho `GG-K17`; tỉnh cho công trình mẫu; người phụ trách `kinhdoanh` cho vài nhà thầu mẫu. Ảnh mốc D9, D16 đổi theo.

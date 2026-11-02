@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 
+import { normalizeItemCode } from "@/domain/item-code";
 import { StockCardFilters } from "@/components/inventory/stock-card-filters";
 import { StockCardSummary } from "@/components/inventory/stock-card-summary";
 import { StockCardTable } from "@/components/inventory/stock-card-table";
@@ -34,7 +35,7 @@ export default async function Page({
   const filter = cardFilterFrom(search);
   const db = getDatabase();
   const [card, sites] = await Promise.all([
-    getStockCard(db, decodeURIComponent(code).toUpperCase(), filter),
+    getStockCard(db, normalizeItemCode(decodeURIComponent(code)), filter),
     listSites(db),
   ]);
   if (!card) notFound();

@@ -25,7 +25,12 @@ import {
 } from "@/domain/business-date";
 import { CONDITION_LABELS, type Condition } from "@/domain/condition";
 import { DomainValueError } from "@/domain/errors";
-import { quantityFromDb, quantityToDb, toQuantity } from "@/domain/quantity";
+import {
+  quantityFromDb,
+  quantityToDb,
+  toQuantity,
+  type QuantityUnit,
+} from "@/domain/quantity";
 import {
   ADJUSTMENT_KINDS,
   ADJUSTMENT_MESSAGES,
@@ -59,6 +64,7 @@ import {
 
 import { nextDocumentCode } from "./counter";
 import { postMovements, type Tx } from "./post";
+import { unitFromDb } from "./unit";
 import {
   assertValueLinesAgainstLedger,
   buildTripRevaluation,
@@ -237,7 +243,7 @@ async function checkDocument(
     if (!line.locationId) {
       throw new DomainValueError(ADJUSTMENT_SERVICE_MESSAGES.locationMissing);
     }
-    const unit = found.unit === "KG" ? "KG" : "PIECE";
+    const unit = unitFromDb(found.unit);
     const checked: AdjustmentLineInput = {
       lineType: (line.lineType ?? "") as AdjustmentLineType,
       itemId: found.id,
@@ -370,7 +376,7 @@ export async function writeLines(
   tx: Tx,
   adjustmentId: string,
   lines: AdjustmentLineInput[],
-  units: Map<string, "PIECE" | "KG">,
+  units: Map<string, QuantityUnit>,
 ): Promise<void> {
   await tx
     .delete(stockAdjustmentLine)
@@ -397,12 +403,12 @@ export async function writeLines(
 
 export async function unitsOf(tx: Tx, lines: AdjustmentLineInput[]) {
   const ids = [...new Set(lines.map((line) => line.itemId))];
-  if (ids.length === 0) return new Map<string, "PIECE" | "KG">();
+  if (ids.length === 0) return new Map<string, QuantityUnit>();
   const rows = await tx
     .select({ id: item.id, unit: item.unit })
     .from(item)
     .where(inArray(item.id, ids));
-  return new Map(rows.map((row) => [row.id, row.unit as "PIECE" | "KG"]));
+  return new Map(rows.map((row) => [row.id, unitFromDb(row.unit)]));
 }
 
 const today = () => toBusinessDate(new Date());

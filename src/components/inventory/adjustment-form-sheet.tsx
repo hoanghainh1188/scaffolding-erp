@@ -26,6 +26,7 @@ import {
 import { DomainValueError } from "@/domain/errors";
 import { parseMoney } from "@/domain/money";
 import {
+  QUANTITY_UNIT_LABELS,
   formatQuantityForInput,
   parseQuantity,
   quantityToDb,
@@ -431,7 +432,7 @@ export function AdjustmentFormSheet({
                   ) : null}
                   <div className="flex flex-col gap-1">
                     <Label htmlFor={id("quantity")}>
-                      Số lượng ({unit === "KG" ? "kg" : "cái"})
+                      Số lượng ({QUANTITY_UNIT_LABELS[unit]})
                     </Label>
                     <Input
                       id={id("quantity")}
@@ -447,7 +448,7 @@ export function AdjustmentFormSheet({
                     <div className="flex flex-col gap-1">
                       <Label htmlFor={id("cost")}>
                         {line.lineType === "OPENING"
-                          ? `Đơn giá vốn (₫/${unit === "KG" ? "kg" : "cái"})`
+                          ? `Đơn giá vốn (₫/${QUANTITY_UNIT_LABELS[unit]})`
                           : "Đơn giá (chỉ khi chưa có giá vốn)"}
                       </Label>
                       <Input

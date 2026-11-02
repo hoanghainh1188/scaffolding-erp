@@ -2,7 +2,11 @@
 // by someone without repairs.manage (figures from today's averages).
 import { formatBusinessDate, formatDateTime } from "@/domain/business-date";
 import { formatMoney, toMoney } from "@/domain/money";
-import { formatQuantity, toQuantity } from "@/domain/quantity";
+import {
+  formatQuantity,
+  toQuantity,
+  type QuantityUnit,
+} from "@/domain/quantity";
 import { repairTotals } from "@/domain/repair-order";
 import type { AwaitingRepair, RepairDetail } from "@/lib/repairs/queries";
 
@@ -11,7 +15,8 @@ import { postedLine, previewLine, type LineFigures } from "./preview";
 import { RepairStatusBadge } from "./repair-status-badge";
 import { RepairSummary } from "./repair-summary";
 
-const pieces = (milli: number) => formatQuantity(toQuantity(milli, "PIECE"));
+const units = (milli: number, unit: QuantityUnit) =>
+  formatQuantity(toQuantity(milli, unit));
 
 function figuresOf(
   slip: RepairDetail,
@@ -32,6 +37,7 @@ function figuresOf(
       {
         itemCode: line.itemCode,
         itemName: line.itemName,
+        unit: line.unit,
         goodMilli: line.goodMilli,
         scrapMilli: line.scrapMilli,
         repairCost: line.repairCost,
@@ -115,6 +121,7 @@ export function RepairView({ slip, awaiting }: RepairViewProps) {
           cost={totals.cost}
           goodMilli={totals.goodMilli}
           scrapMilli={totals.scrapMilli}
+          units={slip.lines.map((line) => line.unit)}
           loss={loss}
         />
       </div>
@@ -159,13 +166,13 @@ export function RepairView({ slip, awaiting }: RepairViewProps) {
                     </span>
                   </th>
                   <td className="border-b px-3 py-2.5 text-right tabular-nums">
-                    {pieces(line.takenMilli)}
+                    {units(line.takenMilli, line.unit)}
                   </td>
                   <td className="border-b px-3 py-2.5 text-right tabular-nums">
-                    {pieces(line.goodMilli)}
+                    {units(line.goodMilli, line.unit)}
                   </td>
                   <td className="border-b px-3 py-2.5 text-right tabular-nums">
-                    {pieces(line.scrapMilli)}
+                    {units(line.scrapMilli, line.unit)}
                   </td>
                   <td className="border-b px-3 py-2.5 text-right tabular-nums">
                     {formatMoney(line.repairCost)}

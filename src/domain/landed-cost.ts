@@ -8,7 +8,11 @@ import { dict } from "../locales";
 import { lineAmount, unitCostOf } from "./average-cost";
 import { DomainValueError } from "./errors";
 import { toMoney, type Money } from "./money";
-import { quantityFromDb, type QuantityUnit } from "./quantity";
+import {
+  hasStandardWeight,
+  quantityFromDb,
+  type QuantityUnit,
+} from "./quantity";
 
 /** How a user splits costs; QUANTITY is only used to split a lot (D5). */
 export const ALLOCATION_METHODS = ["VALUE", "WEIGHT"] as const;
@@ -113,15 +117,15 @@ export function allocate(
 }
 
 /**
- * Weight of a line in thousandths of a kg: pieces × standard weight for a
- * line ordered by the piece, the kg themselves for a line ordered by kg.
+ * Weight of a line in thousandths of a kg: quantity × standard weight for a
+ * line in a weighted unit (cái, bó, m...), the kg themselves for a kg line.
  */
 export function lineWeightKgMilli(
   unit: QuantityUnit,
   quantityMilli: number,
   standardWeightKg: string | null,
 ): number {
-  if (unit === "KG") return quantityMilli;
+  if (!hasStandardWeight(unit)) return quantityMilli;
   const weight = standardWeightKg
     ? quantityFromDb(standardWeightKg, "KG")
     : null;
@@ -175,10 +179,11 @@ export function splitLotByCondition(input: LotSplitInput): LotSplit {
     if (input.scrapPricePerKg === null) {
       throw new DomainValueError(LANDED_COST_MESSAGES.noScrapPrice);
     }
-    const kgMilli =
-      input.unit === "KG"
-        ? scrapMilli
-        : lineWeightKgMilli("PIECE", scrapMilli, input.standardWeightKg);
+    const kgMilli = lineWeightKgMilli(
+      input.unit,
+      scrapMilli,
+      input.standardWeightKg,
+    );
     if (kgMilli <= 0) throw new DomainValueError(LANDED_COST_MESSAGES.noWeight);
     const value = lineAmount(kgMilli, input.scrapPricePerKg);
     scrap = toMoney(Math.min(value, total));

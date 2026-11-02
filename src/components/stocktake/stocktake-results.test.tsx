@@ -97,6 +97,9 @@ describe("format", () => {
       "+12 cái · -2,25 kg",
     );
     expect(signedQuantities({ PIECE: 0, KG: 0 })).toBe("0 cái");
+    expect(
+      signedQuantities({ PIECE: -3 * K, BUNDLE: 2 * K, METER: -1_500 }),
+    ).toBe("-3 cái · +2 bó · -1,5 m");
     expect(quantityText(null, "PIECE")).toBe("–");
     expect(quantityText(1_226 * K, "PIECE")).toBe("1.226");
   });

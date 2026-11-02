@@ -244,7 +244,10 @@ export function waitingText(
       );
       const name = names.get(line.orderLineId) ?? line.itemCode;
       const lower = name.charAt(0).toLowerCase() + name.slice(1);
-      const unit = line.lineUnit === "KG" ? ` ${QUANTITY_UNIT_LABELS.KG}` : "";
+      // "40 mâm": the name already says what a piece is; other units show
+      // their label ("200 kg phế liệu", "40 bó ty ren", "12,5 m ống").
+      const label = QUANTITY_UNIT_LABELS[line.lineUnit];
+      const unit = label === QUANTITY_UNIT_LABELS.PIECE ? "" : ` ${label}`;
       return `${formatQuantity(gap)}${unit} ${lower}`;
     })
     .join(", ");

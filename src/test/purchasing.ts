@@ -2,6 +2,7 @@
 import { eq } from "drizzle-orm";
 
 import { item, supplier } from "@/db/schema";
+import type { QuantityUnit } from "@/domain/quantity";
 import type { OrderBody } from "@/lib/purchasing/orders";
 
 import type { TestContext } from "./auth";
@@ -117,4 +118,61 @@ export async function supplierStatus(ctx: TestContext, id: string) {
     .from(supplier)
     .where(eq(supplier.id, id));
   return row?.status;
+}
+
+/**
+ * An item in one of the new units (catalog-extensions D2): the sample
+ * catalog's row when seedCatalog made it, else added in the group of
+ * GG-K17. Returns its id.
+ */
+export async function insertUnitItem(
+  ctx: TestContext,
+  row: {
+    code: string;
+    name: string;
+    unit: QuantityUnit;
+    standardWeightKg: string | null;
+  },
+): Promise<string> {
+  const [existing] = await ctx.db
+    .select({ id: item.id, unit: item.unit })
+    .from(item)
+    .where(eq(item.code, row.code));
+  if (existing) {
+    if (existing.unit !== row.unit) throw new Error(`${row.code}: unit`);
+    return existing.id;
+  }
+  const [k17] = await ctx.db
+    .select({ groupId: item.groupId })
+    .from(item)
+    .where(eq(item.code, "GG-K17"));
+  if (!k17) throw new Error("Run seedCatalog first.");
+  const [created] = await ctx.db
+    .insert(item)
+    .values({
+      ...row,
+      groupId: k17.groupId,
+      searchText: `${row.code} ${row.name}`.toLowerCase(),
+    })
+    .returning({ id: item.id });
+  if (!created) throw new Error(`no item ${row.code}`);
+  return created.id;
+}
+
+/** ONG-49 (thép ống, 3,56 kg/m) and TY-REN (ty ren, 25 kg/bó). */
+export async function insertMeterAndBundleItems(ctx: TestContext) {
+  return {
+    ong: await insertUnitItem(ctx, {
+      code: "ONG-49",
+      name: "Ống thép phi 49",
+      unit: "METER",
+      standardWeightKg: "3.560",
+    }),
+    ty: await insertUnitItem(ctx, {
+      code: "TY-REN",
+      name: "Ty ren",
+      unit: "BUNDLE",
+      standardWeightKg: "25.000",
+    }),
+  };
 }
