@@ -192,7 +192,7 @@ Mọi trang và API SHALL yêu cầu phiên đăng nhập hợp lệ, trừ `/lo
 - **THEN** hệ thống chuyển tới `/dashboard`
 
 ### Requirement: Bảng quyền theo vai trò
-Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền tới các vai trò được phép, gồm quyền xem từng mục menu, quyền danh mục, quyền kho, quyền thu mua, quyền nhận hàng, giá sắt vụn, quyền phiếu sửa chữa, quyền kiểm kê và quyền xem nhật ký thao tác như các kịch bản dưới đây. Menu và server SHALL cùng đọc bảng này.
+Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền tới các vai trò được phép, gồm quyền xem từng mục menu, quyền danh mục, quyền kho, quyền thu mua, quyền nhận hàng, giá sắt vụn, quyền phiếu sửa chữa, quyền kiểm kê, quyền xem nhật ký thao tác và quyền hợp đồng (thuê, bán, duyệt) như các kịch bản dưới đây. Menu và server SHALL cùng đọc bảng này.
 
 #### Scenario: Menu và server khớp nhau
 - **WHEN** vai trò `ACCOUNTANT` không có quyền vào Cài đặt trong bảng quyền
@@ -262,6 +262,14 @@ Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền t
 - **WHEN** `thuha` (Kế toán) gửi `GET /api/activity?from=2026-10-22&to=2026-10-28`
 - **THEN** API trả 403 với "Bạn không có quyền thực hiện thao tác này"
 
+#### Scenario: Quyền hợp đồng theo vai trò
+- **WHEN** đọc bảng quyền cho các quyền hợp đồng
+- **THEN** `contracts.rental.view` và `contracts.sale.view` cho `DIRECTOR`, `ACCOUNTANT`, `SALES`; `contracts.rental.manage` và `contracts.sale.manage` cho `DIRECTOR`, `SALES`; `contracts.approve` chỉ cho `DIRECTOR`
+
+#### Scenario: Thủ kho gọi API hợp đồng
+- **WHEN** `vantung` (Thủ kho) gửi `GET /api/contracts`
+- **THEN** API trả 403 với "Bạn không có quyền thực hiện thao tác này"
+
 ### Requirement: Từ chối thao tác sai vai trò ở server
 Mỗi API và trang có giới hạn vai trò SHALL kiểm tra quyền ở server theo bảng quyền, độc lập với việc ẩn nút trên giao diện. API sai vai trò SHALL trả 403 với "Bạn không có quyền thực hiện thao tác này" và không thay đổi dữ liệu. Trang sai vai trò SHALL hiện trang 403 "Bạn không có quyền xem trang này" kèm nút về trang mặc định.
 
@@ -315,3 +323,22 @@ Khi hệ thống hoạt động ở chế độ demo (`DEMO_MODE=true`), hệ th
 - **GIVEN** hệ thống đang chạy với `DEMO_MODE=false` (hoặc không cấu hình)
 - **WHEN** tài khoản `ketoan` gửi yêu cầu đổi mật khẩu với mật khẩu hiện tại chính xác
 - **THEN** hệ thống đổi mật khẩu thành công
+
+### Requirement: Phạm vi hợp đồng của tài khoản Kinh doanh
+Mỗi tài khoản SHALL có phạm vi hợp đồng: Cả hai, Chỉ cho thuê, hoặc Chỉ bán (mặc định Cả hai). Với vai trò `SALES`, quyền xem và sửa hợp đồng một loại SHALL cần cả quyền trong bảng quyền lẫn phạm vi có loại đó. Vai trò khác SHALL bỏ qua phạm vi. Trang và API SHALL kiểm ở server theo phạm vi đọc lại ở mỗi yêu cầu.
+
+#### Scenario: Kinh doanh chỉ cho thuê
+- **WHEN** `quocbao` (`SALES`, phạm vi Chỉ cho thuê) gửi `GET /api/contracts?type=SALE`
+- **THEN** API trả 403 với "Bạn không có quyền thực hiện thao tác này"
+
+#### Scenario: Kinh doanh cả hai
+- **WHEN** `lanphuong` (`SALES`, phạm vi Cả hai) mở D4
+- **THEN** D4 hiện cả hợp đồng thuê lẫn hợp đồng bán
+
+#### Scenario: Phạm vi không áp cho Kế toán
+- **WHEN** `thuyvy` đang là Kinh doanh phạm vi Chỉ bán, Giám đốc đổi vai trò sang Kế toán, rồi `thuyvy` mở D5 của một hợp đồng thuê
+- **THEN** trang mở được vì phạm vi chỉ áp cho `SALES`
+
+#### Scenario: Đổi phạm vi có hiệu lực ngay
+- **WHEN** Giám đốc đổi phạm vi của `quocbao` từ Cả hai sang Chỉ cho thuê trong lúc `quocbao` đang mở D5 của hợp đồng bán
+- **THEN** lần tải lại kế tiếp `quocbao` nhận trang 403

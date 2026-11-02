@@ -56,8 +56,8 @@
 
 ## 8. Kiểm tra tổng
 
-- [ ] 8.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate contracts --strict` đều xanh; `npm run test:coverage` ≥ 80 % cho `src/domain`, `src/lib`. Kiểm: chạy lệnh, dán kết quả vào PR.
-- [ ] 8.2 Kiểm tay trên DB dev: tạo hợp đồng thật cỡ 20 mã từ file `BG THUÊ` mẫu, so tiền 1 ngày, giá tháng 30/31 ngày và giá trị dự kiến với Excel; in báo giá trên Edge và lưu PDF; đổi phạm vi một tài khoản Kinh doanh và thử mở hợp đồng bán. Nếu chưa làm được trước archive: ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33 (các bước và số cần so).
+- [x] 8.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate contracts --strict` đều xanh; `npm run test:coverage` ≥ 80 % cho `src/domain`, `src/lib`. Kiểm: chạy lệnh, dán kết quả vào PR.
+- [ ] 8.2 Kiểm tay trên DB dev: tạo hợp đồng thật cỡ 20 mã từ file `BG THUÊ` mẫu, so tiền 1 ngày, giá tháng 30/31 ngày và giá trị dự kiến với Excel; in báo giá trên Edge và lưu PDF; đổi phạm vi một tài khoản Kinh doanh và thử mở hợp đồng bán. Nếu chưa làm được trước archive: ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33 (các bước và số cần so). — **Làm sau, theo dõi ở #33** (mục 10).
 
 ## Workflow follow-up
 

@@ -58,6 +58,17 @@ Mỗi lệnh làm đổi chứng từ SHALL ghi đúng một dòng nhật ký ch
 - **WHEN** Giám đốc duyệt `ĐCG-2026-001` sửa chi phí `PN-2026-094`, 2 dòng, tổng −31.500.000 ₫
 - **THEN** có một dòng Duyệt `ĐCG-2026-001` với tóm tắt "Sửa PN-2026-094 · ghi sổ 2 dòng điều chỉnh giá · −31.500.000 ₫"
 
+### Requirement: Thao tác trên hợp đồng được ghi
+Mỗi lệnh làm đổi hợp đồng hoặc phụ lục hợp đồng (Tạo, Sửa, Gửi duyệt, Duyệt, Trả lại, Hủy) SHALL ghi đúng một dòng nhật ký. Lọc theo loại chứng từ trên D18 SHALL có Hợp đồng và Phụ lục hợp đồng.
+
+#### Scenario: Trả lại hợp đồng
+- **WHEN** Giám đốc trả lại `112026/ANPHAT-MINHPHAT` với lý do "Giá kích tăng U thấp quá, báo lại 450 ₫"
+- **THEN** có một dòng Trả lại loại Hợp đồng `112026/ANPHAT-MINHPHAT` với tóm tắt là lý do đó
+
+#### Scenario: Lọc phụ lục trên D18
+- **WHEN** Giám đốc lọc D18 theo loại Phụ lục hợp đồng
+- **THEN** bảng chỉ hiện các dòng có mã dạng `112026/ANPHAT-MINHPHAT/01`
+
 ### Requirement: Thao tác trên danh mục, người dùng và đăng nhập được ghi
 Hệ thống SHALL ghi một dòng cho: tạo, sửa (cả ngừng dùng, dùng lại), xóa vật tư, nhóm hàng, bộ, nhà cung cấp, nhà thầu, công trình, kho/bãi/xưởng; tạo người dùng, đổi vai trò, khóa, mở khóa, đặt lại mật khẩu, tự đổi mật khẩu; sửa giá sắt vụn; mỗi lần đăng nhập thành công. Đăng nhập sai, đăng xuất, xem trang SHALL không ghi.
 
