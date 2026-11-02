@@ -72,7 +72,7 @@ Màu, chữ, bo góc lấy từ `docs/design-system/tokens.json`. Sửa file đ�
 
 ### CI
 
-`.github/workflows/ci.yml` chạy cho mỗi pull request và mỗi lần push lên `main`: format, lint, typecheck, migration + toàn bộ Vitest trên PostgreSQL, `npm run build`, rồi Playwright (Edge, Firefox, WebKit) và so sánh ảnh mốc.
+`.github/workflows/ci.yml` chạy cho mỗi pull request và mỗi lần push lên `main`: format, lint, typecheck, migration + toàn bộ Vitest trên PostgreSQL, `npm run build`, rồi Playwright (Edge, WebKit) và so sánh ảnh mốc.
 
 ## Quy trình phát triển
 
