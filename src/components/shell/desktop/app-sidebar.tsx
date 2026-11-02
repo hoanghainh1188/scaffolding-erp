@@ -30,6 +30,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import type { NavIcon, NavItem } from "@/lib/navigation";
+import { dict } from "@/locales";
 
 const ICONS: Readonly<Record<NavIcon, LucideIcon>> = {
   "layout-dashboard": LayoutDashboard,
@@ -71,7 +72,7 @@ export function AppSidebar({ items }: AppSidebarProps) {
             SE
           </span>
           <span className="truncate font-display text-h2 sidebar-collapsed:hidden">
-            Giàn giáo
+            {dict.navigation.desktop.brandName}
           </span>
         </Link>
       </SidebarHeader>
@@ -114,7 +115,11 @@ export function AppSidebar({ items }: AppSidebarProps) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 onClick={toggleSidebar}
-                tooltip="Mở rộng menu"
+                tooltip={
+                  open
+                    ? dict.navigation.desktop.sidebarCollapse
+                    : dict.navigation.desktop.sidebarExpand
+                }
                 className="h-10 text-muted-foreground"
               >
                 {/* Icon follows the effective state; before hydration CSS decides. */}
@@ -126,7 +131,11 @@ export function AppSidebar({ items }: AppSidebarProps) {
                   aria-hidden
                   className="hidden sidebar-collapsed:block"
                 />
-                <span>{open ? "Thu gọn menu" : "Mở rộng menu"}</span>
+                <span>
+                  {open
+                    ? dict.navigation.desktop.sidebarCollapse
+                    : dict.navigation.desktop.sidebarExpand}
+                </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
