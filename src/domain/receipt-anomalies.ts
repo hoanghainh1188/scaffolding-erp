@@ -2,6 +2,8 @@
 // the ledger is append-only and a value booked wrong cannot be corrected
 // yet (#42), so a stray zero on the phone must be confirmed first. The same
 // pure check runs on the phone and again on the server.
+import { dict } from "../locales";
+
 import {
   needsWeighing,
   receivedInLineUnit,
@@ -67,14 +69,20 @@ function lineAnomaly(
   const field = needsWeighing(open)
     ? `lines.${index}.weighedKg`
     : `lines.${index}.quantity`;
+  const unitLabel = unit === "PIECE" ? "cái" : "kg";
   return {
     key: lineAnomalyKey(open.orderLineId),
     field,
     question:
       unit === "PIECE"
-        ? `Nhận ${got} cái, đơn chỉ còn ${rest}. Đúng không?`
-        : `Nhận ${got} kg, đơn chỉ còn ${rest} kg. Đúng không?`,
-    note: `nhận dư ${open.itemCode} ${got}/${rest} ${unit === "PIECE" ? "cái" : "kg"}`,
+        ? dict.receiving.anomalies.piecesOver(got, rest)
+        : dict.receiving.anomalies.kgOver(got, rest),
+    note: dict.receiving.anomalies.noteOver(
+      open.itemCode,
+      got,
+      rest,
+      unitLabel,
+    ),
   };
 }
 
@@ -87,8 +95,11 @@ export function receiptAnomalies(input: AnomalyInput): Anomaly[] {
     found.push({
       key: COSTS_ANOMALY_KEY,
       field: "costs",
-      question: `Chi phí chuyến ${formatMoney(input.tripCosts)}, cả đơn dự kiến ${formatMoney(input.expectedCosts)}. Đúng không?`,
-      note: `chi phí cao ${formatMoney(input.tripCosts)}`,
+      question: dict.receiving.anomalies.costsOver(
+        formatMoney(input.tripCosts),
+        formatMoney(input.expectedCosts),
+      ),
+      note: dict.receiving.anomalies.noteCostHigh(formatMoney(input.tripCosts)),
     });
   }
   return found;

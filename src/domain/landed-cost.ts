@@ -3,6 +3,8 @@
 // over the conditions it is sorted into. Every split sums to the exact đồng:
 // largest remainder, computed in bigint. Pure: purchase orders use it for the
 // D3 preview, goods-receipt for the cost that goes into the ledger.
+import { dict } from "../locales";
+
 import { lineAmount, unitCostOf } from "./average-cost";
 import { DomainValueError } from "./errors";
 import { toMoney, type Money } from "./money";
@@ -21,11 +23,10 @@ export const ALLOCATION_METHOD_LABELS: Readonly<
 };
 
 export const LANDED_COST_MESSAGES = {
-  zeroValue:
-    "Tiền hàng bằng 0 nên không chia chi phí theo giá trị được, chọn chia theo trọng lượng",
-  noGoods: "Không có hàng để chia chi phí",
-  noScrapPrice: "Chưa có giá sắt vụn tham khảo, nhờ Giám đốc nhập ở Cài đặt",
-  noWeight: "Vật tư chưa có trọng lượng chuẩn, không quy được phế liệu ra kg",
+  zeroValue: dict.purchasing.costs.zeroValue,
+  noGoods: dict.purchasing.costs.noGoods,
+  noScrapPrice: dict.purchasing.costs.noScrapPrice,
+  noWeight: dict.purchasing.costs.noWeight,
 } as const;
 
 export interface AllocationLine {

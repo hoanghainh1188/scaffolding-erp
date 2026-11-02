@@ -1,6 +1,7 @@
 // Value adjustments (stock-value-adjustment design D1, D2, D4; requirements
 // 0.2 #10, #24, #35): the new average after a change of value, the ledger
 // lines of an approved document, and the lines a corrected trip cost gives.
+import { dict } from "../locales";
 import { roundHalfUp, type CostPool } from "./average-cost";
 import { CONDITION_LABELS, CONDITIONS, type Condition } from "./condition";
 import { DomainValueError } from "./errors";
@@ -20,25 +21,28 @@ const pairLabel = (code: string, condition: Condition) =>
   `${code} ${CONDITION_LABELS[condition]}`;
 
 export const REVALUE_MESSAGES = {
-  deltaZero: "Chênh lệch giá trị phải khác 0",
-  deltaWhole: "Chênh lệch giá trị phải là số nguyên đồng",
+  deltaZero: dict.inventory.revalueMessages.deltaZero,
+  deltaWhole: dict.inventory.revalueMessages.deltaWhole,
   duplicate: (code: string, condition: Condition) =>
-    `${pairLabel(code, condition)} đã có trên phiếu`,
+    dict.inventory.revalueMessages.duplicate(pairLabel(code, condition)),
   soldOut: (code: string, condition: Condition) =>
-    `${pairLabel(code, condition)} đã hết hàng, không điều chỉnh giá trị được`,
+    dict.inventory.revalueMessages.soldOut(pairLabel(code, condition)),
   negative: (code: string, condition: Condition, value: number) =>
-    `Giá trị sau điều chỉnh của ${pairLabel(code, condition)} bị âm (${signedMoney(value).replace("+", "")})`,
-  relatedMissing: "Nhập mã chứng từ bị sửa",
-  relatedNotFound: (code: string) =>
-    `Không tìm thấy chứng từ ${code} trong sổ kho`,
+    dict.inventory.revalueMessages.negative(
+      pairLabel(code, condition),
+      signedMoney(value).replace("+", ""),
+    ),
+  relatedMissing: dict.inventory.revalueMessages.relatedMissing,
+  relatedNotFound: dict.inventory.revalueMessages.relatedNotFound,
   pairNotInRelated: (related: string, code: string, condition: Condition) =>
-    `${related} không có dòng sổ của ${pairLabel(code, condition)}`,
-  tripCost: "Chi phí chuyến phải là số nguyên không âm",
-  tripUnchanged: "Chi phí chuyến không đổi, không có gì để điều chỉnh",
-  tripNotReproducible: (receipt: string) =>
-    `Không dựng lại được cách chia của ${receipt}, lập dòng tay`,
-  tripOpen: (receipt: string, adjustment: string) =>
-    `${receipt} đã có phiếu điều chỉnh giá ${adjustment} chưa ghi sổ`,
+    dict.inventory.revalueMessages.pairNotInRelated(
+      related,
+      pairLabel(code, condition),
+    ),
+  tripCost: dict.inventory.revalueMessages.tripCost,
+  tripUnchanged: dict.inventory.revalueMessages.tripUnchanged,
+  tripNotReproducible: dict.inventory.revalueMessages.tripNotReproducible,
+  tripOpen: dict.inventory.revalueMessages.tripOpen,
 } as const;
 
 /** A change of value: a whole number of đồng, not 0. */

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { callApi } from "@/lib/api-client";
+import { dict } from "@/locales";
 
 interface ChangePasswordFormProps {
   /** Where to go once the password is changed. */
@@ -15,13 +16,17 @@ interface ChangePasswordFormProps {
 const FIELDS = [
   {
     name: "currentPassword",
-    label: "Mật khẩu hiện tại",
+    label: dict.auth.changePassword.currentPassword,
     autoComplete: "current-password",
   },
-  { name: "newPassword", label: "Mật khẩu mới", autoComplete: "new-password" },
+  {
+    name: "newPassword",
+    label: dict.auth.changePassword.newPassword,
+    autoComplete: "new-password",
+  },
   {
     name: "confirmPassword",
-    label: "Nhập lại mật khẩu mới",
+    label: dict.auth.changePassword.confirmPassword,
     autoComplete: "new-password",
   },
 ] as const;
@@ -69,8 +74,7 @@ export function ChangePasswordForm({ doneHref }: ChangePasswordFormProps) {
           />
           {field.name === "newPassword" ? (
             <p id="password-hint" className="text-sm text-muted-foreground">
-              Ít nhất 8 ký tự. Một cụm từ dễ nhớ là tốt nhất, ví dụ “bai sau
-              kho”.
+              {dict.auth.changePassword.hint}
             </p>
           ) : null}
         </div>
@@ -85,7 +89,9 @@ export function ChangePasswordForm({ doneHref }: ChangePasswordFormProps) {
       </div>
 
       <Button type="submit" size="lg" className="h-12" disabled={pending}>
-        {pending ? "Đang lưu…" : "Đổi mật khẩu"}
+        {pending
+          ? dict.auth.changePassword.submitting
+          : dict.auth.changePassword.submit}
       </Button>
     </form>
   );

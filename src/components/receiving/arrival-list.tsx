@@ -9,6 +9,7 @@ import { ToneBadge } from "@/components/domain/tone-badge";
 import { Button } from "@/components/ui/button";
 import { useDrafts } from "@/hooks/use-drafts";
 import type { ArrivalCard } from "@/lib/receiving/queries";
+import { dict } from "@/locales";
 
 interface ArrivalListProps {
   cards: ArrivalCard[];
@@ -16,7 +17,7 @@ interface ArrivalListProps {
   userId: string;
 }
 
-const KIND_SHORT = { NEW: "hàng mới", USED: "hàng cũ" } as const;
+const KIND_SHORT = dict.receiving.home.kindShort;
 
 export function ArrivalList({ cards, later, userId }: ArrivalListProps) {
   const drafts = useDrafts(userId) ?? [];
@@ -27,7 +28,7 @@ export function ArrivalList({ cards, later, userId }: ArrivalListProps) {
       className="flex flex-col gap-3"
     >
       <h2 id="arrivals-title" className="text-h3">
-        Xe sắp về bãi
+        {dict.receiving.home.arrivalsHeader}
       </h2>
       {cards.map((card) => {
         const draft = drafts.find(
@@ -59,7 +60,7 @@ export function ArrivalList({ cards, later, userId }: ArrivalListProps) {
                 </p>
                 {card.waiting && (
                   <p className="text-body">
-                    Đang nhận · chờ giao bù {card.waiting}
+                    {dict.receiving.home.waitingRest(card.waiting)}
                   </p>
                 )}
               </div>
@@ -75,9 +76,11 @@ export function ArrivalList({ cards, later, userId }: ArrivalListProps) {
                     ? draftHref(draft)
                     : `/m/receive/${encodeURIComponent(card.code)}`
                 }
-                aria-label={`${draft ? "Tiếp tục nhập" : "Bắt đầu nhập hàng"} ${card.code}`}
+                aria-label={`${draft ? dict.receiving.home.continueReceiving : dict.receiving.home.startReceiving} ${card.code}`}
               >
-                {draft ? "Tiếp tục nhập" : "Bắt đầu nhập hàng"}
+                {draft
+                  ? dict.receiving.home.continueReceiving
+                  : dict.receiving.home.startReceiving}
               </Link>
             </Button>
           </article>
@@ -85,7 +88,7 @@ export function ArrivalList({ cards, later, userId }: ArrivalListProps) {
       })}
       {later > 0 && (
         <Button asChild variant="ghost" className="h-12 self-start">
-          <Link href="/m?later=1">Xem {later} đơn ngày sau</Link>
+          <Link href="/m?later=1">{dict.receiving.home.viewLater(later)}</Link>
         </Button>
       )}
     </section>

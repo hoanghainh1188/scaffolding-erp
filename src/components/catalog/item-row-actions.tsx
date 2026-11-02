@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ItemRow } from "@/lib/catalog/items";
+import { dict } from "@/locales";
 
 import { ConfirmAction } from "./confirm-action";
 import { ItemFormSheet } from "./item-form-sheet";
@@ -48,23 +49,25 @@ export function ItemRowActions({
             variant="ghost"
             size="icon"
             className="size-9"
-            aria-label={`Thao tác với ${item.code}`}
+            aria-label={dict.catalog.items.rowActionAria(item.code)}
           >
             <Ellipsis aria-hidden />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setOpen("edit")}>
-            Sửa
+            {dict.catalog.items.editAction}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setOpen("status")}>
-            {active ? "Ngừng dùng" : "Dùng lại"}
+            {active
+              ? dict.catalog.items.deactivateAction
+              : dict.catalog.items.activateAction}
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onSelect={() => setOpen("delete")}
           >
-            Xóa
+            {dict.catalog.items.deleteAction}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -78,13 +81,21 @@ export function ItemRowActions({
       <ConfirmAction
         open={open === "status"}
         onOpenChange={close}
-        title={active ? `Ngừng dùng ${item.code}?` : `Dùng lại ${item.code}?`}
+        title={
+          active
+            ? dict.catalog.items.archiveTitle(item.code)
+            : dict.catalog.items.unarchiveTitle(item.code)
+        }
         description={
           active
-            ? "Không chọn được ở bộ và chứng từ mới. Chứng từ cũ vẫn giữ nguyên."
-            : "Vật tư chọn được lại ở bộ và chứng từ mới."
+            ? dict.catalog.items.deactivatedNotice
+            : dict.catalog.items.activatedNotice
         }
-        confirmLabel={active ? "Ngừng dùng" : "Dùng lại"}
+        confirmLabel={
+          active
+            ? dict.catalog.items.deactivateAction
+            : dict.catalog.items.activateAction
+        }
         error={action.error}
         onConfirm={async () =>
           (await action.run(path, {
@@ -96,9 +107,9 @@ export function ItemRowActions({
       <ConfirmAction
         open={open === "delete"}
         onOpenChange={close}
-        title={`Xóa ${item.code}?`}
-        description="Chỉ xóa được vật tư chưa dùng ở đâu. Vật tư đã dùng thì ngừng dùng."
-        confirmLabel="Xóa"
+        title={dict.catalog.items.deleteTitle(item.code)}
+        description={dict.catalog.items.deleteHelpText}
+        confirmLabel={dict.catalog.items.deleteAction}
         destructive
         error={action.error}
         onConfirm={async () =>

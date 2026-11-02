@@ -29,6 +29,7 @@ import {
 import { quantityFromDb, type QuantityUnit } from "@/domain/quantity";
 import { toSearchText } from "@/domain/search-text";
 import { escapeLike } from "@/lib/catalog/items";
+import { dict } from "@/locales";
 
 import { hasReceiptsSql, receiptSummary } from "./receipts";
 
@@ -41,13 +42,8 @@ export const ORDER_TABS = [
 ] as const;
 export type OrderTab = (typeof ORDER_TABS)[number];
 
-export const ORDER_TAB_LABELS: Readonly<Record<OrderTab, string>> = {
-  all: "Tất cả",
-  draft: "Nháp",
-  waiting: "Chờ xe về",
-  receiving: "Đang nhận",
-  done: "Đã nhập",
-};
+export const ORDER_TAB_LABELS: Readonly<Record<OrderTab, string>> =
+  dict.purchasing.tabs;
 
 export const PAGE_SIZE = 20;
 

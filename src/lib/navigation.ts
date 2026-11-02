@@ -1,5 +1,6 @@
 import { can, type Permission } from "@/domain/permissions";
 import type { Role } from "@/domain/role";
+import { dict } from "@/locales";
 
 /** Icon names from lucide-react; the sidebar maps them to components. */
 export type NavIcon =
@@ -27,55 +28,55 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   {
     href: "/dashboard",
-    label: "Tổng quan",
+    label: dict.navigation.desktop.dashboard,
     icon: "layout-dashboard",
     permission: "dashboard.view",
   },
   {
     href: "/purchasing",
-    label: "Thu mua",
+    label: dict.navigation.desktop.purchasing,
     icon: "shopping-cart",
     permission: "purchasing.view",
   },
   {
     href: "/inventory",
-    label: "Kho",
+    label: dict.navigation.desktop.inventory,
     icon: "warehouse",
     permission: "inventory.view",
   },
   {
     href: "/repairs",
-    label: "Sửa chữa",
+    label: dict.navigation.desktop.repairs,
     icon: "wrench",
     permission: "repairs.view",
   },
   {
     href: "/sales",
-    label: "Bán & Thuê",
+    label: dict.navigation.desktop.sales,
     icon: "file-signature",
     permission: "sales.view",
   },
   {
     href: "/receivables",
-    label: "Công nợ",
+    label: dict.navigation.desktop.receivables,
     icon: "wallet",
     permission: "receivables.view",
   },
   {
     href: "/reports",
-    label: "Báo cáo",
+    label: dict.navigation.desktop.reports,
     icon: "chart-column",
     permission: "reports.view",
   },
   {
     href: "/catalog",
-    label: "Danh mục",
+    label: dict.navigation.desktop.catalog,
     icon: "list",
     permission: "catalog.view",
   },
   {
     href: "/settings",
-    label: "Cài đặt",
+    label: dict.navigation.desktop.settings,
     icon: "settings",
     permission: "settings.view",
   },
