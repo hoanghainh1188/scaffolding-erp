@@ -29,7 +29,7 @@ Mọi vai trò SHALL mở được khu Mobile (`/m`), kể cả vai trò dùng D
 - **THEN** hệ thống hiển thị layout Mobile với 4 tab dưới đáy
 
 ### Requirement: Sidebar Desktop có 9 mục menu
-Layout Desktop SHALL có sidebar cố định bên trái, nền sáng (token `card`, viền `border`), gồm logo và các mục theo thứ tự: Tổng quan, Thu mua, Kho, Sửa chữa, Bán & Thuê, Công nợ, Báo cáo, Danh mục, Cài đặt. Mục ứng với trang đang mở SHALL có nền token `accent`.
+Layout Desktop SHALL có sidebar cố định bên trái, nền sáng (token `card`, viền `border`), gồm logo và các mục theo thứ tự: Tổng quan, Mua hàng, Kho, Sửa chữa, Cho thuê & Bán, Công nợ, Báo cáo, Danh mục, Cài đặt. Mục ứng với trang đang mở SHALL có nền token `accent`.
 
 #### Scenario: Làm nổi bật mục đang mở
 - **WHEN** người dùng (vai trò Giám đốc) đang ở `/inventory`
@@ -41,7 +41,7 @@ Sidebar SHALL chỉ hiện các mục mà vai trò của người dùng hiện t
 
 #### Scenario: Kinh doanh không thấy Công nợ, Báo cáo, Cài đặt
 - **WHEN** người dùng có vai trò `SALES` mở layout Desktop
-- **THEN** sidebar hiện 6 mục: Tổng quan, Thu mua, Kho, Sửa chữa, Bán & Thuê, Danh mục
+- **THEN** sidebar hiện 6 mục: Tổng quan, Mua hàng, Kho, Sửa chữa, Cho thuê & Bán, Danh mục
 - **AND** không hiện Công nợ, Báo cáo, Cài đặt
 
 #### Scenario: Kế toán thấy Công nợ nhưng không thấy Cài đặt
