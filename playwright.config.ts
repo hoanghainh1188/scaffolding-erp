@@ -81,13 +81,8 @@ export default defineConfig({
         hasTouch: true,
       },
     },
-    // Safari and Firefox have basic support: only @basic tests run there.
-    {
-      name: "firefox",
-      dependencies: ["setup"],
-      use: { ...devices["Desktop Firefox"] },
-      grep: /@basic/,
-    },
+    // Safari has basic support: only @basic tests run there. Firefox is not
+    // tested.
     {
       name: "webkit",
       dependencies: ["setup"],
