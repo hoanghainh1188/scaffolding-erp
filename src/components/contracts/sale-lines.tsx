@@ -135,8 +135,9 @@ export function SaleLines({
                       disabled={disabled || row.condition === "SCRAP"}
                       onChange={(event) =>
                         change(row.key, {
-                          pricingUnit:
-                            byWeight(event.target.value) ? "KG" : "ITEM",
+                          pricingUnit: byWeight(event.target.value)
+                            ? "KG"
+                            : "ITEM",
                         })
                       }
                       className="h-9 rounded-md border border-input bg-card px-2"
