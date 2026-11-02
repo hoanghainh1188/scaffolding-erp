@@ -20,7 +20,8 @@ context: |
   - "Bộ" (BOM) là tùy chọn, chỉ dùng để báo giá; tồn kho và giá thuê luôn tính theo linh kiện.
   - Mọi biến động kho đều ghi vào Sổ kho (inventory ledger), chỉ ghi thêm, không sửa/xóa dòng cũ.
     Sổ kho là nguồn duy nhất để tính tồn, giá vốn, tiền thuê và báo cáo.
-  - Tiền thuê tính theo ngày: tính ngày xuất, không tính ngày trả. Giá tháng = giá ngày × 30.
+  - Tiền thuê tính theo ngày: đếm từ ngày sau ngày xuất (N+1) đến hết ngày trả (số ngày = ngày trả − ngày xuất).
+    Tiền thuê = giá ngày × số ngày thực tế; thuê tối thiểu 45 ngày. Giá tháng hiển thị = giá ngày × 30, chỉ để quy đổi.
   - 1 hợp đồng = 1 nhà thầu + 1 công trình.
   - Giám đốc duyệt hợp đồng và phiếu đền bù trước khi có hiệu lực.
   - Kế toán: chỉ quản lý công nợ nội bộ, có xuất Excel. Không làm hóa đơn VAT.
