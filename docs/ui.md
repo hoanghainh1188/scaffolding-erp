@@ -12,7 +12,7 @@ Tài liệu nghiệp vụ đi kèm: `docs/requirements.md` (các quyết định
 
 ## 0. LUỒNG NGHIỆP VỤ CHÍNH
 
-1. **Thu mua** (D3) → xe về bãi → **Nhập thực tế** (M3): hàng mới vào *Mới*; hàng cũ tách *Tốt / Chờ sửa / Phế liệu*.
+1. **Mua hàng** (D3) → xe về bãi → **Nhập thực tế** (M3): hàng mới vào *Mới*; hàng cũ tách *Tốt / Chờ sửa / Phế liệu*.
 2. **Chờ sửa** → **Sửa chữa** (D12; M8 ở Bản 2) → về **Tốt** (giá vốn cộng thêm chi phí sửa).
 3. **Mới / Tốt** → **Hợp đồng** (D4, D5) → Giám đốc duyệt → **Xuất kho theo đợt** (D6, M5) ra công trình.
 4. **Công trình trả hàng** → **Nhập thu hồi** (M4) → **Phiếu đền bù** (D8) → Giám đốc duyệt.
@@ -28,9 +28,9 @@ Hệ thống có 2 Layout riêng biệt phục vụ 2 nhóm người dùng:
 ### A. Desktop Layout (Văn phòng: Giám đốc, Kế toán, Kinh doanh)
 
 - **Sidebar (Cố định bên trái):** Logo và Menu điều hướng chính. Có thể thu gọn (Collapse). Nền sáng (`card`), viền `border`; mục đang chọn nền `accent`.
-    - Menu: Tổng quan, Thu mua, Kho, Sửa chữa, Bán & Thuê, Công nợ, Báo cáo, Danh mục, Cài đặt.
+    - Menu: Tổng quan, Mua hàng, Kho, Sửa chữa, Cho thuê & Bán, Công nợ, Báo cáo, Danh mục, Cài đặt.
     - Menu hiển thị theo vai trò (VD: Kinh doanh không thấy Công nợ phải trả).
-- **Top Header:** Tìm kiếm toàn cục, Nút tạo mới nhanh (+ Tạo Hợp đồng, + Tạo Phiếu Thu mua), Notification (có mục "Chờ duyệt" cho Giám đốc), Profile User.
+- **Top Header:** Tìm kiếm toàn cục, Nút tạo mới nhanh (+ Tạo Hợp đồng, + Tạo Đơn mua hàng), Notification (có mục "Chờ duyệt" cho Giám đốc), Profile User.
 - **Main Content Area:** Bảng dữ liệu (Table), biểu đồ (Chart), hoặc Form chi tiết. Nền trang `background`, nội dung nằm trong thẻ `card` (viền `border`, bo `radius-lg`).
 
 ### B. Mobile PWA Layout (Thủ kho, Xưởng)
@@ -86,7 +86,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
     - MVP: Danh sách việc chờ duyệt, Tồn kho theo tình trạng, Công nợ quá hạn.
     - Bản 2: thêm biểu đồ doanh thu/lợi nhuận.
 
-#### Thu mua & Nhập hàng
+#### Mua hàng & Nhập hàng
 
 - **D2. Danh sách Đơn thu mua (PO)** **[MVP]**: Lọc theo NCC/cai thầu, loại (hàng mới/hàng cũ), trạng thái, ngày dự kiến nhập.
 - **D3. Tạo/Sửa PO** **[MVP]**: Thông tin NCC, loại PO, ngày dự kiến, phương tiện vận chuyển. Bảng hàng có Unit Switch (cái hoặc kg). Bảng chi phí Landed Cost (cước xe, bốc xếp, cầu đường), chọn cách phân bổ (theo giá trị / trọng lượng). Xem trước giá nhập từng dòng sau phân bổ.
