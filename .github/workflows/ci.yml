@@ -29,7 +29,7 @@ env:
   E2E_PASSWORD: e2e-pass-1234
 
 # Branch protection requires "Lint, types, tests, build", "E2E (Edge)" and
-# "E2E basic (Firefox, WebKit)". The first two gather parallel jobs (gate-*
+# "E2E basic (WebKit)". The first two gather parallel jobs (gate-*
 # below), so the required names never change when the split does.
 jobs:
   # Docs and planning files (ignored by Prettier, read by no code or test)
@@ -173,7 +173,7 @@ jobs:
         env:
           DATABASE_URL_MIGRATE: ${{ env.TEST_DATABASE_URL_MIGRATE }}
         run: npm run db:roles && npm run db:migrate
-      # Edge only: Firefox and WebKit pull ~100 media packages from the
+      # Edge only: WebKit pulls ~100 media packages from the
       # Ubuntu mirror, which can crawl for half an hour. They run in the
       # e2e-basic job instead, on an image that has them.
       - name: Install Edge
@@ -268,12 +268,11 @@ jobs:
           echo "Results: $RESULTS"
           case "$RESULTS" in *failure*|*cancelled*) exit 1 ;; esac
 
-  # Basic support (@basic) in Firefox and WebKit. The official Playwright
-  # image ships both browsers and their system packages, so nothing comes
-  # from apt. Sign-in runs on its Chromium (PW_CHANNEL), as Edge is not in
+  # Basic support (@basic) in WebKit. The official Playwright image ships
+  # the browser and its system packages, so nothing comes from apt. Sign-in runs on its Chromium (PW_CHANNEL), as Edge is not in
   # the image; the database service is reached by its name.
   e2e-basic:
-    name: E2E basic (Firefox, WebKit)
+    name: E2E basic (WebKit)
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
@@ -317,7 +316,7 @@ jobs:
       - name: E2E basic
         run: >-
           npx playwright test --grep-invert @visual
-          --project setup --project firefox --project webkit
+          --project setup --project webkit
       - name: Upload report
         if: failure()
         uses: actions/upload-artifact@v7

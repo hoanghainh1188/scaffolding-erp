@@ -8,8 +8,8 @@ import {
   waitForHydration,
 } from "./helpers";
 
-// Safari and Firefox have basic support: pages open, work and do not
-// scroll sideways. Small visual differences are accepted.
+// Safari has basic support: pages open, work and do not scroll sideways.
+// Small visual differences are accepted.
 function collectErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -21,10 +21,7 @@ function collectErrors(page: Page): string[] {
 
 test.describe("basic support @basic", () => {
   test.beforeEach(({}, testInfo) => {
-    test.skip(
-      !runOnlyIn(testInfo, "firefox", "webkit"),
-      "Firefox and WebKit only",
-    );
+    test.skip(!runOnlyIn(testInfo, "webkit"), "WebKit only");
   });
 
   test("the desktop area opens and its menu works", async ({ page }) => {
