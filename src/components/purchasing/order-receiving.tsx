@@ -4,6 +4,7 @@
 import { ToneBadge } from "@/components/domain/tone-badge";
 import { formatDateTime } from "@/domain/business-date";
 import { formatMoney } from "@/domain/money";
+import { hasStandardWeight } from "@/domain/quantity";
 import type { OrderLineRow } from "@/lib/purchasing/queries";
 import {
   orderReceivingSummary,
@@ -94,7 +95,7 @@ export function ReceivedCell({
         <span className="flex items-center gap-1 text-caption">
           <ToneBadge tone="primary">Nhận dư</ToneBadge>
           <span>
-            {line.unit === "KG" ? "cân dư" : "dư"} {gap}
+            {hasStandardWeight(line.unit) ? "dư" : "cân dư"} {gap}
           </span>
         </span>
       )}

@@ -16,13 +16,14 @@ import {
   user,
 } from "@/db/schema";
 import type { Condition } from "@/domain/condition";
-import { quantityFromDb } from "@/domain/quantity";
+import { quantityFromDb, type QuantityUnit } from "@/domain/quantity";
 import type {
   AdjustmentKind,
   AdjustmentLineType,
 } from "@/domain/stock-adjustment";
 
 import { poolsOf, previewOf, type ValuePreview } from "./revaluations";
+import { unitFromDb } from "./unit";
 
 export type AdjustmentStatus = "DRAFT" | "PENDING_APPROVAL" | "DONE";
 
@@ -53,7 +54,7 @@ export interface AdjustmentLineRow {
   itemId: string;
   itemCode: string;
   itemName: string;
-  unit: "PIECE" | "KG";
+  unit: QuantityUnit;
   condition: Condition;
   toCondition: Condition | null;
   /** Null on VALUE lines. */
@@ -272,7 +273,7 @@ export async function getAdjustment(
     lines: lines.map((line) => ({
       ...line,
       lineType: line.lineType as AdjustmentLineType,
-      unit: line.unit as "PIECE" | "KG",
+      unit: unitFromDb(line.unit),
       condition: line.condition as Condition,
       toCondition: line.toCondition as Condition | null,
       quantity: quantityFromDb(line.quantity, "KG").milli,

@@ -9,7 +9,7 @@ import { KIT_FIELDS, KIT_PARTS, type KitPartView } from "@/lib/activity/fields";
 import { logActivity } from "@/lib/activity/log";
 import { item, kit, kitComponent } from "@/db/schema";
 import { DomainValueError } from "@/domain/errors";
-import { parseCatalogCode } from "@/domain/item-code";
+import { itemCodeKey, parseItemCode } from "@/domain/item-code";
 import { kitTotals, validateKitComponents } from "@/domain/kit";
 import { toMoney } from "@/domain/money";
 import { quantityFromDb, type QuantityUnit } from "@/domain/quantity";
@@ -218,7 +218,7 @@ export function createKit(
   input: KitInput,
 ): Promise<ServiceResult<KitRow>> {
   return runService(async () => {
-    const code = parseCatalogCode(input.code ?? "");
+    const code = parseItemCode(input.code ?? "");
     const name = requireName(input.name);
     const components = input.components ?? [];
 
@@ -230,7 +230,7 @@ export function createKit(
         .values({
           code,
           name,
-          searchText: toSearchText(name, code),
+          searchText: toSearchText(name, code, itemCodeKey(code)),
           createdBy: actor.id,
           updatedBy: actor.id,
         })
@@ -289,7 +289,11 @@ export function updateKit(
         .update(kit)
         .set({
           name,
-          searchText: toSearchText(name, current.code),
+          searchText: toSearchText(
+            name,
+            current.code,
+            itemCodeKey(current.code),
+          ),
           ...(input.status === undefined
             ? {}
             : { status: input.status, archivedAt: archivedAt(input.status) }),

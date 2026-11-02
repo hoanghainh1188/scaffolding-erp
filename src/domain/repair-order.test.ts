@@ -10,8 +10,10 @@ import {
   RepairFieldError,
   assertRepairDate,
   checkRepairLines,
+  REPAIRABLE_UNITS,
   costRepairLine,
   goodUnitCost,
+  isRepairableUnit,
   perRepairedPiece,
   previewAverage,
   repairAnomalies,
@@ -119,6 +121,53 @@ describe("checkRepairLines", () => {
     );
   });
 
+  it("repairs whole bundles and bars like pieces", () => {
+    expect(() =>
+      checkRepairLines([
+        line("TC-BO", 10, 8, 2, 0, { unit: "BUNDLE" }),
+        line("CAY-3M", 5, 5, 0, 0, { unit: "BAR" }),
+      ]),
+    ).not.toThrow();
+    expect(
+      fieldError(() =>
+        checkRepairLines([
+          line("TC-BO", 0, 0, 0, 0, { unit: "BUNDLE", takenMilli: 2_500 }),
+        ]),
+      ),
+    ).toEqual({
+      message: "TC-BO quản lý theo bó, số lượng phải là số nguyên",
+      field: "lines.0.quantityTaken",
+    });
+    expect(REPAIRABLE_UNITS).toEqual([
+      "PIECE",
+      "BAR",
+      "BUNDLE",
+      "BASKET",
+      "ROLL",
+      "BOX",
+      "CARTON",
+    ]);
+  });
+
+  it("keeps metre items out of repairs with a clear message", () => {
+    expect(isRepairableUnit("METER")).toBe(false);
+    expect(
+      fieldError(() =>
+        checkRepairLines([line("ONG-49", 10, 10, 0, 0, { unit: "METER" })]),
+      ),
+    ).toEqual({
+      message: REPAIR_MESSAGES.measureItem("ONG-49", "m"),
+      field: "lines.0.itemId",
+    });
+    expect(REPAIR_MESSAGES.measureItem("ONG-49", "m")).toBe(
+      "Mã hàng ONG-49 tính theo m, chưa áp dụng quy trình sửa chữa (chỉ sửa mã tính theo đơn vị đếm)",
+    );
+  });
+
+  it("weighs bundle scrap by its kg per bundle", () => {
+    expect(scrapKgMilli(2 * K, "25.000")).toBe(50 * K);
+  });
+
   it("refuses a negative or fractional cost and a cost with nothing repaired", () => {
     for (const cost of [-1_000, 1_000.5]) {
       expect(
@@ -140,7 +189,30 @@ describe("checkRepairLines", () => {
         line("GG-K17", 40, 36, 4, 1_980_000),
         line("GG-CH", 20, 20, 0, 240_000),
       ]),
-    ).toEqual({ cost: 2_220_000, goodMilli: 56 * K, scrapMilli: 4 * K });
+    ).toEqual({
+      cost: 2_220_000,
+      good: [{ unit: "PIECE", milli: 56 * K }],
+      scrap: [{ unit: "PIECE", milli: 4 * K }],
+    });
+  });
+
+  it("keeps cái and bó apart (0.2 #47)", () => {
+    expect(
+      repairTotals([
+        line("GG-K17", 40, 36, 4, 1_980_000),
+        line("TY-REN", 10, 9, 1, 90_000, { unit: "BUNDLE" }),
+      ]),
+    ).toEqual({
+      cost: 2_070_000,
+      good: [
+        { unit: "PIECE", milli: 36 * K },
+        { unit: "BUNDLE", milli: 9 * K },
+      ],
+      scrap: [
+        { unit: "PIECE", milli: 4 * K },
+        { unit: "BUNDLE", milli: 1 * K },
+      ],
+    });
   });
 });
 

@@ -50,10 +50,15 @@ async function customerId(name = "Cty TNHH Xây dựng Minh Phát") {
   return result.data.id;
 }
 
-async function siteFor(owner: string, name = "Chung cư An Phú – Block B") {
+async function siteFor(
+  owner: string,
+  name = "Chung cư An Phú – Block B",
+  province = "HN",
+) {
   const result = await createSite(ctx.db, actor, {
     name,
     address: "Hoài Đức, Hà Nội",
+    province,
     customerId: owner,
   });
   if (!result.ok) throw new Error(result.error);
@@ -277,7 +282,11 @@ describe("sites", () => {
       .insert(location)
       .values({ code: "CT-0001", name: "Chiếm chỗ", type: "YARD" });
     await expect(
-      createSite(ctx.db, actor, { name: "An Phú", customerId: owner }),
+      createSite(ctx.db, actor, {
+        name: "An Phú",
+        province: "HN",
+        customerId: owner,
+      }),
     ).rejects.toThrow();
     expect(await ctx.db.select().from(site)).toHaveLength(0);
   });
@@ -295,7 +304,11 @@ describe("sites", () => {
     });
     await updateCustomer(ctx.db, actor, otherOwner, { status: "ARCHIVED" });
     expect(
-      await createSite(ctx.db, actor, { name: "X", customerId: otherOwner }),
+      await createSite(ctx.db, actor, {
+        name: "X",
+        province: "HN",
+        customerId: otherOwner,
+      }),
     ).toMatchObject({ ok: false, error: "Nhà thầu này đã ngừng dùng" });
   });
 

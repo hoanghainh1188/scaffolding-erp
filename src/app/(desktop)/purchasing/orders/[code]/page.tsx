@@ -7,6 +7,7 @@ import { OrderActions } from "@/components/purchasing/order-actions";
 import { OrderHistory } from "@/components/purchasing/order-history";
 import { OrderStatusBadge } from "@/components/purchasing/order-status-badge";
 import { OrderTotal } from "@/components/purchasing/order-total";
+import { unitHint } from "@/components/purchasing/preview";
 import {
   ReceivedCell,
   ReceivingTrips,
@@ -25,8 +26,10 @@ import {
 } from "@/domain/purchase-order";
 import {
   formatQuantity,
+  hasStandardWeight,
   QUANTITY_UNIT_LABELS,
   toQuantity,
+  type QuantityUnit,
 } from "@/domain/quantity";
 import { requirePermission } from "@/lib/auth/guard";
 import { getOrderByCode } from "@/lib/purchasing/queries";
@@ -75,7 +78,7 @@ export default async function Page({
   const waiting = open ? waitingOf(receiving, order.lines) || null : null;
   const received = order.hasReceipts;
 
-  const quantity = (milli: number, unit: "PIECE" | "KG") =>
+  const quantity = (milli: number, unit: QuantityUnit) =>
     `${formatQuantity(toQuantity(milli, "KG"))} ${QUANTITY_UNIT_LABELS[unit]}`;
 
   return (
@@ -233,7 +236,7 @@ export default async function Page({
                           className={`${cell} text-right whitespace-nowrap tabular-nums`}
                         >
                           {formatMoney(line.unitPrice)}
-                          {line.unit === "KG" ? "/kg" : ""}
+                          {unitHint(line.unit) ? `/${unitHint(line.unit)}` : ""}
                         </td>
                         <td
                           className={`${cell} text-right font-semibold whitespace-nowrap tabular-nums`}
@@ -309,7 +312,7 @@ export default async function Page({
                 const gap = quantity(summary.gapMilli, line.unit);
                 const label =
                   summary.state === "OVER"
-                    ? `${line.itemName} ${line.unit === "KG" ? "cân dư" : "dư"} ${gap}`
+                    ? `${line.itemName} ${hasStandardWeight(line.unit) ? "dư" : "cân dư"} ${gap}`
                     : `Thiếu ${gap.replace(/ cái$/, "")} ${line.itemName.charAt(0).toLowerCase()}${line.itemName.slice(1)}`;
                 return (
                   <Row

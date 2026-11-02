@@ -1,22 +1,16 @@
 // The blue "Tổng chi phí sửa" card of D12.
 import { formatMoney, type Money } from "@/domain/money";
-import { formatQuantity, toQuantity } from "@/domain/quantity";
-
-const pieces = (milli: number) => formatQuantity(toQuantity(milli, "PIECE"));
+import { formatByUnit, type UnitAmount } from "@/domain/quantity";
 
 interface RepairSummaryProps {
   cost: Money;
-  goodMilli: number;
-  scrapMilli: number;
+  /** To Good per unit: "40 cái, 9 bó", never one number (0.2 #47). */
+  good: readonly UnitAmount[];
+  scrap: readonly UnitAmount[];
   loss: Money;
 }
 
-export function RepairSummary({
-  cost,
-  goodMilli,
-  scrapMilli,
-  loss,
-}: RepairSummaryProps) {
+export function RepairSummary({ cost, good, scrap, loss }: RepairSummaryProps) {
   return (
     <section
       aria-label="Tổng chi phí sửa"
@@ -25,7 +19,7 @@ export function RepairSummary({
       <h2 className="text-sm font-semibold">Tổng chi phí sửa</h2>
       <p className="font-display text-h1 tabular-nums">{formatMoney(cost)}</p>
       <p className="text-sm">
-        {pieces(goodMilli)} cái về Tốt · {pieces(scrapMilli)} cái thành phế liệu
+        {`${formatByUnit(good)} về Tốt · ${formatByUnit(scrap)} thành phế liệu`}
       </p>
       {loss > 0 ? (
         <p className="text-sm font-semibold">

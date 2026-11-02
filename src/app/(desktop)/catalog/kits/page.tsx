@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
 import { can } from "@/domain/permissions";
 import { requirePermission } from "@/lib/auth/guard";
+import { isCountUnit } from "@/domain/quantity";
 import { listGroups } from "@/lib/catalog/item-groups";
 import { listItems } from "@/lib/catalog/items";
 import { listKits } from "@/lib/catalog/kits";
@@ -30,7 +31,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
     listGroups(db),
     listKits(db, { q, status }),
   ]);
-  const parts = items.filter((row) => row.unit === "PIECE");
+  const parts = items.filter((row) => isCountUnit(row.unit));
 
   return (
     <div className="flex w-full max-w-[1280px] flex-col gap-6">

@@ -2,6 +2,7 @@
 import { z } from "zod";
 
 import { getDatabase } from "@/db/client";
+import { QUANTITY_UNITS } from "@/domain/quantity";
 import { fail, ok } from "@/lib/api-response";
 
 import {
@@ -52,9 +53,8 @@ export const itemBody = z.object({
   code: text.optional(),
   name: text.optional(),
   groupId: text.optional(),
-  unit: z
-    .enum(["PIECE", "KG"], { error: "Chọn đơn vị cái hoặc kg" })
-    .optional(),
+  unit: z.enum(QUANTITY_UNITS, { error: "Chọn đơn vị của vật tư" }).optional(),
+  aliases: z.array(z.string().max(100)).max(20).optional(),
   standardWeightKg: z.string().max(20).nullable().optional(),
   dailyRentalPrice: money.optional(),
   lostPrice: money.optional(),
@@ -64,6 +64,7 @@ export const itemBody = z.object({
 
 export const groupBody = z.object({
   name: text.optional(),
+  category: text.optional(),
   sortOrder: z.number().int().optional(),
   status: statusField.optional(),
 });
@@ -87,6 +88,7 @@ export const customerBody = z.object({
   address: nullableText.optional(),
   paymentTermsDays: z.number().optional(),
   note: nullableText.optional(),
+  salesUserId: z.string().max(100).nullable().optional(),
   status: statusField.optional(),
 });
 
@@ -106,6 +108,7 @@ export const supplierBody = z.object({
 export const siteBody = z.object({
   name: text.optional(),
   address: nullableText.optional(),
+  province: nullableText.optional(),
   customerId: text.optional(),
   status: statusField.optional(),
 });

@@ -6,7 +6,9 @@ import {
   checkOrderLines,
   editableFields,
   estimatedPieces,
+  estimatedUnitsMilli,
   orderLineAmount,
+  orderUnitsFor,
   orderTotals,
   PURCHASE_COMMANDS,
   PURCHASE_MESSAGES,
@@ -70,6 +72,24 @@ describe("order totals", () => {
     expect(estimatedPieces(2_000_000, "13.500")).toBe(148);
     expect(estimatedPieces(2_000_000, null)).toBeNull();
   });
+
+  it("estimates units in a kg line for any weighted unit (D2)", () => {
+    expect(estimatedUnitsMilli(2_000_000, "13.500", "PIECE")).toBe(148_000);
+    expect(estimatedUnitsMilli(1_010_000, "25.000", "BUNDLE")).toBe(40_000);
+    // 220 kg ÷ 3,56 kg/m = 61,797 m (rounded down)
+    expect(estimatedUnitsMilli(220_000, "3.560", "METER")).toBe(61_797);
+    expect(estimatedUnitsMilli(220_000, null, "METER")).toBeNull();
+    expect(estimatedUnitsMilli(220_000, null, "KG")).toBeNull();
+  });
+});
+
+describe("orderUnitsFor", () => {
+  it("offers the item unit and kg, or only kg for a kg item", () => {
+    expect(orderUnitsFor("PIECE")).toEqual(["PIECE", "KG"]);
+    expect(orderUnitsFor("METER")).toEqual(["METER", "KG"]);
+    expect(orderUnitsFor("BUNDLE")).toEqual(["BUNDLE", "KG"]);
+    expect(orderUnitsFor("KG")).toEqual(["KG"]);
+  });
 });
 
 describe("checkOrderLines", () => {
@@ -83,7 +103,55 @@ describe("checkOrderLines", () => {
     ).not.toThrow();
   });
 
+  it("accepts metres with decimals, bundles and their kg lines", () => {
+    expect(() =>
+      checkOrderLines([
+        {
+          ...frame,
+          itemCode: "ONG-49",
+          itemUnit: "METER",
+          unit: "METER",
+          quantityMilli: 120_500,
+        },
+        {
+          ...frame,
+          itemCode: "TY-REN",
+          itemUnit: "BUNDLE",
+          unit: "BUNDLE",
+          quantityMilli: 40_000,
+        },
+        {
+          ...frame,
+          itemCode: "TY-REN2",
+          itemUnit: "BUNDLE",
+          unit: "KG",
+          quantityMilli: 1_000_500,
+        },
+      ]),
+    ).not.toThrow();
+  });
+
   it.each<[string, OrderLineCheck[], string, string]>([
+    [
+      "half a bundle",
+      [
+        {
+          ...frame,
+          itemCode: "TY-REN",
+          itemUnit: "BUNDLE",
+          unit: "BUNDLE",
+          quantityMilli: 2_500,
+        },
+      ],
+      PURCHASE_MESSAGES.wholePieces("TY-REN", "bó"),
+      "lines.0.quantity",
+    ],
+    [
+      "a metre item by the piece",
+      [{ ...frame, itemCode: "ONG-49", itemUnit: "METER", unit: "PIECE" }],
+      PURCHASE_MESSAGES.unitNotAllowed("ONG-49", "m"),
+      "lines.0.unit",
+    ],
     [
       "a kg item by the piece",
       [

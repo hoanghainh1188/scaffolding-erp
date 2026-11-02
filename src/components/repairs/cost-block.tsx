@@ -1,12 +1,21 @@
 // One "Giá vốn sau sửa" card of D12 (spec "Màn D12 phiếu sửa chữa").
 import { lineAmount } from "@/domain/average-cost";
 import { formatMoney, type Money } from "@/domain/money";
-import { formatQuantity, toQuantity } from "@/domain/quantity";
+import {
+  QUANTITY_UNIT_LABELS,
+  formatQuantity,
+  toQuantity,
+  type QuantityUnit,
+} from "@/domain/quantity";
 import { perRepairedPiece } from "@/domain/repair-order";
 
 import type { LineFigures } from "./preview";
 
-const pieces = (milli: number) => formatQuantity(toQuantity(milli, "PIECE"));
+const units = (milli: number, unit: QuantityUnit) =>
+  formatQuantity(toQuantity(milli, unit));
+/** "4 cái", "2 bó". */
+const withUnit = (milli: number, unit: QuantityUnit) =>
+  `${units(milli, unit)} ${QUANTITY_UNIT_LABELS[unit]}`;
 const kg = (milli: number) => formatQuantity(toQuantity(milli, "KG"));
 
 function Row({
@@ -34,7 +43,7 @@ function Row({
 
 /** "4 cái hỏng hẳn vào Phế liệu theo giá sắt vụn 405.000 ₫ (54 kg × 7.500 ₫)". */
 export function scrapSentence(figures: LineFigures): string {
-  const count = `${pieces(figures.scrapMilli)} cái hỏng hẳn vào Phế liệu`;
+  const count = `${withUnit(figures.scrapMilli, figures.unit)} hỏng hẳn vào Phế liệu`;
   const value = formatMoney(figures.scrapValue);
   const price = figures.scrapPricePerKg;
   // V = min(kg × price, pieces × B): say which side won.
@@ -51,8 +60,8 @@ export function CostBlock({ figures }: { figures: LineFigures }) {
   const good = figures.goodMilli;
   const title =
     good > 0
-      ? `${figures.itemName} · ${pieces(good)} cái sửa xong`
-      : `${figures.itemName} · ${pieces(figures.scrapMilli)} cái hỏng hẳn`;
+      ? `${figures.itemName} · ${withUnit(good, figures.unit)} sửa xong`
+      : `${figures.itemName} · ${withUnit(figures.scrapMilli, figures.unit)} hỏng hẳn`;
   return (
     <article
       aria-label={`Giá vốn sau sửa ${figures.itemCode}`}
@@ -63,12 +72,12 @@ export function CostBlock({ figures }: { figures: LineFigures }) {
         <dl className="flex flex-col gap-1.5 text-sm">
           <Row label="Giá vốn Chờ sửa" value={figures.needsRepairAvg} />
           <Row
-            label={`+ Chi phí sửa (${formatMoney(figures.repairCost)} ÷ ${pieces(good)})`}
+            label={`+ Chi phí sửa (${formatMoney(figures.repairCost)} ÷ ${units(good, figures.unit)})`}
             value={perRepairedPiece(figures.repairCost, good)}
           />
           {figures.damage > 0 ? (
             <Row
-              label={`+ Phần hỏng gánh thêm (${formatMoney(figures.damage)} ÷ ${pieces(good)})`}
+              label={`+ Phần hỏng gánh thêm (${formatMoney(figures.damage)} ÷ ${units(good, figures.unit)})`}
               value={perRepairedPiece(figures.damage, good)}
             />
           ) : null}

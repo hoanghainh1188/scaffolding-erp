@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { ALL_FIELD_SPECS, SUPPLIER_FIELDS } from "./fields";
+import { diffFields } from "@/domain/activity-changes";
+
+import {
+  ALL_FIELD_SPECS,
+  CUSTOMER_FIELDS,
+  GROUP_FIELDS,
+  ITEM_FIELDS,
+  SITE_FIELDS,
+  SUPPLIER_FIELDS,
+} from "./fields";
 
 describe("field specs (activity-log design D6, D7)", () => {
   const fields = ALL_FIELD_SPECS.flat();
@@ -26,5 +35,88 @@ describe("field specs (activity-log design D6, D7)", () => {
     expect(
       SUPPLIER_FIELDS.filter((spec) => spec.sensitive).map((s) => s.field),
     ).toEqual(["idNumber", "bankAccount"]);
+  });
+});
+
+describe("catalog-extensions fields", () => {
+  const item = {
+    name: "Thép ống D49",
+    groupName: "Thép ống",
+    unit: "METER" as const,
+    aliases: [] as string[],
+    standardWeightKg: "3.560",
+    dailyRentalPrice: null,
+    lostPrice: null,
+    damagePrice: null,
+    status: "ACTIVE",
+  };
+
+  it("compares old codes and writes the weight per unit", () => {
+    expect(
+      diffFields(ITEM_FIELDS, item, {
+        ...item,
+        aliases: ["ONG49"],
+        standardWeightKg: "3.600",
+      }),
+    ).toEqual([
+      { field: "aliases", label: "Mã cũ", before: null, after: "ONG49" },
+      {
+        field: "standardWeightKg",
+        label: "Trọng lượng chuẩn",
+        before: "3,56 kg/m",
+        after: "3,6 kg/m",
+      },
+    ]);
+  });
+
+  it("compares group category, site province and sales staff by label", () => {
+    expect(
+      diffFields(
+        GROUP_FIELDS,
+        {
+          name: "Que hàn",
+          category: "EQUIPMENT",
+          sortOrder: 0,
+          status: "ACTIVE",
+        },
+        {
+          name: "Que hàn",
+          category: "MATERIAL",
+          sortOrder: 0,
+          status: "ACTIVE",
+        },
+      ),
+    ).toEqual([
+      {
+        field: "category",
+        label: "Phân loại",
+        before: "Thiết bị",
+        after: "Vật tư",
+      },
+    ]);
+    const site = {
+      name: "A",
+      address: null,
+      provinceName: null,
+      status: "ACTIVE",
+    };
+    expect(
+      diffFields(SITE_FIELDS, site, { ...site, provinceName: "Bắc Ninh" }),
+    ).toMatchObject([{ field: "province", before: null, after: "Bắc Ninh" }]);
+    const nt = {
+      kind: "COMPANY",
+      name: "Minh Phát",
+      taxCode: null,
+      contactName: null,
+      phone: null,
+      address: null,
+      paymentTermsDays: 30,
+      note: null,
+      salesUserName: null,
+      status: "ACTIVE",
+    };
+    expect(
+      diffFields(CUSTOMER_FIELDS, nt, { ...nt, salesUserName: "Khang" }),
+    ).toMatchObject([{ field: "salesUser", before: null, after: "Khang" }]);
   });
 });

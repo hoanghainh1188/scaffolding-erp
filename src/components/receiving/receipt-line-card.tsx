@@ -9,11 +9,21 @@ import { ConditionSplit } from "@/components/domain/condition-split";
 import { QuantityInput } from "@/components/domain/quantity-input";
 import { Stepper } from "@/components/domain/stepper";
 import { FieldMessage } from "@/components/purchasing/field-message";
+import { unitHint } from "@/components/purchasing/preview";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { needsWeighing, type ReceivingLine } from "@/domain/goods-receipt";
-import { estimatedPieces, type PurchaseKind } from "@/domain/purchase-order";
-import { formatQuantity, toQuantity } from "@/domain/quantity";
+import {
+  estimatedUnitsMilli,
+  type PurchaseKind,
+} from "@/domain/purchase-order";
+import {
+  formatQuantity,
+  hasStandardWeight,
+  isCountUnit,
+  QUANTITY_UNIT_LABELS,
+  toQuantity,
+} from "@/domain/quantity";
 import { cn } from "@/lib/utils";
 
 import {
@@ -46,8 +56,8 @@ function compareText(open: ReceivingLine, line: LineForm): string | null {
   const gap = shortAfter(open, line);
   if (gap > 0) {
     const number = formatQuantity(toQuantity(gap, open.lineUnit));
-    const unit = open.lineUnit === "KG" ? " kg" : "";
-    return `Thiếu ${number}${unit} so với đơn`;
+    const hint = unitHint(open.lineUnit);
+    return `Thiếu ${number}${hint ? ` ${hint}` : ""} so với đơn`;
   }
   if (gap < 0) return `Nhiều hơn đơn ${quantityText(-gap, open.lineUnit)}`;
   return "Đúng như đơn";
@@ -68,8 +78,12 @@ export const ReceiptLineCard = forwardRef<HTMLElement, ReceiptLineCardProps>(
     const weighing = needsWeighing(open);
     const guess =
       weighing && line.weighedKgMilli > 0
-        ? estimatedPieces(line.weighedKgMilli, open.standardWeightKg)
+        ? estimatedUnitsMilli(line.weighedKgMilli, open.standardWeightKg, unit)
         : null;
+    // kg is weighed, metres measured with decimals, count units stepped.
+    const byKg = !hasStandardWeight(unit);
+    const counting = isCountUnit(unit);
+    const amountLabel = byKg ? "Cân thực tế" : "Thực nhận";
 
     return (
       <section
@@ -116,32 +130,33 @@ export const ReceiptLineCard = forwardRef<HTMLElement, ReceiptLineCardProps>(
         {line.mode === "COUNTED" && (
           <fieldset disabled={disabled} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <span className="text-label">
-                {unit === "KG" ? "Cân thực tế" : "Thực nhận"}
-              </span>
-              {unit === "PIECE" ? (
+              <span className="text-label">{amountLabel}</span>
+              {counting ? (
                 <Stepper
                   label={`Thực nhận ${open.itemName}`}
-                  value={toQuantity(line.quantityMilli, "PIECE")}
+                  value={toQuantity(line.quantityMilli, unit)}
                   onValueChange={(q) => change({ quantityMilli: q.milli })}
                 />
               ) : (
                 <div className="flex items-center gap-2">
                   <QuantityInput
-                    aria-label={`Cân thực tế ${open.itemName}`}
-                    value={toQuantity(line.quantityMilli, "KG")}
+                    aria-label={`${amountLabel} ${open.itemName}`}
+                    value={toQuantity(line.quantityMilli, unit)}
                     onValueChange={(q) =>
                       change({ quantityMilli: Math.max(q.milli, 0) })
                     }
                     className="h-12 text-h2"
                   />
-                  <span className="text-label">kg</span>
+                  <span className="text-label">
+                    {QUANTITY_UNIT_LABELS[unit]}
+                  </span>
                 </div>
               )}
-              {unit === "KG" && (
+              {!counting && (
                 <p className="text-caption text-muted-foreground">
                   Dùng dấu phẩy cho số lẻ.
-                  {kind === "USED" &&
+                  {byKg &&
+                    kind === "USED" &&
                     " Phế liệu nhập thẳng vào tình trạng Phế liệu."}
                 </p>
               )}
@@ -163,8 +178,7 @@ export const ReceiptLineCard = forwardRef<HTMLElement, ReceiptLineCardProps>(
                 </div>
                 {guess !== null && (
                   <p className="text-caption text-muted-foreground">
-                    ≈ {quantityText(guess * 1000, "PIECE")} theo trọng lượng
-                    chuẩn
+                    ≈ {quantityText(guess, unit)} theo trọng lượng chuẩn
                   </p>
                 )}
               </div>
@@ -176,12 +190,12 @@ export const ReceiptLineCard = forwardRef<HTMLElement, ReceiptLineCardProps>(
 
             {isSplit(kind, open) && (
               <ConditionSplit
-                total={toQuantity(line.quantityMilli, "PIECE")}
+                total={toQuantity(line.quantityMilli, unit)}
                 value={{
-                  GOOD: toQuantity(line.good, "PIECE"),
-                  NEEDS_REPAIR: toQuantity(line.repair, "PIECE"),
-                  SCRAP: toQuantity(line.scrap, "PIECE"),
-                  LOST: toQuantity(0, "PIECE"),
+                  GOOD: toQuantity(line.good, unit),
+                  NEEDS_REPAIR: toQuantity(line.repair, unit),
+                  SCRAP: toQuantity(line.scrap, unit),
+                  LOST: toQuantity(0, unit),
                 }}
                 onValueChange={(parts) =>
                   change({
@@ -190,7 +204,7 @@ export const ReceiptLineCard = forwardRef<HTMLElement, ReceiptLineCardProps>(
                     scrap: parts.SCRAP.milli,
                   })
                 }
-                balancedLabel={`Đã chia đủ ${quantityText(line.quantityMilli, "PIECE")}`}
+                balancedLabel={`Đã chia đủ ${quantityText(line.quantityMilli, unit)}`}
               />
             )}
           </fieldset>

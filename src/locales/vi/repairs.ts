@@ -6,8 +6,10 @@ export const repairs = {
     kgItem: (code: string) =>
       `Mã hàng ${code} quản lý theo kg, không áp dụng quy trình sửa chữa theo cái`,
     duplicateItem: (code: string) => `${code} đã có trên phiếu`,
-    wholePieces: (code: string) =>
-      `${code} quản lý theo cái, số lượng phải là số nguyên`,
+    measureItem: (code: string, unit: string) =>
+      `Mã hàng ${code} tính theo ${unit}, chưa áp dụng quy trình sửa chữa (chỉ sửa mã tính theo đơn vị đếm)`,
+    wholePieces: (code: string, unit = "cái") =>
+      `${code} quản lý theo ${unit}, số lượng phải là số nguyên`,
     quantityNegative: (code: string) => `${code}: số lượng không được âm`,
     takenZero: (code: string) => `${code}: Số lượng xuất sửa phải lớn hơn 0`,
     sumMismatch: (sum: string, taken: string) =>

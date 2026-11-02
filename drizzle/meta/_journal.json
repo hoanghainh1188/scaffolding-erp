@@ -92,6 +92,13 @@
       "when": 1793495956184,
       "tag": "0012_natural_deadpool",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793585003814,
+      "tag": "0013_catalog_extensions",
+      "breakpoints": true
     }
   ]
 }

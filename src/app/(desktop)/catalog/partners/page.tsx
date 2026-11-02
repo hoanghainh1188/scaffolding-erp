@@ -9,22 +9,39 @@ import {
   LocationDetail,
   SiteDetail,
   SupplierDetail,
+  provinceText,
+  regionText,
+  salesUserText,
 } from "@/components/catalog/partner-details";
 import {
-  CUSTOMER_FIELDS,
   LOCATION_FIELDS,
   SUPPLIER_FIELDS,
+  customerFields,
 } from "@/components/catalog/partner-form-fields";
+import { UrlSelect } from "@/components/catalog/url-select";
 import { RecordFormSheet } from "@/components/catalog/record-form-sheet";
 import { CatalogSwitch, TabLinks } from "@/components/catalog/tab-links";
 import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
 import { formatPhone } from "@/domain/partner-fields";
+import {
+  REGIONS,
+  REGION_LABELS,
+  UNKNOWN_REGION_LABEL,
+  parseProvinceFilter,
+  parseRegionFilter,
+  provincesIn,
+} from "@/domain/province";
 import { can } from "@/domain/permissions";
 import { requirePermission } from "@/lib/auth/guard";
-import { listCustomers, listSuppliers } from "@/lib/catalog/partners";
+import {
+  listCustomers,
+  listSalesStaff,
+  listSuppliers,
+} from "@/lib/catalog/partners";
 import { countPlaces, listLocations, listSites } from "@/lib/catalog/places";
 import { cn } from "@/lib/utils";
+import { dict } from "@/locales";
 
 export const metadata: Metadata = { title: "Đối tác và công trình" };
 
@@ -61,6 +78,13 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const q = one(params.q);
   const status = one(params.status) === "archived" ? "ARCHIVED" : "ACTIVE";
   const selectedId = one(params.id);
+  const region = parseRegionFilter(one(params.region));
+  // A province only counts inside the chosen region (spec: Lọc công trình).
+  const province =
+    region && region !== "UNKNOWN"
+      ? parseProvinceFilter(one(params.province))
+      : undefined;
+  const sales = one(params.sales);
   const canEditPartners = can(user.role, "partners.manage");
   const canEditLocations = can(user.role, "locations.manage");
   const db = getDatabase();
@@ -75,14 +99,46 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   let shownId: string | undefined;
   let detail: ReactNode = null;
   let addButton: ReactNode = null;
+  let filters: ReactNode = null;
 
   if (tab === "customers") {
-    const rows = await listCustomers(db, { q, status });
+    const [rows, staff] = await Promise.all([
+      listCustomers(db, { q, status, sales }),
+      listSalesStaff(db),
+    ]);
     entries = rows.map((row) => ({
       id: row.id,
       title: row.name,
-      subtitle: `${row.code} · ${row.siteCount} công trình`,
+      subtitle: [
+        row.code,
+        `${row.siteCount} công trình`,
+        salesUserText(row.salesUser),
+      ]
+        .filter(Boolean)
+        .join(" · "),
     }));
+    // Locked people still in charge of someone stay in the filter.
+    const filterStaff = new Map(staff.map((person) => [person.id, person]));
+    for (const row of activeCustomers) {
+      if (row.salesUser && !filterStaff.has(row.salesUser.id)) {
+        filterStaff.set(row.salesUser.id, row.salesUser);
+      }
+    }
+    filters = (
+      <UrlSelect
+        id="filter-sales"
+        label={dict.catalog.salesStaff.label}
+        param="sales"
+        allLabel={dict.catalog.salesStaff.all}
+        options={[
+          { value: "none", label: dict.catalog.salesStaff.none },
+          ...[...filterStaff.values()].map((person) => ({
+            value: person.id,
+            label: salesUserText(person) ?? person.name,
+          })),
+        ]}
+      />
+    );
     const selected = pick(rows, selectedId);
     shownId = selected?.id;
     if (selected) {
@@ -92,6 +148,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
           key={selected.id}
           customer={selected}
           sites={sites}
+          staff={staff}
           canEdit={canEditPartners}
         />
       );
@@ -107,7 +164,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
               Thêm nhà thầu
             </Button>
           }
-          fields={CUSTOMER_FIELDS}
+          fields={customerFields(staff)}
           values={{ kind: "COMPANY", paymentTermsDays: 30 }}
           path="/api/catalog/customers"
           method="POST"
@@ -154,12 +211,50 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       );
     }
   } else if (tab === "sites") {
-    const rows = await listSites(db, { q, status });
+    const rows = await listSites(db, { q, status, region, province });
     entries = rows.map((row) => ({
       id: row.id,
       title: row.name,
-      subtitle: `${row.code} · ${row.customerName}`,
+      subtitle: [
+        row.code,
+        row.customerName,
+        provinceText(row),
+        regionText(row),
+      ].join(" · "),
     }));
+    filters = (
+      <div className="flex flex-wrap gap-3">
+        <UrlSelect
+          id="filter-region"
+          label={dict.catalog.provinces.region}
+          param="region"
+          allLabel={dict.catalog.provinces.allRegions}
+          clears={["province"]}
+          options={[
+            ...REGIONS.map((value) => ({
+              value,
+              label: REGION_LABELS[value],
+            })),
+            { value: "UNKNOWN", label: UNKNOWN_REGION_LABEL },
+          ]}
+        />
+        {region && region !== "UNKNOWN" ? (
+          <UrlSelect
+            id="filter-province"
+            label={dict.catalog.provinces.label}
+            param="province"
+            allLabel={dict.catalog.provinces.allProvinces}
+            options={provincesIn(region).map((item) => ({
+              value: item.code,
+              label: item.name,
+            }))}
+          />
+        ) : null}
+        <p className="self-end pb-2.5 text-sm text-muted-foreground">
+          {rows.length} công trình
+        </p>
+      </div>
+    );
     const selected = pick(rows, selectedId);
     shownId = selected?.id;
     if (selected)
@@ -215,6 +310,9 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const query = new URLSearchParams({ tab });
   if (q) query.set("q", q);
   if (status === "ARCHIVED") query.set("status", "archived");
+  if (tab === "sites" && region) query.set("region", region);
+  if (tab === "sites" && province) query.set("province", province);
+  if (tab === "customers" && sales) query.set("sales", sales);
 
   return (
     <div className="flex w-full max-w-[1280px] flex-col gap-6">
@@ -267,6 +365,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
               placeholder="Tìm theo tên, mã, điện thoại"
             />
           )}
+          {filters}
           {entries.length === 0 ? (
             <p className="text-body text-muted-foreground">
               Chưa có bản ghi nào khớp.

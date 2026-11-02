@@ -87,6 +87,7 @@ describe("catalog under concurrent changes", () => {
       await Promise.all([
         updateCustomer(other.db, actor, ownerId, { status: "ARCHIVED" }),
         createSite(ctx.db, actor, {
+          province: "HN",
           name: `Công trình ${round}`,
           customerId: ownerId,
         }),

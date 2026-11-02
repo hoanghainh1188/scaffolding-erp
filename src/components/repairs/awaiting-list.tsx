@@ -3,7 +3,11 @@
 // D12 right column: needs-repair stock at the place a slip takes from;
 // pressing an item adds its line (once).
 import { formatMoney } from "@/domain/money";
-import { formatQuantity, toQuantity } from "@/domain/quantity";
+import {
+  QUANTITY_UNIT_LABELS,
+  formatQuantity,
+  toQuantity,
+} from "@/domain/quantity";
 import type { AwaitingItem } from "@/lib/repairs/queries";
 import { cn } from "@/lib/utils";
 
@@ -66,7 +70,8 @@ export function AwaitingList({
                     </span>
                   </span>
                   <span className="text-sm font-semibold whitespace-nowrap tabular-nums">
-                    {formatQuantity(toQuantity(item.onHandMilli, "PIECE"))} cái
+                    {formatQuantity(toQuantity(item.onHandMilli, item.unit))}{" "}
+                    {QUANTITY_UNIT_LABELS[item.unit]}
                   </span>
                 </button>
               </li>

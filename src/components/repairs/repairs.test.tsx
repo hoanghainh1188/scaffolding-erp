@@ -41,6 +41,7 @@ const K17: AwaitingItem = {
   itemId: "k17",
   itemCode: "GG-K17",
   itemName: "Khung giàn giáo 1,7m",
+  unit: "PIECE",
   standardWeightKg: "13.500",
   onHandMilli: 201 * K,
   needsRepairAvg: m(160_000),
@@ -53,6 +54,7 @@ const CH: AwaitingItem = {
   itemId: "ch",
   itemCode: "GG-CH",
   itemName: "Chéo giàn giáo",
+  unit: "PIECE",
   standardWeightKg: "2.800",
   onHandMilli: 63 * K,
   needsRepairAvg: m(30_000),
@@ -65,6 +67,7 @@ const M16: AwaitingItem = {
   itemId: "m16",
   itemCode: "GG-M16",
   itemName: "Mâm giàn giáo 1,6m",
+  unit: "PIECE",
   standardWeightKg: "12.000",
   onHandMilli: 9 * K,
   needsRepairAvg: m(210_000),
@@ -137,8 +140,11 @@ describe("RepairList", () => {
     toCode: "BAI-01",
     toName: "Bãi chính",
     lineCount: 2,
-    goodMilli: 56 * K,
-    scrapMilli: 4 * K,
+    good: [
+      { unit: "PIECE", milli: 56 * K },
+      { unit: "BUNDLE", milli: 9 * K },
+    ],
+    scrap: [{ unit: "PIECE", milli: 4 * K }],
     cost: m(2_220_000),
     loss: m(0),
     createdAt: new Date("2026-10-28T03:00:00Z"),
@@ -151,6 +157,7 @@ describe("RepairList", () => {
       within(table).getByRole("link", { name: "PSC-2026-024" }),
     ).toHaveAttribute("href", "/repairs/PSC-2026-024");
     expect(within(table).getByText("2.220.000 ₫")).toBeInTheDocument();
+    expect(within(table).getByText("56 cái, 9 bó")).toBeInTheDocument();
     expect(within(table).getByText("Nháp")).toBeInTheDocument();
     expect(within(table).getByText("28/10/2026")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Phiếu mới" })).toHaveAttribute(
@@ -180,6 +187,7 @@ describe("Giá vốn sau sửa", () => {
       {
         itemCode: "GG-K17",
         itemName: "Khung giàn giáo 1,7m",
+        unit: "PIECE",
         goodMilli: 36 * K,
         scrapMilli: 4 * K,
         repairCost: 1_980_000,
@@ -214,6 +222,7 @@ describe("Giá vốn sau sửa", () => {
       {
         itemCode: "GG-M16",
         itemName: "Mâm giàn giáo 1,6m",
+        unit: "PIECE",
         goodMilli: 0,
         scrapMilli: 5 * K,
         repairCost: 0,
@@ -236,6 +245,7 @@ describe("Giá vốn sau sửa", () => {
       {
         itemCode: "GG-CH",
         itemName: "Chéo giàn giáo",
+        unit: "PIECE",
         goodMilli: 20 * K,
         scrapMilli: 0,
         repairCost: 240_000,
@@ -252,6 +262,7 @@ describe("Giá vốn sau sửa", () => {
         {
           itemCode: "GG-K17",
           itemName: "Khung",
+          unit: "PIECE",
           goodMilli: 36 * K,
           scrapMilli: 4 * K,
           repairCost: 0,

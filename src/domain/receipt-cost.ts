@@ -17,6 +17,7 @@ import {
 } from "./landed-cost";
 import { toMoney, type Money } from "./money";
 import type { PurchaseKind } from "./purchase-order";
+import { hasStandardWeight } from "./quantity";
 
 export interface TripLine {
   readonly open: ReceivingLine;
@@ -58,13 +59,15 @@ export function receiptGoodsAmount(
   return lineAmount(receivedInLineUnit(open, line), unitPrice);
 }
 
-/** Weight basis (design D3): pieces × standard weight, or the kg weighed. */
+/**
+ * Weight basis (design D3): quantity × standard weight for a line in the
+ * item unit (cái, bó, m...), or the kg weighed for a kg line.
+ */
 function weightOf(open: ReceivingLine, received: number): number {
-  if (open.lineUnit === "KG") return received;
-  return lineWeightKgMilli("PIECE", received, open.standardWeightKg);
+  return lineWeightKgMilli(open.lineUnit, received, open.standardWeightKg);
 }
 
-/** True when a used lot shares scrap with good or repair pieces. */
+/** True when a used lot shares scrap with good or repair units. */
 export function needsScrapPrice(
   kind: PurchaseKind,
   lines: readonly Pick<TripLine, "line" | "open">[],
@@ -73,7 +76,7 @@ export function needsScrapPrice(
   return lines.some(
     ({ line, open }) =>
       line.status === "COUNTED" &&
-      open.itemUnit === "PIECE" &&
+      hasStandardWeight(open.itemUnit) &&
       line.split.SCRAP > 0 &&
       line.split.GOOD + line.split.NEEDS_REPAIR > 0,
   );

@@ -12,7 +12,12 @@ import {
 } from "@/domain/business-date";
 import { DomainValueError } from "@/domain/errors";
 import { toMoney, type Money } from "@/domain/money";
-import { quantityFromDb, quantityToDb, toQuantity } from "@/domain/quantity";
+import {
+  QUANTITY_UNIT_LABELS,
+  quantityFromDb,
+  quantityToDb,
+  toQuantity,
+} from "@/domain/quantity";
 import { unconfirmedAnomalies } from "@/domain/receipt-anomalies";
 import {
   REPAIRED_BY_MAX,
@@ -42,6 +47,7 @@ import {
 import { changeSummary, countText } from "@/domain/activity-summary";
 import { logActivity } from "@/lib/activity/log";
 import { nextDocumentCode } from "@/lib/inventory/counter";
+import { unitFromDb } from "@/lib/inventory/unit";
 import {
   POST_MESSAGES,
   lockForPosting,
@@ -232,7 +238,7 @@ async function checkSlip(
     return {
       itemId: found.id,
       itemCode: found.code,
-      unit: found.unit === "KG" ? "KG" : "PIECE",
+      unit: unitFromDb(found.unit),
       takenMilli: readQuantity(
         line.quantityTaken,
         `lines.${index}.quantityTaken`,
@@ -267,9 +273,9 @@ async function writeLines(
       orderId,
       position: index + 1,
       itemId: line.itemId,
-      quantityTaken: quantityToDb(toQuantity(line.takenMilli, "PIECE")),
-      quantityGood: quantityToDb(toQuantity(line.goodMilli, "PIECE")),
-      quantityScrap: quantityToDb(toQuantity(line.scrapMilli, "PIECE")),
+      quantityTaken: quantityToDb(toQuantity(line.takenMilli, line.unit)),
+      quantityGood: quantityToDb(toQuantity(line.goodMilli, line.unit)),
+      quantityScrap: quantityToDb(toQuantity(line.scrapMilli, line.unit)),
       repairCost: line.repairCost,
     })),
   );
@@ -412,7 +418,7 @@ async function storedLines(tx: Tx, orderId: string) {
     id: row.id,
     itemId: row.itemId,
     itemCode: row.itemCode,
-    unit: (row.unit === "KG" ? "KG" : "PIECE") as RepairLineInput["unit"],
+    unit: unitFromDb(row.unit),
     takenMilli: quantityFromDb(row.taken, "KG").milli,
     goodMilli: quantityFromDb(row.good, "KG").milli,
     scrapMilli: quantityFromDb(row.scrap, "KG").milli,
@@ -484,7 +490,7 @@ export function postRepairOrder(
                   line.itemCode,
                   "NEEDS_REPAIR",
                   locks.places.get(slip.fromLocationId) ?? "",
-                  "0 cái",
+                  `0 ${QUANTITY_UNIT_LABELS[line.unit]}`,
                 ),
               ),
             );

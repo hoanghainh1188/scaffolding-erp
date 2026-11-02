@@ -153,6 +153,63 @@ describe("lineWeightKgMilli", () => {
     expect(lineWeightKgMilli("KG", 2_000_000, "13.500")).toBe(2_000_000);
     expect(lineWeightKgMilli("PIECE", 1000, null)).toBe(0);
   });
+
+  it("weighs metres and bundles by their standard weight (catalog-extensions D2)", () => {
+    // ONG-49: 120,5 m × 3,56 kg/m = 428,98 kg
+    expect(lineWeightKgMilli("METER", 120_500, "3.560")).toBe(428_980);
+    // TY-REN: 40 bó × 25 kg/bó = 1.000 kg
+    expect(lineWeightKgMilli("BUNDLE", 40_000, "25.000")).toBe(1_000_000);
+  });
+});
+
+describe("allocate with metres", () => {
+  it("splits costs by kg for a METER item like any weighted line", () => {
+    const lines: AllocationLine[] = [
+      // ONG-49: 500 m × 60.000, 3,56 kg/m = 1.780 kg
+      {
+        amount: m(30_000_000),
+        weightKgMilli: lineWeightKgMilli("METER", 500_000, "3.560"),
+        quantityMilli: 500_000,
+      },
+      // TY-REN: 40 bó × 400.000, 25 kg/bó = 1.000 kg
+      {
+        amount: m(16_000_000),
+        weightKgMilli: lineWeightKgMilli("BUNDLE", 40_000, "25.000"),
+        quantityMilli: 40_000,
+      },
+      // ONG-49 bought by kg: 220 kg
+      {
+        amount: m(3_300_000),
+        weightKgMilli: lineWeightKgMilli("KG", 220_000, "3.560"),
+        quantityMilli: 220_000,
+      },
+    ];
+    const parts = allocate(m(3_000_000), lines, "WEIGHT");
+    // 3.000.000 × 1780/3000, × 1000/3000, × 220/3000
+    expect(parts).toEqual([1_780_000, 1_000_000, 220_000]);
+    expect(landedUnitCost(lines[0]!.amount, parts[0] as Money, 500_000)).toBe(
+      63_560,
+    );
+  });
+
+  it("prices metre scrap in a lot by its kg", () => {
+    expect(
+      splitLotByCondition({
+        total: m(10_000_000),
+        unit: "METER",
+        standardWeightKg: "3.560",
+        goodMilli: 80_000,
+        repairMilli: 20_000,
+        scrapMilli: 10_500,
+        scrapPricePerKg: m(7_500),
+      }),
+    ).toEqual({
+      // 10,5 m × 3,56 = 37,38 kg × 7.500 = 280.350
+      SCRAP: 280_350,
+      GOOD: 7_775_720,
+      NEEDS_REPAIR: 1_943_930,
+    });
+  });
 });
 
 describe("splitLotByCondition", () => {

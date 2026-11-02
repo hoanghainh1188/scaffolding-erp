@@ -7,7 +7,14 @@ import {
   type ReceiptLineInput,
   type ReceivingLine,
 } from "@/domain/goods-receipt";
-import { formatQuantity, quantityToDb, toQuantity } from "@/domain/quantity";
+import {
+  formatQuantity,
+  hasStandardWeight,
+  QUANTITY_UNIT_LABELS,
+  quantityToDb,
+  toQuantity,
+  type QuantityUnit,
+} from "@/domain/quantity";
 import {
   receiptAnomalies,
   unconfirmedAnomalies,
@@ -106,9 +113,12 @@ export function alignForm(
   };
 }
 
-/** A used piece item is split; everything else goes to one condition. */
+/**
+ * A used item with a standard weight (cái, bó, m...) is split over
+ * conditions; a kg item goes to Phế liệu and new goods to Mới.
+ */
 export function isSplit(kind: PurchaseKind, line: ReceivingLine): boolean {
-  return kind === "USED" && line.itemUnit === "PIECE";
+  return kind === "USED" && hasStandardWeight(line.itemUnit);
 }
 
 export function awaitsRestOf(line: LineForm): boolean {
@@ -259,8 +269,8 @@ export function toBody(order: ReceivingOrder, form: ReceiptForm): ReceiptBody {
 }
 
 /** "196 cái", "1.250,5 kg". */
-export function quantityText(milli: number, unit: "PIECE" | "KG"): string {
-  return `${formatQuantity(toQuantity(milli, unit))} ${unit === "PIECE" ? "cái" : "kg"}`;
+export function quantityText(milli: number, unit: QuantityUnit): string {
+  return `${formatQuantity(toQuantity(milli, unit))} ${QUANTITY_UNIT_LABELS[unit]}`;
 }
 
 /** Changing a count drops its earlier "Đúng" (must be confirmed again). */

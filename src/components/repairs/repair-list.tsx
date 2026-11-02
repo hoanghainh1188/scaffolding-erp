@@ -5,12 +5,10 @@ import { TabLinks } from "@/components/catalog/tab-links";
 import { Button } from "@/components/ui/button";
 import { formatBusinessDate } from "@/domain/business-date";
 import { formatMoney } from "@/domain/money";
-import { formatQuantity, toQuantity } from "@/domain/quantity";
+import { formatByUnit } from "@/domain/quantity";
 import type { RepairStatus, RepairSummary } from "@/lib/repairs/queries";
 
 import { RepairStatusBadge } from "./repair-status-badge";
-
-const pieces = (milli: number) => formatQuantity(toQuantity(milli, "PIECE"));
 
 interface RepairListProps {
   rows: RepairSummary[];
@@ -104,10 +102,10 @@ export function RepairList({ rows, status, canManage }: RepairListProps) {
                       {row.lineCount}
                     </td>
                     <td className="border-b px-3 py-2.5 text-right tabular-nums">
-                      {pieces(row.goodMilli)}
+                      {formatByUnit(row.good)}
                     </td>
                     <td className="border-b px-3 py-2.5 text-right tabular-nums">
-                      {pieces(row.scrapMilli)}
+                      {formatByUnit(row.scrap)}
                     </td>
                     <td className="border-b px-3 py-2.5 text-right tabular-nums">
                       {formatMoney(row.cost)}

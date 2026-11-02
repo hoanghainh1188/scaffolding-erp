@@ -26,7 +26,14 @@ import {
 } from "@/db/schema";
 import type { Condition } from "@/domain/condition";
 import { toMoney, type Money } from "@/domain/money";
-import { quantityFromDb } from "@/domain/quantity";
+import {
+  quantityFromDb,
+  sumByUnit,
+  type QuantityUnit,
+  type UnitAmount,
+} from "@/domain/quantity";
+import { REPAIRABLE_UNITS } from "@/domain/repair-order";
+import { unitFromDb } from "@/lib/inventory/unit";
 import { currentScrapPrice } from "@/lib/receiving/scrap-price";
 
 import type { RepairStatus } from "./labels";
@@ -50,8 +57,9 @@ export interface RepairSummary {
   toCode: string;
   toName: string;
   lineCount: number;
-  goodMilli: number;
-  scrapMilli: number;
+  /** To Good per unit (0.2 #47). */
+  good: UnitAmount[];
+  scrap: UnitAmount[];
   cost: Money;
   loss: Money;
   createdAt: Date;
@@ -100,6 +108,27 @@ export async function listRepairOrders(
     .leftJoin(totals, eq(totals.orderId, repairOrder.id))
     .where(where.length ? and(...where) : undefined)
     .orderBy(desc(repairOrder.createdAt), desc(repairOrder.code));
+  const perUnit = await db
+    .select({
+      code: repairOrder.code,
+      unit: item.unit,
+      good: sql<string>`sum(${repairOrderLine.quantityGood})`,
+      scrap: sql<string>`sum(${repairOrderLine.quantityScrap})`,
+    })
+    .from(repairOrderLine)
+    .innerJoin(repairOrder, eq(repairOrder.id, repairOrderLine.orderId))
+    .innerJoin(item, eq(item.id, repairOrderLine.itemId))
+    .where(where.length ? and(...where) : undefined)
+    .groupBy(repairOrder.code, item.unit);
+  const amounts = (code: string, pick: "good" | "scrap") =>
+    sumByUnit(
+      perUnit
+        .filter((row) => row.code === code)
+        .map((row) => ({
+          unit: row.unit as QuantityUnit,
+          milli: milli(row[pick]),
+        })),
+    );
   return rows.map((row) => ({
     code: row.code,
     status: row.status as RepairStatus,
@@ -109,8 +138,8 @@ export async function listRepairOrders(
     toCode: row.toCode,
     toName: row.toName,
     lineCount: row.lineCount ?? 0,
-    goodMilli: milli(row.good),
-    scrapMilli: milli(row.scrap),
+    good: amounts(row.code, "good"),
+    scrap: amounts(row.code, "scrap"),
     cost: toMoney(Number(row.cost ?? 0)),
     loss: toMoney(Number(row.loss ?? 0)),
     createdAt: row.createdAt,
@@ -121,7 +150,7 @@ export interface RepairLineRow {
   itemId: string;
   itemCode: string;
   itemName: string;
-  unit: "PIECE" | "KG";
+  unit: QuantityUnit;
   standardWeightKg: string | null;
   takenMilli: number;
   goodMilli: number;
@@ -305,7 +334,7 @@ export async function getRepairOrder(
       itemId: line.itemId,
       itemCode: line.itemCode,
       itemName: line.itemName,
-      unit: line.unit === "KG" ? "KG" : "PIECE",
+      unit: unitFromDb(line.unit),
       standardWeightKg: line.standardWeightKg,
       takenMilli: milli(line.taken),
       goodMilli: milli(line.good),
@@ -321,8 +350,9 @@ export interface AwaitingItem {
   itemId: string;
   itemCode: string;
   itemName: string;
+  unit: QuantityUnit;
   standardWeightKg: string | null;
-  /** Chờ sửa at the chosen place, in thousandths of a piece. */
+  /** Chờ sửa at the chosen place, in thousandths of its unit. */
   onHandMilli: number;
   needsRepairAvg: Money | null;
   goodPoolMilli: number;
@@ -366,6 +396,7 @@ export async function awaitingRepair(
       itemId: item.id,
       itemCode: item.code,
       itemName: item.name,
+      unit: item.unit,
       standardWeightKg: item.standardWeightKg,
       quantity: onHand.quantity,
     })
@@ -373,7 +404,7 @@ export async function awaitingRepair(
     .leftJoin(onHand, eq(onHand.itemId, item.id))
     .where(
       and(
-        eq(item.unit, "PIECE"),
+        inArray(item.unit, [...REPAIRABLE_UNITS]),
         or(
           sql`${onHand.quantity} > 0`,
           alsoItemIds.length ? inArray(item.id, [...alsoItemIds]) : sql`false`,
@@ -406,6 +437,7 @@ export async function awaitingRepair(
       itemId: row.itemId,
       itemCode: row.itemCode,
       itemName: row.itemName,
+      unit: unitFromDb(row.unit),
       standardWeightKg: row.standardWeightKg,
       onHandMilli: milli(row.quantity),
       needsRepairAvg: money(cost(row.itemId, "NEEDS_REPAIR")?.avgCost ?? null),

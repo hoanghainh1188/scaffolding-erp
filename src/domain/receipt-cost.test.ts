@@ -168,6 +168,52 @@ describe("costTrip (design D4)", () => {
     ]);
   });
 
+  it("splits trip costs by kg for metre and bundle lines (D2)", () => {
+    // ONG-49: 500 m × 3,56 = 1.780 kg; TY-REN: 40 bó × 25 = 1.000 kg;
+    // TY-REN by kg: 220 kg weighed.
+    const cost = costTrip(
+      trip({
+        kind: "NEW",
+        method: "WEIGHT",
+        costs: m(3_000_000),
+        lines: [
+          line(
+            "ONG-49",
+            { itemUnit: "METER", lineUnit: "METER", standardWeightKg: "3.560" },
+            60_000,
+            500 * K,
+            { NEW: 500 * K },
+          ),
+          line(
+            "TY-REN",
+            {
+              itemUnit: "BUNDLE",
+              lineUnit: "BUNDLE",
+              standardWeightKg: "25.000",
+            },
+            400_000,
+            40 * K,
+            { NEW: 40 * K },
+          ),
+          line(
+            "TY-KG",
+            { itemUnit: "BUNDLE", lineUnit: "KG", standardWeightKg: "25.000" },
+            16_000,
+            9 * K,
+            { NEW: 9 * K },
+            220 * K,
+          ),
+        ],
+      }),
+    );
+    expect(cost.lines.map((costed) => costed.allocated)).toEqual([
+      1_780_000, 1_000_000, 220_000,
+    ]);
+    expect(cost.lines.map((costed) => costed.goods)).toEqual([
+      30_000_000, 16_000_000, 3_520_000,
+    ]);
+  });
+
   it("puts all of a new-goods line into Mới", () => {
     const cost = costTrip(
       trip({

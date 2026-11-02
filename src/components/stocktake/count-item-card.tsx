@@ -16,7 +16,7 @@ import {
   CONDITIONS,
   type Condition,
 } from "@/domain/condition";
-import { formatQuantity, parseQuantity } from "@/domain/quantity";
+import { formatQuantity, isCountUnit, parseQuantity } from "@/domain/quantity";
 
 import { inputText, type ItemCount, type ItemView } from "./stocktake-model";
 
@@ -200,7 +200,7 @@ export const CountItemCard = forwardRef<HTMLElement, CountItemCardProps>(
                   </Button>
                   <Input
                     aria-label={label}
-                    inputMode={item.unit === "KG" ? "decimal" : "numeric"}
+                    inputMode={isCountUnit(item.unit) ? "numeric" : "decimal"}
                     value={text}
                     placeholder="–"
                     disabled={disabled}

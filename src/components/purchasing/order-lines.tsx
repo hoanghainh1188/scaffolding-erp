@@ -5,11 +5,17 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatMoney, type Money } from "@/domain/money";
+import { orderUnitAllowed, orderUnitsFor } from "@/domain/purchase-order";
 import { QUANTITY_UNIT_LABELS, type QuantityUnit } from "@/domain/quantity";
 import { cn } from "@/lib/utils";
 
 import { FieldMessage } from "./field-message";
-import type { DraftLine, ItemChoice, LinePreview } from "./preview";
+import {
+  unitHint,
+  type DraftLine,
+  type ItemChoice,
+  type LinePreview,
+} from "./preview";
 
 interface OrderLinesProps {
   lines: DraftLine[];
@@ -101,6 +107,7 @@ export function OrderLines({
               const preview = previews[index];
               const name = choice ? choice.name : `dòng ${index + 1}`;
               const field = (key: string) => errors[`lines.${index}.${key}`];
+              const hint = unitHint(line.unit);
               return (
                 <tr key={line.key} className="bg-card">
                   <td className={cell}>
@@ -112,7 +119,10 @@ export function OrderLines({
                         const picked = itemById.get(event.target.value);
                         onChange(line.key, {
                           itemId: event.target.value,
-                          ...(picked?.unit === "KG" ? { unit: "KG" } : {}),
+                          ...(picked &&
+                          !orderUnitAllowed(picked.unit, line.unit)
+                            ? { unit: picked.unit }
+                            : {}),
                         });
                       }}
                       className="h-10 w-36 rounded-md border border-input bg-card px-2 text-sm"
@@ -133,7 +143,7 @@ export function OrderLines({
                   </td>
                   <td className={cell}>
                     <Input
-                      aria-label={`Số lượng ${name}${line.unit === "KG" ? " (kg)" : ""}`}
+                      aria-label={`Số lượng ${name}${hint ? ` (${hint})` : ""}`}
                       inputMode="decimal"
                       value={line.quantity}
                       disabled={locked}
@@ -146,22 +156,22 @@ export function OrderLines({
                       <UnitSwitch
                         name={name}
                         value={line.unit}
-                        kgOnly={choice?.unit === "KG"}
+                        units={orderUnitsFor(choice?.unit ?? "PIECE")}
                         disabled={locked}
                         onChange={(unit) => onChange(line.key, { unit })}
                       />
                     </div>
                     <FieldMessage message={field("unit")} />
-                    {preview?.pieces != null ? (
+                    {preview?.estimate != null ? (
                       <p className="mt-1 text-right text-caption text-muted-foreground">
-                        ≈ {preview.pieces.toLocaleString("vi-VN")} cái
+                        ≈ {preview.estimate}
                       </p>
                     ) : null}
                     <FieldMessage message={field("quantity")} />
                   </td>
                   <td className={cell}>
                     <Input
-                      aria-label={`Đơn giá ${name}${line.unit === "KG" ? " mỗi kg" : ""}`}
+                      aria-label={`Đơn giá ${name}${hint ? ` mỗi ${hint}` : ""}`}
                       inputMode="numeric"
                       value={line.unitPrice}
                       disabled={locked}
@@ -192,7 +202,7 @@ export function OrderLines({
                     )}
                   >
                     {preview?.unitCost != null
-                      ? `${formatMoney(preview.unitCost)}${line.unit === "KG" ? "/kg" : ""}`
+                      ? `${formatMoney(preview.unitCost)}${hint ? `/${hint}` : ""}`
                       : "–"}
                   </td>
                   <td className={cn(cell, "px-0")}>
@@ -231,20 +241,22 @@ export function OrderLines({
 interface UnitSwitchProps {
   name: string;
   value: QuantityUnit;
-  kgOnly: boolean;
+  units: readonly QuantityUnit[];
   disabled: boolean;
   onChange: (unit: QuantityUnit) => void;
 }
 
-/** "cái | kg": a kg item has only kg (spec "Đơn vị đặt hàng"). */
+/**
+ * "cái | kg", "m | kg": the item unit and kg; a kg item has only kg (spec
+ * "Đơn vị đặt hàng").
+ */
 function UnitSwitch({
   name,
   value,
-  kgOnly,
+  units,
   disabled,
   onChange,
 }: UnitSwitchProps) {
-  const units: QuantityUnit[] = kgOnly ? ["KG"] : ["PIECE", "KG"];
   return (
     <div
       role="group"

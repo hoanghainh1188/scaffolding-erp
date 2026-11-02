@@ -1,6 +1,17 @@
 // Sites (công trình) and locations (bãi, xưởng, công trình) for D16
-// (spec sites-and-locations, design D6, D7).
-import { and, asc, count, eq, ilike, sql, type SQL } from "drizzle-orm";
+// (spec sites-and-locations, design D6, D7; catalog-extensions D4: province
+// and region).
+import {
+  and,
+  asc,
+  count,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 
 import type { Database } from "@/db/client";
 import { customer, location, site, siteCodeSeq } from "@/db/schema";
@@ -9,8 +20,15 @@ import {
   formatSequenceCode,
 } from "@/domain/catalog-code-sequence";
 import { DomainValueError } from "@/domain/errors";
-import { parseCatalogCode } from "@/domain/item-code";
+import { parsePlaceCode } from "@/domain/item-code";
 import type { LocationType } from "@/domain/location-type";
+import {
+  findProvince,
+  parseProvince,
+  provincesIn,
+  regionOf,
+  type Region,
+} from "@/domain/province";
 import { diffFields } from "@/domain/activity-changes";
 import { changeSummary, joinParts } from "@/domain/activity-summary";
 import { toSearchText } from "@/domain/search-text";
@@ -67,6 +85,11 @@ export interface SiteRow {
   code: string;
   name: string;
   address: string | null;
+  /** Province code ("HCM"), null for sites made before provinces. */
+  province: string | null;
+  provinceName: string | null;
+  /** Follows the province; null when it has none ("Chưa rõ"). */
+  region: Region | null;
   customerId: string;
   customerCode: string;
   customerName: string;
@@ -78,6 +101,9 @@ export interface SiteFilter {
   q?: string;
   status?: CatalogStatus;
   customerId?: string;
+  /** A region, or "UNKNOWN" for sites with no province. */
+  region?: Region | "UNKNOWN";
+  province?: string;
 }
 
 const siteColumns = {
@@ -85,6 +111,7 @@ const siteColumns = {
   code: site.code,
   name: site.name,
   address: site.address,
+  province: site.province,
   customerId: site.customerId,
   customerCode: customer.code,
   customerName: customer.name,
@@ -92,12 +119,33 @@ const siteColumns = {
   status: site.status,
 };
 
-type SiteRecord = Omit<SiteRow, "status"> & { status: string };
+type SiteRecord = Omit<SiteRow, "status" | "provinceName" | "region"> & {
+  status: string;
+};
 
 const toSiteRow = (row: SiteRecord): SiteRow => ({
   ...row,
+  provinceName: findProvince(row.province)?.name ?? null,
+  region: regionOf(row.province),
   status: row.status as CatalogStatus,
 });
+
+/** The region and province filters as SQL (the region is never stored). */
+function placeConditions(filter: SiteFilter): SQL[] {
+  const conditions: SQL[] = [];
+  if (filter.region === "UNKNOWN") {
+    conditions.push(isNull(site.province));
+  } else if (filter.region) {
+    conditions.push(
+      inArray(
+        site.province,
+        provincesIn(filter.region).map((province) => province.code),
+      ),
+    );
+  }
+  if (filter.province) conditions.push(eq(site.province, filter.province));
+  return conditions;
+}
 
 export async function listSites(
   db: Database,
@@ -108,6 +156,7 @@ export async function listSites(
     conditions.push(eq(site.customerId, filter.customerId));
   const q = toSearchText(filter.q);
   if (q) conditions.push(ilike(site.searchText, `%${escapeLike(q)}%`));
+  conditions.push(...placeConditions(filter));
   const rows = await db
     .select(siteColumns)
     .from(site)
@@ -129,6 +178,8 @@ async function getSite(db: Database, id: string): Promise<SiteRow | null> {
 export interface SiteInput {
   name?: string;
   address?: string | null;
+  /** Province code or name; required on create and on every edit. */
+  province?: string | null;
   customerId?: string;
   status?: CatalogStatus;
 }
@@ -151,8 +202,13 @@ async function requireActiveCustomer(
   }
 }
 
-function siteSearchText(name: string, code: string, address: string | null) {
-  return toSearchText(name, code, address);
+function siteSearchText(
+  name: string,
+  code: string,
+  address: string | null,
+  province: string | null,
+) {
+  return toSearchText(name, code, address, findProvince(province)?.name);
 }
 
 /** A site and its SITE location, in one transaction (design D6). */
@@ -164,6 +220,7 @@ export function createSite(
   return runService(async () => {
     const name = requireName(input.name);
     const address = optionalText(input.address);
+    const province = parseProvince(input.province);
     if (!input.customerId) {
       return badRequest(PLACE_MESSAGES.customerMissing);
     }
@@ -197,9 +254,10 @@ export function createSite(
           code,
           name,
           address,
+          province,
           customerId,
           locationId: place?.id ?? "",
-          searchText: siteSearchText(name, code, address),
+          searchText: siteSearchText(name, code, address, province),
           createdBy: actor.id,
           updatedBy: actor.id,
         })
@@ -208,7 +266,7 @@ export function createSite(
       await logActivity(tx, actor, {
         action: "CREATE",
         document: { type: "SITE", id, code },
-        summary: joinParts(name, address),
+        summary: joinParts(name, findProvince(province)?.name, address),
       });
       return id;
     });
@@ -244,6 +302,17 @@ export function updateSite(
         input.address === undefined
           ? current.address
           : optionalText(input.address);
+      // A status change alone stays possible for sites made before
+      // provinces; any other edit must choose one (spec: Tỉnh/thành).
+      const edits =
+        input.name !== undefined ||
+        input.address !== undefined ||
+        input.province !== undefined;
+      const province = edits
+        ? parseProvince(
+            input.province === undefined ? current.province : input.province,
+          )
+        : current.province;
       if (input.status === "ACTIVE" && current.status === "ARCHIVED") {
         await requireActiveCustomer(
           tx,
@@ -266,7 +335,8 @@ export function updateSite(
         .set({
           name,
           address,
-          searchText: siteSearchText(name, current.code, address),
+          province,
+          searchText: siteSearchText(name, current.code, address, province),
           ...status,
           ...stamp,
         })
@@ -276,11 +346,19 @@ export function updateSite(
         .update(location)
         .set({ name, ...status, ...stamp })
         .where(eq(location.id, current.locationId));
-      const changes = diffFields(SITE_FIELDS, current, {
-        name,
-        address,
-        status: input.status ?? current.status,
-      });
+      const changes = diffFields(
+        SITE_FIELDS,
+        {
+          ...current,
+          provinceName: findProvince(current.province)?.name ?? null,
+        },
+        {
+          name,
+          address,
+          provinceName: findProvince(province)?.name ?? null,
+          status: input.status ?? current.status,
+        },
+      );
       await logActivity(tx, actor, {
         action: "UPDATE",
         document: { type: "SITE", id, code: current.code },
@@ -377,7 +455,7 @@ export function createLocation(
 ): Promise<ServiceResult<LocationRow>> {
   return runService(async () => {
     const type = yardOrWorkshop(input.type);
-    const code = parseCatalogCode(input.code ?? "");
+    const code = parsePlaceCode(input.code ?? "");
     const name = requireName(input.name);
     try {
       const row = await db.transaction(async (tx) => {

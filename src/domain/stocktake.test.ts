@@ -290,16 +290,43 @@ describe("stocktakeSummary", () => {
     flags: [],
   }));
 
+  it("keeps metres and bundles apart from pieces in the tiles", () => {
+    const summary = stocktakeSummary([
+      {
+        unit: "METER",
+        countedMilli: 118_000,
+        bookMilli: 120_500,
+        unitCost: toMoney(60_000),
+        flags: [],
+      },
+      {
+        unit: "BUNDLE",
+        countedMilli: 12 * K,
+        bookMilli: 10 * K,
+        unitCost: toMoney(100_000),
+        flags: [],
+      },
+      ...matched,
+    ]);
+    expect(summary.shortage.quantity).toMatchObject({
+      METER: -2_500,
+      PIECE: 0,
+      BUNDLE: 0,
+    });
+    expect(summary.shortage.value).toBe(-150_000);
+    expect(summary.surplus.quantity).toMatchObject({ BUNDLE: 2 * K, METER: 0 });
+  });
+
   it("adds up the D13 tiles", () => {
     const summary = stocktakeSummary([...off, ...matched]);
     expect(summary.shortage).toEqual({
       lines: 3,
-      quantity: { PIECE: -42 * K, KG: 0 },
+      quantity: expect.objectContaining({ PIECE: -42 * K, KG: 0 }),
       value: -3_048_056,
     });
     expect(summary.surplus).toEqual({
       lines: 2,
-      quantity: { PIECE: 12 * K, KG: 0 },
+      quantity: expect.objectContaining({ PIECE: 12 * K, KG: 0 }),
       value: 260_000,
     });
     expect(summary.matched).toBe(23);
@@ -395,6 +422,37 @@ describe("assertSubmission", () => {
             { condition: "NEEDS_REPAIR", quantityMilli: 0 },
           ]),
         ]),
+      ).message,
+    ).toBe("none");
+  });
+
+  it("refuses 2,5 bó but takes 2,5 m", () => {
+    const lines: SessionLine[] = [
+      { itemId: "bo", condition: "GOOD", counted: false, recount: false },
+      { itemId: "ong", condition: "GOOD", counted: false, recount: false },
+    ];
+    const item = (
+      itemId: string,
+      itemCode: string,
+      unit: SubmittedItem["unit"],
+      quantityMilli: number,
+    ): SubmittedItem => ({
+      itemId,
+      itemCode,
+      unit,
+      lines: [{ condition: "GOOD", quantityMilli }],
+    });
+    expect(
+      failure(() =>
+        assertSubmission(lines, [item("bo", "TC-BO", "BUNDLE", 2_500)]),
+      ),
+    ).toEqual({
+      message: "TC-BO quản lý theo bó, số lượng phải là số nguyên",
+      field: "items.0.lines.0.quantity",
+    });
+    expect(
+      failure(() =>
+        assertSubmission(lines, [item("ong", "ONG-49", "METER", 2_500)]),
       ).message,
     ).toBe("none");
   });

@@ -94,10 +94,10 @@ describe("D10 stock table", () => {
 describe("D10 cards", () => {
   const cards: Cards = {
     totalValue: 2_595_268_632,
-    needsRepairPieces: 706_000,
+    needsRepair: { PIECE: 706_000 },
     scrapKgMilli: 13_958_900,
     convertedKgMilli: 1_108_400,
-    convertedPieces: 141_000,
+    converted: { PIECE: 141_000 },
   };
 
   it("adds converted scrap pieces to the kg", () => {
@@ -108,6 +108,24 @@ describe("D10 cards", () => {
     expect(
       screen.getByText("gồm 1.108,4 kg quy đổi từ 141 cái"),
     ).toBeInTheDocument();
+  });
+});
+
+describe("D10 cards with metre and bundle items", () => {
+  it("lists Chờ sửa per unit and converts metre scrap to kg", () => {
+    render(
+      <StockCards
+        cards={{
+          totalValue: 0,
+          needsRepair: { PIECE: 706_000, BUNDLE: 4_000, METER: 12_500 },
+          scrapKgMilli: 1_136_880,
+          convertedKgMilli: 28_480,
+          converted: { METER: 8_000 },
+        }}
+      />,
+    );
+    expect(screen.getByText("706 cái · 4 bó · 12,5 m")).toBeInTheDocument();
+    expect(screen.getByText("gồm 28,48 kg quy đổi từ 8 m")).toBeInTheDocument();
   });
 });
 

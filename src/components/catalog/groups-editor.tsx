@@ -7,10 +7,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { GroupRow } from "@/lib/catalog/item-groups";
+import type { ItemCategory } from "@/lib/catalog/items";
+import { dict } from "@/locales";
 
 import { ConfirmAction } from "./confirm-action";
 import { FormError } from "./form-error";
 import { useCatalogAction } from "./use-catalog-action";
+
+const CATEGORIES: readonly ItemCategory[] = ["EQUIPMENT", "MATERIAL"];
+const categoryText = dict.catalog.categories;
+
+interface CategorySelectProps {
+  id?: string;
+  label?: string;
+  value: ItemCategory;
+  onChange: (value: ItemCategory) => void;
+}
+
+/** Thiết bị / Vật tư of a group (catalog-extensions D3). */
+function CategorySelect({ id, label, value, onChange }: CategorySelectProps) {
+  return (
+    <select
+      id={id}
+      aria-label={label}
+      value={value}
+      onChange={(event) => onChange(event.target.value as ItemCategory)}
+      className="h-11 rounded-md border border-input bg-card px-3 text-base"
+    >
+      {CATEGORIES.map((category) => (
+        <option key={category} value={category}>
+          {categoryText[category]}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 /** D9 "Nhóm hàng" tab: list, add, rename, archive, delete (spec item-catalog). */
 export function GroupsEditor({
@@ -21,6 +52,7 @@ export function GroupsEditor({
   canEdit: boolean;
 }) {
   const [name, setName] = useState("");
+  const [category, setCategory] = useState<ItemCategory>("EQUIPMENT");
   const create = useCatalogAction();
 
   async function add(event: FormEvent) {
@@ -28,7 +60,7 @@ export function GroupsEditor({
     if (
       await create.run("/api/catalog/item-groups", {
         method: "POST",
-        body: { name },
+        body: { name, category },
       })
     ) {
       setName("");
@@ -46,6 +78,14 @@ export function GroupsEditor({
               value={name}
               onChange={(event) => setName(event.target.value)}
               maxLength={60}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-group-category">{categoryText.label}</Label>
+            <CategorySelect
+              id="new-group-category"
+              value={category}
+              onChange={setCategory}
             />
           </div>
           <Button type="submit" disabled={create.pending}>
@@ -67,6 +107,7 @@ export function GroupsEditor({
 
 function GroupLine({ group, canEdit }: { group: GroupRow; canEdit: boolean }) {
   const [name, setName] = useState(group.name);
+  const [category, setCategory] = useState<ItemCategory>(group.category);
   const save = useCatalogAction();
   const change = useCatalogAction();
   const archived = group.status === "ARCHIVED";
@@ -80,7 +121,7 @@ function GroupLine({ group, canEdit }: { group: GroupRow; canEdit: boolean }) {
             event.preventDefault();
             await save.run(`/api/catalog/item-groups/${group.id}`, {
               method: "PATCH",
-              body: { name },
+              body: { name, category },
             });
           }}
         >
@@ -89,16 +130,26 @@ function GroupLine({ group, canEdit }: { group: GroupRow; canEdit: boolean }) {
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
+          <CategorySelect
+            label={`${categoryText.label} nhóm ${group.name}`}
+            value={category}
+            onChange={setCategory}
+          />
           <Button
             type="submit"
             variant="outline"
-            disabled={name === group.name}
+            disabled={name === group.name && category === group.category}
           >
             Lưu
           </Button>
         </form>
       ) : (
-        <span className="flex-1">{group.name}</span>
+        <span className="flex-1">
+          {group.name}{" "}
+          <span className="text-sm text-muted-foreground">
+            · {categoryText[group.category]}
+          </span>
+        </span>
       )}
       <span className="text-sm text-muted-foreground">
         {group.itemCount} vật tư

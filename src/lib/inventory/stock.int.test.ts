@@ -115,8 +115,8 @@ describe("getStockOverview", () => {
     expect(cards).toMatchObject({
       scrapKgMilli: 13_958_900,
       convertedKgMilli: 1_108_400,
-      convertedPieces: 141_000,
-      needsRepairPieces: (186 + 60 + 100) * 1000,
+      converted: { PIECE: 141_000 },
+      needsRepair: { PIECE: (186 + 60 + 100) * 1000 },
     });
   });
 
@@ -222,10 +222,9 @@ describe("stock after a REVALUE line (no location)", () => {
 
   it("does not change the totals that block archiving", async () => {
     expect(await itemStock(ctx.db, fx.item("GG-K17"))).toEqual({
-      pieceMilli: 5_388_000,
-      kgMilli: 0,
+      PIECE: 5_388_000,
     });
-    expect((await locationStock(ctx.db, fx.place("BAI-01"))).pieceMilli).toBe(
+    expect((await locationStock(ctx.db, fx.place("BAI-01"))).PIECE).toBe(
       (1240 + 186 + 42 + 2500 + 100 + 11 + 18 + 64 + 6) * 1000,
     );
   });

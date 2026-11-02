@@ -115,6 +115,32 @@ describe("receiptAnomalies (design D5b)", () => {
     ]);
   });
 
+  it("lets a metre line pass at 10 % and asks about one extra bundle (D2)", () => {
+    const ong: ReceivingLine = {
+      ...KHUNG,
+      orderLineId: "ong",
+      itemCode: "ONG-49",
+      itemUnit: "METER",
+      lineUnit: "METER",
+      orderedMilli: 100 * K,
+    };
+    const ty: ReceivingLine = {
+      ...KHUNG,
+      orderLineId: "ty",
+      itemCode: "TY-REN",
+      itemUnit: "BUNDLE",
+      lineUnit: "BUNDLE",
+      orderedMilli: 40 * K,
+    };
+    expect(anomalies([counted(ong, 110 * K)])).toEqual([]);
+    expect(anomalies([counted(ong, 110_500)])[0]?.question).toBe(
+      dict.receiving.anomalies.piecesOver("110,5", "100", "m"),
+    );
+    expect(anomalies([counted(ty, 41 * K)])[0]?.question).toBe(
+      dict.receiving.anomalies.piecesOver("41", "40", "bó"),
+    );
+  });
+
   it("counts what earlier receipts already brought", () => {
     const partly = { ...KHUNG, receivedMilli: 100 * K };
     expect(anomalies([counted(partly, 150 * K)])[0]?.question).toBe(

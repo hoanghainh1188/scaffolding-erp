@@ -1,8 +1,13 @@
 import { toMoney, type Money } from "./money";
-import { toQuantity, type Quantity, type QuantityUnit } from "./quantity";
+import {
+  isCountUnit,
+  toQuantity,
+  type Quantity,
+  type QuantityUnit,
+} from "./quantity";
 
 export const KIT_MESSAGES = {
-  pieceOnly: "Bộ chỉ gồm vật tư tính theo cái",
+  pieceOnly: "Bộ chỉ gồm vật tư đếm được (cái, cây, bó...)",
   tooSmall: "Bộ phải có ít nhất 2 linh kiện",
   duplicate: "Mỗi vật tư chỉ một dòng trong bộ",
   quantity: "Số lượng mỗi linh kiện là số nguyên từ 1 trở lên",
@@ -28,7 +33,7 @@ export function validateKitComponents(
     }
     if (seen.has(line.itemId)) return KIT_MESSAGES.duplicate;
     seen.add(line.itemId);
-    if (line.unit !== "PIECE") return KIT_MESSAGES.pieceOnly;
+    if (!isCountUnit(line.unit)) return KIT_MESSAGES.pieceOnly;
     if (line.status !== "ACTIVE") return KIT_MESSAGES.archived(line.code);
   }
   const pieces = lines.reduce((sum, line) => sum + line.quantity, 0);
@@ -37,7 +42,7 @@ export function validateKitComponents(
 
 export interface KitLineValue {
   quantity: number;
-  /** kg per piece. */
+  /** kg per unit. */
   standardWeightKg: Quantity;
   /** null: the item is not for rent. */
   dailyRentalPrice: Money | null;

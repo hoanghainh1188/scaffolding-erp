@@ -5,14 +5,20 @@ import type { ReactNode } from "react";
 import { ToneBadge } from "@/components/domain/tone-badge";
 import { Button } from "@/components/ui/button";
 import { formatPhone } from "@/domain/partner-fields";
-import type { CustomerRow, SupplierRow } from "@/lib/catalog/partners";
+import { REGION_LABELS, UNKNOWN_REGION_LABEL } from "@/domain/province";
+import type {
+  CustomerRow,
+  SalesUser,
+  SupplierRow,
+} from "@/lib/catalog/partners";
 import type { LocationRow, SiteRow } from "@/lib/catalog/places";
+import { dict } from "@/locales";
 
 import {
-  CUSTOMER_FIELDS,
   LOCATION_FIELDS,
   SITE_FIELDS,
   SUPPLIER_FIELDS,
+  customerFields,
 } from "./partner-form-fields";
 import { RecordActions } from "./record-actions";
 import { RecordFormSheet } from "./record-form-sheet";
@@ -60,15 +66,37 @@ function Title({
 
 const editButton = <Button variant="outline">Sửa thông tin</Button>;
 
+/** "Khang", "Khang (đã khóa)", or null. */
+export function salesUserText(person: SalesUser | null): string | null {
+  if (!person) return null;
+  return person.active
+    ? person.name
+    : dict.catalog.salesStaff.locked(person.name);
+}
+
+/** "Bắc Ninh", or "Chưa chọn" for sites made before provinces. */
+export function provinceText(site: SiteRow): string {
+  return site.provinceName ?? dict.catalog.provinces.notChosen;
+}
+
+/** "Miền Bắc", or "Chưa rõ". */
+export function regionText(site: SiteRow): string {
+  return site.region ? REGION_LABELS[site.region] : UNKNOWN_REGION_LABEL;
+}
+
 export function CustomerDetail({
   customer,
   sites,
+  staff = [],
   canEdit,
 }: {
   customer: CustomerRow;
   sites: SiteRow[];
+  /** Who can be put in charge (catalog-extensions D5). */
+  staff?: readonly SalesUser[];
   canEdit: boolean;
 }) {
+  const { salesUser, ...fields } = customer;
   const path = `/api/catalog/customers/${customer.id}`;
   return (
     <div className="flex flex-col gap-5">
@@ -82,8 +110,12 @@ export function CustomerDetail({
           <RecordFormSheet
             title={`Sửa ${customer.code}`}
             trigger={editButton}
-            fields={CUSTOMER_FIELDS}
-            values={{ ...customer }}
+            fields={customerFields(staff, salesUser)}
+            values={{
+              ...fields,
+              siteCount: undefined,
+              salesUserId: salesUser?.id,
+            }}
             path={path}
             method="PATCH"
             submitLabel="Lưu thay đổi"
@@ -97,6 +129,7 @@ export function CustomerDetail({
           ["Người liên hệ", customer.contactName],
           ["Điện thoại", customer.phone ? formatPhone(customer.phone) : null],
           ["Hạn thanh toán mặc định", `${customer.paymentTermsDays} ngày`],
+          [dict.catalog.salesStaff.label, salesUserText(salesUser)],
           ["Địa chỉ", customer.address],
           ["Ghi chú", customer.note],
         ]}
@@ -142,7 +175,7 @@ export function CustomerDetail({
                 >
                   <span className="font-medium">{place.name}</span>
                   <span className="text-caption text-muted-foreground">
-                    {place.code}
+                    {place.code} · {provinceText(place)}
                     {place.address ? ` · ${place.address}` : ""}
                   </span>
                 </Link>
@@ -242,7 +275,11 @@ export function SiteDetail({
             title={`Sửa ${site.code}`}
             trigger={editButton}
             fields={SITE_FIELDS}
-            values={{ ...site }}
+            values={{
+              name: site.name,
+              address: site.address,
+              province: site.province,
+            }}
             path={path}
             method="PATCH"
             submitLabel="Lưu thay đổi"
@@ -261,6 +298,8 @@ export function SiteDetail({
               {site.customerCode} · {site.customerName}
             </Link>,
           ],
+          [dict.catalog.provinces.label, provinceText(site)],
+          [dict.catalog.provinces.region, regionText(site)],
           ["Địa chỉ", site.address],
           ["Vị trí kho", `${site.code} (tự tạo cùng công trình)`],
         ]}

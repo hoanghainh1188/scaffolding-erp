@@ -11,9 +11,18 @@ import {
   type ReceivingLine,
 } from "./goods-receipt";
 import { formatMoney, type Money } from "./money";
-import { formatQuantity, toQuantity } from "./quantity";
+import {
+  formatQuantity,
+  hasStandardWeight,
+  isCountUnit,
+  QUANTITY_UNIT_LABELS,
+  toQuantity,
+} from "./quantity";
 
-/** More than 10 % over on a kg line; exactly 10 % passes (scale drift). */
+/**
+ * More than 10 % over on a measured line (kg, m); exactly 10 % passes (scale
+ * or tape drift). Count units have no tolerance.
+ */
 const KG_TOLERANCE_NUMERATOR = 11n;
 const KG_TOLERANCE_DENOMINATOR = 10n;
 
@@ -48,7 +57,7 @@ export function lineAnomalyKey(orderLineId: string): string {
 
 function isOver(open: ReceivingLine, received: number, left: number): boolean {
   if (received <= left) return false;
-  if (open.lineUnit === "PIECE") return true;
+  if (isCountUnit(open.lineUnit)) return true;
   return (
     BigInt(received) * KG_TOLERANCE_DENOMINATOR >
     BigInt(left) * KG_TOLERANCE_NUMERATOR
@@ -69,14 +78,13 @@ function lineAnomaly(
   const field = needsWeighing(open)
     ? `lines.${index}.weighedKg`
     : `lines.${index}.quantity`;
-  const unitLabel = unit === "PIECE" ? "cái" : "kg";
+  const unitLabel = QUANTITY_UNIT_LABELS[unit];
   return {
     key: lineAnomalyKey(open.orderLineId),
     field,
-    question:
-      unit === "PIECE"
-        ? dict.receiving.anomalies.piecesOver(got, rest)
-        : dict.receiving.anomalies.kgOver(got, rest),
+    question: hasStandardWeight(unit)
+      ? dict.receiving.anomalies.piecesOver(got, rest, unitLabel)
+      : dict.receiving.anomalies.kgOver(got, rest),
     note: dict.receiving.anomalies.noteOver(
       open.itemCode,
       got,

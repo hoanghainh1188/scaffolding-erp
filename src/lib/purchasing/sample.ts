@@ -6,6 +6,7 @@ import { asc, eq, inArray } from "drizzle-orm";
 import type { Database } from "@/db/client";
 import { item, purchaseOrder, supplier } from "@/db/schema";
 import { toBusinessDate } from "@/domain/business-date";
+import type { QuantityUnit } from "@/domain/quantity";
 import type { Actor } from "@/lib/catalog/common";
 
 import {
@@ -53,7 +54,7 @@ async function ids(db: Database) {
 
 const line = (
   itemId: string | undefined,
-  unit: "PIECE" | "KG",
+  unit: QuantityUnit,
   quantity: string,
   unitPrice: number,
 ): OrderLineBody => ({ itemId, unit, quantity, unitPrice });
