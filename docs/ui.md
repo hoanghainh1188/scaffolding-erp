@@ -109,7 +109,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 - **D4. Danh sách Hợp đồng / Báo giá** **[MVP]**: Lọc theo nhà thầu, công trình, loại (bán/thuê), trạng thái (gồm Chờ duyệt).
 - **D5. Chi tiết Hợp đồng** **[MVP]**: Nhà thầu + 1 công trình. Dòng hàng theo "Bộ" hoặc linh kiện (bộ tự rã để hiển thị linh kiện bên dưới). Đơn giá bán đứt hoặc giá thuê ngày/tháng (hiện giá ngày quy đổi). Bảng giá đền bù mất/hỏng. Approval Bar cho Giám đốc.
 - **D6. Tiến độ cấp hàng theo Công trình** **[MVP]**: Delivery Timeline các đợt xuất/trả. Số lượng đang ở công trình. Tạo phiếu xuất đợt mới (chỉ chọn hàng Mới/Tốt). Ghi cước vận chuyển chiều đi.
-- **D7. Tính tiền thuê (Billing)** **[MVP]**: Chọn kỳ. Bảng chi tiết từng linh kiện: ngày xuất, ngày trả, số ngày tính tiền (tính ngày xuất, không tính ngày trả), đơn giá ngày, thành tiền. Nút chốt kỳ để ghi công nợ.
+- **D7. Tính tiền thuê (Billing)** **[MVP]**: Chọn kỳ. Bảng chi tiết từng linh kiện: ngày xuất, ngày trả, số ngày tính tiền (không tính ngày xuất, tính ngày trả, 0.2 #4), đơn giá ngày, thành tiền. Nút chốt kỳ để ghi công nợ.
 - **D8. Phiếu tính phí đền bù** **[MVP]**: Sinh tự động từ phiếu thu hồi. Số lượng hỏng/mất × đơn giá đền bù trong hợp đồng. Ảnh hiện trạng đính kèm. Approval Bar cho Giám đốc; duyệt xong mới cộng vào công nợ.
 
 #### Tài chính & Công nợ

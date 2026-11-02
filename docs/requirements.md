@@ -73,6 +73,8 @@ Các quyết định dưới đây có thể đổi sau khi chủ trả lời c�
 
 | Quyết định | Điều có thể đổi | Câu hỏi |
 |---|---|---|
+| #4 Tính tiền thuê | Có trừ ngày Tết/lễ không (file Excel đang trừ số cố định −9, −1, −2) | Q1 |
+| #39 Thuê tối thiểu | 45 ngày tính theo từng đợt xuất hay cả hợp đồng; trả một phần trước 45 ngày thì tính sao | Q2 |
 | #18 Hạn thanh toán | Có phạt/lãi chậm trả không | Q5 |
 | #20 Đền bù | Bảng giá đền bù lấy từ đâu (cố định toàn công ty hay riêng từng HĐ) | Q6 |
 | Bảo lãnh ngân hàng | Thông tin cần lưu và cơ chế cảnh báo hạn chứng thư | Q7 |
@@ -176,7 +178,7 @@ Thời gian giữ đăng nhập cụ thể (khi có và không tick ô) do chang
 - **Chốt khối lượng & Tính tiền thuê tự động (Billing)** **[MVP]**:
     - Kế toán chọn kỳ (VD: 01/10 – 31/10).
     - Hệ thống quét sổ kho của công trình, tính số ngày thuê thực tế từng linh kiện.
-    - Quy tắc: **tính ngày xuất, không tính ngày trả**; phần đã trả giữa kỳ được trừ đúng ngày trả.
+    - Quy tắc (0.2 #4): **không tính ngày xuất, tính ngày trả** (đếm từ N+1); phần đã trả giữa kỳ được trừ đúng ngày trả; thuê tối thiểu 45 ngày (0.2 #39).
     - Kết quả hiển thị chi tiết từng dòng để kế toán kiểm tra trước khi chốt.
 
 ## 5. Phân hệ Thu hồi & Đền bù (Return & Compensation)

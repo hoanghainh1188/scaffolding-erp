@@ -106,7 +106,7 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 - Tồn kho, giá vốn, tiền thuê **luôn tính từ sổ kho**, không lưu số "cộng dồn" ở chỗ khác mà không đối chiếu.
 - **Giá vốn bình quân** theo (mã hàng + tình trạng).
 - 4 tình trạng: `NEW`, `GOOD`, `NEEDS_REPAIR`, `SCRAP`. Chỉ `NEW`, `GOOD` được xuất bán/cho thuê.
-- **Tiền thuê:** tính ngày xuất, không tính ngày trả. Giá tháng = giá ngày × 30.
+- **Tiền thuê:** đếm từ ngày sau ngày xuất (N+1) đến hết ngày trả: số ngày = ngày trả − ngày xuất. Tiền thuê = giá ngày × số ngày thực tế (tháng 28–31 ngày), thuê tối thiểu 45 ngày (0.2 #4, #39). Giá tháng hiển thị = giá ngày × 30, chỉ để quy đổi.
 - Hợp đồng và phiếu đền bù chỉ có hiệu lực sau khi **Giám đốc duyệt**.
 
 ## Quy ước code
