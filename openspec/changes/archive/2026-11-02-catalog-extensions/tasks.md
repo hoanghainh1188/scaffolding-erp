@@ -43,11 +43,14 @@
 - [x] 5.5 M2 và các chỗ dựng URL có mã (`/inventory/items/[code]`, link từ D9, thẻ quét): dùng `encodeURIComponent` / giải mã đúng; thẻ quét hiện nhãn đơn vị mới. Component test thẻ `ONG-49` hiện "ONG-49 · m · 3,56 kg/m".
 - [x] 5.6 Seed dev (`src/lib/catalog/seed.ts` và seed liên quan): mã thật, đơn vị mới, nhóm "Que hàn" Vật tư, mã cũ `K1,7`, tỉnh cho công trình mẫu, người phụ trách `kinhdoanh` cho vài nhà thầu (design Migration Plan bước 5). Xong khi `npm run db:seed:dev` chạy lại không lỗi trên DB đã seed.
 - [ ] 5.7 E2E `tests/e2e/catalog.spec.ts` (mã có hậu tố ngẫu nhiên để chạy lại được): tạo vật tư `NỐI 34-<hậu tố>` đơn vị mét có giá thuê, thêm mã cũ, tìm bằng mã cũ ra đúng dòng; mở thẻ kho của mã có `+`; lọc Vật tư ở D9; tạo công trình có tỉnh và lọc Miền Nam ở D16; gán và lọc người phụ trách. Ảnh mốc D9, D16 (`visual.spec.ts`) cập nhật bằng nhãn `update-snapshots`.
+  - E2E đã viết, xanh ở local (Edge). Ảnh mốc D9, D16: làm sau, theo dõi ở #33 (CI hết phút Actions tháng 11/2026).
 
 ## 6. Kiểm tra tổng
 
 - [ ] 6.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate catalog-extensions --strict` đều xanh; `npm run inventory:check` xanh trên DB dev.
+  - Local xanh (lint, typecheck, Vitest 1.997 test, E2E Edge desktop/mobile, validate). E2E Firefox/WebKit trên CI: làm sau, theo dõi ở #33.
 - [ ] 6.2 Kiểm tra tay trên Edge 1366px: D9 với `ONG-49`, `KB+KU34`, `NỐI 34` (đủ cột giá, không cuộn ngang); D16 lọc khu vực và người phụ trách; M2 gõ `noi 34` và `k1,7`. So với file thiết kế D9, D16.
+  - Làm sau, theo dõi ở #33.
 
 ## Workflow follow-up
 
