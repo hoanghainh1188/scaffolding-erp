@@ -7,7 +7,7 @@ Hợp đồng cho thuê và hợp đồng bán của công ty: giá, điều kho
 ## ADDED Requirements
 
 ### Requirement: Hai loại hợp đồng, một công trình
-Mỗi hợp đồng SHALL có đúng một loại: **Cho thuê** hoặc **Bán**, và đúng một nhà thầu. Hợp đồng cho thuê SHALL có đúng một công trình của chính nhà thầu đó. Hợp đồng bán MAY để trống công trình (hiện "Nhận hàng tại bãi"). Loại, nhà thầu và công trình SHALL không đổi được sau khi gửi duyệt, kể cả bằng phụ lục.
+Mỗi hợp đồng SHALL có đúng một loại: **Cho thuê** hoặc **Bán**, và đúng một nhà thầu. Hợp đồng cho thuê SHALL có đúng một công trình của chính nhà thầu đó. Hợp đồng bán MAY để trống công trình (hiện "Nhận hàng tại bãi"). Loại và nhà thầu SHALL không đổi được sau lần lưu đầu (số hợp đồng đã mang tên khách); muốn đổi thì hủy nháp, lập mới. Công trình SHALL đổi được khi còn Nháp (vẫn phải của nhà thầu đó), không đổi được sau khi gửi duyệt, kể cả bằng phụ lục.
 
 #### Scenario: Hợp đồng thuê cho một công trình
 - **WHEN** `quocbao` tạo hợp đồng Cho thuê cho "Cty TNHH Xây dựng Minh Phát" (`NT-0003`), công trình "Trường THCS Dương Nội" (`CT-0003`)
@@ -24,6 +24,18 @@ Mỗi hợp đồng SHALL có đúng một loại: **Cho thuê** hoặc **Bán**
 #### Scenario: Hợp đồng bán không có công trình
 - **WHEN** `quocbao` tạo hợp đồng Bán cho "Anh Phạm Đức Long" không chọn công trình
 - **THEN** hợp đồng được lưu và D4 hiện "Nhận hàng tại bãi" ở cột công trình
+
+#### Scenario: Đổi nhà thầu của nháp đã có số
+- **WHEN** nháp `112026/ANPHAT-MINHPHAT` của `NT-0003` đã lưu và `quocbao` gửi lệnh sửa đổi nhà thầu sang `NT-0005`
+- **THEN** hệ thống từ chối với "Hợp đồng đã có số theo nhà thầu Minh Phát nên không đổi nhà thầu được. Bạn hủy nháp này và lập hợp đồng mới." và không đổi dữ liệu
+
+#### Scenario: Đổi loại của nháp đã có số
+- **WHEN** `quocbao` gửi lệnh sửa đổi nháp Cho thuê `112026/ANPHAT-MINHPHAT` sang loại Bán
+- **THEN** hệ thống từ chối với "Hợp đồng đã lưu nên không đổi loại được. Bạn hủy nháp này và lập hợp đồng mới." và không đổi dữ liệu
+
+#### Scenario: Đổi công trình khi còn Nháp
+- **WHEN** nháp của `NT-0003` đang chọn `CT-0003` và `quocbao` đổi sang `CT-0004` cũng của `NT-0003`
+- **THEN** nháp lưu công trình `CT-0004`, số hợp đồng không đổi
 
 ### Requirement: Số hợp đồng tự sinh
 Khi lưu lần đầu, hệ thống SHALL cấp số `MMYYYY/<VIẾT_TẮT>-<KHÁCH>`: `MMYYYY` là tháng, năm của ngày bắt đầu (thuê từ ngày, hoặc ngày giao của hợp đồng bán); `<VIẾT_TẮT>` là tên viết tắt công ty trong Cài đặt; `<KHÁCH>` do người lập gõ hoặc để mặc định. Cả hai phần viết hoa, bỏ dấu, chỉ giữ A–Z và 0–9. Số SHALL không đổi sau khi cấp, kể cả khi sửa ngày hay tên viết tắt.
@@ -228,10 +240,10 @@ Hợp đồng thuê SHALL có giá đền bù **mất** và **hỏng, sửa đư
 - **THEN** bảng ghi chú "Hàng hỏng đến mức thành phế liệu tính như mất."
 
 ### Requirement: Cọc tiền và bảo lãnh ngân hàng
-Hợp đồng SHALL có không, một hoặc nhiều khoản cọc. **Cọc tiền**: số tiền (> 0 ₫), hình thức (tiền mặt hoặc chuyển khoản), ngày nhận (có thể trống khi chưa nhận). **Bảo lãnh ngân hàng**: ngân hàng, số chứng thư, giá trị (> 0 ₫), ngày hết hạn, đều bắt buộc. Change này chỉ lưu; cọc chỉ cấn trừ khi thanh lý công trình (change sau).
+Hợp đồng SHALL có không, một hoặc nhiều khoản cọc. **Cọc tiền** là khoản cọc **thỏa thuận**: số tiền (> 0 ₫), hình thức (tiền mặt hoặc chuyển khoản); hợp đồng không ghi đã nhận hay chưa. **Bảo lãnh ngân hàng**: ngân hàng, số chứng thư, giá trị (> 0 ₫), ngày hết hạn, đều bắt buộc. Change này chỉ lưu; ghi nhận tiền cọc đã nhận và cấn trừ khi thanh lý thuộc change sau.
 
 #### Scenario: Một cọc tiền và một bảo lãnh
-- **WHEN** `quocbao` thêm cọc tiền 50.000.000 ₫ chuyển khoản nhận 30/10/2026 và bảo lãnh Vietcombank số `BL-2026-1188` giá trị 100.000.000 ₫ hết hạn 31/03/2027
+- **WHEN** `quocbao` thêm cọc tiền 50.000.000 ₫ chuyển khoản và bảo lãnh Vietcombank số `BL-2026-1188` giá trị 100.000.000 ₫ hết hạn 31/03/2027
 - **THEN** hợp đồng lưu hai khoản cọc **AND** D5 hiện tổng cọc tiền 50.000.000 ₫ và tổng bảo lãnh 100.000.000 ₫ tách riêng
 
 #### Scenario: Bảo lãnh thiếu số chứng thư
@@ -277,7 +289,7 @@ Hợp đồng MAY có nhiều đợt giao dự kiến, mỗi đợt có ngày d�
 - **THEN** hệ thống từ chối với "Mã CC3 chưa có trên hợp đồng. Bạn thêm dòng hàng trước." và không lưu
 
 ### Requirement: Nhân viên phụ trách theo nhà thầu
-Khi tạo hợp đồng hoặc đổi nhà thầu lúc còn Nháp, hệ thống SHALL chép nhân viên phụ trách của nhà thầu vào hợp đồng. Đổi người phụ trách của nhà thầu sau đó SHALL không đổi hợp đồng đã tạo. D4 SHALL lọc được hợp đồng theo người phụ trách.
+Khi tạo hợp đồng, hệ thống SHALL chép nhân viên phụ trách của nhà thầu vào hợp đồng. Đổi người phụ trách của nhà thầu sau đó SHALL không đổi hợp đồng đã tạo. D4 SHALL lọc được hợp đồng theo người phụ trách.
 
 #### Scenario: Chép người phụ trách
 - **WHEN** nhà thầu `NT-0003` do `quocbao` phụ trách và Giám đốc tạo hợp đồng cho nhà thầu này

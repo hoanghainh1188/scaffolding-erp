@@ -33,16 +33,17 @@
 | `PENDING` → `APPROVED` (Duyệt) | `contracts.approve` | nợ quá hạn > 0 thì bắt buộc lý do |
 | `PENDING` → `DRAFT` (Trả lại) | `contracts.approve` | bắt buộc lý do |
 | `DRAFT` → `CANCELLED` | quyền sửa loại đó | lý do |
-| `APPROVED` → `CANCELLED` | `contracts.approve` | chưa có phiếu xuất (`hasDeliveries` trả `false` tới change `deliveries`) |
+| `APPROVED` → `CANCELLED` | `contracts.approve` | chưa có phiếu xuất (`hasDeliveries` trả `false` tới change `deliveries`); phụ lục Nháp/Chờ duyệt bị hủy cùng transaction, mỗi phụ lục một dòng nhật ký Hủy "Hợp đồng đã hủy" |
 | `APPROVED` → `ACTIVE` | hệ thống, change `deliveries` | phiếu xuất đầu tiên ghi sổ |
 | `ACTIVE` → `CLOSED` | change `returns-and-compensation` / `receivables` | thanh lý |
 
 - **"Từ chối" = Trả lại về Nháp**, không có trạng thái `REJECTED` cuối. Lý do: thực tế báo giá bị chê thì Kinh doanh sửa giá và gửi lại; một trạng thái chết buộc tạo hợp đồng mới, mất số đã in cho khách. Lý do trả lại lưu ở `contract_revision.returned_reason` (lần gần nhất) và trong nhật ký (đủ lịch sử). Khách không lấy thì **Hủy** (giữ số, vì báo giá đã in).
 - **Không xóa nháp**: số đã có thể in cho khách; hủy giữ dấu vết, D4 xếp vào "Đã kết thúc".
 - Bảng chuyển trong `transition()` ở `src/domain/contract.ts` như `purchase-order.ts`; service gọi nó sau khi khóa `FOR UPDATE`.
+- **Loại và nhà thầu khóa từ lần lưu đầu** (số đã mang tên khách, D7): lệnh sửa nháp đổi `type` hoặc `customer_id` bị từ chối, người lập hủy nháp và lập mới. Công trình đổi được khi còn Nháp (vẫn của nhà thầu đó), khóa từ lúc gửi duyệt. Vì nhà thầu không đổi nên người phụ trách chỉ chép một lần lúc tạo.
 - `ACTIVE`, `CLOSED` chỉ khai báo ở change này (có trong check của DB, `transition()` và nhãn), chưa có lệnh nào chuyển tới.
 
-**Phụ lục:** `DRAFT` → `PENDING` → `APPROVED`; `PENDING` → `DRAFT` (Trả lại); `DRAFT`/`PENDING` → `CANCELLED`. Không có `ACTIVE`/`CLOSED`. Đã duyệt thì không sửa, không hủy (muốn đổi thì phụ lục mới). Mỗi hợp đồng **tối đa một phụ lục chưa xong**: tránh hai phụ lục chồng ngày hiệu lực và tránh tranh số; kiểm bằng unique một phần `(contract_id) where kind = 'AMENDMENT' and status in ('DRAFT','PENDING')`.
+**Phụ lục:** `DRAFT` → `PENDING` → `APPROVED`; `PENDING` → `DRAFT` (Trả lại); `DRAFT`/`PENDING` → `CANCELLED`. Không có `ACTIVE`/`CLOSED`. Đã duyệt thì không sửa, không hủy (muốn đổi thì phụ lục mới). Mọi lệnh trên phụ lục khóa hợp đồng `FOR UPDATE` trước rồi mới khóa bản phụ lục, và từ chối khi hợp đồng không còn `APPROVED`/`ACTIVE` (VD đã hủy trong lúc phụ lục chờ duyệt). Mỗi hợp đồng **tối đa một phụ lục chưa xong**: tránh hai phụ lục chồng ngày hiệu lực và tránh tranh số; kiểm bằng unique một phần `(contract_id) where kind = 'AMENDMENT' and status in ('DRAFT','PENDING')`.
 
 Đã cân nhắc: cho Kinh doanh tự "rút lại" hợp đồng Chờ duyệt. Bỏ: thêm một chuyển nữa trong khi Giám đốc trả lại là đủ; thêm sau nếu cần.
 
@@ -50,10 +51,10 @@
 
 Bảng `contract_revision`: **bản gốc** (`number = 0`, `kind = 'ORIGINAL'`) và mỗi **phụ lục** (`number = 1, 2...`, `kind = 'AMENDMENT'`). Mỗi bản giữ **toàn bộ** nội dung đổi được: điều khoản, dòng hàng, bộ, giá đền bù, cọc, kế hoạch giao. Lập phụ lục = **chép** bản đang áp dụng mới nhất thành bản mới rồi sửa.
 
-- **Tra giá ngày X** = lấy bản `APPROVED` có `effective_from ≤ X` lớn nhất (bản gốc `effective_from = start_date`; X trước ngày bắt đầu vẫn lấy bản gốc). Một truy vấn `order by effective_from desc limit 1`, rồi đọc dòng của bản đó. Hàm thuần `revisionAt(revisions, date)` ở `src/domain/contract-revision.ts` để unit test; service `contractTermsAt(tx, contractId, date)` ở `src/lib/contracts/terms.ts` cho `rental-billing`.
+- **Tra giá ngày X** = lấy bản `APPROVED` có `effective_from ≤ X` lớn nhất (bản gốc `effective_from = start_date`; X trước ngày bắt đầu vẫn lấy bản gốc). Một truy vấn `order by effective_from desc, number desc limit 1`, rồi đọc dòng của bản đó. **Hai bản cùng ngày hiệu lực thì bản số lớn hơn thắng** (lập sau, đã thấy bản trước). Chọn xếp thêm `number` thay vì bắt ngày hiệu lực sau hẳn, vì phụ lục cùng ngày bắt đầu (sửa giá trước khi giao hàng) hoặc hai phụ lục cùng ngày là có thật; luật `≥` giữ nguyên, kết quả vẫn xác định. Hàm thuần `revisionAt(revisions, date)` ở `src/domain/contract-revision.ts` để unit test; service `contractTermsAt(tx, contractId, date)` ở `src/lib/contracts/terms.ts` cho `rental-billing`.
 - Ngày hiệu lực của phụ lục **thuộc bản mới** (giá mới tính từ chính ngày đó), khớp D5b "Từ 15/12/2026 · Giá mới".
-- D5b "Hiện tại ↔ Mới" = so bản mới với bản nó chép từ (`based_on_revision_id`); hàm thuần `diffRevisions` dùng chung cho D5b, kiểm "chưa có thay đổi nào" và tóm tắt nhật ký.
-- Nội dung của bản `APPROVED` bị **trigger khóa** (UPDATE/DELETE dòng con, UPDATE cột nội dung của bản), như phiếu sửa chữa đã ghi sổ. Cột trạng thái của `contract` vẫn đổi được (`ACTIVE`, `CLOSED`).
+- D5b "Hiện tại ↔ Mới" = so bản mới với bản nó chép từ (`based_on_revision_id`); hàm thuần `diffRevisions` dùng chung cho D5b, kiểm "chưa có thay đổi nào" và tóm tắt nhật ký. `diffRevisions` **cấm** đổi loại, nhà thầu, công trình, ngày ký, ngày bắt đầu (một câu báo chung) và bỏ dòng hàng; ngày bắt đầu là `effective_from` của bản gốc nên đổi nó làm sai cách tra giá. Ngày kết thúc dự kiến mới phải **sau** ngày hiệu lực.
+- Nội dung của bản `APPROVED` bị **trigger khóa** (UPDATE/DELETE dòng con, UPDATE cột nội dung của bản), như phiếu sửa chữa đã ghi sổ. Trigger xét **`OLD.status = 'APPROVED'`**: chính lệnh duyệt (UPDATE từ `PENDING` sang `APPROVED`, ghi `approved_by/at`, `approval_reason`, `overdue_*`) đi qua được; mọi UPDATE sau đó, kể cả `approval_reason`, bị chặn. Cột trạng thái của `contract` vẫn đổi được (`ACTIVE`, `CLOSED`).
 
 Đã cân nhắc:
 - *Bảng phụ lục chỉ lưu dòng thay đổi* (delta): gọn hơn nhưng tra giá ngày X phải cộng dồn mọi delta trước X theo từng mã, và hiện "Hiện tại" phải tính lại; dễ sai khi phụ lục đổi cả giá đền bù, cọc, VAT. Bỏ.
@@ -102,7 +103,7 @@ Bảng `contract_revision`: **bản gốc** (`number = 0`, `kind = 'ORIGINAL'`) 
   - `contractCodeBase({ month, year, companyShort, customerToken })` → `112026/ANPHAT-MINHPHAT`.
   - `contractCode(base, n)` → `n = 1`: `base`; `n ≥ 2`: `base-n`. Token chỉ có chữ và số nên hậu tố `-n` không lẫn.
   - `amendmentCode(contractCode, n)` → `<code>/01` (hai chữ số, ≥ 100 thì ba).
-- Cấp số trong transaction tạo: `document_counter` với `prefix = 'HĐ:' + <VIẾT_TẮT>-<KHÁCH>` và `year = YYYY × 100 + MM` (VD `202611`). Upsert khóa dòng đếm nên hai lệnh cùng gốc ra hai số (spec "Lưu cùng lúc"). Không dùng `SEQUENCE` (0.2 #33 quy ước 1). Cột `contract.code` unique là lớp chặn thứ hai.
+- Cấp số trong transaction tạo: `document_counter` với `prefix = 'HĐ:' + <VIẾT_TẮT>-<KHÁCH>` và `year = YYYY × 100 + MM` (VD `202611`). Upsert khóa dòng đếm nên hai lệnh cùng gốc ra hai số (spec "Lưu cùng lúc"). `numbering.ts` ghi chú rằng cột `year` ở đây chứa **năm-tháng**, và tự upsert + định dạng bằng `contractCode`, **không** gọi `nextDocumentCode`/`formatDocumentCode` (hàm đó ra kiểu `PN-2026-001`). Không dùng `SEQUENCE` (0.2 #33 quy ước 1). Cột `contract.code` unique là lớp chặn thứ hai.
 - `MMYYYY` theo **ngày bắt đầu** (thuê từ ngày / ngày giao), vì D5 ghi `112026/...` cho hợp đồng gửi 25/10 bắt đầu 01/11. Số cấp lúc lưu lần đầu, không đổi sau (báo giá đã in mang số).
 - Phần khách mặc định: token của hợp đồng gần nhất của nhà thầu, nếu không có thì mã nhà thầu bỏ gạch (`NT0003`). Người lập sửa được trước khi lưu lần đầu (D5a "Sửa được phần tên khách").
 - Phụ lục: `contract.last_amendment_number` tăng trong transaction sau `SELECT … FOR UPDATE` hợp đồng; unique `(contract_id, number)`. Không dùng `document_counter` vì số phụ lục theo từng hợp đồng, dòng hợp đồng đã bị khóa sẵn trong lệnh.
@@ -124,7 +125,7 @@ canContract(user: { role; contractScope }, type: "RENTAL" | "SALE", action: "vie
 Đã cân nhắc:
 - *Tách vai trò Kinh doanh thành hai vai trò*: đổi 0.2 #6 (5 vai trò), mọi chỗ đọc `SALES` (mua hàng, danh mục) phải xét lại. Bỏ.
 - *Quyền theo từng người tổng quát* (bảng `user_permission`): mạnh nhưng phá "bảng quyền duy nhất". Bỏ ở MVP.
-- **Cần người dùng xác nhận** khi duyệt PR: dùng phạm vi theo tài khoản như trên. Quyết định ghi vào 0.2 sau khi duyệt (task 1.1).
+- **Đã chốt** khi review PR #128 (02/11/2026): dùng phạm vi theo tài khoản như trên, ghi ở `docs/requirements.md` 0.2 #51.
 
 ### D9. Dòng hàng, bộ và bán theo kg
 
@@ -143,6 +144,7 @@ canContract(user: { role; contractScope }, type: "RENTAL" | "SALE", action: "vie
 - `expectedValue(dailyTotal, startDate, endDate, minDays)` cho D5/D5a; `monthDisplay(dailyTotal)` trả hai số **× 30 và × 31** cho dòng "tháng 30 ngày ≈ …, tháng 31 ngày ≈ …". Không có hàm nào chia 30.
 - Đổi giá giữa chừng (spec "Đổi giá giữa chừng") là ví dụ để `rental-billing` ghép `rentAmount` theo đoạn ngày của từng bản; change này chỉ có unit test của hàm thuần, chưa có đoạn ngày từ phiếu xuất.
 - 45 ngày tính cho **một lượng hàng từ lúc xuất tới lúc trả** như spec; câu hỏi 0.2b Q2 (theo đợt hay cả hợp đồng) có thể đổi cách `rental-billing` gom, không đổi hàm thuần.
+- Chưa chốt (để `rental-billing`): hàng trả trước 45 ngày mà khoảng thuê đi qua ngày hiệu lực phụ lục thì **ngày bù cho đủ 45** tính giá nào (giá ngày trả, giá ngày cuối của 45 ngày, hay giá bản gốc). Ghi ở Workflow follow-up của tasks.
 
 ### D11. Kỳ đã chốt khi chưa có `rental-billing`: hàm chờ
 
@@ -161,12 +163,12 @@ canContract(user: { role; contractScope }, type: "RENTAL" | "SALE", action: "vie
 | `contract_kit` | `revision_id`, `kit_id`, `quantity` int ≥ 1 | PK `(revision_id, kit_id)`, FK cascade theo bản, restrict tới `kit` |
 | `contract_line` | `id`, `revision_id`, `item_id`, `condition` null, `pricing_unit`, `own_quantity`, `quantity numeric(14,3)` > 0, `price` bigint ≥ 0 null (nháp), `catalog_price` null | unique như D9 (hai unique một phần theo loại) |
 | `contract_compensation` | `revision_id`, `item_id`, `lost_price`, `damage_price` (null khi nháp chưa nhập), `catalog_lost_price`, `catalog_damage_price` | PK `(revision_id, item_id)` |
-| `contract_deposit` | `id`, `revision_id`, `kind` (`CASH`/`GUARANTEE`), `amount` bigint > 0, `method` (`CASH`/`TRANSFER`) null, `received_date` null, `bank_name`, `guarantee_number`, `expiry_date` | check theo `kind` (bảo lãnh đủ 4 trường) |
+| `contract_deposit` | `id`, `revision_id`, `kind` (`CASH`/`GUARANTEE`), `amount` bigint > 0, `method` (`CASH`/`TRANSFER`) null, `bank_name`, `guarantee_number`, `expiry_date` | check theo `kind` (cọc tiền có `method`; bảo lãnh đủ 4 trường). **Không có ngày nhận**: hợp đồng chỉ lưu khoản cọc thỏa thuận; cọc thường nhận sau khi ký, mà bản đã duyệt bị khóa, nên ghi nhận tiền đã nhận thuộc `receivables` |
 | `contract_delivery_batch` | `id`, `revision_id`, `seq`, `planned_date`, `note` | unique `(revision_id, seq)` |
 | `contract_delivery_batch_line` | `batch_id`, `kit_id` null, `item_id` null, `quantity` > 0 | check đúng một trong `kit_id`, `item_id` |
 | `user` | thêm `contract_scope text not null default 'ALL'` | check `in ('ALL','RENTAL','SALE')` |
 
-- Trigger `contract_revision_locked`: chặn UPDATE cột nội dung và DELETE của bản `APPROVED`; chặn INSERT/UPDATE/DELETE dòng con (`contract_kit`, `contract_line`, `contract_compensation`, `contract_deposit`, `contract_delivery_batch*`) của bản `APPROVED`.
+- Trigger `contract_revision_locked` (xét `OLD.status = 'APPROVED'`, D2): chặn mọi UPDATE và DELETE của bản đã duyệt, cho qua lệnh duyệt `PENDING → APPROVED`; chặn INSERT/UPDATE/DELETE dòng con (`contract_kit`, `contract_line`, `contract_compensation`, `contract_deposit`, `contract_delivery_batch*`) của bản `APPROVED`.
 - Không phải bảng chỉ ghi thêm, nên **không** vào `APPEND_ONLY_TABLES`; `db:migrate` cấp CRUD cho `erp_app` như bảng thường.
 - `DOCUMENT_TYPES` thêm `CONTRACT`, `CONTRACT_AMENDMENT`; cùng migration bỏ và tạo lại `activity_log_document_type_check` với hai giá trị mới (như `0013_catalog_extensions.sql`).
 

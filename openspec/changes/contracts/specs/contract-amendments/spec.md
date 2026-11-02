@@ -37,7 +37,7 @@ Phụ lục SHALL có số = số hợp đồng + `/` + thứ tự hai chữ s�
 - **THEN** đúng một phụ lục `/01` được tạo **AND** lệnh kia nhận "Hợp đồng đang có phụ lục 01 chưa duyệt. Bạn chờ duyệt xong hoặc hủy phụ lục đó trước."
 
 ### Requirement: Nội dung đổi được qua phụ lục
-Phụ lục SHALL đổi được: số lượng và giá dòng hàng, thêm mã mới, ngày kết thúc dự kiến, thuê tối thiểu, hạn thanh toán, VAT và thuế suất, bảng giá đền bù, cọc và bảo lãnh, kế hoạch giao. Phụ lục SHALL không đổi loại, nhà thầu, công trình, và không bỏ dòng hàng đã có. Phụ lục SHALL có lý do (1–500 ký tự) và ít nhất một thay đổi.
+Phụ lục SHALL đổi được: số lượng và giá dòng hàng, thêm mã mới, ngày kết thúc dự kiến, thuê tối thiểu, hạn thanh toán, VAT và thuế suất, bảng giá đền bù, cọc và bảo lãnh, kế hoạch giao. Phụ lục SHALL không đổi loại, nhà thầu, công trình, ngày ký, ngày bắt đầu, và không bỏ dòng hàng đã có. Ngày kết thúc dự kiến mới SHALL sau ngày hiệu lực. Phụ lục SHALL có lý do (1–500 ký tự) và ít nhất một thay đổi.
 
 #### Scenario: Đổi giá và thêm mã
 - **WHEN** phụ lục đổi giá `CHEO1,7` từ 300 ₫ thành 400 ₫/ngày và thêm `CC3` 200 cái × 700 ₫/ngày
@@ -45,7 +45,15 @@ Phụ lục SHALL đổi được: số lượng và giá dòng hàng, thêm mã
 
 #### Scenario: Đổi nhà thầu
 - **WHEN** có lệnh phụ lục đổi nhà thầu sang `NT-0005`
-- **THEN** hệ thống từ chối với "Phụ lục không đổi được nhà thầu hay công trình (1 hợp đồng = 1 công trình). Bạn lập hợp đồng mới." và không lưu
+- **THEN** hệ thống từ chối với "Phụ lục không đổi được loại, nhà thầu, công trình, ngày ký hay ngày bắt đầu. Bạn lập hợp đồng mới nếu cần đổi những mục này." và không lưu
+
+#### Scenario: Đổi ngày bắt đầu
+- **WHEN** có lệnh phụ lục đổi ngày bắt đầu từ 01/11/2026 sang 05/11/2026
+- **THEN** hệ thống từ chối với cùng câu "Phụ lục không đổi được loại, nhà thầu, công trình, ngày ký hay ngày bắt đầu. Bạn lập hợp đồng mới nếu cần đổi những mục này." và không lưu
+
+#### Scenario: Ngày kết thúc mới trước ngày hiệu lực
+- **WHEN** phụ lục hiệu lực 15/12/2026 đặt ngày kết thúc dự kiến mới 10/12/2026
+- **THEN** hệ thống từ chối với "Ngày kết thúc dự kiến mới phải sau ngày hiệu lực của phụ lục (15/12/2026)." và không lưu
 
 #### Scenario: Bỏ dòng hàng
 - **WHEN** có lệnh phụ lục bỏ dòng `KU0,5` khỏi hợp đồng
@@ -97,8 +105,23 @@ Phụ lục SHALL đi Nháp → Chờ duyệt → Đã duyệt; Giám đốc tr�
 - **WHEN** có lệnh sửa phụ lục `/01` đã duyệt
 - **THEN** hệ thống từ chối với "Phụ lục đã duyệt không sửa được. Bạn lập phụ lục mới." và không đổi dữ liệu
 
+### Requirement: Hủy hợp đồng thì hủy phụ lục chưa xong
+Khi hợp đồng đã duyệt bị hủy, phụ lục đang Nháp hoặc Chờ duyệt của nó SHALL bị hủy trong cùng transaction, mỗi phụ lục một dòng nhật ký Hủy với lý do "Hợp đồng đã hủy". Lưu, gửi duyệt, duyệt hay trả lại phụ lục của hợp đồng không còn Đã duyệt hoặc Đang thực hiện SHALL bị từ chối.
+
+#### Scenario: Hủy hợp đồng có phụ lục chờ duyệt
+- **WHEN** `112026/ANPHAT-MINHPHAT` Đã duyệt, chưa xuất hàng, có phụ lục `/01` Chờ duyệt, và Giám đốc hủy hợp đồng
+- **THEN** hợp đồng sang Đã hủy **AND** `/01` sang Đã hủy **AND** nhật ký có một dòng Hủy hợp đồng và một dòng Hủy `112026/ANPHAT-MINHPHAT/01` "Hợp đồng đã hủy"
+
+#### Scenario: Duyệt phụ lục của hợp đồng đã hủy
+- **WHEN** có lệnh duyệt phụ lục `/01` sau khi hợp đồng đã hủy
+- **THEN** hệ thống từ chối với "Hợp đồng đã hủy nên không duyệt phụ lục được." và không đổi dữ liệu
+
+#### Scenario: Gửi duyệt phụ lục của hợp đồng đã hủy
+- **WHEN** tab cũ của `quocbao` gửi duyệt phụ lục `/01` sau khi hợp đồng đã hủy
+- **THEN** hệ thống từ chối với "Hợp đồng đã hủy nên không gửi duyệt phụ lục được." và không có dòng nhật ký mới
+
 ### Requirement: Giá đang áp dụng tại một ngày
-Với một hợp đồng và một ngày X, hệ thống SHALL trả bản đang áp dụng: phụ lục đã duyệt có ngày hiệu lực lớn nhất mà ≤ X, nếu không có thì bản gốc. Kết quả SHALL gồm giá ngày từng mã, giá đền bù, thuê tối thiểu, hạn thanh toán, VAT, và số của bản đó. Ngày hiệu lực thuộc bản mới. Change tính tiền thuê SHALL đọc giá qua đây.
+Với một hợp đồng và một ngày X, hệ thống SHALL trả bản đang áp dụng: phụ lục đã duyệt có ngày hiệu lực lớn nhất mà ≤ X, nếu không có thì bản gốc. Hai bản cùng ngày hiệu lực thì bản có số lớn hơn (lập sau) thắng. Kết quả SHALL gồm giá ngày từng mã, giá đền bù, thuê tối thiểu, hạn thanh toán, VAT, và số của bản đó. Ngày hiệu lực thuộc bản mới. Change tính tiền thuê SHALL đọc giá qua đây.
 
 #### Scenario: Trước ngày hiệu lực
 - **WHEN** bản gốc có `H1,7` 1.200 ₫/ngày, phụ lục `/01` đã duyệt hiệu lực 15/12/2026 đổi thành 1.400 ₫, tra ngày 14/12/2026
@@ -111,6 +134,14 @@ Với một hợp đồng và một ngày X, hệ thống SHALL trả bản đan
 #### Scenario: Hai phụ lục
 - **WHEN** phụ lục `/01` hiệu lực 15/12/2026 (1.400 ₫) và `/02` hiệu lực 01/02/2027 (1.300 ₫) đều đã duyệt, tra ngày 10/01/2027 và 01/02/2027
 - **THEN** ngày 10/01/2027 giá 1.400 ₫ **AND** ngày 01/02/2027 giá 1.300 ₫
+
+#### Scenario: Hai bản cùng ngày hiệu lực
+- **WHEN** phụ lục `/01` (1.400 ₫) và `/02` (1.350 ₫) đều đã duyệt, cùng hiệu lực 15/12/2026, tra ngày 15/12/2026
+- **THEN** giá `H1,7` là 1.350 ₫ từ bản `112026/ANPHAT-MINHPHAT/02`
+
+#### Scenario: Phụ lục cùng ngày bắt đầu hợp đồng
+- **WHEN** hợp đồng bắt đầu 01/11/2026 (1.200 ₫) và phụ lục `/01` đã duyệt hiệu lực 01/11/2026 (1.250 ₫), tra ngày 01/11/2026
+- **THEN** giá `H1,7` là 1.250 ₫ từ bản `/01`
 
 #### Scenario: Mã thêm bằng phụ lục
 - **WHEN** `CC3` thêm bằng phụ lục `/01` hiệu lực 15/12/2026, tra ngày 10/12/2026
