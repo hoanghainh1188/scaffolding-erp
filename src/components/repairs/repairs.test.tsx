@@ -140,8 +140,11 @@ describe("RepairList", () => {
     toCode: "BAI-01",
     toName: "Bãi chính",
     lineCount: 2,
-    goodMilli: 56 * K,
-    scrapMilli: 4 * K,
+    good: [
+      { unit: "PIECE", milli: 56 * K },
+      { unit: "BUNDLE", milli: 9 * K },
+    ],
+    scrap: [{ unit: "PIECE", milli: 4 * K }],
     cost: m(2_220_000),
     loss: m(0),
     createdAt: new Date("2026-10-28T03:00:00Z"),
@@ -154,6 +157,7 @@ describe("RepairList", () => {
       within(table).getByRole("link", { name: "PSC-2026-024" }),
     ).toHaveAttribute("href", "/repairs/PSC-2026-024");
     expect(within(table).getByText("2.220.000 ₫")).toBeInTheDocument();
+    expect(within(table).getByText("56 cái, 9 bó")).toBeInTheDocument();
     expect(within(table).getByText("Nháp")).toBeInTheDocument();
     expect(within(table).getByText("28/10/2026")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Phiếu mới" })).toHaveAttribute(

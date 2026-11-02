@@ -26,7 +26,12 @@ import {
 } from "@/db/schema";
 import type { Condition } from "@/domain/condition";
 import { toMoney, type Money } from "@/domain/money";
-import { quantityFromDb, type QuantityUnit } from "@/domain/quantity";
+import {
+  quantityFromDb,
+  sumByUnit,
+  type QuantityUnit,
+  type UnitAmount,
+} from "@/domain/quantity";
 import { REPAIRABLE_UNITS } from "@/domain/repair-order";
 import { unitFromDb } from "@/lib/inventory/unit";
 import { currentScrapPrice } from "@/lib/receiving/scrap-price";
@@ -52,8 +57,9 @@ export interface RepairSummary {
   toCode: string;
   toName: string;
   lineCount: number;
-  goodMilli: number;
-  scrapMilli: number;
+  /** To Good per unit (0.2 #47). */
+  good: UnitAmount[];
+  scrap: UnitAmount[];
   cost: Money;
   loss: Money;
   createdAt: Date;
@@ -102,6 +108,27 @@ export async function listRepairOrders(
     .leftJoin(totals, eq(totals.orderId, repairOrder.id))
     .where(where.length ? and(...where) : undefined)
     .orderBy(desc(repairOrder.createdAt), desc(repairOrder.code));
+  const perUnit = await db
+    .select({
+      code: repairOrder.code,
+      unit: item.unit,
+      good: sql<string>`sum(${repairOrderLine.quantityGood})`,
+      scrap: sql<string>`sum(${repairOrderLine.quantityScrap})`,
+    })
+    .from(repairOrderLine)
+    .innerJoin(repairOrder, eq(repairOrder.id, repairOrderLine.orderId))
+    .innerJoin(item, eq(item.id, repairOrderLine.itemId))
+    .where(where.length ? and(...where) : undefined)
+    .groupBy(repairOrder.code, item.unit);
+  const amounts = (code: string, pick: "good" | "scrap") =>
+    sumByUnit(
+      perUnit
+        .filter((row) => row.code === code)
+        .map((row) => ({
+          unit: row.unit as QuantityUnit,
+          milli: milli(row[pick]),
+        })),
+    );
   return rows.map((row) => ({
     code: row.code,
     status: row.status as RepairStatus,
@@ -111,8 +138,8 @@ export async function listRepairOrders(
     toCode: row.toCode,
     toName: row.toName,
     lineCount: row.lineCount ?? 0,
-    goodMilli: milli(row.good),
-    scrapMilli: milli(row.scrap),
+    good: amounts(row.code, "good"),
+    scrap: amounts(row.code, "scrap"),
     cost: toMoney(Number(row.cost ?? 0)),
     loss: toMoney(Number(row.loss ?? 0)),
     createdAt: row.createdAt,

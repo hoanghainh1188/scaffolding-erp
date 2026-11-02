@@ -189,7 +189,30 @@ describe("checkRepairLines", () => {
         line("GG-K17", 40, 36, 4, 1_980_000),
         line("GG-CH", 20, 20, 0, 240_000),
       ]),
-    ).toEqual({ cost: 2_220_000, goodMilli: 56 * K, scrapMilli: 4 * K });
+    ).toEqual({
+      cost: 2_220_000,
+      good: [{ unit: "PIECE", milli: 56 * K }],
+      scrap: [{ unit: "PIECE", milli: 4 * K }],
+    });
+  });
+
+  it("keeps cái and bó apart (0.2 #47)", () => {
+    expect(
+      repairTotals([
+        line("GG-K17", 40, 36, 4, 1_980_000),
+        line("TY-REN", 10, 9, 1, 90_000, { unit: "BUNDLE" }),
+      ]),
+    ).toEqual({
+      cost: 2_070_000,
+      good: [
+        { unit: "PIECE", milli: 36 * K },
+        { unit: "BUNDLE", milli: 9 * K },
+      ],
+      scrap: [
+        { unit: "PIECE", milli: 4 * K },
+        { unit: "BUNDLE", milli: 1 * K },
+      ],
+    });
   });
 });
 

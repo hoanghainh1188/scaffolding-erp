@@ -776,8 +776,8 @@ describe("reading", () => {
     expect(first).toMatchObject({
       status: "DRAFT",
       lineCount: 2,
-      goodMilli: 56 * K,
-      scrapMilli: 4 * K,
+      good: [{ unit: "PIECE", milli: 56 * K }],
+      scrap: [{ unit: "PIECE", milli: 4 * K }],
       cost: 2_220_000,
     });
 

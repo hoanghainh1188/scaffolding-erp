@@ -119,9 +119,8 @@ export function RepairView({ slip, awaiting }: RepairViewProps) {
         </section>
         <RepairSummary
           cost={totals.cost}
-          goodMilli={totals.goodMilli}
-          scrapMilli={totals.scrapMilli}
-          units={slip.lines.map((line) => line.unit)}
+          good={totals.good}
+          scrap={totals.scrap}
           loss={loss}
         />
       </div>

@@ -16,7 +16,9 @@ import {
   isCountUnit,
   QUANTITY_UNIT_LABELS,
   QUANTITY_UNITS,
+  sumByUnit,
   type QuantityUnit,
+  type UnitAmount,
 } from "./quantity";
 import type { Anomaly } from "./receipt-anomalies";
 
@@ -194,25 +196,28 @@ export function assertRepairDate(
 
 export interface RepairTotals {
   readonly cost: Money;
-  readonly goodMilli: number;
-  readonly scrapMilli: number;
+  /** To Good, per unit: "40 cái, 9 bó" (0.2 #47). */
+  readonly good: UnitAmount[];
+  /** To Scrap, per unit. */
+  readonly scrap: UnitAmount[];
 }
 
-/** Header of D12: total cost, pieces to Good, pieces to Scrap. */
+/** Header of D12: total cost, quantities to Good and to Scrap per unit. */
 export function repairTotals(
   lines: readonly Pick<
     RepairLineInput,
-    "goodMilli" | "scrapMilli" | "repairCost"
+    "unit" | "goodMilli" | "scrapMilli" | "repairCost"
   >[],
 ): RepairTotals {
-  return lines.reduce(
-    (sum, line) => ({
-      cost: toMoney(sum.cost + line.repairCost),
-      goodMilli: sum.goodMilli + line.goodMilli,
-      scrapMilli: sum.scrapMilli + line.scrapMilli,
-    }),
-    { cost: toMoney(0), goodMilli: 0, scrapMilli: 0 },
-  );
+  return {
+    cost: toMoney(lines.reduce((sum, line) => sum + line.repairCost, 0)),
+    good: sumByUnit(
+      lines.map((line) => ({ unit: line.unit, milli: line.goodMilli })),
+    ),
+    scrap: sumByUnit(
+      lines.map((line) => ({ unit: line.unit, milli: line.scrapMilli })),
+    ),
+  };
 }
 
 export interface ScrapValueInput {

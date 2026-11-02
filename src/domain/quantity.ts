@@ -212,3 +212,32 @@ export function subtractQuantity(a: Quantity, b: Quantity): Quantity {
   assertSameUnit(a, b);
   return toQuantity(a.milli - b.milli, a.unit);
 }
+
+/** A quantity of one unit, for totals that mix units. */
+export interface UnitAmount {
+  readonly unit: QuantityUnit;
+  readonly milli: number;
+}
+
+/**
+ * Sums per unit, in the order of QUANTITY_UNITS: cái and bó are never added
+ * into one number (catalog-extensions, 0.2 #47).
+ */
+export function sumByUnit(rows: readonly UnitAmount[]): UnitAmount[] {
+  return QUANTITY_UNITS.flatMap((unit) => {
+    const matching = rows.filter((row) => row.unit === unit);
+    if (matching.length === 0) return [];
+    return [{ unit, milli: matching.reduce((sum, row) => sum + row.milli, 0) }];
+  });
+}
+
+/** "40 cái, 9 bó"; "0 cái" when there is nothing yet. */
+export function formatByUnit(amounts: readonly UnitAmount[]): string {
+  if (amounts.length === 0) return `0 ${QUANTITY_UNIT_LABELS.PIECE}`;
+  return amounts
+    .map(
+      (amount) =>
+        `${formatQuantity(toQuantity(amount.milli, amount.unit))} ${QUANTITY_UNIT_LABELS[amount.unit]}`,
+    )
+    .join(", ");
+}

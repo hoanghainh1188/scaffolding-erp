@@ -7,6 +7,7 @@ import {
   QUANTITY_UNIT_LABELS,
   addQuantity,
   formatQuantity,
+  formatByUnit,
   formatQuantityForInput,
   hasStandardWeight,
   isCountUnit,
@@ -15,6 +16,7 @@ import {
   quantityFromNumber,
   quantityToDb,
   subtractQuantity,
+  sumByUnit,
   toQuantity,
 } from "./quantity";
 
@@ -238,5 +240,26 @@ describe("units (catalog-extensions D2)", () => {
       unit: "METER",
       milli: 12345,
     });
+  });
+});
+
+describe("totals per unit (0.2 #47)", () => {
+  it("sums cái and bó apart, in unit order", () => {
+    const totals = sumByUnit([
+      { unit: "BUNDLE", milli: 4000 },
+      { unit: "PIECE", milli: 30_000 },
+      { unit: "PIECE", milli: 10_000 },
+      { unit: "BUNDLE", milli: 5000 },
+    ]);
+    expect(totals).toEqual([
+      { unit: "PIECE", milli: 40_000 },
+      { unit: "BUNDLE", milli: 9000 },
+    ]);
+    expect(formatByUnit(totals)).toBe("40 cái, 9 bó");
+  });
+
+  it("shows 0 cái when empty and keeps zero units it was given", () => {
+    expect(formatByUnit([])).toBe("0 cái");
+    expect(formatByUnit(sumByUnit([{ unit: "BAR", milli: 0 }]))).toBe("0 cây");
   });
 });

@@ -450,9 +450,8 @@ export function RepairForm({
         </section>
         <RepairSummary
           cost={totals.cost}
-          goodMilli={totals.goodMilli}
-          scrapMilli={totals.scrapMilli}
-          units={read.valid.map((line) => line.unit)}
+          good={totals.good}
+          scrap={totals.scrap}
           loss={loss}
         />
       </div>
