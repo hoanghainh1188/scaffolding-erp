@@ -6,6 +6,7 @@ import { and, eq, inArray, like, notInArray, sql } from "drizzle-orm";
 import { createDatabase, type Database } from "@/db/client";
 import {
   activityLog,
+  contract,
   customer,
   goodsReceipt,
   inventoryCost,
@@ -25,6 +26,8 @@ import {
 } from "@/db/schema";
 import { actorByUsername, type ActivityActor } from "@/lib/activity/actor";
 import { seedActivity } from "@/lib/activity/sample";
+import { cancelContract, returnContract } from "@/lib/contracts/approval";
+import { seedContracts } from "@/lib/contracts/sample";
 import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
 import { createItem } from "@/lib/catalog/items";
@@ -308,6 +311,36 @@ async function removeTempAccounts(db: Database): Promise<void> {
     .where(and(temp, eq(user.status, "ACTIVE")));
 }
 
+/** The customer part of every number contracts.spec.ts issues. */
+export const E2E_CONTRACT_TOKEN = "E2ETHU";
+
+/**
+ * Contracts of earlier runs (number "…-E2ETHU…") are cancelled, never
+ * deleted: numbers stay used (contracts design D1). Pending ones are
+ * returned first, the only way out of PENDING.
+ */
+async function cancelTestContracts(
+  db: Database,
+  director: ActivityActor,
+): Promise<void> {
+  const actor = { ...director, contractScope: "ALL" as const };
+  const rows = await db
+    .select({ id: contract.id, status: contract.status })
+    .from(contract)
+    .where(
+      and(
+        eq(contract.customerToken, E2E_CONTRACT_TOKEN),
+        inArray(contract.status, ["DRAFT", "PENDING", "APPROVED"]),
+      ),
+    );
+  for (const row of rows) {
+    if (row.status === "PENDING") {
+      await returnContract(db, actor, row.id, "E2E thử");
+    }
+    await cancelContract(db, actor, row.id, "E2E thử");
+  }
+}
+
 export default async function globalSetup(): Promise<void> {
   const env = getEnv();
   if (!env.E2E_PASSWORD) {
@@ -325,6 +358,11 @@ export default async function globalSetup(): Promise<void> {
       password: env.E2E_PASSWORD,
       reset: true,
     });
+    // contracts.spec.ts never changes these, but a failed run may have.
+    await handle.db
+      .update(user)
+      .set({ contractScope: "ALL" })
+      .where(like(user.username, "e2e.%"));
     // The D9 / D16 sample data, so catalog tests and screenshots have rows.
     const director = await actorByUsername(handle.db, "e2e.giamdoc");
     await removeTestOrders(handle.db);
@@ -356,6 +394,9 @@ export default async function globalSetup(): Promise<void> {
       // The D18 sample on 27–28/10/2026 (activity-log design D13), once.
       const accountant = await actorByUsername(handle.db, "e2e.ketoan");
       const sales = await actorByUsername(handle.db, "e2e.kinhdoanh");
+      // D4 / D5 / D5b sample contracts (contracts tasks 7.6), once.
+      await cancelTestContracts(handle.db, director);
+      if (sales) await seedContracts(handle.db, { director, sales });
       if (accountant && sales && warehouse) {
         await seedActivity(handle.db, {
           director,

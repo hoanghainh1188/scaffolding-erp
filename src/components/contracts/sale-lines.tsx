@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CONDITION_LABELS } from "@/domain/condition";
-import { SALE_CONDITIONS } from "@/domain/contract-lines";
+import { byWeight, SALE_CONDITIONS } from "@/domain/contract-lines";
 import { formatMoney, toMoney } from "@/domain/money";
 import { QUANTITY_UNIT_LABELS, type QuantityUnit } from "@/domain/quantity";
 
@@ -136,7 +136,7 @@ export function SaleLines({
                       onChange={(event) =>
                         change(row.key, {
                           pricingUnit:
-                            event.target.value === "KG" ? "KG" : "ITEM",
+                            byWeight(event.target.value) ? "KG" : "ITEM",
                         })
                       }
                       className="h-9 rounded-md border border-input bg-card px-2"

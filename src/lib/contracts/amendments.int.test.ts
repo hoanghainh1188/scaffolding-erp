@@ -374,3 +374,123 @@ describe("contractTermsAt (tasks 5.3)", () => {
     });
   });
 });
+
+describe("returning, cancelling and edge cases", () => {
+  it("returns a pending amendment with its reason, and refuses no reason", async () => {
+    const draft = await open();
+    await updateAmendment(ctx.db, fx.sales, contractId, draft.number, {
+      ...repriced(1400, "2026-12-15"),
+      updatedAt: draft.updatedAt,
+    });
+    await submitAmendment(ctx.db, fx.sales, contractId, draft.number);
+    expect(
+      await returnAmendment(ctx.db, fx.director, contractId, draft.number, ""),
+    ).toMatchObject({ ok: false, error: CONTRACT_MESSAGES.returnReason });
+    expect(
+      await returnAmendment(
+        ctx.db,
+        fx.director,
+        contractId,
+        draft.number,
+        "Giá chéo cao quá",
+      ),
+    ).toMatchObject({ ok: true, data: { status: "DRAFT" } });
+    expect(
+      await returnAmendment(ctx.db, fx.sales, contractId, draft.number, "x"),
+    ).toMatchObject({ ok: false, status: 403 });
+  });
+
+  it("cancels a pending amendment and frees the contract for another", async () => {
+    const draft = await open();
+    expect(
+      await cancelAmendment(ctx.db, fx.sales, contractId, draft.number, ""),
+    ).toMatchObject({ ok: false, error: CONTRACT_MESSAGES.cancelReason });
+    expect(
+      await cancelAmendment(
+        ctx.db,
+        fx.sales,
+        contractId,
+        draft.number,
+        "Lập nhầm",
+      ),
+    ).toMatchObject({ ok: true, data: { status: "CANCELLED" } });
+    expect(
+      await cancelAmendment(ctx.db, fx.sales, contractId, draft.number, "Lại"),
+    ).toMatchObject({ ok: false, error: CONTRACT_MESSAGES.amendCancelled });
+  });
+
+  it("answers 409 to a stale edit and 422 to a malformed date", async () => {
+    const draft = await open();
+    expect(
+      await updateAmendment(ctx.db, fx.sales, contractId, draft.number, {
+        ...repriced(1400, "2026-12-15"),
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      }),
+    ).toEqual({ ok: false, status: 409, error: CONTRACT_MESSAGES.stale });
+    expect(
+      await updateAmendment(ctx.db, fx.sales, contractId, draft.number, {
+        ...repriced(1400, "15/12/2026"),
+        updatedAt: draft.updatedAt,
+      }),
+    ).toMatchObject({ ok: false, status: 422, field: "effectiveFrom" });
+  });
+
+  it("refuses to send an amendment without a reason", async () => {
+    const draft = await open();
+    await updateAmendment(ctx.db, fx.sales, contractId, draft.number, {
+      ...repriced(1400, "2026-12-15", { reason: null }),
+      updatedAt: draft.updatedAt,
+    });
+    expect(
+      await submitAmendment(ctx.db, fx.sales, contractId, draft.number),
+    ).toMatchObject({ ok: false, error: CONTRACT_MESSAGES.amendReason });
+  });
+
+  it("answers 404 for the original revision and a missing number", async () => {
+    expect(
+      await submitAmendment(ctx.db, fx.sales, contractId, 0),
+    ).toMatchObject({ ok: false, status: 404 });
+    expect(
+      await submitAmendment(ctx.db, fx.sales, contractId, 7),
+    ).toMatchObject({ ok: false, status: 404 });
+  });
+
+  it("amends a sale and logs its total before and after", async () => {
+    const { kgSale } = await import("@/test/contracts");
+    const sale = await createContract(ctx.db, fx.sales, kgSale(fx));
+    if (!sale.ok) throw new Error(sale.error);
+    await submitContract(ctx.db, fx.sales, sale.data.id);
+    await approveContract(ctx.db, fx.director, sale.data.id, null);
+    const draft = await createAmendment(ctx.db, fx.sales, sale.data.id, {
+      today: TODAY,
+    });
+    if (!draft.ok) throw new Error(draft.error);
+    await updateAmendment(ctx.db, fx.sales, sale.data.id, 1, {
+      ...kgSale(fx),
+      lines: [
+        {
+          itemId: fx.item("GG-K17"),
+          condition: "GOOD",
+          pricingUnit: "KG",
+          quantity: "1250,5",
+          price: 15_000,
+        },
+      ],
+      effectiveFrom: "2026-11-05",
+      reason: "Giá thép tăng",
+      updatedAt: draft.data.updatedAt,
+    });
+    await submitAmendment(ctx.db, fx.sales, sale.data.id, 1);
+    const done = await approveAmendment(
+      ctx.db,
+      fx.director,
+      sale.data.id,
+      1,
+      null,
+    );
+    if (!done.ok) throw new Error(done.error);
+    expect((await activityRows(ctx.db, done.data.code)).at(-1)?.summary).toBe(
+      "Hiệu lực 05/11/2026 · tổng tiền 17.507.000 ₫ → 18.757.500 ₫",
+    );
+  });
+});

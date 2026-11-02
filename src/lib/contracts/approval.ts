@@ -2,7 +2,7 @@
 // return, cancel. The contract FOR UPDATE first, transition() decides, the
 // original revision follows the contract until approval and is frozen
 // after it (trigger). Cancelling an approved contract cancels its open
-// amendment in the same transaction (review of PR #128).
+// amendment in the same transaction (review of PR 128).
 import { and, eq, inArray } from "drizzle-orm";
 
 import type { Database } from "@/db/client";

@@ -201,7 +201,7 @@ export default async function Page({
             <h2 id="check-title" className="text-label">
               Kiểm tra trước khi duyệt
             </h2>
-            <ul className="flex flex-col gap-1.5 text-sm">
+            <ul data-mask className="flex flex-col gap-1.5 text-sm">
               {checks.lines.map((line) => (
                 <li
                   key={line.message}
@@ -215,6 +215,7 @@ export default async function Page({
           </section>
           <section
             aria-labelledby="history-title"
+            data-mask
             className="flex flex-col gap-2 rounded-lg border bg-card p-5 text-sm"
           >
             <h2 id="history-title" className="text-label">

@@ -271,7 +271,7 @@ export const contractCompensation = pgTable(
 );
 
 /**
- * Agreed deposits only (review of PR #128): money received and offsets
+ * Agreed deposits only (review of PR 128): money received and offsets
  * belong to receivables.
  */
 export const contractDeposit = pgTable(

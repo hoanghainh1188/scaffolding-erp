@@ -46,7 +46,7 @@ export interface RevisionRef {
 /**
  * The revision that applies on `date`: the approved one with the latest
  * effective date ≤ date; on the same date the higher number wins (review
- * of PR #128). Before the start date the original applies. Null when not
+ * of PR 128). Before the start date the original applies. Null when not
  * even the original is approved.
  */
 export function revisionAt<T extends RevisionRef>(

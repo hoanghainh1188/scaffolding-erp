@@ -57,7 +57,7 @@ export function ApprovalBar({
         {what} này đang chờ bạn duyệt
       </h2>
       {submittedBy && submittedAt ? (
-        <p className="text-sm text-muted-foreground">
+        <p data-mask className="text-sm text-muted-foreground">
           {submittedBy} gửi lúc {formatDateTime(new Date(submittedAt))}. Duyệt
           xong mới tạo được phiếu xuất.
         </p>

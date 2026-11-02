@@ -11,6 +11,7 @@ import {
   TermsSummary,
 } from "@/components/contracts/contract-view";
 import { PrintButton } from "@/components/contracts/print-button";
+import { printTitle } from "@/components/contracts/print-title";
 import { getDatabase } from "@/db/client";
 import { toBusinessDate } from "@/domain/business-date";
 import { formatMoney, toMoney } from "@/domain/money";
@@ -46,7 +47,7 @@ export default async function Page({
   const { head, shown } = found.data;
   const company = await getCompanyProfile(db);
   const quote = head.status === "DRAFT" || head.status === "PENDING";
-  const title = `${quote ? "Báo giá" : "Hợp đồng"} ${shown.number > 0 ? shown.code : head.code}`;
+  const title = printTitle(head.status, head.code, shown.code);
   const bank = [company.bankAccount, company.bankName]
     .filter(Boolean)
     .join(" · ");

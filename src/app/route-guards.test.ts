@@ -86,7 +86,9 @@ describe("route guards", () => {
     "%s passes the account scope to the service",
     (_name, file) => {
       const source = readFileSync(file, "utf8");
-      const handlers = source.match(/export const (GET|POST|PUT|PATCH|DELETE)\b/g);
+      const handlers = source.match(
+        /export const (GET|POST|PUT|PATCH|DELETE)\b/g,
+      );
       const scoped = source.match(/contractActor\(user, actor\)/g);
       expect(scoped?.length ?? 0).toBe(handlers?.length ?? -1);
     },

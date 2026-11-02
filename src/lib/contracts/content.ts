@@ -345,7 +345,10 @@ async function lockKits(tx: Tx, ids: readonly string[]) {
       quantity: kitComponent.quantity,
     })
     .from(kitComponent)
-    .where(inArray(kitComponent.kitId, unique));
+    .innerJoin(item, eq(item.id, kitComponent.itemId))
+    .where(inArray(kitComponent.kitId, unique))
+    // A fixed order, so the lines a kit brings always come out the same.
+    .orderBy(asc(item.code));
   return new Map(
     rows.map((row) => [
       row.id,
@@ -451,14 +454,26 @@ export async function checkContent(
   const kitIds = rawKits.map((entry, index) =>
     uuidOf(entry.kitId, CONTENT_MESSAGES.kit, `kits.${index}.kitId`),
   );
-  const kits = await lockKits(tx, kitIds);
+  // Kits and items a batch names are read too, so a batch naming one that
+  // is not on the contract gets its code in the message.
+  const batchRefs = rawBatches.flatMap((batch) => batch.lines ?? []);
+  const known = (value: string | null | undefined) =>
+    value && UUID.test(value) ? [value] : [];
+  const kits = await lockKits(tx, [
+    ...kitIds,
+    ...batchRefs.flatMap((line) => known(line.kitId)),
+  ]);
   const lineIds = rawLines.map((entry, index) =>
     uuidOf(entry.itemId, CONTENT_MESSAGES.item, `lines.${index}.itemId`),
   );
   const partIds = [...kits.values()].flatMap((entry) =>
     entry.components.map((part) => part.itemId),
   );
-  const items = await lockItems(tx, [...lineIds, ...partIds]);
+  const items = await lockItems(tx, [
+    ...lineIds,
+    ...partIds,
+    ...batchRefs.flatMap((line) => known(line.itemId)),
+  ]);
 
   rawKits.forEach((entry, index) => {
     const found = kits.get(entry.kitId ?? "");

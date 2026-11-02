@@ -289,7 +289,9 @@ export async function revisionView(
             quantity: kitComponent.quantity,
           })
           .from(kitComponent)
-          .where(inArray(kitComponent.kitId, kitIds)),
+          .innerJoin(item, eq(item.id, kitComponent.itemId))
+          .where(inArray(kitComponent.kitId, kitIds))
+          .orderBy(asc(item.code)),
       ])
     : [[], []];
   const itemIds = [
@@ -648,7 +650,9 @@ export async function formOptions(
       .innerJoin(
         kit,
         and(eq(kit.id, kitComponent.kitId), eq(kit.status, "ACTIVE")),
-      ),
+      )
+      .innerJoin(item, eq(item.id, kitComponent.itemId))
+      .orderBy(asc(item.code)),
   ]);
   return {
     customers,
