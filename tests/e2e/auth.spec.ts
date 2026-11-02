@@ -207,19 +207,15 @@ test.describe("D17 and temporary passwords", () => {
     await waitForHydration(phone, MOBILE_READY);
 
     // Giám đốc locks the account.
-    await page.reload();
-    await page
-      .getByRole("button", { name: "Thao tác với Ngọc Lâm" })
-      .first()
-      .click();
+    await page.goto("/settings/users?role=WAREHOUSE");
+    const row = page.getByRole("row", { name: new RegExp(username) });
+    await row.getByRole("button", { name: /Thao tác/ }).click();
     await page.getByRole("menuitem", { name: "Khóa tài khoản" }).click();
     await page
       .getByRole("alertdialog")
       .getByRole("button", { name: "Khóa" })
       .click();
-    await expect(
-      page.getByRole("row", { name: new RegExp(username) }),
-    ).toContainText("Đã khóa");
+    await expect(row).toContainText("Đã khóa");
 
     await phone
       .getByRole("navigation", { name: "Điều hướng chính" })

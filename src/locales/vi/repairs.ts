@@ -2,21 +2,22 @@
 export const repairs = {
   messages: {
     noLines: "Thêm ít nhất một mã hàng",
-    tooManyLines: "Phiếu tối đa 200 mã hàng",
-    kgItem: (code: string) => `${code} tính theo kg, không lập phiếu sửa được`,
+    tooManyLines: "Một phiếu sửa chữa tối đa 200 dòng hàng",
+    kgItem: (code: string) =>
+      `Mã hàng ${code} quản lý theo kg, không áp dụng quy trình sửa chữa theo cái`,
     duplicateItem: (code: string) => `${code} đã có trên phiếu`,
     wholePieces: (code: string) =>
-      `${code} tính theo cái, số lượng phải là số nguyên`,
+      `${code} quản lý theo cái, số lượng phải là số nguyên`,
     quantityNegative: (code: string) => `${code}: số lượng không được âm`,
-    takenZero: (code: string) => `${code}: số lấy ra phải lớn hơn 0`,
+    takenZero: (code: string) => `${code}: Số lượng xuất sửa phải lớn hơn 0`,
     sumMismatch: (sum: string, taken: string) =>
-      `sửa xong + phế liệu (${sum}) phải bằng số lấy ra (${taken})`,
+      `Tổng số lượng sửa đạt và phế liệu (${sum}) phải bằng số lượng xuất sửa (${taken})`,
     cost: "Chi phí sửa phải là số đồng không âm",
     costWithoutGood: (code: string) =>
-      `${code}: không có hàng sửa xong để tính chi phí sửa`,
-    futureDate: "Ngày sửa xong không được sau hôm nay",
+      `${code}: Không có sản phẩm sửa đạt chuẩn để phân bổ chi phí sửa chữa`,
+    futureDate: "Ngày hoàn thành không được lớn hơn ngày hiện tại",
     noWeight: (code: string) =>
-      `${code} chưa có trọng lượng chuẩn, không tính được giá phế liệu`,
+      `Mã ${code} chưa được khai báo trọng lượng chuẩn, không thể tính giá vốn phế liệu`,
     repairedByTooLong: (max: number) => `Người/tổ sửa dài tối đa ${max} ký tự`,
     noteTooLong: (max: number) => `Ghi chú dài tối đa ${max} ký tự`,
   },

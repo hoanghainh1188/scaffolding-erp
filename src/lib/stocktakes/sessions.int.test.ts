@@ -11,6 +11,7 @@ import { inventoryCost, inventoryLedger, item, stocktake } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import type { Condition } from "@/domain/condition";
 import type { Movement } from "@/domain/movement";
+import { STOCKTAKE_MESSAGES } from "@/domain/stocktake";
 import { updateItem } from "@/lib/catalog/items";
 import { updateLocation } from "@/lib/catalog/places";
 import { postMovements } from "@/lib/inventory/post";
@@ -297,7 +298,7 @@ describe("startStocktake (4.1)", () => {
     expect(result).toMatchObject({
       ok: false,
       status: 400,
-      error: "Chỉ kiểm kê bãi và xưởng",
+      error: STOCKTAKE_MESSAGES.siteRefused,
     });
     expect(await ctx.db.select().from(stocktake)).toHaveLength(0);
   });
@@ -363,7 +364,7 @@ describe("startStocktake (4.1)", () => {
       [await groupId("Phụ kiện")],
       "XUONG-01",
     ).catch((error: Error) => error.message);
-    expect(accessories).toBe("Phạm vi đã chọn không có hàng nào ở XUONG-01");
+    expect(accessories).toBe(STOCKTAKE_MESSAGES.emptyScope("XUONG-01"));
     await cancelStocktake(ctx.db, keeper, all, { reason: "Thử phạm vi" });
     const scoped = await start([await groupId("Phụ kiện")]);
     const view = await countView(ctx.db, scoped);
@@ -383,7 +384,7 @@ describe("startStocktake (4.1)", () => {
     expect(second).toMatchObject({
       ok: false,
       status: 409,
-      error: `BAI-01 đang có phiên ${first} chưa xong`,
+      error: STOCKTAKE_MESSAGES.openSession("BAI-01", first),
     });
     expect(await start(null, "XUONG-01")).toMatch(/-002$/);
   });
@@ -535,11 +536,11 @@ describe("submitStocktake (4.3)", () => {
     expect(await submit(code, [["GG-CH", [["GOOD", 2_450]]]])).toMatchObject({
       ok: false,
       status: 422,
-      error: "Nhập số cho Chờ sửa (0 nếu không có)",
+      error: STOCKTAKE_MESSAGES.missingCondition("NEEDS_REPAIR"),
     });
     expect(await submit(code, [])).toMatchObject({
       ok: false,
-      error: "Đếm ít nhất một mã trước khi gửi",
+      error: STOCKTAKE_MESSAGES.nothingCounted,
     });
     // numeric(14,3) holds 11 whole digits: one more is a typo, not a 500.
     expect(
@@ -985,12 +986,12 @@ describe("recount, return, cancel (4.7)", () => {
 
     expect(await submit(code, [["GG-K17", [["GOOD", 1_228]]]])).toMatchObject({
       ok: false,
-      error: "GG-K17 không cần đếm lại",
+      error: STOCKTAKE_MESSAGES.noRecount("GG-K17"),
     });
     expect(await submit(code, [])).toMatchObject({
       ok: false,
       status: 422,
-      error: "Còn 1 dòng văn phòng yêu cầu đếm lại, đếm xong mới gửi được",
+      error: STOCKTAKE_MESSAGES.recountMissing(1),
     });
     await post([
       {
@@ -1071,7 +1072,7 @@ describe("recount, return, cancel (4.7)", () => {
     ).toMatchObject({
       ok: false,
       status: 409,
-      error: "Phiên đã gửi văn phòng, nhờ Giám đốc hủy",
+      error: STOCKTAKE_MESSAGES.cancelAfterSubmit,
     });
     expect(
       await cancelStocktake(ctx.db, director, code, { reason: "" }),

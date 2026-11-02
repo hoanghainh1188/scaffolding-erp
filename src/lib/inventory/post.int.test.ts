@@ -5,6 +5,7 @@ import { inventoryCost, inventoryLedger } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import type { Condition } from "@/domain/condition";
 import type { MovementDraft } from "@/domain/movement";
+import { REVALUE_MESSAGES } from "@/domain/stock-revaluation";
 import { createTestContext } from "@/test/auth";
 import { setupInventoryFixture, type InventoryFixture } from "@/test/inventory";
 import { updateItem } from "@/lib/catalog/items";
@@ -402,7 +403,7 @@ describe("postMovements: REVALUE", () => {
           }),
         ]),
       ),
-    ).toBe("PK-KU Mới đã hết hàng, không điều chỉnh giá trị được");
+    ).toBe(REVALUE_MESSAGES.soldOut("PK-KU", "NEW"));
     expect(await ledgerCount()).toBe(before);
     expect((await pool("PK-KU", "NEW"))?.avgCost).toBe(52_000);
   });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { BusinessDate } from "./business-date";
+import { REVALUE_MESSAGES } from "./stock-revaluation";
 import {
   ADJUSTMENT_PREFIX,
   adjustmentMovements,
@@ -174,10 +175,10 @@ describe("assertAdjustmentLine", () => {
       assertAdjustmentLine("ADJUSTMENT", valueLine(-1_500_000)),
     ).toThrow("Dòng không hợp với loại phiếu");
     expect(() => assertAdjustmentLine("REVALUE", valueLine(0))).toThrow(
-      "Chênh lệch giá trị phải khác 0",
+      REVALUE_MESSAGES.deltaZero,
     );
     expect(() => assertAdjustmentLine("REVALUE", valueLine(null))).toThrow(
-      "Chênh lệch giá trị phải khác 0",
+      REVALUE_MESSAGES.deltaZero,
     );
     expect(() => assertAdjustmentLine("REVALUE", valueLine(-1.5))).toThrow(
       "Chênh lệch giá trị phải là số nguyên đồng",
