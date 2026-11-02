@@ -6,7 +6,7 @@ Chưa có chứng từ nào cho phần chiếm 90 % doanh thu: cho thuê. Xuất
 
 - Giai đoạn: **[MVP]**, issue #9, phụ thuộc `catalog-extensions` (đã xong).
 - Màn hình: **D4** Danh sách hợp đồng, **D5** Chi tiết hợp đồng (có thanh duyệt của Giám đốc), **D5a** Soạn hợp đồng / báo giá, **D5b** Lập phụ lục. Thiết kế ở `docs/design/screens/D4-Contracts`, `D5-Contract`, `D5a-ContractForm`, `D5b-ContractAmendment`.
-- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #4, #5, #6, #15, #16, #18, #20, #22, #33, #39, #40, #41, #43, #45, #48, #49, #50, và **#51** (tách quyền thuê/bán theo phạm vi tài khoản, chốt khi review PR #128, ghi trong PR này).
+- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #4, #5, #6, #15, #16, #18, #20, #22, #33, #39, #40, #41, #43, #45, #48, #49, #50, và **#51–#53** (tách quyền thuê/bán theo phạm vi tài khoản; tháng của số hợp đồng theo ngày bắt đầu; đổi bảo lãnh, cọc sau duyệt qua phụ lục), chốt khi review PR #128, ghi trong PR này.
 
 ## What Changes
 

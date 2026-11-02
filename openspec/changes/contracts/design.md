@@ -60,6 +60,7 @@ Bảng `contract_revision`: **bản gốc** (`number = 0`, `kind = 'ORIGINAL'`) 
 - *Bảng phụ lục chỉ lưu dòng thay đổi* (delta): gọn hơn nhưng tra giá ngày X phải cộng dồn mọi delta trước X theo từng mã, và hiện "Hiện tại" phải tính lại; dễ sai khi phụ lục đổi cả giá đền bù, cọc, VAT. Bỏ.
 - *Dòng hợp đồng có `valid_from`/`valid_to`*: phải đóng `valid_to` của dòng cũ khi duyệt (UPDATE dòng đã duyệt) và khó gom các thay đổi không phải dòng hàng (VAT, cọc). Bỏ.
 - Chép đầy đủ tốn vài chục dòng mỗi phụ lục: không đáng kể (hợp đồng thường < 30 mã, vài phụ lục).
+- Hệ quả: gia hạn bảo lãnh, đổi số chứng thư, đổi cọc sau khi duyệt cũng phải lập phụ lục và duyệt lại. **Đã chốt cho MVP** (0.2 #53): có dấu vết, không thêm cơ chế; thấy nặng thì tách khối cọc khỏi bản hợp đồng bằng change riêng.
 
 ### D3. Nợ quá hạn khi chưa có `receivables`: hàm chờ (điểm cần chốt 3)
 
@@ -108,7 +109,7 @@ Bảng `contract_revision`: **bản gốc** (`number = 0`, `kind = 'ORIGINAL'`) 
 - Phần khách mặc định: token của hợp đồng gần nhất của nhà thầu, nếu không có thì mã nhà thầu bỏ gạch (`NT0003`). Người lập sửa được trước khi lưu lần đầu (D5a "Sửa được phần tên khách").
 - Phụ lục: `contract.last_amendment_number` tăng trong transaction sau `SELECT … FOR UPDATE` hợp đồng; unique `(contract_id, number)`. Không dùng `document_counter` vì số phụ lục theo từng hợp đồng, dòng hợp đồng đã bị khóa sẵn trong lệnh.
 
-Đã cân nhắc: tháng theo ngày ký (ngày ký có thể chưa có khi báo giá), tháng theo ngày tạo (lệch với D5). Bỏ.
+Đã cân nhắc: tháng theo ngày ký (ngày ký có thể chưa có khi báo giá), tháng theo ngày tạo (lệch với D5). Bỏ. **Đã chốt** khi review PR #128: 0.2 #52.
 
 ### D8. Tách quyền thuê / bán: quyền theo loại + phạm vi của tài khoản Kinh doanh
 
