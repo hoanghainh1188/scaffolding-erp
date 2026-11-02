@@ -22,6 +22,7 @@ import type {
 } from "@/lib/users/service";
 
 import { AddUserForm } from "./add-user-form";
+import { roleWithScope } from "./contract-scope-radio-group";
 import { describeCounts } from "./role-info";
 import {
   TempPasswordDialog,
@@ -198,7 +199,8 @@ function buildColumns({
     {
       id: "role",
       header: "Vai trò",
-      accessorFn: (row) => ROLE_LABELS[row.role],
+      accessorFn: (row) =>
+        roleWithScope(ROLE_LABELS[row.role], row.role, row.contractScope),
     },
     {
       id: "device",

@@ -28,14 +28,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  CONTRACT_SCOPE_LABELS,
+  type ContractScope,
+} from "@/domain/permissions";
 import { ROLE_LABELS, type Role } from "@/domain/role";
 import { isTempPasswordExpired } from "@/domain/temp-password-expiry";
 import { callApi } from "@/lib/api-client";
 import type { UserRow, WithTempPassword } from "@/lib/users/service";
 
+import { ContractScopeRadioGroup } from "./contract-scope-radio-group";
 import { RoleRadioGroup } from "./role-radio-group";
 
-type Pending = "role" | "reset" | "lock" | "unlock" | null;
+type Pending = "role" | "scope" | "reset" | "lock" | "unlock" | null;
 
 interface UserRowActionsProps {
   user: UserRow;
@@ -46,7 +51,7 @@ interface UserRowActionsProps {
 }
 
 const CONFIRM: Record<
-  Exclude<Pending, "role" | null>,
+  Exclude<Pending, "role" | "scope" | null>,
   {
     title: string;
     body: (name: string) => string;
@@ -90,10 +95,11 @@ export function UserRowActions({
 }: UserRowActionsProps) {
   const [open, setOpen] = useState<Pending>(null);
   const [role, setRole] = useState<Role>(user.role);
+  const [scope, setScope] = useState<ContractScope>(user.contractScope);
   const [busy, setBusy] = useState(false);
   const expired = isTempPasswordExpired(user, now);
   const confirm =
-    open && open !== "role"
+    open && open !== "role" && open !== "scope"
       ? open === "reset" && expired
         ? {
             title: "Cấp lại mật khẩu tạm?",
@@ -148,6 +154,11 @@ export function UserRowActions({
               <DropdownMenuItem onSelect={() => setOpen("role")}>
                 Đổi vai trò
               </DropdownMenuItem>
+              {user.role === "SALES" ? (
+                <DropdownMenuItem onSelect={() => setOpen("scope")}>
+                  Đổi phạm vi hợp đồng
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onSelect={() => setOpen("reset")}>
                 {expired ? "Cấp lại mật khẩu tạm" : "Đặt lại mật khẩu"}
               </DropdownMenuItem>
@@ -195,6 +206,42 @@ export function UserRowActions({
               onClick={() => run("", { method: "PATCH", body: { role } })}
             >
               Lưu vai trò
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={open === "scope"}
+        onOpenChange={(next) => {
+          if (!next) setOpen(null);
+          setScope(user.contractScope);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Phạm vi hợp đồng của {user.name}</DialogTitle>
+            <DialogDescription>
+              Hiện là {CONTRACT_SCOPE_LABELS[user.contractScope]}. Phạm vi mới
+              có hiệu lực ngay ở lần tải trang kế tiếp.
+            </DialogDescription>
+          </DialogHeader>
+          <ContractScopeRadioGroup
+            value={scope}
+            onChange={setScope}
+            idPrefix={`scope-${user.id}`}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(null)}>
+              Hủy
+            </Button>
+            <Button
+              disabled={busy || scope === user.contractScope}
+              onClick={() =>
+                run("", { method: "PATCH", body: { contractScope: scope } })
+              }
+            >
+              Lưu phạm vi
             </Button>
           </DialogFooter>
         </DialogContent>

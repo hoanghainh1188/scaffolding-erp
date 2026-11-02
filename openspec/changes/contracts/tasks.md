@@ -21,8 +21,8 @@
 
 ## 3. Phạm vi hợp đồng của người dùng
 
-- [ ] 3.1 `src/lib/current-user.ts` đọc `contract_scope` mỗi yêu cầu cùng vai trò; `src/lib/users/service.ts` thêm đặt phạm vi (chỉ Giám đốc, chỉ tài khoản `SALES`, khóa `FOR UPDATE`, `updatedAt`, `logActivity` Sửa với trường "Phạm vi hợp đồng"; không đổi thì không ghi); API sửa người dùng nhận `contractScope`. Kiểm: `src/lib/users/service.int.test.ts`: đặt Chỉ cho thuê ghi đúng một dòng nhật ký; `quocbao` tự đổi → 403; đặt cho Kế toán → lỗi "Phạm vi hợp đồng chỉ đặt cho tài khoản Kinh doanh."; tài khoản mới mặc định `ALL`.
-- [ ] 3.2 D17: ô "Phạm vi hợp đồng" (Cả hai / Chỉ cho thuê / Chỉ bán) trong form tạo/sửa, chỉ hiện khi vai trò Kinh doanh; dòng bảng hiện "Kinh doanh · Chỉ cho thuê". Kiểm: component test form ẩn ô với vai trò khác và gửi đúng giá trị.
+- [x] 3.1 `src/lib/current-user.ts` đọc `contract_scope` mỗi yêu cầu cùng vai trò; `src/lib/users/service.ts` thêm đặt phạm vi (chỉ Giám đốc, chỉ tài khoản `SALES`, khóa `FOR UPDATE`, `updatedAt`, `logActivity` Sửa với trường "Phạm vi hợp đồng"; không đổi thì không ghi); API sửa người dùng nhận `contractScope`. Kiểm: `src/lib/users/contract-scope.int.test.ts`: đặt Chỉ cho thuê ghi đúng một dòng nhật ký; `quocbao` tự đổi → 403; đặt cho Kế toán → lỗi "Phạm vi hợp đồng chỉ đặt cho tài khoản Kinh doanh."; tài khoản mới mặc định `ALL`.
+- [x] 3.2 D17: ô "Phạm vi hợp đồng" (Cả hai / Chỉ cho thuê / Chỉ bán) trong form tạo/sửa, chỉ hiện khi vai trò Kinh doanh; dòng bảng hiện "Kinh doanh · Chỉ cho thuê". Kiểm: component test form ẩn ô với vai trò khác và gửi đúng giá trị.
 
 ## 4. Service hợp đồng (integration test, mỗi lệnh một transaction)
 
