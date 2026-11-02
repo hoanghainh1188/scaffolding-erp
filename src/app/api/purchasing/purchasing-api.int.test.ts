@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { can, type Permission } from "@/domain/permissions";
+import { PURCHASE_MESSAGES } from "@/domain/purchase-order";
 import { ROLES, type Role } from "@/domain/role";
 import { createOrder } from "@/lib/purchasing/orders";
 import { getOrderByCode } from "@/lib/purchasing/queries";
@@ -270,9 +271,7 @@ describe("purchasing API permissions", () => {
       { ...d3Order(fx), updatedAt: "2020-01-01T00:00:00.000Z" },
     )(cookies.get("SALES") ?? "");
     expect(response.status).toBe(409);
-    expect((await response.json()).error).toBe(
-      "Đơn vừa được người khác sửa, tải lại trang",
-    );
+    expect((await response.json()).error).toBe(PURCHASE_MESSAGES.stale);
   });
 
   it("answers 404 for an unknown or malformed code", async () => {
@@ -284,7 +283,7 @@ describe("purchasing API permissions", () => {
         () => code,
       )(cookies.get("SALES") ?? "");
       expect(response.status).toBe(404);
-      expect((await response.json()).error).toBe("Không tìm thấy đơn thu mua");
+      expect((await response.json()).error).toBe(PURCHASE_MESSAGES.notFound);
     }
   });
 

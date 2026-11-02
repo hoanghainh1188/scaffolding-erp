@@ -20,11 +20,11 @@ interface AnomalyDialogProps {
   onConfirm: () => void;
 }
 
-/** "Nhận 2.000 cái, đơn chỉ còn 200. Đúng không?" → "Đúng, nhập 2.000 cái". */
+/** "Số lượng nhận (2.000 cái) vượt quá..." → "Đúng, nhập 2.000 cái". */
 export function confirmLabel(anomaly: Anomaly): string {
-  const amount = /^(?:Nhận|Chi phí chuyến) ([^,]+),/.exec(
-    anomaly.question,
-  )?.[1];
+  const amount =
+    /\(([^)]+)\)/.exec(anomaly.question)?.[1] ??
+    /^(?:Nhận|Chi phí chuyến) ([^,]+),/.exec(anomaly.question)?.[1];
   if (!amount) return "Đúng";
   return anomaly.key === "costs"
     ? `Đúng, chi phí ${amount}`

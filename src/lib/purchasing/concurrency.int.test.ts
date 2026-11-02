@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase } from "@/db/client";
+import { PURCHASE_MESSAGES } from "@/domain/purchase-order";
 import { updateItem } from "@/lib/catalog/items";
 import { updateSupplier } from "@/lib/catalog/partners";
 import { createTestContext } from "@/test/auth";
@@ -117,8 +118,8 @@ describe("purchase orders under concurrency", () => {
       expect(order?.status).toBe(cancelled.ok ? "DONE" : "IN_PROGRESS");
       if (cancelled.ok && !edited.ok) {
         expect([
-          "Đơn vừa được người khác sửa, tải lại trang",
-          `Đơn ${code} đã xong, không đổi được nữa`,
+          PURCHASE_MESSAGES.stale,
+          PURCHASE_MESSAGES.done(code),
         ]).toContain(edited.error);
       } else {
         // The edit went first: the cancel still ends the order.

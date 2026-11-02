@@ -9,10 +9,10 @@ describe("navigation", () => {
   it("lists nine desktop items in order", () => {
     expect(NAV_ITEMS.map((item) => [item.label, item.href])).toEqual([
       ["Tổng quan", "/dashboard"],
-      ["Thu mua", "/purchasing"],
+      ["Mua hàng", "/purchasing"],
       ["Kho", "/inventory"],
       ["Sửa chữa", "/repairs"],
-      ["Bán & Thuê", "/sales"],
+      ["Cho thuê & Bán", "/sales"],
       ["Công nợ", "/receivables"],
       ["Báo cáo", "/reports"],
       ["Danh mục", "/catalog"],
@@ -27,10 +27,10 @@ describe("navigation", () => {
   it("hides receivables, reports and settings from sales", () => {
     expect(labels("SALES")).toEqual([
       "Tổng quan",
-      "Thu mua",
+      "Mua hàng",
       "Kho",
       "Sửa chữa",
-      "Bán & Thuê",
+      "Cho thuê & Bán",
       "Danh mục",
     ]);
   });
