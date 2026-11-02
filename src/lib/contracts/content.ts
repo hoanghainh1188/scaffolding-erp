@@ -86,7 +86,7 @@ export interface TermsBody {
   minRentalDays?: number | null;
   paymentTermsDays?: number;
   vatEnabled?: boolean;
-  vatRate?: string | null;
+  vatRate?: string | number | null;
   companyTruck?: boolean;
   freightPerTrip?: number | null;
   note?: string | null;

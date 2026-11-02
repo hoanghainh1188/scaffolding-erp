@@ -3,9 +3,12 @@
 // change replaces the body only. Called inside the approval transaction.
 import type { OverdueDebt } from "@/domain/contract";
 
-import type { Tx } from "./common";
+import type { Database } from "@/db/client";
+
+/** Any reader: the transaction of a command or the plain database. */
+type Reader = Pick<Database, "select">;
 
 export const overdueDebt: (
-  tx: Tx,
+  tx: Reader,
   customerId: string,
 ) => Promise<OverdueDebt> = async () => ({ amount: 0, days: 0 });

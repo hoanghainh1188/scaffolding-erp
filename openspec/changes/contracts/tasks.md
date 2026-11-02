@@ -41,8 +41,8 @@
 
 ## 6. API
 
-- [ ] 6.1 Route `src/app/api/contracts/**` theo design D14, bọc `withAuth`, kiểm `canContract` sau khi đọc loại, lỗi qua `api-response.ts`. Mở rộng `src/app/route-guards.test.ts`: route hợp đồng phải gọi `canContract` hoặc `contracts.approve`. Kiểm: `contracts-api.int.test.ts`: **người chỉ có quyền thuê không xem/sửa được hợp đồng bán và ngược lại** (`GET`/`PUT`/`POST` theo mã → 403 cả hai chiều, danh sách không lộ hợp đồng loại kia); Kế toán `GET` được, `PUT` 403; Thủ kho `GET /api/contracts` 403; `approve` bằng `SALES` 403; `PUT` lệch `updatedAt` → 409.
-- [ ] 6.2 `GET /api/contracts/[id]/terms?date=` và `GET /api/contracts/code-preview`. Kiểm: integration test ngày sai định dạng → 400 "Ngày không hợp lệ"; preview trả `112026/ANPHAT-MINHPHAT` (chưa cấp số, `document_counter` không đổi).
+- [x] 6.1 Route `src/app/api/contracts/**` theo design D14, bọc `withAuth`, kiểm `canContract` sau khi đọc loại, lỗi qua `api-response.ts`. Mở rộng `src/app/route-guards.test.ts`: mọi handler hợp đồng phải truyền phạm vi tài khoản vào service qua `contractActor(user, actor)` (service kiểm `canContract` hoặc `contracts.approve`). Kiểm: `contracts-api.int.test.ts`: **người chỉ có quyền thuê không xem/sửa được hợp đồng bán và ngược lại** (`GET`/`PUT`/`POST` theo mã → 403 cả hai chiều, danh sách không lộ hợp đồng loại kia); Kế toán `GET` được, `PUT` 403; Thủ kho `GET /api/contracts` 403; `approve` bằng `SALES` 403; `PUT` lệch `updatedAt` → 409.
+- [x] 6.2 `GET /api/contracts/[id]/terms?date=` và `GET /api/contracts/code-preview`. Kiểm: integration test ngày sai định dạng → 400 "Ngày không hợp lệ"; preview trả `112026/ANPHAT-MINHPHAT` (chưa cấp số, `document_counter` không đổi).
 
 ## 7. Giao diện
 
