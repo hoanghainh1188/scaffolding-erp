@@ -142,6 +142,25 @@ describe("createContract", () => {
     });
   });
 
+  it("reads quantities the forms send as numeric text", async () => {
+    const saved = await create({
+      ...d5Rental(fx),
+      lines: [{ itemId: fx.item("PK-KU"), quantity: "400.000" }],
+    });
+    const { content } = await contentOf(saved.id);
+    expect(lineOf(content, fx.item("PK-KU"))?.quantity).toBe("400.000");
+    expect(
+      await createContract(ctx.db, fx.sales, {
+        ...d5Rental(fx),
+        lines: [{ itemId: fx.item("PK-KU"), quantity: "400.500" }],
+      }),
+    ).toMatchObject({
+      ok: false,
+      status: 422,
+      error: "Số lượng cái phải là số nguyên",
+    });
+  });
+
   it("refuses a seller without the rental scope", async () => {
     const saleOnly = await fx.seller("thuyvy", "SALE");
     const before = (await activityRows(ctx.db)).length;

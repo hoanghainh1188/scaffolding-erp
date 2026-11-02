@@ -30,7 +30,9 @@ import {
 import type { ContentBatch, RevisionContent } from "@/domain/contract-revision";
 import {
   hasStandardWeight,
+  isCountUnit,
   parseQuantity,
+  QUANTITY_UNIT_LABELS,
   quantityFromDb,
   quantityToDb,
   toQuantity,
@@ -38,10 +40,12 @@ import {
   type QuantityUnit,
 } from "@/domain/quantity";
 import { DEFAULT_MIN_RENTAL_DAYS } from "@/domain/rental";
+import { DomainValueError } from "@/domain/errors";
 import { optionalText } from "@/lib/catalog/common";
 
 import { ContractFieldError, type Tx } from "./common";
 
+const DB_QUANTITY = /^\d+\.\d{1,3}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_LINES = 200;
 const MAX_KITS = 50;
@@ -376,8 +380,19 @@ function quantityOf(
   unit: QuantityUnit,
   name: string,
 ) {
+  const raw = (text ?? "").trim();
   try {
-    return parseQuantity(text ?? "", unit).milli;
+    // The forms send numeric(14,3) text ("600.000", "1250.500"); typed text
+    // ("1250,5") is read the user's way.
+    const quantity = DB_QUANTITY.test(raw)
+      ? quantityFromDb(raw, unit)
+      : parseQuantity(raw, unit);
+    if (isCountUnit(unit) && quantity.milli % 1000 !== 0) {
+      throw new DomainValueError(
+        `Số lượng ${QUANTITY_UNIT_LABELS[unit]} phải là số nguyên`,
+      );
+    }
+    return quantity.milli;
   } catch (error: unknown) {
     throw field((error as Error).message || CONTENT_MESSAGES.quantity, name);
   }

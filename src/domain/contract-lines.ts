@@ -20,6 +20,9 @@ export function byWeight(pricingUnit: string): boolean {
 
 export const VAT_MAX = 20;
 
+/** Rate the form suggests when VAT is ticked (drawing D5a); editable. */
+export const DEFAULT_VAT_RATE = 8;
+
 export const LINE_MESSAGES = {
   quantity: "Số lượng phải lớn hơn 0. Bạn bỏ dòng nếu không thuê mã này.",
   kitQuantity: "Số bộ phải là số nguyên từ 1 trở lên.",

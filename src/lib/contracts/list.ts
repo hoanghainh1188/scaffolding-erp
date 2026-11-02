@@ -11,6 +11,7 @@ import {
   contractRevision,
   customer,
   site,
+  user,
 } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import {
@@ -251,4 +252,15 @@ async function withTerms(
       warnings,
     };
   });
+}
+
+/** Sales accounts for the "Phụ trách" filter of D4. */
+export async function sellerOptions(
+  db: Database,
+): Promise<{ id: string; name: string }[]> {
+  return db
+    .select({ id: user.id, name: user.name })
+    .from(user)
+    .where(and(eq(user.role, "SALES"), eq(user.status, "ACTIVE")))
+    .orderBy(user.name);
 }
