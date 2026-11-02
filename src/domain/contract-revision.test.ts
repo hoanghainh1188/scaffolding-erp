@@ -179,7 +179,7 @@ describe("diffRevisions", () => {
         line("CC3", 200, 700),
       ],
     };
-    const changes = diffRevisions(BASE, after, "2026-12-15");
+    const changes = diffRevisions(BASE, after, { effectiveFrom: "2026-12-15" });
     expect(changes.map((entry) => entry.label)).toEqual([
       "Giá CHEO1,7",
       "Thêm CC3",
@@ -199,11 +199,9 @@ describe("diffRevisions", () => {
       deposits: [{ ...BASE.deposits[0]!, amount: 70_000_000 }],
     };
     expect(
-      diffRevisions(BASE, after, "2026-12-15").map((entry) => [
-        entry.label,
-        entry.before,
-        entry.after,
-      ]),
+      diffRevisions(BASE, after, { effectiveFrom: "2026-12-15" }).map(
+        (entry) => [entry.label, entry.before, entry.after],
+      ),
     ).toEqual([
       ["Giá mất H1,7", "480.000 ₫", "500.000 ₫"],
       ["Kết thúc dự kiến", "21/03/2027", "30/04/2027"],
@@ -224,7 +222,11 @@ describe("diffRevisions", () => {
     ["start date", { startDate: "2026-11-05" }],
   ])("refuses a change of %s", (_name, patch) => {
     expect(() =>
-      diffRevisions(BASE, { ...BASE, ...patch }, "2026-12-15"),
+      diffRevisions(
+        BASE,
+        { ...BASE, ...patch },
+        { effectiveFrom: "2026-12-15" },
+      ),
     ).toThrow(REVISION_MESSAGES.fixed);
   });
 
@@ -233,7 +235,7 @@ describe("diffRevisions", () => {
       diffRevisions(
         BASE,
         { ...BASE, lines: BASE.lines.slice(0, 3) },
-        "2026-12-15",
+        { effectiveFrom: "2026-12-15" },
       ),
     ).toThrow(
       "Phụ lục không bỏ được dòng hàng đã có (KU0,5). Bạn giữ dòng và sửa số lượng dự kiến.",
@@ -242,14 +244,34 @@ describe("diffRevisions", () => {
 
   it("refuses a new end date before the effective date", () => {
     expect(() =>
-      diffRevisions(BASE, { ...BASE, endDate: "2026-12-10" }, "2026-12-15"),
+      diffRevisions(
+        BASE,
+        { ...BASE, endDate: "2026-12-10" },
+        { effectiveFrom: "2026-12-15" },
+      ),
     ).toThrow(
       "Ngày kết thúc dự kiến mới phải sau ngày hiệu lực của phụ lục (15/12/2026).",
     );
   });
 
+  it("lists fixed fields and dropped lines for a draft edit", () => {
+    const changes = diffRevisions(BASE, {
+      ...BASE,
+      startDate: "2026-11-05",
+      lines: BASE.lines.slice(0, 3),
+    });
+    expect(changes.map((entry) => entry.label)).toEqual([
+      "Ngày bắt đầu",
+      "Bỏ KU0,5",
+    ]);
+  });
+
   it("finds nothing in a plain copy, and submitting it is refused", () => {
-    const changes = diffRevisions(BASE, { ...BASE }, "2026-12-15");
+    const changes = diffRevisions(
+      BASE,
+      { ...BASE },
+      { effectiveFrom: "2026-12-15" },
+    );
     expect(changes).toEqual([]);
     expect(() => assertChanged(changes)).toThrow(
       "Phụ lục chưa có thay đổi nào.",

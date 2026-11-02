@@ -208,43 +208,54 @@ function listChange(
   return change(field, label, from, to);
 }
 
+/** The rules of an amendment, checked by diffRevisions when given. */
+export interface AmendmentRules {
+  effectiveFrom: string;
+}
+
 /**
- * What `after` (an amendment) changes from `before` (the copy it was made
- * from), field by field as D5b and the activity log show it. Throws for
- * what an amendment may not change. An empty list means no change.
+ * What `after` changes from `before`, field by field as D5b and the
+ * activity log show it. With `amendment`, throws for what an amendment may
+ * not change; without (a draft being edited), those changes are listed
+ * too. An empty list means no change.
  */
 export function diffRevisions(
   before: RevisionContent,
   after: RevisionContent,
-  effectiveFrom: string,
+  amendment?: AmendmentRules,
 ): FieldChange[] {
-  if (
-    before.type !== after.type ||
-    before.customerId !== after.customerId ||
-    before.siteId !== after.siteId ||
-    before.signedDate !== after.signedDate ||
-    before.startDate !== after.startDate
-  ) {
-    fail(REVISION_MESSAGES.fixed);
-  }
-  const afterLines = new Map(after.lines.map((line) => [lineKey(line), line]));
-  for (const line of before.lines) {
-    if (!afterLines.has(lineKey(line))) {
-      fail(REVISION_MESSAGES.dropLine(lineName(line)));
-    }
-  }
-  if (
-    after.endDate !== null &&
-    after.endDate !== before.endDate &&
-    after.endDate <= effectiveFrom
-  ) {
-    fail(REVISION_MESSAGES.endBeforeEffective(effectiveFrom));
-  }
-
-  const changes: FieldChange[] = [];
+  if (amendment) checkAmendment(before, after, amendment.effectiveFrom);
+  const changes: FieldChange[] = amendment
+    ? []
+    : [
+        ...change("site", "Công trình", before.siteId, after.siteId),
+        ...change(
+          "signedDate",
+          "Ngày ký",
+          date(before.signedDate),
+          date(after.signedDate),
+        ),
+        ...change(
+          "startDate",
+          "Ngày bắt đầu",
+          date(before.startDate),
+          date(after.startDate),
+        ),
+      ];
   const beforeLines = new Map(
     before.lines.map((line) => [lineKey(line), line]),
   );
+  const afterKeys = new Set(after.lines.map(lineKey));
+  for (const line of before.lines) {
+    if (!afterKeys.has(lineKey(line))) {
+      changes.push({
+        field: `line.${lineKey(line)}`,
+        label: `Bỏ ${lineName(line)}`,
+        before: `${quantityText(line)} × ${money(line.price) ?? "–"}`,
+        after: null,
+      });
+    }
+  }
   for (const line of after.lines) {
     const old = beforeLines.get(lineKey(line));
     const name = lineName(line);
@@ -336,6 +347,35 @@ export function diffRevisions(
     ),
   );
   return changes;
+}
+
+function checkAmendment(
+  before: RevisionContent,
+  after: RevisionContent,
+  effectiveFrom: string,
+): void {
+  if (
+    before.type !== after.type ||
+    before.customerId !== after.customerId ||
+    before.siteId !== after.siteId ||
+    before.signedDate !== after.signedDate ||
+    before.startDate !== after.startDate
+  ) {
+    fail(REVISION_MESSAGES.fixed);
+  }
+  const afterLines = new Set(after.lines.map(lineKey));
+  for (const line of before.lines) {
+    if (!afterLines.has(lineKey(line))) {
+      fail(REVISION_MESSAGES.dropLine(lineName(line)));
+    }
+  }
+  if (
+    after.endDate !== null &&
+    after.endDate !== before.endDate &&
+    after.endDate <= effectiveFrom
+  ) {
+    fail(REVISION_MESSAGES.endBeforeEffective(effectiveFrom));
+  }
 }
 
 /** Submitting an amendment needs at least one change. */
