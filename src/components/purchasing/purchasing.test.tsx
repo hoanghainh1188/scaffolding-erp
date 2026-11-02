@@ -295,9 +295,7 @@ describe("D3 form", () => {
         order={{ ...D3, editable: "SCHEDULE" }}
       />,
     );
-    expect(
-      screen.getByText(PURCHASE_MESSAGES.editLocked),
-    ).toBeInTheDocument();
+    expect(screen.getByText(PURCHASE_MESSAGES.editLocked)).toBeInTheDocument();
     expect(screen.getByLabelText("Nhà cung cấp / cai thầu")).toBeDisabled();
     expect(within(rowOf("1")).getByLabelText(/Số lượng Khung/)).toBeDisabled();
     expect(screen.getByLabelText("Ngày dự kiến nhập")).toBeEnabled();

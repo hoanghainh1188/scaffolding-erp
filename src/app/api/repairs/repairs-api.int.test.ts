@@ -4,6 +4,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import type { BusinessDate } from "@/domain/business-date";
 import { can, type Permission } from "@/domain/permissions";
+import { REPAIR_MESSAGES } from "@/domain/repair-order";
 import { ROLES, type Role } from "@/domain/role";
 import { postMovements } from "@/lib/inventory/post";
 import { createRepairDraft, type RepairBody } from "@/lib/repairs/orders";
@@ -224,7 +225,7 @@ describe("/api/repairs bodies", () => {
     expect(response.status).toBe(422);
     expect(await response.json()).toMatchObject({
       success: false,
-      error: "GG-CH: sửa xong + phế liệu (10) phải bằng số lấy ra (20)",
+      error: REPAIR_MESSAGES.sumMismatch("GG-CH", 10_000, 20_000),
       data: { field: "lines.0.quantityGood" },
     });
   });

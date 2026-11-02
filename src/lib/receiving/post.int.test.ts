@@ -13,6 +13,8 @@ import {
   purchaseOrderEvent,
 } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
+import { LANDED_COST_MESSAGES } from "@/domain/landed-cost";
+import { dict } from "@/locales";
 import { reconcileInventory } from "@/lib/inventory/reconcile";
 import { postMovements } from "@/lib/inventory/post";
 import { closeOrder, updateOrder } from "@/lib/purchasing/orders";
@@ -259,7 +261,7 @@ describe("posting a trip writes the ledger in one transaction (4.3)", () => {
     expect(result).toMatchObject({
       ok: false,
       status: 409,
-      error: "Chưa có giá sắt vụn tham khảo, nhờ Giám đốc nhập ở Cài đặt",
+      error: LANDED_COST_MESSAGES.noScrapPrice,
     });
     expect(await receiptCount()).toBe(0);
     expect(await ledgerCount()).toBe(0);
@@ -338,7 +340,7 @@ describe("a receipt must count or mark every open line (4.4)", () => {
     expect(await post(body)).toEqual({
       ok: false,
       status: 422,
-      error: "Nhận 2.000 cái, đơn chỉ còn 200. Đúng không?",
+      error: dict.receiving.anomalies.piecesOver("2.000", "200"),
       field: "lines.0.quantity",
     });
     body.confirmedOverrides = [`line:${lines.get("GG-K17")}`];
@@ -346,8 +348,7 @@ describe("a receipt must count or mark every open line (4.4)", () => {
     expect(await post(body)).toEqual({
       ok: false,
       status: 422,
-      error:
-        "Chi phí chuyến 35.000.000 ₫, cả đơn dự kiến 4.880.000 ₫. Đúng không?",
+      error: dict.receiving.anomalies.costsOver("35.000.000 ₫", "4.880.000 ₫"),
       field: "costs",
     });
     expect(await receiptCount()).toBe(0);
@@ -361,7 +362,7 @@ describe("a receipt must count or mark every open line (4.4)", () => {
     await posted(oneLine(order, "100", { awaitsRest: true }));
     expect(await post(waiting)).toMatchObject({
       status: 422,
-      error: "Nhận 200 cái, đơn chỉ còn 100. Đúng không?",
+      error: dict.receiving.anomalies.piecesOver("200", "100"),
     });
   });
 });

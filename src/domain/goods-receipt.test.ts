@@ -12,10 +12,7 @@ import {
   type ReceiptLineInput,
   type ReceivingLine,
 } from "./goods-receipt";
-import {
-  PURCHASE_MESSAGES,
-  PurchaseFieldError,
-} from "./purchase-order";
+import { PURCHASE_MESSAGES, PurchaseFieldError } from "./purchase-order";
 
 const K = 1000;
 

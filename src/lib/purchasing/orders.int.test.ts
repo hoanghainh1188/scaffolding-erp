@@ -12,6 +12,7 @@ import {
   purchaseOrderEvent,
 } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
+import { PURCHASE_MESSAGES } from "@/domain/purchase-order";
 import { updateItem } from "@/lib/catalog/items";
 import {
   createSupplier,
@@ -128,7 +129,7 @@ describe("create, place, read", () => {
     expect(await placeOrder(ctx.db, fx.sales, code)).toMatchObject({
       ok: false,
       status: 409,
-      error: `Đơn ${code} đã đặt rồi`,
+      error: PURCHASE_MESSAGES.placed(code),
     });
   });
 
@@ -175,7 +176,7 @@ describe("create, place, read", () => {
     ];
     expect(await createOrder(ctx.db, fx.sales, body)).toMatchObject({
       status: 422,
-      error: "PL-SAT tính theo kg, chỉ đặt được theo kg",
+      error: PURCHASE_MESSAGES.kgOnly("PL-SAT"),
       field: "lines.0.unit",
     });
     body.lines = [
@@ -187,7 +188,7 @@ describe("create, place, read", () => {
       },
     ];
     expect(await createOrder(ctx.db, fx.sales, body)).toMatchObject({
-      error: "GG-CH tính theo cái, số lượng phải là số nguyên",
+      error: PURCHASE_MESSAGES.wholePieces("GG-CH"),
       field: "lines.0.quantity",
     });
     expect(await ctx.db.select().from(purchaseOrder)).toHaveLength(0);
@@ -233,7 +234,7 @@ describe("edit, cancel, close, delete", () => {
     ).toMatchObject({
       ok: false,
       status: 409,
-      error: "Đơn vừa được người khác sửa, tải lại trang",
+      error: PURCHASE_MESSAGES.stale,
     });
     expect((await detail(code)).note).toBe("Giám đốc sửa trước");
   });
@@ -255,21 +256,21 @@ describe("edit, cancel, close, delete", () => {
       "Người bán bán cho chỗ khác",
     ]);
     expect(await cancelOrder(ctx.db, fx.sales, code, "x")).toMatchObject({
-      error: `Đơn ${code} đã xong, không đổi được nữa`,
+      error: PURCHASE_MESSAGES.done(code),
     });
     expect(
       await updateOrder(ctx.db, fx.sales, code, {
         ...d3Order(fx),
         updatedAt: order.updatedAt.toISOString(),
       }),
-    ).toMatchObject({ error: `Đơn ${code} đã xong, không đổi được nữa` });
+    ).toMatchObject({ error: PURCHASE_MESSAGES.done(code) });
   });
 
   it("refuses to close an order no goods came in for", async () => {
     const code = await made(true);
     expect(await closeOrder(ctx.db, fx.sales, code, null)).toMatchObject({
       ok: false,
-      error: "Đơn chưa có phiếu nhập, dùng Hủy đơn",
+      error: PURCHASE_MESSAGES.closeNoReceipts,
     });
   });
 
@@ -281,7 +282,7 @@ describe("edit, cancel, close, delete", () => {
     const placed = await made(true);
     expect(await deleteOrder(ctx.db, fx.sales, placed)).toMatchObject({
       ok: false,
-      error: "Đơn đã đặt không xóa được, dùng Hủy đơn",
+      error: PURCHASE_MESSAGES.deletePlaced,
     });
   });
 

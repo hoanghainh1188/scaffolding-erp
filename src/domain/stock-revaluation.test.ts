@@ -72,9 +72,7 @@ describe("averageAfterRevalue", () => {
     const scrap = { code: "GG-K17", condition: "SCRAP" as const };
     expect(() =>
       averageAfterRevalue(pool(42, 160_000), m(-7_000_000), scrap),
-    ).toThrow(
-      REVALUE_MESSAGES.negative(scrap.code, scrap.condition, -280_000),
-    );
+    ).toThrow(REVALUE_MESSAGES.negative(scrap.code, scrap.condition, -280_000));
     expect(averageAfterRevalue(pool(42, 160_000), m(-6_720_000), scrap)).toBe(
       0,
     );

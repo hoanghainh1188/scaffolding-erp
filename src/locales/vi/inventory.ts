@@ -3,7 +3,8 @@ export const inventory = {
   adjustments: {
     deleteDraft: "Xóa nháp",
     deleteDraftTitle: (code: string) => `Xóa ${code}?`,
-    confirmDeleteDraft: "Bản nháp sẽ bị xóa vĩnh viễn và không làm thay đổi sổ kho.",
+    confirmDeleteDraft:
+      "Bản nháp sẽ bị xóa vĩnh viễn và không làm thay đổi sổ kho.",
     deleteConfirm: "Xóa",
     submitForApproval: "Gửi duyệt",
     returnAction: "Trả lại",
@@ -29,7 +30,8 @@ export const inventory = {
     pairNotInRelated: (related: string, pair: string) =>
       `${related} không có dòng sổ của ${pair}`,
     tripCost: "Chi phí chuyến phải là số nguyên không âm",
-    tripUnchanged: "Chi phí chuyến không thay đổi, không có phát sinh để điều chỉnh",
+    tripUnchanged:
+      "Chi phí chuyến không thay đổi, không có phát sinh để điều chỉnh",
     tripNotReproducible: (receipt: string) =>
       `Không thể tự động phân bổ lại chi phí theo phiếu ${receipt}. Vui lòng nhập dòng điều chỉnh thủ công.`,
     tripOpen: (receipt: string, adjustment: string) =>

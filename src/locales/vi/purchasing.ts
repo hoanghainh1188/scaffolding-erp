@@ -35,7 +35,8 @@ export const purchasing = {
     alreadyPlaced: (code: string) => `Đơn hàng ${code} đã được đặt`,
     notPlaced: (code: string) =>
       `Đơn hàng ${code} đang ở trạng thái nháp. Bạn có thể xóa bản nháp nếu không dùng.`,
-    alreadyDone: (code: string) => `Đơn hàng ${code} đã hoàn tất, không thể thay đổi`,
+    alreadyDone: (code: string) =>
+      `Đơn hàng ${code} đã hoàn tất, không thể thay đổi`,
     cancelWithReceipts:
       "Đơn hàng đã có phiếu nhập kho. Vui lòng hoàn tất phiếu nhập hoặc đóng đơn thay vì hủy.",
     cancelReasonRequired: "Nhập lý do hủy đơn",

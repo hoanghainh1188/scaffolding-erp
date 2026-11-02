@@ -4,6 +4,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { goodsReceipt } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
+import { PURCHASE_MESSAGES } from "@/domain/purchase-order";
 import { cancelOrder, closeOrder, updateOrder } from "@/lib/purchasing/orders";
 import { getOrderByCode, listOrders } from "@/lib/purchasing/queries";
 import { activityRows } from "@/test/activity";
@@ -115,8 +116,7 @@ describe("an order with a receipt (4.2)", () => {
   it("cannot be cancelled but can be closed", async () => {
     expect(await cancelOrder(ctx.db, fx.sales, code, "Thôi")).toMatchObject({
       ok: false,
-      error:
-        "Đơn đã có phiếu nhập thì không hủy được. Hàng nhập sai thì lập phiếu điều chỉnh kho.",
+      error: PURCHASE_MESSAGES.cancelReceived,
     });
     expect((await closeOrder(ctx.db, fx.sales, code, null)).ok).toBe(true);
   });
@@ -137,8 +137,7 @@ describe("an order with a receipt (4.2)", () => {
       }),
     ).toMatchObject({
       ok: false,
-      error:
-        "Đơn đã có phiếu nhập, chỉ sửa được ngày dự kiến, phương tiện và ghi chú",
+      error: PURCHASE_MESSAGES.editLocked,
     });
     expect(
       await updateOrder(ctx.db, fx.sales, code, {

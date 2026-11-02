@@ -8,8 +8,7 @@ export const users = {
       SALES: "Mua hàng, báo giá, lập hợp đồng (máy tính).",
       WAREHOUSE:
         "Quét mã, nhập kho, xuất kho, kiểm kê thực tế tại bãi (điện thoại).",
-      WORKSHOP:
-        "Lập phiếu sửa chữa, ghi nhận tân trang hàng hóa (điện thoại).",
+      WORKSHOP: "Lập phiếu sửa chữa, ghi nhận tân trang hàng hóa (điện thoại).",
     },
   },
 } as const;
