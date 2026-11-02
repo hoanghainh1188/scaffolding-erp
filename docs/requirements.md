@@ -66,6 +66,9 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 45 | Phong cách microcopy và thông điệp hệ thống | Thông điệp cảnh báo, lỗi và đối thoại (microcopy) được chuẩn hóa theo **tiếng Việt tự nhiên, có chủ ngữ/vị ngữ rõ ràng**, nêu rõ lý do và hành động khắc phục, loại bỏ lối hành văn dịch máy cộc lốc (VD: *"Số lượng nhận (2.000 cái) vượt quá số lượng còn lại trên đơn (200 cái). Bạn có chắc chắn muốn nhập không?"*, *"Chỉ hỗ trợ kiểm kê tại Bãi và Xưởng"*) (chốt 02/11/2026, change `natural-ui-copy`) |
 | 46 | Đơn vị "Cây" và khu vực của công trình | Thêm đơn vị **Cây** (đếm, có trọng lượng chuẩn; thép ống thô mua/bán theo cây 6 m) vào danh sách đơn vị của 0.2 #37. Công trình có **tỉnh/thành** (34 tỉnh/thành sau sắp xếp 07/2025); **khu vực suy ra từ tỉnh**: **Miền Bắc (15)** Hà Nội, Hải Phòng, Quảng Ninh, Bắc Ninh, Hưng Yên, Ninh Bình, Phú Thọ, Thái Nguyên, Tuyên Quang, Lào Cai, Lạng Sơn, Cao Bằng, Điện Biên, Lai Châu, Sơn La; **Miền Trung (11)** Thanh Hóa, Nghệ An, Hà Tĩnh, Quảng Trị, Huế, Đà Nẵng, Quảng Ngãi, Gia Lai, Đắk Lắk, Khánh Hòa, Lâm Đồng (gộp Tây Nguyên); **Miền Nam (8)** TP. Hồ Chí Minh, Đồng Nai, Tây Ninh, Cần Thơ, Vĩnh Long, Đồng Tháp, An Giang, Cà Mau. Đổi bảng chỉ sửa `src/domain/province.ts` (chốt 02/11/2026 khi duyệt PR #119, change `catalog-extensions`) |
 | 47 | Hàng tính theo mét và tổng nhiều đơn vị | (1) **Chưa sửa chữa hàng tính theo mét**: phiếu sửa chữa từ chối mã đơn vị m (báo rõ lý do); hàng đếm có trọng lượng chuẩn (cái, cây, bó...) sửa như cái. Luật sửa hàng mét (số lẻ, hao hụt khi cắt) chốt sau. (2) **Nhận dư hàng tính theo mét** được dung sai **10 %** như kg; đơn vị đếm không có dung sai. (3) **Tổng số lượng không cộng lẫn đơn vị**: tổng phiếu sửa và danh sách D12 ghi tách theo đơn vị ("40 cái, 9 bó"). (4) Thẻ **"Chờ sửa" D10** đếm mọi mã có trọng lượng chuẩn, kể cả hàng mét (chốt 02/11/2026 khi review PR #119, change `catalog-extensions`) |
+| 48 | Chậm thanh toán (mặc định tạm, Q5) | **Chưa tính lãi hay phạt chậm trả.** Hợp đồng lưu hạn thanh toán (mặc định lấy từ nhà thầu, sửa được); quá hạn chỉ **cảnh báo** trên Công nợ và khi duyệt hợp đồng mới (0.2 #15). Chủ trả lời Q5 khác thì thêm sau, không đổi dữ liệu cũ (chốt tạm 02/11/2026, change `contracts`, `receivables`) |
+| 49 | Bảng giá đền bù (mặc định tạm, Q6) | Công ty có **một bảng giá đền bù chung** (mất, hỏng sửa được) theo mã hàng. Hợp đồng mới **chép giá từ bảng chung** rồi sửa riêng được; giá đã chép không đổi khi bảng chung đổi. Giá khác bảng chung được đánh dấu để Giám đốc thấy khi duyệt. Đổi giá sau duyệt đi qua phụ lục (0.2 #16) (chốt tạm 02/11/2026, change `contracts`, `returns-and-compensation`) |
+| 50 | Bảo lãnh ngân hàng (mặc định tạm, Q7) | Cọc của hợp đồng gồm **cọc tiền** và/hoặc **bảo lãnh ngân hàng**. Bảo lãnh lưu: ngân hàng, số chứng thư, giá trị, ngày hết hạn. **Cảnh báo trước 30 ngày** khi sắp hết hạn, và khi gửi duyệt nếu bảo lãnh hết hạn trước ngày kết thúc dự kiến. Bảo lãnh không phải tiền nên không cấn trừ tự động khi thanh lý (0.2 #40) (chốt tạm 02/11/2026, change `contracts`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 
@@ -75,9 +78,6 @@ Các quyết định dưới đây có thể đổi sau khi chủ trả lời c�
 |---|---|---|
 | #4 Tính tiền thuê | Có trừ ngày Tết/lễ không (file Excel đang trừ số cố định −9, −1, −2) | Q1 |
 | #39 Thuê tối thiểu | 45 ngày tính theo từng đợt xuất hay cả hợp đồng; trả một phần trước 45 ngày thì tính sao | Q2 |
-| #18 Hạn thanh toán | Có phạt/lãi chậm trả không | Q5 |
-| #20 Đền bù | Bảng giá đền bù lấy từ đâu (cố định toàn công ty hay riêng từng HĐ) | Q6 |
-| Bảo lãnh ngân hàng | Thông tin cần lưu và cơ chế cảnh báo hạn chứng thư | Q7 |
 | Sản xuất (`production-orders`) | Chi phí công thợ tính khoán theo thành phẩm hay chi phí chung | Q11 |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
