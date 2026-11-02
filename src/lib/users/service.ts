@@ -7,6 +7,12 @@ import type { Database } from "@/db/client";
 import { account, loginThrottle, session, user } from "@/db/schema";
 import { isDevice, type Device } from "@/domain/device";
 import { joinParts } from "@/domain/activity-summary";
+import {
+  CONTRACT_SCOPE_LABELS,
+  CONTRACT_SCOPES,
+  parseContractScope,
+  type ContractScope,
+} from "@/domain/permissions";
 import { ROLE_LABELS, ROLES, type Role } from "@/domain/role";
 import { generateTempPassword } from "@/domain/temp-password";
 import { isValidUsername, normalizeUsername } from "@/domain/username";
@@ -36,6 +42,7 @@ export const USER_MESSAGES = {
   demoResetBlocked: "Tài khoản demo dùng chung không thể đặt lại mật khẩu",
   demoLockBlocked: "Tài khoản demo dùng chung không thể khóa",
   demoRoleBlocked: "Tài khoản demo dùng chung không thể đổi vai trò",
+  scopeNotSales: "Phạm vi hợp đồng chỉ đặt cho tài khoản Kinh doanh.",
 } as const;
 
 export const TEMP_PASSWORD_TTL_MS = 48 * 60 * 60 * 1000;
@@ -45,6 +52,8 @@ export interface UserRow {
   name: string;
   username: string;
   role: Role;
+  /** Contract types a SALES account works on (0.2 #51). */
+  contractScope: ContractScope;
   status: UserStatus;
   mustChangePassword: boolean;
   /** ISO time when the temporary password expires, or null if already changed. */
@@ -101,6 +110,10 @@ export const createUserSchema = z.object({
       error: "Chữ thường không dấu, không khoảng trắng",
     }),
   role: z.enum(ROLES, { error: "Chọn một vai trò" }),
+  /** Only kept for SALES; anything else stores ALL. */
+  contractScope: z
+    .enum(CONTRACT_SCOPES, { error: "Chọn phạm vi hợp đồng" })
+    .optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
@@ -109,11 +122,25 @@ export const changeRoleSchema = z.object({
   role: z.enum(ROLES, { error: "Chọn một vai trò" }),
 });
 
+/** PATCH /api/users/[id]: a new role or a new contract scope. */
+export const updateUserSchema = z.union(
+  [
+    changeRoleSchema,
+    z.object({
+      contractScope: z.enum(CONTRACT_SCOPES, {
+        error: "Chọn phạm vi hợp đồng",
+      }),
+    }),
+  ],
+  { error: "Chọn vai trò hoặc phạm vi hợp đồng" },
+);
+
 const rowColumns = {
   id: user.id,
   name: user.name,
   username: user.username,
   role: user.role,
+  contractScope: user.contractScope,
   status: user.status,
   mustChangePassword: user.mustChangePassword,
   tempPasswordExpiresAt: user.tempPasswordExpiresAt,
@@ -126,6 +153,7 @@ type StoredRow = {
   name: string;
   username: string;
   role: string;
+  contractScope: string;
   status: string;
   mustChangePassword: boolean;
   tempPasswordExpiresAt: Date | null;
@@ -139,6 +167,7 @@ function toUserRow(row: StoredRow): UserRow {
     name: row.name,
     username: row.username,
     role: row.role as Role,
+    contractScope: parseContractScope(row.contractScope),
     status: row.status as UserStatus,
     mustChangePassword: row.mustChangePassword,
     tempPasswordExpiresAt: row.tempPasswordExpiresAt?.toISOString() ?? null,
@@ -208,6 +237,12 @@ export async function createUser(
         mustChangePassword: true,
         tempPasswordExpiresAt: new Date(Date.now() + TEMP_PASSWORD_TTL_MS),
       });
+      if (input.role === "SALES" && input.contractScope) {
+        await tx
+          .update(user)
+          .set({ contractScope: input.contractScope })
+          .where(eq(user.id, id));
+      }
       // Never the temporary password (activity-log design D7).
       await logActivity(tx, actor, {
         action: "CREATE",
@@ -388,6 +423,51 @@ export async function changeRole(
     return {
       ok: true as const,
       data: { user: { ...toUserRow(target), role } },
+    };
+  });
+}
+
+/**
+ * Contract scope of a SALES account (user-management spec "Đặt phạm vi hợp
+ * đồng cho Kinh doanh"): only an active director, logged like a role.
+ */
+export async function changeContractScope(
+  { db }: UserServiceDeps,
+  actor: Actor,
+  targetId: string,
+  scope: ContractScope,
+): Promise<ServiceResult<{ user: UserRow }>> {
+  return db.transaction(async (tx) => {
+    const directors = await lockActiveDirectors(tx);
+    if (!directors.includes(actor.id)) return forbidden();
+    const target = await lockRow(tx, targetId);
+    if (!target) return notFound();
+    if (target.role !== "SALES") return conflict(USER_MESSAGES.scopeNotSales);
+    const was = parseContractScope(target.contractScope);
+    await tx
+      .update(user)
+      .set({ contractScope: scope, updatedAt: new Date() })
+      .where(eq(user.id, targetId));
+    await logActivity(tx, actor, {
+      action: "UPDATE",
+      document: userDocument(target),
+      summary: `Phạm vi hợp đồng ${target.username}: ${CONTRACT_SCOPE_LABELS[was]} → ${CONTRACT_SCOPE_LABELS[scope]}`,
+      changes:
+        was === scope
+          ? []
+          : [
+              {
+                field: "contractScope",
+                label: "Phạm vi hợp đồng",
+                before: CONTRACT_SCOPE_LABELS[was],
+                after: CONTRACT_SCOPE_LABELS[scope],
+              },
+            ],
+      sensitive: true,
+    });
+    return {
+      ok: true as const,
+      data: { user: { ...toUserRow(target), contractScope: scope } },
     };
   });
 }

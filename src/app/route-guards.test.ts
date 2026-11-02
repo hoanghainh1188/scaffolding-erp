@@ -71,4 +71,26 @@ describe("route guards", () => {
       expect(guarded?.length).toBe(handlers?.length);
     },
   );
+
+  // Contracts are checked per type and per account scope (contracts design
+  // D8): every handler hands the scope to the service through contractActor.
+  const contractRoutes = routes.filter((file) =>
+    label(file).startsWith("api/contracts/"),
+  );
+
+  it("finds the contract routes", () => {
+    expect(contractRoutes.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it.each(contractRoutes.map((file) => [label(file), file]))(
+    "%s passes the account scope to the service",
+    (_name, file) => {
+      const source = readFileSync(file, "utf8");
+      const handlers = source.match(
+        /export const (GET|POST|PUT|PATCH|DELETE)\b/g,
+      );
+      const scoped = source.match(/contractActor\(user, actor\)/g);
+      expect(scoped?.length ?? 0).toBe(handlers?.length ?? -1);
+    },
+  );
 });

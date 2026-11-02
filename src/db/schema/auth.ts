@@ -44,6 +44,9 @@ export const user = pgTable(
     }),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     lastLoginDevice: text("last_login_device"),
+    // Which contracts a SALES account works on (contracts design D8, 0.2
+    // #51); other roles ignore it.
+    contractScope: text("contract_scope").notNull().default("ALL"),
     ...timestamps,
   },
   (table) => [
@@ -55,6 +58,10 @@ export const user = pgTable(
     check(
       "user_last_login_device_check",
       sql`${table.lastLoginDevice} in ('DESKTOP', 'MOBILE')`,
+    ),
+    check(
+      "user_contract_scope_check",
+      sql`${table.contractScope} in ('ALL', 'RENTAL', 'SALE')`,
     ),
     check(
       "user_username_lower_check",

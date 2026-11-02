@@ -170,3 +170,60 @@ test.describe("visual baselines @visual", () => {
     }
   }
 });
+
+// contracts tasks 7.7: the seed samples (src/lib/contracts/sample.ts). Their
+// ids are random, so D5 and D5b are reached from D4; contracts.spec.ts
+// numbers its own contracts "…-E2ETHU", which q=MINHPHAT leaves out.
+const CONTRACT_PAGES = [
+  { name: "d4-contracts", from: null, link: null },
+  { name: "d5a-contract-form", from: null, link: null },
+  {
+    name: "d5-contract",
+    from: "/sales/contracts?q=MINHPHAT",
+    link: /^112026\/ANPHAT-MINHPHAT$/,
+  },
+  {
+    name: "d5b-amendment",
+    from: "/sales/contracts?q=MINHPHAT",
+    link: /^062026\/ANPHAT-MINHPHAT$/,
+  },
+] as const;
+
+test.describe("contract baselines @visual", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "sets its own viewport");
+  });
+
+  for (const { name, from, link } of CONTRACT_PAGES) {
+    for (const width of WIDTHS) {
+      test(`${name} at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        let path =
+          name === "d4-contracts"
+            ? "/sales/contracts?q=MINHPHAT"
+            : "/sales/contracts/new";
+        if (from && link) {
+          await page.goto(from);
+          await waitForHydration(page, DESKTOP_READY);
+          const href =
+            (await page
+              .getByRole("link", { name: link })
+              .getAttribute("href")) ?? "";
+          path = name === "d5b-amendment" ? `${href}/amendments/1` : href;
+        }
+        await page.goto(path);
+        await waitForHydration(page, DESKTOP_READY);
+        await page.addStyleTag({
+          content: "nextjs-portal { display: none !important; }",
+        });
+        await page.evaluate(() => document.fonts.ready);
+        await expect(page).toHaveScreenshot(`${name}-${width}.png`, {
+          fullPage: true,
+          mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
+          animations: "disabled",
+          caret: "hide",
+        });
+      });
+    }
+  }
+});

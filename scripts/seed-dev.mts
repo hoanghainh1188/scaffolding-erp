@@ -5,6 +5,7 @@ import { createDatabase } from "@/db/client";
 import { actorByUsername } from "@/lib/activity/actor";
 import { seedActivity } from "@/lib/activity/sample";
 import { createAuth } from "@/lib/auth/auth";
+import { seedContracts } from "@/lib/contracts/sample";
 import { getEnv } from "@/lib/env";
 import { seedCatalog } from "@/lib/catalog/seed";
 import { seedValueAdjustments } from "@/lib/inventory/revaluation-sample";
@@ -71,8 +72,14 @@ async function main(): Promise<number> {
     process.stdout.write(
       `Phiếu điều chỉnh giá mẫu: thêm ${revaluations} phiếu.\n`,
     );
-    // Sample activity log like drawing D18 (activity-log design D13).
+    // Sample contracts: D5 pending, an approved one with a D5b draft, a sale.
     const sales = await actorByUsername(handle.db, "kinhdoanh");
+    const contracts =
+      director && sales
+        ? await seedContracts(handle.db, { director, sales })
+        : 0;
+    process.stdout.write(`Hợp đồng mẫu: thêm ${contracts} hợp đồng.\n`);
+    // Sample activity log like drawing D18 (activity-log design D13).
     const activity =
       director && accountant && sales && warehouse
         ? await seedActivity(handle.db, {

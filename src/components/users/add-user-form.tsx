@@ -5,10 +5,12 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { ContractScope } from "@/domain/permissions";
 import type { Role } from "@/domain/role";
 import { callApi } from "@/lib/api-client";
 import type { WithTempPassword } from "@/lib/users/service";
 
+import { ContractScopeRadioGroup } from "./contract-scope-radio-group";
 import { RoleRadioGroup } from "./role-radio-group";
 
 interface AddUserFormProps {
@@ -18,6 +20,7 @@ interface AddUserFormProps {
 /** D17 "Thêm người dùng" panel. */
 export function AddUserForm({ onCreated }: AddUserFormProps) {
   const [role, setRole] = useState<Role | null>(null);
+  const [scope, setScope] = useState<ContractScope>("ALL");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -37,6 +40,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         name: String(data.get("name") ?? ""),
         username: String(data.get("username") ?? ""),
         role,
+        ...(role === "SALES" ? { contractScope: scope } : {}),
       },
     });
     setPending(false);
@@ -46,6 +50,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
     }
     form.reset();
     setRole(null);
+    setScope("ALL");
     onCreated(result.data);
   }
 
@@ -89,6 +94,16 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             idPrefix="new-role"
           />
         </fieldset>
+        {role === "SALES" ? (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-2 text-label">Phạm vi hợp đồng</legend>
+            <ContractScopeRadioGroup
+              value={scope}
+              onChange={setScope}
+              idPrefix="new-scope"
+            />
+          </fieldset>
+        ) : null}
         <div role="alert" className="empty:hidden">
           {error ? (
             <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

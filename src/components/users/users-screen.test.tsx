@@ -28,6 +28,7 @@ const row = (
   name,
   username,
   role,
+  contractScope: "ALL",
   status,
   mustChangePassword,
   tempPasswordExpiresAt,
@@ -193,6 +194,49 @@ describe("UsersScreen (D17)", () => {
     expect(
       screen.getAllByRole("menuitem").map((item) => item.textContent),
     ).toEqual(["Đổi vai trò", "Đặt lại mật khẩu", "Khóa tài khoản"]);
+  });
+
+  it("shows the contract scope next to Kinh doanh only", () => {
+    renderScreen();
+    const quocbao = screen.getByText("quocbao").closest("tr")!;
+    expect(
+      within(quocbao).getByText("Kinh doanh · Cả hai"),
+    ).toBeInTheDocument();
+    const thuha = screen.getByText("thuha").closest("tr")!;
+    expect(within(thuha).getByText("Kế toán")).toBeInTheDocument();
+  });
+
+  it("offers the scope change on a seller's row, not on others", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    await user.click(
+      screen.getByRole("button", { name: "Thao tác với Quốc Bảo" }),
+    );
+    expect(
+      screen.getAllByRole("menuitem").map((item) => item.textContent),
+    ).toContain("Đổi phạm vi hợp đồng");
+    await user.keyboard("{Escape}");
+    await user.click(
+      screen.getByRole("button", { name: "Thao tác với Thu Hà" }),
+    );
+    expect(
+      screen.getAllByRole("menuitem").map((item) => item.textContent),
+    ).not.toContain("Đổi phạm vi hợp đồng");
+  });
+
+  it("asks for a scope only once Kinh doanh is picked", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    const form = within(
+      screen.getByRole("region", { name: "Thêm người dùng" }),
+    );
+    expect(
+      form.queryByRole("radiogroup", { name: "Phạm vi hợp đồng" }),
+    ).toBeNull();
+    await user.click(form.getByRole("radio", { name: "Kinh doanh" }));
+    const scope = form.getByRole("radiogroup", { name: "Phạm vi hợp đồng" });
+    expect(within(scope).getByRole("radio", { name: "Cả hai" })).toBeChecked();
+    expect(within(scope).getAllByRole("radio")).toHaveLength(3);
   });
 
   it("starts the role picker with 3 roles and can show all 5", async () => {

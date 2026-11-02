@@ -94,6 +94,8 @@ export const DOCUMENT_TYPES = [
   "USER",
   "SCRAP_PRICE",
   "COMPANY_PROFILE",
+  "CONTRACT",
+  "CONTRACT_AMENDMENT",
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
@@ -114,6 +116,8 @@ export const DOCUMENT_TYPE_LABELS: Readonly<Record<DocumentType, string>> = {
   USER: "Người dùng",
   SCRAP_PRICE: "Giá sắt vụn",
   COMPANY_PROFILE: "Cài đặt công ty",
+  CONTRACT: "Hợp đồng",
+  CONTRACT_AMENDMENT: "Phụ lục hợp đồng",
 };
 
 /** The label of an action on a document: submitting an order places it. */
