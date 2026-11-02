@@ -7,12 +7,15 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { dict } from "@/locales";
+
+const CATEGORIES = ["EQUIPMENT", "MATERIAL"] as const;
 
 interface ItemsFiltersProps {
-  groups: { id: string; name: string }[];
+  groups: { id: string; name: string; category?: string }[];
   /** Search placeholder, e.g. "Tìm vật tư". */
   placeholder: string;
-  /** Show the group select (items only). */
+  /** Show the category buttons and the group select (items only). */
   withGroups?: boolean;
 }
 
@@ -37,6 +40,12 @@ export function ItemsFilters({
     const query = next.toString();
     router.replace(query ? `${pathname}?${query}` : pathname);
   }
+
+  const category = params.get("category");
+  // The group select only offers groups of the chosen category (design D8).
+  const shownGroups = category
+    ? groups.filter((group) => group.category === category)
+    : groups;
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -67,6 +76,31 @@ export function ItemsFilters({
         />
       </div>
       {withGroups ? (
+        <fieldset className="flex flex-col gap-1">
+          <legend className="mb-1 text-label">
+            {dict.catalog.categories.label}
+          </legend>
+          <div
+            role="group"
+            className="inline-flex h-11 overflow-hidden rounded-md border border-input bg-card"
+          >
+            {[null, ...CATEGORIES].map((value) => (
+              <button
+                key={value ?? "all"}
+                type="button"
+                aria-pressed={category === value}
+                onClick={() => go({ category: value, group: null })}
+                className="px-3 text-base transition-colors not-first:border-l not-first:border-input hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+              >
+                {value === null
+                  ? dict.catalog.categories.all
+                  : dict.catalog.categories[value]}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
+      {withGroups ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="catalog-group">Nhóm</Label>
           <select
@@ -76,7 +110,7 @@ export function ItemsFilters({
             className="h-11 rounded-md border border-input bg-card px-3 text-base"
           >
             <option value="">Tất cả</option>
-            {groups.map((group) => (
+            {shownGroups.map((group) => (
               <option key={group.id} value={group.id}>
                 {group.name}
               </option>

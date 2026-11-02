@@ -4,7 +4,14 @@
 import { CONDITIONS, type Condition } from "./condition";
 import { computeConditionSplit } from "./condition-split";
 import { DomainValueError } from "./errors";
-import { formatQuantity, toQuantity, type QuantityUnit } from "./quantity";
+import {
+  formatQuantity,
+  hasStandardWeight,
+  isCountUnit,
+  QUANTITY_UNIT_LABELS,
+  toQuantity,
+  type QuantityUnit,
+} from "./quantity";
 import {
   PURCHASE_MESSAGES,
   PurchaseFieldError,
@@ -67,9 +74,9 @@ export type ConditionSplit = Readonly<Record<Condition, number>>;
 export interface ReceiptLineInput {
   readonly orderLineId: string;
   readonly status: ReceiptLineStatus;
-  /** In the item unit (pieces counted, or kg weighed for a kg item). */
+  /** In the item unit (units counted or metres measured, kg for a kg item). */
   readonly quantityMilli: number;
-  /** Weighed kg of a kg line of a piece item; null otherwise. */
+  /** Weighed kg of a kg line of a weighted item; null otherwise. */
   readonly weighedKgMilli: number | null;
   readonly split: ConditionSplit;
   readonly awaitsRest: boolean;
@@ -82,11 +89,14 @@ export const EMPTY_SPLIT: ConditionSplit = {
   SCRAP: 0,
 };
 
-/** The item unit needs kg weighed besides the count: a kg line of a piece item. */
+/**
+ * The item unit needs kg weighed besides the count: a kg line of an item
+ * with a standard weight (cái, bó, m...), counted in its own unit.
+ */
 export function needsWeighing(
   line: Pick<ReceivingLine, "itemUnit" | "lineUnit">,
 ): boolean {
-  return line.lineUnit === "KG" && line.itemUnit === "PIECE";
+  return !hasStandardWeight(line.lineUnit) && hasStandardWeight(line.itemUnit);
 }
 
 /** What this trip adds to the line, in the line unit (design D3). */
@@ -154,7 +164,10 @@ function checkSplit(
     }
     return;
   }
-  if (open.itemUnit === "KG" && line.split.SCRAP !== line.quantityMilli) {
+  if (
+    !hasStandardWeight(open.itemUnit) &&
+    line.split.SCRAP !== line.quantityMilli
+  ) {
     throw new PurchaseFieldError(
       RECEIPT_MESSAGES.kgToScrap(open.itemCode),
       `${field}.split`,
@@ -183,9 +196,12 @@ function checkCountedLine(
       `${field}.quantity`,
     );
   }
-  if (open.itemUnit === "PIECE" && line.quantityMilli % 1000 !== 0) {
+  if (isCountUnit(open.itemUnit) && line.quantityMilli % 1000 !== 0) {
     throw new PurchaseFieldError(
-      PURCHASE_MESSAGES.wholePieces(open.itemCode),
+      PURCHASE_MESSAGES.wholePieces(
+        open.itemCode,
+        QUANTITY_UNIT_LABELS[open.itemUnit],
+      ),
       `${field}.quantity`,
     );
   }

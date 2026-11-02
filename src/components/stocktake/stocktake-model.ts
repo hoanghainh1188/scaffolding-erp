@@ -4,7 +4,9 @@
 import { CONDITIONS, type Condition } from "@/domain/condition";
 import { DomainValueError } from "@/domain/errors";
 import {
+  isCountUnit,
   parseQuantity,
+  QUANTITY_UNIT_LABELS,
   quantityFromDb,
   quantityToDb,
   type QuantityUnit,
@@ -207,8 +209,11 @@ export function finishError(
       if (quantity.milli < 0) return STOCKTAKE_MESSAGES.negative(item.itemCode);
     } catch (error) {
       if (error instanceof DomainValueError) {
-        return item.unit === "PIECE"
-          ? STOCKTAKE_MESSAGES.wholePieces(item.itemCode)
+        return isCountUnit(item.unit)
+          ? STOCKTAKE_MESSAGES.wholePieces(
+              item.itemCode,
+              QUANTITY_UNIT_LABELS[item.unit],
+            )
           : error.message;
       }
       throw error;

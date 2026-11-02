@@ -6,8 +6,8 @@ import {
   DataTable,
   type DataTableColumn,
 } from "@/components/domain/data-table";
-import { QUANTITY_UNIT_LABELS } from "@/domain/quantity";
 import type { ItemRow } from "@/lib/catalog/items";
+import { dict } from "@/locales";
 
 import { formatPrice, formatWeight, monthlyPrice } from "./format";
 import { ItemRowActions } from "./item-row-actions";
@@ -57,6 +57,12 @@ export function ItemsTable({
           <span className="text-caption text-muted-foreground">
             {row.original.code}
           </span>
+          {row.original.aliases.length > 0 ? (
+            <span className="text-caption text-muted-foreground">
+              {dict.catalog.oldCodes.rowPrefix}{" "}
+              {row.original.aliases.join(", ")}
+            </span>
+          ) : null}
         </Link>
       ),
     },
@@ -64,29 +70,28 @@ export function ItemsTable({
     {
       id: "unit",
       header: "ĐVT",
-      accessorFn: (row) => QUANTITY_UNIT_LABELS[row.unit],
+      accessorFn: (row) => row.unitLabel,
       meta: { hideBelow: "md" },
     },
     {
       id: "weight",
       header: "Trọng lượng chuẩn",
-      accessorFn: (row) => formatWeight(row.standardWeightKg),
+      accessorFn: (row) => formatWeight(row.standardWeightKg, row.unit),
       meta: { align: "right", hideBelow: "md" },
     },
     {
       id: "daily",
       header: "Giá thuê / ngày",
-      accessorFn: (row) =>
-        row.unit === "KG" ? "–" : formatPrice(row.dailyRentalPrice),
+      accessorFn: (row) => formatPrice(row.dailyRentalPrice, row.unit),
       meta: { align: "right" },
     },
     {
       id: "monthly",
       header: "Giá thuê / tháng",
       accessorFn: (row) =>
-        row.unit === "KG" || row.dailyRentalPrice === null
+        row.dailyRentalPrice === null
           ? NOT_FOR_RENT
-          : formatPrice(monthlyPrice(row.dailyRentalPrice)),
+          : formatPrice(monthlyPrice(row.dailyRentalPrice), row.unit),
       meta: { align: "right", hideBelow: "lg" },
     },
     ...(canEdit

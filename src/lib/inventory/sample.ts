@@ -229,7 +229,11 @@ async function sampleSiteLocations(
       found.set(key, row.locationId);
       continue;
     }
-    const created = await createSite(db, actor, { name, customerId: owner.id });
+    const created = await createSite(db, actor, {
+      name,
+      province: "HN",
+      customerId: owner.id,
+    });
     if (!created.ok) throw new Error(`${name}: ${created.error}`);
     found.set(key, created.data.locationId);
   }

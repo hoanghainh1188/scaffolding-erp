@@ -8,7 +8,12 @@ import { DomainValueError } from "./errors";
 import type { LocationType } from "./location-type";
 import type { Money } from "./money";
 import type { MovementDraft } from "./movement";
-import type { QuantityUnit } from "./quantity";
+import {
+  isCountUnit,
+  QUANTITY_UNIT_LABELS,
+  QUANTITY_UNITS,
+  type QuantityUnit,
+} from "./quantity";
 import {
   adjustmentMovements,
   type AdjustmentLineInput,
@@ -230,7 +235,9 @@ export function stocktakeSummary(
 ): StocktakeSummary {
   const bucket = () => ({
     lines: 0,
-    quantity: { PIECE: 0, KG: 0 } as Record<QuantityUnit, number>,
+    quantity: Object.fromEntries(
+      QUANTITY_UNITS.map((unit) => [unit, 0]),
+    ) as Record<QuantityUnit, number>,
     value: 0,
   });
   const shortage = bucket();
@@ -374,9 +381,12 @@ export function assertSubmission(
           lineField,
         );
       }
-      if (item.unit === "PIECE" && line.quantityMilli % K !== 0) {
+      if (isCountUnit(item.unit) && line.quantityMilli % K !== 0) {
         throw new StocktakeFieldError(
-          STOCKTAKE_MESSAGES.wholePieces(item.itemCode),
+          STOCKTAKE_MESSAGES.wholePieces(
+            item.itemCode,
+            QUANTITY_UNIT_LABELS[item.unit],
+          ),
           lineField,
         );
       }

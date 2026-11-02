@@ -1,12 +1,21 @@
-// Items (vật tư) for D9 (spec item-catalog, design D1, D3, D4, D7).
+// Items (vật tư) for D9 (spec item-catalog, design D1, D3, D4, D7;
+// catalog-extensions D1–D3: real codes, old codes, 9 units, categories).
 import { and, asc, count, eq, ilike, inArray, type SQL } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
-import { item, itemGroup, kit, kitComponent } from "@/db/schema";
+import { item, itemAlias, itemGroup, kit, kitComponent } from "@/db/schema";
 import { DomainValueError } from "@/domain/errors";
-import { parseCatalogCode } from "@/domain/item-code";
+import {
+  isValidItemCode,
+  itemCodeKey,
+  normalizeItemCode,
+  parseItemCode,
+} from "@/domain/item-code";
 import { toMoney, type Money } from "@/domain/money";
 import {
+  QUANTITY_UNIT_LABELS,
+  hasStandardWeight,
+  isQuantityUnit,
   quantityFromDb,
   quantityToDb,
   type QuantityUnit,
@@ -19,7 +28,7 @@ import { changeSummary, joinParts } from "@/domain/activity-summary";
 import { ITEM_FIELDS, type ItemView } from "@/lib/activity/fields";
 import { logActivity } from "@/lib/activity/log";
 
-import { claimItemOrKitCode } from "./codes";
+import { claimItemOrKitCode, claimOldCodes } from "./codes";
 import {
   archivedAt,
   badRequest,
@@ -40,11 +49,20 @@ import {
   openOrderCodesForItem,
 } from "@/lib/purchasing/references";
 
+/** Old codes per item (design D1). */
+export const MAX_OLD_CODES = 5;
+
+export type ItemCategory = "EQUIPMENT" | "MATERIAL";
+export const ITEM_CATEGORIES: readonly ItemCategory[] = [
+  "EQUIPMENT",
+  "MATERIAL",
+];
+
 export const ITEM_MESSAGES = {
   codeFixed: "Không đổi được mã hàng sau khi tạo",
   unitFixed: "Không đổi được đơn vị sau khi tạo",
-  unit: "Chọn đơn vị cái hoặc kg",
-  kgNoRental: "Vật tư tính theo kg không cho thuê",
+  unit: "Chọn đơn vị của vật tư",
+  tooManyOldCodes: `Mỗi vật tư có tối đa ${MAX_OLD_CODES} mã cũ`,
   kgNoWeight: "Vật tư tính theo kg không có trọng lượng chuẩn",
   weightTooBig: "Trọng lượng chuẩn quá lớn",
   negativePrice: "Giá không được âm",
@@ -68,8 +86,14 @@ export interface ItemRow {
   name: string;
   groupId: string;
   groupName: string;
+  /** From the item's group (design D3). */
+  category: ItemCategory;
   unit: QuantityUnit;
-  /** "13.500" (kg per piece), null for items counted in kg. */
+  /** "cái", "m", "bó"... */
+  unitLabel: string;
+  /** Old codes, in the order they were added. */
+  aliases: string[];
+  /** "13.500" (kg per unit), null for items counted in kg. */
   standardWeightKg: string | null;
   dailyRentalPrice: number | null;
   lostPrice: number | null;
@@ -86,6 +110,7 @@ export interface ItemCounts {
 
 export interface ItemFilter {
   q?: string;
+  category?: ItemCategory;
   groupId?: string;
   status?: CatalogStatus;
 }
@@ -96,6 +121,7 @@ const rowColumns = {
   name: item.name,
   groupId: item.groupId,
   groupName: itemGroup.name,
+  category: itemGroup.category,
   unit: item.unit,
   standardWeightKg: item.standardWeightKg,
   dailyRentalPrice: item.dailyRentalPrice,
@@ -104,16 +130,57 @@ const rowColumns = {
   status: item.status,
 };
 
-function toRow(row: {
-  unit: string;
-  status: string;
-  [key: string]: unknown;
-}): ItemRow {
+function toRow(
+  row: {
+    id: string;
+    unit: string;
+    category: string;
+    status: string;
+    [key: string]: unknown;
+  },
+  aliases: ReadonlyMap<string, string[]>,
+): ItemRow {
+  const unit = row.unit as QuantityUnit;
   return {
     ...(row as unknown as ItemRow),
-    unit: row.unit as QuantityUnit,
+    category: row.category as ItemCategory,
+    unit,
+    unitLabel: QUANTITY_UNIT_LABELS[unit],
+    aliases: aliases.get(row.id) ?? [],
     status: row.status as CatalogStatus,
   };
+}
+
+/** Old codes per item id, in the order they were added. */
+export async function oldCodesOf(
+  db: Pick<Database, "select">,
+  ids: readonly string[],
+): Promise<Map<string, string[]>> {
+  const result = new Map<string, string[]>();
+  if (ids.length === 0) return result;
+  const rows = await db
+    .select({ itemId: itemAlias.itemId, code: itemAlias.code })
+    .from(itemAlias)
+    .where(inArray(itemAlias.itemId, [...ids]))
+    .orderBy(asc(itemAlias.createdAt), asc(itemAlias.code));
+  for (const row of rows) {
+    result.set(row.itemId, [...(result.get(row.itemId) ?? []), row.code]);
+  }
+  return result;
+}
+
+/** Name, code and old codes, with their keys: NỐI 34 is found by "noi34". */
+function itemSearchText(
+  name: string,
+  code: string,
+  aliases: readonly string[],
+): string {
+  return toSearchText(
+    name,
+    code,
+    itemCodeKey(code),
+    ...aliases.flatMap((alias) => [alias, itemCodeKey(alias)]),
+  );
 }
 
 /** D9 list: active items by default, name order, plus the header counts. */
@@ -122,6 +189,9 @@ export async function listItems(
   filter: ItemFilter = {},
 ): Promise<{ items: ItemRow[]; counts: ItemCounts }> {
   const conditions: SQL[] = [eq(item.status, filter.status ?? "ACTIVE")];
+  if (filter.category) {
+    conditions.push(eq(itemGroup.category, filter.category));
+  }
   if (filter.groupId) conditions.push(eq(item.groupId, filter.groupId));
   const q = toSearchText(filter.q);
   if (q) conditions.push(ilike(item.searchText, `%${escapeLike(q)}%`));
@@ -143,8 +213,12 @@ export async function listItems(
     .from(kit)
     .where(eq(kit.status, "ACTIVE"));
 
+  const aliases = await oldCodesOf(
+    db,
+    rows.map((row) => row.id),
+  );
   return {
-    items: rows.map(toRow),
+    items: rows.map((row) => toRow(row, aliases)),
     counts: {
       activeItems: perGroup.reduce((sum, row) => sum + row.value, 0),
       activeKits: kits?.value ?? 0,
@@ -164,7 +238,7 @@ export async function getItem(
     .from(item)
     .innerJoin(itemGroup, eq(itemGroup.id, item.groupId))
     .where(eq(item.id, id));
-  return row ? toRow(row) : null;
+  return row ? toRow(row, await oldCodesOf(db, [id])) : null;
 }
 
 export interface ItemInput {
@@ -172,6 +246,8 @@ export interface ItemInput {
   name?: string;
   groupId?: string;
   unit?: QuantityUnit;
+  /** The full list of old codes after the change (design D7). */
+  aliases?: string[];
   /** Decimal string in kg, e.g. "13.5"; null for kg items. */
   standardWeightKg?: string | null;
   dailyRentalPrice?: number | null;
@@ -187,17 +263,16 @@ function price(value: number | null | undefined): Money | null {
   return money;
 }
 
-/** Weight and rent rules per unit (spec item-catalog). */
+/**
+ * Weight rules per unit (spec item-catalog): every unit but kg has a
+ * standard weight. Any unit may have a rental price (design D2).
+ */
 function checkUnitRules(
   unit: QuantityUnit,
   weight: string | null,
-  dailyRentalPrice: Money | null,
 ): string | null {
-  if (unit === "KG") {
+  if (!hasStandardWeight(unit)) {
     if (weight !== null) throw new DomainValueError(ITEM_MESSAGES.kgNoWeight);
-    if (dailyRentalPrice !== null) {
-      throw new DomainValueError(ITEM_MESSAGES.kgNoRental);
-    }
     return null;
   }
   if (weight === null) throw new DomainValueError(WEIGHT_MESSAGES.noWeight);
@@ -224,10 +299,52 @@ async function requireActiveGroup(
   }
 }
 
+/** Old codes as typed: normalized, at most MAX_OLD_CODES. */
+function parseOldCodes(input: readonly string[]): string[] {
+  const codes = input
+    .filter((code) => code.trim() !== "")
+    .map((code) => parseItemCode(code));
+  if (codes.length > MAX_OLD_CODES) {
+    throw new DomainValueError(ITEM_MESSAGES.tooManyOldCodes);
+  }
+  return codes;
+}
+
+/** Replaces the old codes of an item; the caller holds the code lock. */
+async function writeOldCodes(
+  tx: Pick<Database, "delete" | "insert">,
+  actor: Actor,
+  itemId: string,
+  codes: readonly string[],
+): Promise<void> {
+  await tx.delete(itemAlias).where(eq(itemAlias.itemId, itemId));
+  if (codes.length === 0) return;
+  await tx
+    .insert(itemAlias)
+    .values(codes.map((code) => ({ itemId, code, createdBy: actor.id })));
+}
+
+/** "Mã cũ thêm K1,7, KHUNG 1M7; bỏ GG17" (spec: Mã cũ của vật tư). */
+function oldCodesPhrase(
+  before: readonly string[],
+  after: readonly string[],
+): string | null {
+  const added = after.filter((code) => !before.includes(code));
+  const removed = before.filter((code) => !after.includes(code));
+  const parts = [
+    added.length > 0 ? `thêm ${added.join(", ")}` : null,
+    removed.length > 0 ? `bỏ ${removed.join(", ")}` : null,
+  ].filter((part): part is string => part !== null);
+  return parts.length > 0 ? `Mã cũ ${parts.join("; ")}` : null;
+}
+
 /** An item as the activity log compares it: the group by its name. */
 async function itemView(
   tx: Pick<Database, "select">,
-  row: Omit<ItemView, "groupName"> & { groupId: string },
+  row: Omit<ItemView, "groupName" | "unit"> & {
+    groupId: string;
+    unit: string;
+  },
 ): Promise<ItemView> {
   const [group] = await tx
     .select({ name: itemGroup.name })
@@ -236,6 +353,8 @@ async function itemView(
   return {
     name: row.name,
     groupName: group?.name ?? "",
+    unit: row.unit as QuantityUnit,
+    aliases: row.aliases,
     standardWeightKg: row.standardWeightKg,
     dailyRentalPrice: row.dailyRentalPrice,
     lostPrice: row.lostPrice,
@@ -250,24 +369,21 @@ export function createItem(
   input: ItemInput,
 ): Promise<ServiceResult<ItemRow>> {
   return runService(async () => {
-    const code = parseCatalogCode(input.code ?? "");
+    const code = parseItemCode(input.code ?? "");
     const name = requireName(input.name);
-    if (input.unit !== "PIECE" && input.unit !== "KG") {
-      return badRequest(ITEM_MESSAGES.unit);
-    }
+    if (!isQuantityUnit(input.unit)) return badRequest(ITEM_MESSAGES.unit);
     const unit: QuantityUnit = input.unit;
     const rent = price(input.dailyRentalPrice);
-    const weight = checkUnitRules(
-      input.unit,
-      input.standardWeightKg ?? null,
-      rent,
-    );
+    const weight = checkUnitRules(unit, input.standardWeightKg ?? null);
+    const aliases = parseOldCodes(input.aliases ?? []);
     const lost = price(input.lostPrice);
     const damage = price(input.damagePrice);
     await requireActiveGroup(db, input.groupId);
 
     const id = await db.transaction(async (tx) => {
       await claimItemOrKitCode(tx, code);
+      // Same lock: the old codes are checked against the new code too.
+      await claimOldCodes(tx, "", code, aliases);
       const [row] = await tx
         .insert(item)
         .values({
@@ -279,18 +395,20 @@ export function createItem(
           dailyRentalPrice: rent,
           lostPrice: lost,
           damagePrice: damage,
-          searchText: toSearchText(name, code),
+          searchText: itemSearchText(name, code, aliases),
           createdBy: actor.id,
           updatedBy: actor.id,
         })
         .returning({ id: item.id });
       const id = row?.id ?? "";
+      await writeOldCodes(tx, actor, id, aliases);
       await logActivity(tx, actor, {
         action: "CREATE",
         document: { type: "ITEM", id, code },
         summary: joinParts(
           name,
-          unit === "KG" ? "tính theo kg" : "tính theo cái",
+          `tính theo ${QUANTITY_UNIT_LABELS[unit]}`,
+          aliases.length > 0 && `mã cũ ${aliases.join(", ")}`,
         ),
       });
       return id;
@@ -318,7 +436,7 @@ export function updateItem(
       if (!current) return false;
       if (
         input.code !== undefined &&
-        input.code.trim().toUpperCase() !== current.code
+        normalizeItemCode(input.code) !== current.code
       ) {
         throw new ServiceFailure(badRequest(ITEM_MESSAGES.codeFixed));
       }
@@ -326,6 +444,15 @@ export function updateItem(
         throw new ServiceFailure(badRequest(ITEM_MESSAGES.unitFixed));
       }
       const unit = current.unit as QuantityUnit;
+      const currentAliases = (await oldCodesOf(tx, [id])).get(id) ?? [];
+      const aliases =
+        input.aliases === undefined
+          ? currentAliases
+          : parseOldCodes(input.aliases);
+      const aliasesChanged = aliases.join("\n") !== currentAliases.join("\n");
+      if (aliasesChanged) {
+        await claimOldCodes(tx, id, current.code, aliases);
+      }
       const name =
         input.name === undefined ? current.name : requireName(input.name);
       const rent =
@@ -337,7 +464,6 @@ export function updateItem(
         input.standardWeightKg === undefined
           ? current.standardWeightKg
           : input.standardWeightKg,
-        rent,
       );
       if (input.groupId !== undefined && input.groupId !== current.groupId) {
         await requireActiveGroup(tx, input.groupId);
@@ -400,7 +526,7 @@ export function updateItem(
         .update(item)
         .set({
           ...next,
-          searchText: toSearchText(name, current.code),
+          searchText: itemSearchText(name, current.code, aliases),
           ...(input.status === undefined
             ? {}
             : { archivedAt: archivedAt(input.status) }),
@@ -408,17 +534,25 @@ export function updateItem(
           updatedAt: new Date(),
         })
         .where(eq(item.id, id));
+      if (aliasesChanged) await writeOldCodes(tx, actor, id, aliases);
       const changes = diffFields(
         ITEM_FIELDS,
-        await itemView(tx, current),
-        await itemView(tx, next),
+        await itemView(tx, { ...current, aliases: currentAliases }),
+        await itemView(tx, { ...next, unit, aliases }),
       );
-      await logActivity(tx, actor, {
-        action: "UPDATE",
-        document: { type: "ITEM", id, code: current.code },
-        summary: changeSummary(changes),
-        changes,
-      });
+      if (changes.length > 0) {
+        const aliasPhrase = oldCodesPhrase(currentAliases, aliases);
+        const rest = changes.filter((change) => change.field !== "aliases");
+        await logActivity(tx, actor, {
+          action: "UPDATE",
+          document: { type: "ITEM", id, code: current.code },
+          summary: joinParts(
+            aliasPhrase,
+            rest.length > 0 && changeSummary(rest),
+          ),
+          changes,
+        });
+      }
       return true;
     });
     if (!found) return notFound();
@@ -481,4 +615,34 @@ export async function itemsByIds(
 /** "%" and "_" typed by the user are literal characters, not wildcards. */
 export function escapeLike(text: string): string {
   return text.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+/**
+ * The main code of the item a typed code means (design D1): the exact main
+ * code first, then a main code with the same key (other accents, spaces,
+ * case), then an old code. null when nothing matches.
+ */
+export async function resolveItemCode(
+  db: Pick<Database, "select">,
+  typed: string,
+): Promise<string | null> {
+  const code = normalizeItemCode(typed);
+  if (!isValidItemCode(code)) return null;
+  const [exact] = await db
+    .select({ code: item.code })
+    .from(item)
+    .where(eq(item.code, code));
+  if (exact) return exact.code;
+  const key = itemCodeKey(code);
+  const [similar] = await db
+    .select({ code: item.code })
+    .from(item)
+    .where(eq(item.codeKey, key));
+  if (similar) return similar.code;
+  const [old] = await db
+    .select({ code: item.code })
+    .from(itemAlias)
+    .innerJoin(item, eq(item.id, itemAlias.itemId))
+    .where(eq(itemAlias.codeKey, key));
+  return old?.code ?? null;
 }

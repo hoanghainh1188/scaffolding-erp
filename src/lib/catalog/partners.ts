@@ -1,6 +1,17 @@
 // Customers (nhà thầu) and suppliers (nhà cung cấp) for D16
-// (spec partner-directory, design D1, D5, D7).
-import { and, asc, count, eq, ilike, sql, type SQL } from "drizzle-orm";
+// (spec partner-directory, design D1, D5, D7; catalog-extensions D5: sales
+// staff in charge).
+import {
+  and,
+  asc,
+  count,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 
 import type { Database } from "@/db/client";
 import {
@@ -9,6 +20,7 @@ import {
   site,
   supplier,
   supplierCodeSeq,
+  user,
 } from "@/db/schema";
 import {
   CODE_PREFIXES,
@@ -56,11 +68,23 @@ export const PARTNER_MESSAGES = {
   customerInUse: "Nhà thầu đã được dùng nên chỉ ngừng dùng được",
   supplierInUse: "Nhà cung cấp đã được dùng nên chỉ ngừng dùng được",
   customerHasSites: "Ngừng dùng các công trình của nhà thầu này trước",
+  salesUser:
+    "Người phụ trách phải là tài khoản Kinh doanh hoặc Giám đốc đang hoạt động",
   supplierHasOrders: (code: string, orders: string) =>
     `${code} còn đơn thu mua đang xử lý: ${orders}. Đóng hoặc hủy đơn trước`,
 } as const;
 
 export type PartnerKind = "COMPANY" | "PERSON";
+
+/** Roles that may be in charge of a customer (design D5). */
+export const SALES_STAFF_ROLES = ["SALES", "DIRECTOR"] as const;
+
+export interface SalesUser {
+  id: string;
+  name: string;
+  /** false once the account is locked: shown as "Lương (đã khóa)". */
+  active: boolean;
+}
 
 export interface PartnerFilter {
   q?: string;
@@ -145,9 +169,15 @@ export interface CustomerRow {
   address: string | null;
   paymentTermsDays: number;
   note: string | null;
+  salesUser: SalesUser | null;
   status: CatalogStatus;
   /** Active sites of this customer. */
   siteCount: number;
+}
+
+export interface CustomerFilter extends PartnerFilter {
+  /** A user id, or "none" for customers nobody is in charge of. */
+  sales?: string;
 }
 
 export interface CustomerInput {
@@ -159,12 +189,71 @@ export interface CustomerInput {
   address?: string | null;
   paymentTermsDays?: number;
   note?: string | null;
+  /** null removes the person in charge. */
+  salesUserId?: string | null;
   status?: CatalogStatus;
+}
+
+/** Active Sales and Director accounts: who can be put in charge. */
+export async function listSalesStaff(
+  db: Pick<Database, "select">,
+): Promise<SalesUser[]> {
+  const rows = await db
+    .select({ id: user.id, name: user.name })
+    .from(user)
+    .where(
+      and(
+        inArray(user.role, [...SALES_STAFF_ROLES]),
+        eq(user.status, "ACTIVE"),
+      ),
+    )
+    .orderBy(asc(user.name));
+  return rows.map((row) => ({ ...row, active: true }));
+}
+
+/**
+ * The person put in charge, checked and held FOR SHARE so a lock of that
+ * account waits for this change (convention for referenced rows).
+ */
+async function requireSalesUser(
+  tx: Executor,
+  id: string,
+): Promise<{ id: string; name: string }> {
+  const [row] = await tx
+    .select({
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      status: user.status,
+    })
+    .from(user)
+    .where(eq(user.id, id))
+    .for("share");
+  if (
+    !row ||
+    row.status !== "ACTIVE" ||
+    !(SALES_STAFF_ROLES as readonly string[]).includes(row.role)
+  ) {
+    throw new DomainValueError(PARTNER_MESSAGES.salesUser);
+  }
+  return { id: row.id, name: row.name };
+}
+
+async function userName(
+  tx: Pick<Database, "select">,
+  id: string | null,
+): Promise<string | null> {
+  if (id === null) return null;
+  const [row] = await tx
+    .select({ name: user.name })
+    .from(user)
+    .where(eq(user.id, id));
+  return row?.name ?? null;
 }
 
 export async function listCustomers(
   db: Database,
-  filter: PartnerFilter = {},
+  filter: CustomerFilter = {},
 ): Promise<CustomerRow[]> {
   const sites = await db
     .select({ customerId: site.customerId, value: count() })
@@ -172,14 +261,26 @@ export async function listCustomers(
     .where(eq(site.status, "ACTIVE"))
     .groupBy(site.customerId);
   const siteCount = new Map(sites.map((row) => [row.customerId, row.value]));
+  const conditions = searchConditions(
+    filter,
+    customer.status,
+    customer.searchText,
+  );
+  if (filter.sales === "none") conditions.push(isNull(customer.salesUserId));
+  else if (filter.sales) {
+    conditions.push(eq(customer.salesUserId, filter.sales));
+  }
   const rows = await db
-    .select()
+    .select({
+      row: customer,
+      salesName: user.name,
+      salesStatus: user.status,
+    })
     .from(customer)
-    .where(
-      and(...searchConditions(filter, customer.status, customer.searchText)),
-    )
+    .leftJoin(user, eq(user.id, customer.salesUserId))
+    .where(and(...conditions))
     .orderBy(asc(customer.name));
-  return rows.map((row) => ({
+  return rows.map(({ row, salesName, salesStatus }) => ({
     id: row.id,
     code: row.code,
     kind: row.kind as PartnerKind,
@@ -190,6 +291,14 @@ export async function listCustomers(
     address: row.address,
     paymentTermsDays: row.paymentTermsDays,
     note: row.note,
+    salesUser:
+      row.salesUserId === null
+        ? null
+        : {
+            id: row.salesUserId,
+            name: salesName ?? "",
+            active: salesStatus === "ACTIVE",
+          },
     status: row.status as CatalogStatus,
     siteCount: siteCount.get(row.id) ?? 0,
   }));
@@ -257,12 +366,16 @@ export function createCustomer(
   return runService(async () => {
     const values = customerValues(input);
     const id = await db.transaction(async (tx) => {
+      const sales = input.salesUserId
+        ? await requireSalesUser(tx, input.salesUserId)
+        : null;
       const code = await nextCode(tx, customerCodeSeq, CODE_PREFIXES.customer);
       const [row] = await tx
         .insert(customer)
         .values({
           ...values,
           code,
+          salesUserId: sales?.id ?? null,
           searchText: toSearchText(
             values.name,
             code,
@@ -278,7 +391,7 @@ export function createCustomer(
       await logActivity(tx, actor, {
         action: "CREATE",
         document: { type: "CUSTOMER", id, code },
-        summary: joinParts(values.name, values.contactName),
+        summary: joinParts(values.name, values.contactName, sales?.name),
       });
       return id;
     });
@@ -305,6 +418,15 @@ export function updateCustomer(
         .for("update");
       if (!current) return false;
       const values = customerValues(input, current);
+      // Only a new choice is checked: a person locked after being put in
+      // charge stays until someone changes it (spec partner-directory).
+      const salesUserId =
+        input.salesUserId === undefined
+          ? current.salesUserId
+          : input.salesUserId;
+      if (salesUserId !== null && salesUserId !== current.salesUserId) {
+        await requireSalesUser(tx, salesUserId);
+      }
       if (input.status === "ARCHIVED" && current.status === "ACTIVE") {
         const [active] = await tx
           .select({ id: site.id })
@@ -319,6 +441,7 @@ export function updateCustomer(
         .update(customer)
         .set({
           ...values,
+          salesUserId,
           searchText: toSearchText(
             values.name,
             current.code,
@@ -331,10 +454,18 @@ export function updateCustomer(
           updatedAt: new Date(),
         })
         .where(eq(customer.id, id));
-      const changes = diffFields(CUSTOMER_FIELDS, current, {
-        ...values,
-        status: input.status ?? current.status,
-      });
+      const changes = diffFields(
+        CUSTOMER_FIELDS,
+        {
+          ...current,
+          salesUserName: await userName(tx, current.salesUserId),
+        },
+        {
+          ...values,
+          salesUserName: await userName(tx, salesUserId),
+          status: input.status ?? current.status,
+        },
+      );
       await logActivity(tx, actor, {
         action: "UPDATE",
         document: { type: "CUSTOMER", id, code: current.code },

@@ -5,6 +5,7 @@ import {
   EMPTY_SPLIT,
   isOpenLine,
   linesAfterTrip,
+  needsWeighing,
   openLines,
   orderCommandAfterReceipt,
   ReceiptConflictError,
@@ -190,6 +191,76 @@ describe("checkReceiptLines", () => {
         [{ ...line, weighedKgMilli: 1_987_500 }],
       ),
     ).not.toThrow();
+  });
+
+  it("accepts metres with decimals and refuses half a bundle (D2)", () => {
+    const ong: ReceivingLine = {
+      ...KHUNG,
+      orderLineId: "ong",
+      itemCode: "ONG-49",
+      itemUnit: "METER",
+      lineUnit: "METER",
+      standardWeightKg: "3.560",
+      orderedMilli: 500 * K,
+    };
+    const ty: ReceivingLine = {
+      ...KHUNG,
+      orderLineId: "ty",
+      itemCode: "TY-REN",
+      itemUnit: "BUNDLE",
+      lineUnit: "BUNDLE",
+      standardWeightKg: "25.000",
+      orderedMilli: 40 * K,
+    };
+    expect(() =>
+      checkReceiptLines(
+        "PO-1",
+        "USED",
+        [ong, ty],
+        [
+          counted(ong, 120_500, { GOOD: 110_250, SCRAP: 10_250 }),
+          counted(ty, 40 * K, { GOOD: 40 * K }),
+        ],
+      ),
+    ).not.toThrow();
+    expect(
+      failure(() =>
+        checkReceiptLines(
+          "PO-1",
+          "USED",
+          [ong, ty],
+          [
+            counted(ong, 120_500, { GOOD: 120_500 }),
+            counted(ty, 39_500, { GOOD: 39_500 }),
+          ],
+        ),
+      ),
+    ).toEqual({
+      message: PURCHASE_MESSAGES.wholePieces("TY-REN", "bó"),
+      field: "lines.1.quantity",
+    });
+  });
+
+  it("needs the weighed kg of a kg line of a bundle or metre item", () => {
+    expect(needsWeighing({ itemUnit: "BUNDLE", lineUnit: "KG" })).toBe(true);
+    expect(needsWeighing({ itemUnit: "METER", lineUnit: "KG" })).toBe(true);
+    expect(needsWeighing({ itemUnit: "METER", lineUnit: "METER" })).toBe(false);
+    expect(needsWeighing({ itemUnit: "KG", lineUnit: "KG" })).toBe(false);
+    const byKg: ReceivingLine = {
+      ...KHUNG,
+      itemCode: "TY-REN",
+      itemUnit: "BUNDLE",
+      lineUnit: "KG",
+      standardWeightKg: "25.000",
+      orderedMilli: 1_000_000,
+    };
+    const line = counted(byKg, 40 * K, { GOOD: 40 * K });
+    expect(
+      failure(() => checkReceiptLines("PO-1", "USED", [byKg], [line])),
+    ).toEqual({
+      message: "Nhập số kg cân thực tế",
+      field: "lines.0.weighedKg",
+    });
   });
 
   it("refuses a split that does not add up", () => {

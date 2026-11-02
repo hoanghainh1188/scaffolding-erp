@@ -3,13 +3,15 @@ import { asc, count, eq } from "drizzle-orm";
 import type { Database } from "@/db/client";
 import { item, itemGroup } from "@/db/schema";
 import { diffFields } from "@/domain/activity-changes";
-import { changeSummary } from "@/domain/activity-summary";
+import { changeSummary, joinParts } from "@/domain/activity-summary";
 import { toSearchText } from "@/domain/search-text";
-import { GROUP_FIELDS } from "@/lib/activity/fields";
+import { CATEGORY_LABELS, GROUP_FIELDS } from "@/lib/activity/fields";
 import { logActivity } from "@/lib/activity/log";
 
+import { ITEM_CATEGORIES, type ItemCategory } from "./items";
 import {
   archivedAt,
+  badRequest,
   conflict,
   isForeignKeyViolation,
   isUniqueViolation,
@@ -17,6 +19,7 @@ import {
   ok,
   requireName,
   runService,
+  ServiceFailure,
   type Actor,
   type CatalogStatus,
   type ServiceResult,
@@ -25,6 +28,7 @@ import {
 export const GROUP_MESSAGES = {
   nameTaken: "Tên nhóm đã có",
   inUse: "Nhóm hàng đã được dùng nên chỉ ngừng dùng được",
+  category: "Chọn phân loại Thiết bị hoặc Vật tư",
 } as const;
 
 const NAME_MAX = 60;
@@ -32,6 +36,8 @@ const NAME_MAX = 60;
 export interface GroupRow {
   id: string;
   name: string;
+  /** Thiết bị or Vật tư (catalog-extensions D3). */
+  category: ItemCategory;
   sortOrder: number;
   status: CatalogStatus;
   /** Active items in the group. */
@@ -52,6 +58,7 @@ export async function listGroups(db: Database): Promise<GroupRow[]> {
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
+    category: row.category as ItemCategory,
     sortOrder: row.sortOrder,
     status: row.status as CatalogStatus,
     itemCount: byGroup.get(row.id) ?? 0,
@@ -60,8 +67,17 @@ export async function listGroups(db: Database): Promise<GroupRow[]> {
 
 export interface GroupInput {
   name?: string;
+  category?: string;
   sortOrder?: number;
   status?: CatalogStatus;
+}
+
+function parseCategory(value: string | undefined): ItemCategory | undefined {
+  if (value === undefined) return undefined;
+  if (!(ITEM_CATEGORIES as readonly string[]).includes(value)) {
+    throw new ServiceFailure(badRequest(GROUP_MESSAGES.category));
+  }
+  return value as ItemCategory;
 }
 
 export function createGroup(
@@ -71,6 +87,7 @@ export function createGroup(
 ): Promise<ServiceResult<{ id: string }>> {
   return runService(async () => {
     const name = requireName(input.name, NAME_MAX);
+    const category = parseCategory(input.category) ?? "EQUIPMENT";
     try {
       const id = await db.transaction(async (tx) => {
         const [row] = await tx
@@ -78,6 +95,7 @@ export function createGroup(
           .values({
             name,
             nameKey: toSearchText(name),
+            category,
             sortOrder: input.sortOrder ?? 0,
             createdBy: actor.id,
             updatedBy: actor.id,
@@ -88,7 +106,7 @@ export function createGroup(
         await logActivity(tx, actor, {
           action: "CREATE",
           document: { type: "ITEM_GROUP", id, code: name },
-          summary: `Nhóm hàng ${name}`,
+          summary: joinParts(`Nhóm hàng ${name}`, CATEGORY_LABELS[category]),
         });
         return id;
       });
@@ -109,6 +127,7 @@ export function updateGroup(
   return runService(async () => {
     const name =
       input.name === undefined ? undefined : requireName(input.name, NAME_MAX);
+    const category = parseCategory(input.category);
     try {
       const found = await db.transaction(async (tx) => {
         const [current] = await tx
@@ -119,6 +138,7 @@ export function updateGroup(
         if (!current) return false;
         const next = {
           name: name ?? current.name,
+          category: category ?? current.category,
           sortOrder: input.sortOrder ?? current.sortOrder,
           status: input.status ?? current.status,
         };
@@ -128,6 +148,7 @@ export function updateGroup(
             ...(name === undefined
               ? {}
               : { name, nameKey: toSearchText(name) }),
+            ...(category === undefined ? {} : { category }),
             ...(input.sortOrder === undefined
               ? {}
               : { sortOrder: input.sortOrder }),

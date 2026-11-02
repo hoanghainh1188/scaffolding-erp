@@ -1,3 +1,7 @@
+import { PROVINCES, PROVINCE_MESSAGES } from "@/domain/province";
+import type { SalesUser } from "@/lib/catalog/partners";
+import { dict } from "@/locales";
+
 import type { FormField } from "./record-form-sheet";
 
 const KIND_OPTIONS = [
@@ -25,6 +29,38 @@ export const CUSTOMER_FIELDS: FormField[] = [
   { name: "note", label: "Ghi chú", kind: "textarea" },
 ];
 
+/**
+ * The customer form with the sales staff picker (catalog-extensions D5).
+ * `current` keeps a person locked since, so saving other changes works.
+ */
+export function customerFields(
+  staff: readonly SalesUser[],
+  current: SalesUser | null = null,
+): FormField[] {
+  const text = dict.catalog.salesStaff;
+  const options = staff.map((person) => ({
+    value: person.id,
+    label: person.name,
+  }));
+  if (current && !staff.some((person) => person.id === current.id)) {
+    options.unshift({
+      value: current.id,
+      label: current.active ? current.name : text.locked(current.name),
+    });
+  }
+  return [
+    ...CUSTOMER_FIELDS,
+    {
+      name: "salesUserId",
+      label: text.label,
+      kind: "select",
+      placeholder: text.noneOption,
+      options,
+      hint: "Chỉ để lọc và báo cáo, không giới hạn ai xem được nhà thầu.",
+    },
+  ];
+}
+
 export const SUPPLIER_FIELDS: FormField[] = [
   { name: "kind", label: "Loại", kind: "select", options: KIND_OPTIONS },
   { name: "name", label: "Tên nhà cung cấp", required: true },
@@ -49,6 +85,18 @@ export const SUPPLIER_FIELDS: FormField[] = [
 
 export const SITE_FIELDS: FormField[] = [
   { name: "name", label: "Tên công trình", required: true },
+  {
+    name: "province",
+    label: dict.catalog.provinces.label,
+    kind: "search-select",
+    placeholder: dict.catalog.provinces.choose,
+    searchLabel: dict.catalog.provinces.search,
+    requiredMessage: PROVINCE_MESSAGES.required,
+    options: PROVINCES.map((province) => ({
+      value: province.code,
+      label: province.name,
+    })),
+  },
   { name: "address", label: "Địa chỉ", kind: "textarea" },
 ];
 

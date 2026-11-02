@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DomainValueError } from "@/domain/errors";
-import { parseCatalogCode } from "@/domain/item-code";
+import { parseItemCode } from "@/domain/item-code";
 import { kitTotals } from "@/domain/kit";
 import { toMoney } from "@/domain/money";
 import { quantityFromDb, toQuantity } from "@/domain/quantity";
@@ -83,7 +83,7 @@ export function KitEditorDialog({ parts, kit, trigger }: KitEditorDialogProps) {
       body = {
         name,
         components: lines,
-        ...(editing ? {} : { code: parseCatalogCode(code) }),
+        ...(editing ? {} : { code: parseItemCode(code) }),
       };
     } catch (cause: unknown) {
       if (cause instanceof DomainValueError) {

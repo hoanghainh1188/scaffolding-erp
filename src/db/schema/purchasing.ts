@@ -19,6 +19,7 @@ import {
 
 import { user } from "./auth";
 import { item, supplier } from "./catalog";
+import { UNIT_SQL } from "./units";
 
 const userRef = (name: string) =>
   text(name).references(() => user.id, { onDelete: "restrict" });
@@ -99,10 +100,7 @@ export const purchaseOrderLine = pgTable(
     unitPrice: bigint("unit_price", { mode: "number" }).notNull(),
   },
   (table) => [
-    check(
-      "purchase_order_line_unit_check",
-      sql`${table.unit} in ('PIECE', 'KG')`,
-    ),
+    check("purchase_order_line_unit_check", sql`${table.unit} in ${UNIT_SQL}`),
     check(
       "purchase_order_line_values_check",
       sql`${table.quantity} > 0 and ${table.unitPrice} >= 0`,

@@ -1,6 +1,7 @@
 import { formatMoney, toMoney } from "@/domain/money";
 import {
   QUANTITY_UNIT_LABELS,
+  QUANTITY_UNITS,
   formatQuantity,
   toQuantity,
   type QuantityUnit,
@@ -14,6 +15,20 @@ export function formatStock(milli: number, unit: QuantityUnit): string {
 /** "1.240 cái", "12.850,5 kg". */
 export function formatStockWithUnit(milli: number, unit: QuantityUnit): string {
   return `${formatStock(milli, unit)} ${QUANTITY_UNIT_LABELS[unit]}`;
+}
+
+/**
+ * "706 cái", "141 cái · 20 m": one figure per unit, in catalog order;
+ * `empty` when every unit is zero.
+ */
+export function formatByUnit(
+  byUnit: Readonly<Partial<Record<QuantityUnit, number>>>,
+  empty = `0 ${QUANTITY_UNIT_LABELS.PIECE}`,
+): string {
+  const parts = QUANTITY_UNITS.filter((unit) => (byUnit[unit] ?? 0) !== 0).map(
+    (unit) => formatStockWithUnit(byUnit[unit] ?? 0, unit),
+  );
+  return parts.length ? parts.join(" · ") : empty;
 }
 
 /** "195.282 ₫", or "–". */

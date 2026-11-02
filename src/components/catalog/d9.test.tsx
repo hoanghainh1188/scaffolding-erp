@@ -7,11 +7,13 @@ import type { KitRow } from "@/lib/catalog/kits";
 
 import { ItemFormSheet } from "./item-form-sheet";
 import { ItemKitsPanel } from "./item-kits-panel";
+import { ItemsFilters } from "./items-filters";
 import { ItemsHeader } from "./items-header";
 import { ItemsTable } from "./items-table";
 
+const replace = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ refresh: vi.fn(), replace }),
   usePathname: () => "/catalog/items",
   useSearchParams: () => new URLSearchParams(),
 }));
@@ -29,7 +31,10 @@ const row = (
   name,
   groupId: groupName,
   groupName,
+  category: "EQUIPMENT",
   unit,
+  unitLabel: { PIECE: "cái", METER: "m", KG: "kg" }[unit as string] ?? unit,
+  aliases: [],
   standardWeightKg: weight,
   dailyRentalPrice: daily,
   lostPrice: null,
@@ -169,28 +174,70 @@ describe("D9 item form", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("refuses a code with a space", async () => {
+  it("refuses a code with a slash", async () => {
     const { user, fetch } = await openForm();
-    await user.type(screen.getByLabelText("Mã hàng"), "GG K17");
-    await user.clear(screen.getByLabelText("Trọng lượng chuẩn (kg/cái)"));
+    await user.type(screen.getByLabelText("Mã hàng"), "H1/7");
+    await user.clear(screen.getByLabelText("Trọng lượng chuẩn (kg / cái)"));
     await user.type(
-      screen.getByLabelText("Trọng lượng chuẩn (kg/cái)"),
+      screen.getByLabelText("Trọng lượng chuẩn (kg / cái)"),
       "13,5{Tab}",
     );
     await user.click(
       screen.getAllByRole("button", { name: "Thêm vật tư" }).at(-1)!,
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Mã chỉ gồm chữ in hoa không dấu, số và dấu gạch ngang",
+      "Mã chỉ gồm chữ in hoa, số và các dấu , * + - hoặc khoảng trắng",
     );
     expect(fetch).not.toHaveBeenCalled();
   });
 
   it("shows the monthly rent as daily × 30 while typing", async () => {
     const { user } = await openForm();
-    await user.type(screen.getByLabelText("Giá thuê / ngày (₫)"), "1200");
+    await user.type(screen.getByLabelText("Giá thuê / ngày (₫/cái)"), "1200");
     expect(
       screen.getByText(/Giá thuê \/ tháng: 36\.000 ₫/),
     ).toBeInTheDocument();
+  });
+});
+
+describe("D9 catalog-extensions", () => {
+  it("labels the weight per metre once m is chosen", async () => {
+    const user = userEvent.setup();
+    render(<ItemFormSheet groups={[{ id: "g1", name: "Thép ống" }]} />);
+    await user.click(screen.getByRole("button", { name: "Thêm vật tư" }));
+    await user.selectOptions(screen.getByLabelText("Đơn vị tính"), "METER");
+    expect(
+      screen.getByLabelText("Trọng lượng chuẩn (kg / m)"),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Giá thuê / ngày (₫/m)")).toBeInTheDocument();
+  });
+
+  it("shows ONG-49 rent per metre and old codes under the code", () => {
+    const pipe = {
+      ...row("ONG-49", "Thép ống D49", "Thép ống", "3.560", 150, "METER"),
+      aliases: ["ONG49", "D49"],
+    };
+    render(<ItemsTable items={[pipe]} query="" selectedCode={null} />);
+    const line = rowOf("ONG-49");
+    expect(within(line).getByText("150 ₫/m")).toBeInTheDocument();
+    expect(within(line).getByText("4.500 ₫/m")).toBeInTheDocument();
+    expect(within(line).getByText("3,56 kg/m")).toBeInTheDocument();
+    expect(within(line).getByText("Mã cũ: ONG49, D49")).toBeInTheDocument();
+  });
+
+  it("puts ?category=MATERIAL on the URL for Vật tư", async () => {
+    const user = userEvent.setup();
+    replace.mockClear();
+    render(
+      <ItemsFilters
+        groups={[
+          { id: "g1", name: "Giàn giáo", category: "EQUIPMENT" },
+          { id: "g2", name: "Que hàn", category: "MATERIAL" },
+        ]}
+        placeholder="Tìm vật tư"
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Vật tư" }));
+    expect(replace).toHaveBeenCalledWith("/catalog/items?category=MATERIAL");
   });
 });

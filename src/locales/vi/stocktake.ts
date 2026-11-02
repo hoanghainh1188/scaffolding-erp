@@ -25,8 +25,8 @@ export const stocktake = {
       "Vui lòng nhập số liệu kiểm đếm cho ít nhất một mã hàng trước khi gửi duyệt",
     missingCondition: (conditionName: string) =>
       `Vui lòng nhập số lượng cho tình trạng ${conditionName} (nhập 0 nếu không có)`,
-    wholePieces: (code: string) =>
-      `${code} quản lý theo cái, số lượng phải là số nguyên`,
+    wholePieces: (code: string, unit = "cái") =>
+      `${code} quản lý theo ${unit}, số lượng phải là số nguyên`,
     negative: (code: string) => `${code}: số lượng không được âm`,
     duplicateItem: (code: string) => `${code} gửi hai lần trong một lần gửi`,
     duplicateCondition: (code: string, conditionName: string) =>

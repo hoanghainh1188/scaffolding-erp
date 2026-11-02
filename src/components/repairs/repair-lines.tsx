@@ -8,7 +8,11 @@ import { FieldMessage } from "@/components/purchasing/field-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatMoney, type Money } from "@/domain/money";
-import { formatQuantity, toQuantity } from "@/domain/quantity";
+import {
+  QUANTITY_UNIT_LABELS,
+  formatQuantity,
+  toQuantity,
+} from "@/domain/quantity";
 import type { AwaitingItem } from "@/lib/repairs/queries";
 
 export interface DraftLine {
@@ -159,7 +163,7 @@ export function RepairLines({
                       <span className="block font-semibold">{name}</span>
                       <span className="text-caption text-muted-foreground">
                         {item
-                          ? `đang chờ sửa ${formatQuantity(toQuantity(item.onHandMilli, "PIECE"))} cái`
+                          ? `đang chờ sửa ${formatQuantity(toQuantity(item.onHandMilli, item.unit))} ${QUANTITY_UNIT_LABELS[item.unit]}`
                           : code}
                       </span>
                       {rowError ? (

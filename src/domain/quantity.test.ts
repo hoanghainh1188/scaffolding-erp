@@ -3,14 +3,20 @@ import { describe, expect, it } from "vitest";
 import { DomainValueError } from "./errors";
 import {
   MAX_QUANTITY_MILLI,
+  QUANTITY_UNITS,
+  QUANTITY_UNIT_LABELS,
   addQuantity,
   formatQuantity,
+  formatByUnit,
   formatQuantityForInput,
+  hasStandardWeight,
+  isCountUnit,
   parseQuantity,
   quantityFromDb,
   quantityFromNumber,
   quantityToDb,
   subtractQuantity,
+  sumByUnit,
   toQuantity,
 } from "./quantity";
 
@@ -195,5 +201,65 @@ describe("database numeric(14,3)", () => {
     expect(quantityToDb(kg(250.5))).toBe("250.500");
     expect(quantityToDb(pcs(0))).toBe("0.000");
     expect(quantityToDb(kg(-0.001))).toBe("-0.001");
+  });
+});
+
+describe("units (catalog-extensions D2)", () => {
+  it("has 7 count units and 2 measure units with labels", () => {
+    expect(QUANTITY_UNITS).toHaveLength(9);
+    expect(QUANTITY_UNITS.filter(isCountUnit)).toEqual([
+      "PIECE",
+      "BAR",
+      "BUNDLE",
+      "BASKET",
+      "ROLL",
+      "BOX",
+      "CARTON",
+    ]);
+    expect(QUANTITY_UNIT_LABELS.BUNDLE).toBe("bó");
+    expect(QUANTITY_UNIT_LABELS.METER).toBe("m");
+  });
+
+  it("gives a standard weight to every unit but kg", () => {
+    expect(QUANTITY_UNITS.filter((unit) => !hasStandardWeight(unit))).toEqual([
+      "KG",
+    ]);
+  });
+
+  it("refuses 2,5 bó", () => {
+    expect(() => parseQuantity("2,5", "BUNDLE")).toThrow(
+      "Số lượng bó phải là số nguyên",
+    );
+    expect(() => quantityFromNumber(2.5, "BUNDLE")).toThrow(
+      "Số lượng bó phải là số nguyên",
+    );
+  });
+
+  it("accepts 12,345 m", () => {
+    expect(parseQuantity("12,345", "METER")).toEqual({
+      unit: "METER",
+      milli: 12345,
+    });
+  });
+});
+
+describe("totals per unit (0.2 #47)", () => {
+  it("sums cái and bó apart, in unit order", () => {
+    const totals = sumByUnit([
+      { unit: "BUNDLE", milli: 4000 },
+      { unit: "PIECE", milli: 30_000 },
+      { unit: "PIECE", milli: 10_000 },
+      { unit: "BUNDLE", milli: 5000 },
+    ]);
+    expect(totals).toEqual([
+      { unit: "PIECE", milli: 40_000 },
+      { unit: "BUNDLE", milli: 9000 },
+    ]);
+    expect(formatByUnit(totals)).toBe("40 cái, 9 bó");
+  });
+
+  it("shows 0 cái when empty and keeps zero units it was given", () => {
+    expect(formatByUnit([])).toBe("0 cái");
+    expect(formatByUnit(sumByUnit([{ unit: "BAR", milli: 0 }]))).toBe("0 cây");
   });
 });

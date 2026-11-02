@@ -138,6 +138,7 @@ export function RepairForm({
             itemCode: row.input.itemCode,
             itemName:
               facts.get(row.input.itemId)?.itemName ?? row.input.itemCode,
+            unit: row.input.unit,
             goodMilli: row.input.goodMilli,
             scrapMilli: row.input.scrapMilli,
             repairCost: row.input.repairCost,
@@ -449,8 +450,8 @@ export function RepairForm({
         </section>
         <RepairSummary
           cost={totals.cost}
-          goodMilli={totals.goodMilli}
-          scrapMilli={totals.scrapMilli}
+          good={totals.good}
+          scrap={totals.scrap}
           loss={loss}
         />
       </div>

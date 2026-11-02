@@ -8,8 +8,15 @@ import {
   type AllocationMethod,
 } from "@/domain/landed-cost";
 import { parseMoney, toMoney, type Money } from "@/domain/money";
-import { estimatedPieces, orderLineAmount } from "@/domain/purchase-order";
-import { parseQuantity, type QuantityUnit } from "@/domain/quantity";
+import { estimatedUnitsMilli, orderLineAmount } from "@/domain/purchase-order";
+import {
+  formatQuantity,
+  hasStandardWeight,
+  parseQuantity,
+  QUANTITY_UNIT_LABELS,
+  toQuantity,
+  type QuantityUnit,
+} from "@/domain/quantity";
 
 export interface ItemChoice {
   id: string;
@@ -39,8 +46,8 @@ export interface LinePreview {
   amount: Money | null;
   allocated: Money | null;
   unitCost: Money | null;
-  /** "≈ 148 cái" for a kg line of a piece item. */
-  pieces: number | null;
+  /** "148 cái", "61,797 m": units in a kg line of a weighted item. */
+  estimate: string | null;
 }
 
 export interface OrderPreview {
@@ -71,6 +78,33 @@ export function readMoney(text: string): Money | null {
   if (text.trim() === "") return null;
   const parsed = tryParse(() => parseMoney(text));
   return parsed !== null && parsed >= 0 ? parsed : null;
+}
+
+/**
+ * The unit shown next to a quantity or price ("(kg)", "/m"): none for cái,
+ * which the item name already implies, the label for every other unit.
+ */
+export function unitHint(unit: QuantityUnit): string | null {
+  const label = QUANTITY_UNIT_LABELS[unit];
+  return label === QUANTITY_UNIT_LABELS.PIECE ? null : label;
+}
+
+function estimateOf(
+  lineUnit: QuantityUnit,
+  choice: ItemChoice | null,
+  quantityMilli: number | null,
+): string | null {
+  if (!choice || quantityMilli === null) return null;
+  if (hasStandardWeight(lineUnit) || !hasStandardWeight(choice.unit)) {
+    return null;
+  }
+  const milli = estimatedUnitsMilli(
+    quantityMilli,
+    choice.standardWeightKg,
+    choice.unit,
+  );
+  if (milli === null) return null;
+  return `${formatQuantity(toQuantity(milli, choice.unit))} ${QUANTITY_UNIT_LABELS[choice.unit]}`;
 }
 
 export function previewOrder(
@@ -133,12 +167,7 @@ export function previewOrder(
           part !== null && row.amount !== null && row.quantityMilli !== null
             ? landedUnitCost(row.amount, part, row.quantityMilli)
             : null,
-        pieces:
-          row.line.unit === "KG" &&
-          row.choice?.unit === "PIECE" &&
-          row.quantityMilli !== null
-            ? estimatedPieces(row.quantityMilli, row.choice.standardWeightKg)
-            : null,
+        estimate: estimateOf(row.line.unit, row.choice, row.quantityMilli),
       };
     }),
     goods,

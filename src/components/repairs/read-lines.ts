@@ -79,7 +79,7 @@ export function readLines(
       const candidate: RepairLineInput = {
         itemId: line.itemId,
         itemCode: code,
-        unit: "PIECE",
+        unit: facts.get(line.itemId)?.unit ?? "PIECE",
         takenMilli: taken,
         goodMilli: good,
         scrapMilli: scrap,

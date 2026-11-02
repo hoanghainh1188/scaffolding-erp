@@ -3,7 +3,11 @@
 import { formatBusinessDate, type BusinessDate } from "./business-date";
 import { CONDITION_LABELS, type Condition } from "./condition";
 import { DomainValueError } from "./errors";
-import type { QuantityUnit } from "./quantity";
+import {
+  isCountUnit,
+  QUANTITY_UNIT_LABELS,
+  type QuantityUnit,
+} from "./quantity";
 
 export const MOVEMENTS = [
   "OPENING",
@@ -48,8 +52,8 @@ export const MOVEMENT_MESSAGES = {
   revalueQuantity: "Dòng điều chỉnh giá không có số lượng",
   inboundSign: "Dòng nhập phải có số lượng dương",
   outboundSign: "Dòng xuất phải có số lượng âm",
-  wholePieces: (code: string) =>
-    `${code} tính theo cái, số lượng phải là số nguyên`,
+  wholePieces: (code: string, unit = "cái") =>
+    `${code} tính theo ${unit}, số lượng phải là số nguyên`,
   amountMissing: "Dòng làm đổi giá vốn phải có giá trị",
   amountNotAllowed:
     "Chỉ tồn đầu kỳ, nhập mua, nhập sau sửa, điều chỉnh giá mới có giá trị",
@@ -87,8 +91,13 @@ export function assertMovementLine(line: MovementLineCheck): void {
   if (!isInbound(line.movement) && line.quantityMilli > 0) {
     throw new DomainValueError(MOVEMENT_MESSAGES.outboundSign);
   }
-  if (line.unit === "PIECE" && line.quantityMilli % 1000 !== 0) {
-    throw new DomainValueError(MOVEMENT_MESSAGES.wholePieces(line.itemCode));
+  if (isCountUnit(line.unit) && line.quantityMilli % 1000 !== 0) {
+    throw new DomainValueError(
+      MOVEMENT_MESSAGES.wholePieces(
+        line.itemCode,
+        QUANTITY_UNIT_LABELS[line.unit],
+      ),
+    );
   }
   if (changesAverage(line.movement) && !line.hasAmount) {
     throw new DomainValueError(MOVEMENT_MESSAGES.amountMissing);

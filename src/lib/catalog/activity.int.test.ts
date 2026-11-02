@@ -150,6 +150,7 @@ describe("customers and sites", () => {
     if (!created.ok) throw new Error(created.error);
     const owner = created.data;
     const place = await createSite(ctx.db, lanphuong, {
+      province: "HN",
       name: "An Phú – Block B",
       address: "Hoài Đức",
       customerId: owner.id,

@@ -2,7 +2,7 @@ import { ConditionBadge } from "@/components/domain/condition-badge";
 import { formatMoney, toMoney } from "@/domain/money";
 import type { StockCards as Cards } from "@/lib/inventory/stock";
 
-import { formatStock } from "./format";
+import { formatByUnit, formatStock } from "./format";
 
 /** The three figures over D10 (spec stock-views "Thẻ số đầu D10"). */
 export function StockCards({ cards }: { cards: Cards }) {
@@ -35,7 +35,7 @@ export function StockCards({ cards }: { cards: Cards }) {
       >
         <ConditionBadge condition="NEEDS_REPAIR" className="self-start" />
         <p data-mask className="font-display text-h1 tabular-nums">
-          {formatStock(cards.needsRepairPieces, "PIECE")} cái
+          {formatByUnit(cards.needsRepair)}
         </p>
         <p className="text-sm text-muted-foreground">Tại bãi và xưởng</p>
       </section>
@@ -48,8 +48,8 @@ export function StockCards({ cards }: { cards: Cards }) {
           {formatStock(cards.scrapKgMilli, "KG")} kg
         </p>
         <p data-mask className="text-sm text-muted-foreground">
-          {cards.convertedPieces > 0
-            ? `gồm ${formatStock(cards.convertedKgMilli, "KG")} kg quy đổi từ ${formatStock(cards.convertedPieces, "PIECE")} cái`
+          {Object.values(cards.converted).some((milli) => milli !== 0)
+            ? `gồm ${formatStock(cards.convertedKgMilli, "KG")} kg quy đổi từ ${formatByUnit(cards.converted)}`
             : "Phế liệu tại bãi"}
         </p>
       </section>

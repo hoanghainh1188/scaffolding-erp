@@ -53,7 +53,7 @@ describe("seedCatalog", () => {
     const first = await seedCatalog(ctx.db, actor);
     expect(first).toBeGreaterThan(0);
     expect(await seedCatalog(ctx.db, actor)).toBe(0);
-    expect(await ctx.db.select().from(item)).toHaveLength(8);
+    expect(await ctx.db.select().from(item)).toHaveLength(15);
     expect(await ctx.db.select().from(kit)).toHaveLength(1);
     expect(await ctx.db.select().from(site)).toHaveLength(2);
     expect(await ctx.db.select().from(supplier)).toHaveLength(2);
@@ -140,9 +140,9 @@ describe("groups and items", () => {
       await createItem(ctx.db, actor, {
         ...base,
         groupId,
-        unit: "BOX" as never,
+        unit: "LITRE" as never,
       }),
-    ).toMatchObject({ error: "Chọn đơn vị cái hoặc kg" });
+    ).toMatchObject({ error: "Chọn đơn vị của vật tư" });
   });
 
   it("refuses a kg item with a weight and a negative price", async () => {
@@ -213,7 +213,9 @@ describe("kits", () => {
 
 describe("sites and locations", () => {
   it("needs a customer, keeps location codes, refuses SITE rows and duplicates", async () => {
-    expect(await createSite(ctx.db, actor, { name: "X" })).toMatchObject({
+    expect(
+      await createSite(ctx.db, actor, { name: "X", province: "HN" }),
+    ).toMatchObject({
       status: 400,
       error: "Chọn nhà thầu của công trình",
     });
@@ -241,6 +243,7 @@ describe("sites and locations", () => {
       name: "Minh Phát",
     });
     const place = await createSite(ctx.db, actor, {
+      province: "HN",
       name: "An Phú",
       customerId: owner.ok ? owner.data.id : "",
     });

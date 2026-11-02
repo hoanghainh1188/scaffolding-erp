@@ -9,8 +9,8 @@ export const receiving = {
     continueReceiving: "Tiếp tục nhập",
   },
   anomalies: {
-    piecesOver: (got: string, rest: string) =>
-      `Số lượng nhận (${got} cái) vượt quá số lượng còn lại trên đơn (${rest} cái). Bạn có chắc chắn muốn nhập không?`,
+    piecesOver: (got: string, rest: string, unit = "cái") =>
+      `Số lượng nhận (${got} ${unit}) vượt quá số lượng còn lại trên đơn (${rest} ${unit}). Bạn có chắc chắn muốn nhập không?`,
     kgOver: (got: string, rest: string) =>
       `Khối lượng nhận (${got} kg) vượt quá số lượng còn lại trên đơn (${rest} kg). Bạn có chắc chắn muốn nhập không?`,
     costsOver: (trip: string, expected: string) =>

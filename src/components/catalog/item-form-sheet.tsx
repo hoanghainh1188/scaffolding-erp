@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { QuantityInput } from "@/components/domain/quantity-input";
@@ -16,9 +16,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { DomainValueError } from "@/domain/errors";
-import { parseCatalogCode } from "@/domain/item-code";
+import { normalizeItemCode, parseItemCode } from "@/domain/item-code";
 import { formatMoneyForInput, parseMoney, toMoney } from "@/domain/money";
 import {
+  COUNT_UNITS,
+  MEASURE_UNITS,
+  QUANTITY_UNIT_LABELS,
+  hasStandardWeight,
   quantityFromDb,
   quantityToDb,
   toQuantity,
@@ -26,7 +30,8 @@ import {
   type QuantityUnit,
 } from "@/domain/quantity";
 import { WEIGHT_MESSAGES } from "@/domain/weight-conversion";
-import type { ItemRow } from "@/lib/catalog/items";
+import { MAX_OLD_CODES, type ItemRow } from "@/lib/catalog/items";
+import { dict } from "@/locales";
 
 import { FormError } from "./form-error";
 import { formatPrice, monthlyPrice } from "./format";
@@ -52,6 +57,78 @@ function priceText(value: number | null): string {
   return value === null ? "" : formatMoneyForInput(toMoney(value));
 }
 
+const text = dict.catalog;
+
+interface OldCodesFieldProps {
+  codes: string[];
+  onChange: (codes: string[]) => void;
+}
+
+/** Old codes as removable tags, at most MAX_OLD_CODES (design D8). */
+function OldCodesField({ codes, onChange }: OldCodesFieldProps) {
+  const [draft, setDraft] = useState("");
+  const full = codes.length >= MAX_OLD_CODES;
+
+  function add() {
+    const code = normalizeItemCode(draft);
+    if (code === "" || codes.includes(code) || full) return;
+    onChange([...codes, code]);
+    setDraft("");
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor="item-old-code">{text.oldCodes.label}</Label>
+      {codes.length > 0 ? (
+        <ul className="flex flex-wrap gap-2" aria-label={text.oldCodes.label}>
+          {codes.map((code) => (
+            <li
+              key={code}
+              className="inline-flex items-center gap-1 rounded-full bg-muted py-1 pr-1 pl-3 text-sm"
+            >
+              {code}
+              <button
+                type="button"
+                onClick={() =>
+                  onChange(codes.filter((other) => other !== code))
+                }
+                aria-label={text.oldCodes.remove(code)}
+                className="inline-flex size-7 items-center justify-center rounded-full hover:bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              >
+                <X aria-hidden className="size-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <div className="flex gap-2">
+        <Input
+          id="item-old-code"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              add();
+            }
+          }}
+          placeholder={full ? text.oldCodes.full : text.oldCodes.placeholder}
+          disabled={full}
+          autoCapitalize="characters"
+          spellCheck={false}
+          aria-describedby="item-old-code-help"
+        />
+        <Button type="button" variant="outline" onClick={add} disabled={full}>
+          {text.oldCodes.add}
+        </Button>
+      </div>
+      <span id="item-old-code-help" className="text-sm text-muted-foreground">
+        {text.oldCodes.help}
+      </span>
+    </div>
+  );
+}
+
 /** D9 add / edit item (spec item-catalog; design D13). */
 export function ItemFormSheet({
   groups,
@@ -69,6 +146,9 @@ export function ItemFormSheet({
   };
   const [unit, setUnit] = useState<QuantityUnit>(item?.unit ?? "PIECE");
   const [code, setCode] = useState(item?.code ?? "");
+  const [aliases, setAliases] = useState<string[]>(item?.aliases ?? []);
+  const unitLabel = QUANTITY_UNIT_LABELS[unit];
+  const weighted = hasStandardWeight(unit);
   const [weight, setWeight] = useState<Quantity>(
     item?.standardWeightKg
       ? quantityFromDb(item.standardWeightKg, "KG")
@@ -89,17 +169,18 @@ export function ItemFormSheet({
     const form = new FormData(event.currentTarget);
     let body: Record<string, unknown>;
     try {
-      if (unit === "PIECE" && weight.milli <= 0) {
+      if (weighted && weight.milli <= 0) {
         throw new DomainValueError(WEIGHT_MESSAGES.noWeight);
       }
       body = {
         name: String(form.get("name") ?? ""),
         groupId: String(form.get("groupId") ?? ""),
-        standardWeightKg: unit === "PIECE" ? quantityToDb(weight) : null,
-        dailyRentalPrice: unit === "PIECE" ? readPrice(daily) : null,
+        aliases: aliases.map((alias) => parseItemCode(alias)),
+        standardWeightKg: weighted ? quantityToDb(weight) : null,
+        dailyRentalPrice: readPrice(daily),
         lostPrice: readPrice(String(form.get("lostPrice") ?? "")),
         damagePrice: readPrice(String(form.get("damagePrice") ?? "")),
-        ...(editing ? {} : { code: parseCatalogCode(code), unit }),
+        ...(editing ? {} : { code: parseItemCode(code), unit }),
       };
     } catch (cause: unknown) {
       if (cause instanceof DomainValueError) {
@@ -149,8 +230,10 @@ export function ItemFormSheet({
               <Input
                 id="item-code"
                 value={code}
-                onChange={(event) => setCode(event.target.value.toUpperCase())}
-                placeholder="VD: GG-K17"
+                onChange={(event) =>
+                  setCode(event.target.value.toLocaleUpperCase("vi"))
+                }
+                placeholder="VD: GG-K17, H1,7, NỐI 34"
                 autoCapitalize="characters"
                 spellCheck={false}
                 required
@@ -181,74 +264,72 @@ export function ItemFormSheet({
               ))}
             </select>
           </div>
+          <OldCodesField codes={aliases} onChange={setAliases} />
           {editing ? null : (
-            <fieldset className="flex flex-col gap-2">
-              <legend className="mb-1 text-label">Đơn vị tính</legend>
-              <div className="flex gap-4">
-                {(
-                  [
-                    ["PIECE", "Cái (có trọng lượng chuẩn)"],
-                    ["KG", "Kg (sắt vụn mua về)"],
-                  ] as const
-                ).map(([value, label]) => (
-                  <label
-                    key={value}
-                    className="flex min-h-11 items-center gap-2 text-sm"
-                  >
-                    <input
-                      type="radio"
-                      name="unit"
-                      value={value}
-                      checked={unit === value}
-                      onChange={() => setUnit(value)}
-                      className="size-4 accent-primary"
-                    />
-                    {label}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="item-unit">{text.units.legend}</Label>
+              <select
+                id="item-unit"
+                value={unit}
+                onChange={(event) =>
+                  setUnit(event.target.value as QuantityUnit)
+                }
+                className="h-11 rounded-md border border-input bg-card px-3 text-base"
+              >
+                <optgroup label={text.units.countGroup}>
+                  {COUNT_UNITS.map((value) => (
+                    <option key={value} value={value}>
+                      {QUANTITY_UNIT_LABELS[value]}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label={text.units.measureGroup}>
+                  {MEASURE_UNITS.map((value) => (
+                    <option key={value} value={value}>
+                      {QUANTITY_UNIT_LABELS[value]}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
           )}
-          {unit === "PIECE" ? (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="item-weight">Trọng lượng chuẩn (kg/cái)</Label>
-                <QuantityInput
-                  id="item-weight"
-                  value={weight}
-                  onValueChange={setWeight}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="item-daily">Giá thuê / ngày (₫)</Label>
-                <Input
-                  id="item-daily"
-                  inputMode="numeric"
-                  value={daily}
-                  onChange={(event) => setDaily(event.target.value)}
-                  placeholder="Để trống nếu không cho thuê"
-                  aria-describedby="item-monthly"
-                />
-                <span
-                  id="item-monthly"
-                  className="text-sm text-muted-foreground"
-                >
-                  Giá thuê / tháng: {monthly} (= giá ngày × 30)
-                </span>
-              </div>
-            </>
+          {weighted ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="item-weight">
+                {text.units.weightLabel(unitLabel)}
+              </Label>
+              <QuantityInput
+                id="item-weight"
+                value={weight}
+                onValueChange={setWeight}
+              />
+            </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Hàng tính theo kg không cho thuê và không có trọng lượng chuẩn.
-            </p>
+            <p className="text-sm text-muted-foreground">{text.units.kgNote}</p>
           )}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="item-daily">
+              {text.units.dailyPrice(unitLabel)}
+            </Label>
+            <Input
+              id="item-daily"
+              inputMode="numeric"
+              value={daily}
+              onChange={(event) => setDaily(event.target.value)}
+              placeholder="Để trống nếu không cho thuê"
+              aria-describedby="item-monthly"
+            />
+            <span id="item-monthly" className="text-sm text-muted-foreground">
+              Giá thuê / tháng: {monthly} (= giá ngày × 30)
+            </span>
+          </div>
           <fieldset className="flex flex-col gap-3">
             <legend className="mb-1 text-label">
               Giá đền bù mặc định (gợi ý cho hợp đồng)
             </legend>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="item-lost">
-                Mất (₫/{unit === "KG" ? "kg" : "cái"})
+                {text.units.lostPrice(unitLabel)}
               </Label>
               <Input
                 id="item-lost"
@@ -259,7 +340,7 @@ export function ItemFormSheet({
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="item-damage">
-                Hỏng, sửa được (₫/{unit === "KG" ? "kg" : "cái"})
+                {text.units.damagePrice(unitLabel)}
               </Label>
               <Input
                 id="item-damage"

@@ -35,6 +35,7 @@ import {
   type PurchaseStatus,
 } from "@/domain/purchase-order";
 import {
+  isQuantityUnit,
   quantityFromDb,
   quantityToDb,
   type QuantityUnit,
@@ -71,7 +72,7 @@ export const ORDER_SERVICE_MESSAGES = {
   noteTooLong: "Ghi chú dài tối đa 1000 ký tự",
   tooManyLines: "Đơn tối đa 100 dòng hàng",
   tooManyCosts: "Đơn tối đa 20 khoản chi phí",
-  unit: "Chọn đơn vị cái hoặc kg",
+  unit: "Chọn đơn vị",
   quantity: "Số lượng không hợp lệ",
 } as const;
 
@@ -251,12 +252,12 @@ async function checkOrder(tx: Tx, body: OrderBody): Promise<CheckedOrder> {
         field: `lines.${index}.itemId`,
       });
     }
-    if (line.unit !== "PIECE" && line.unit !== "KG") {
+    if (!isQuantityUnit(line.unit)) {
       throw fieldError(ORDER_SERVICE_MESSAGES.unit, `lines.${index}.unit`);
     }
     let quantityMilli: number;
     try {
-      // KG keeps three decimals; whole pieces are checked by the domain.
+      // Read with three decimals; whole count units are checked by the domain.
       quantityMilli = quantityFromDb((line.quantity ?? "").trim(), "KG").milli;
     } catch {
       throw fieldError(
@@ -267,7 +268,7 @@ async function checkOrder(tx: Tx, body: OrderBody): Promise<CheckedOrder> {
     return {
       itemCode: found.code,
       itemUnit: found.unit as QuantityUnit,
-      unit: line.unit as QuantityUnit,
+      unit: line.unit,
       quantityMilli,
       unitPrice: line.unitPrice ?? -1,
       itemId: found.id,

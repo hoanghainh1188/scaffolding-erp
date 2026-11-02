@@ -15,13 +15,16 @@ import { lineAmount } from "@/domain/average-cost";
 import { CONDITIONS, type Condition } from "@/domain/condition";
 import { toMoney } from "@/domain/money";
 import {
+  hasStandardWeight,
   quantityFromDb,
   toQuantity,
   type QuantityUnit,
 } from "@/domain/quantity";
 import { toSearchText } from "@/domain/search-text";
-import { piecesToKg } from "@/domain/weight-conversion";
+import { unitsToKg } from "@/domain/weight-conversion";
 import { escapeLike } from "@/lib/catalog/items";
+
+import { unitFromDb } from "./unit";
 
 /** Every quantity in thousandths of the item's unit. */
 export interface StockRow {
@@ -40,14 +43,22 @@ export interface StockRow {
   value: number;
 }
 
+/** Thousandths per unit; cái, bó and m are never added together. */
+export type QuantityByUnit = Partial<Record<QuantityUnit, number>>;
+
 export interface StockCards {
   totalValue: number;
-  /** Pieces in Chờ sửa at yards and workshops. */
-  needsRepairPieces: number;
-  /** Scrap at yards in kg: kg items plus pieces × standard weight. */
+  /** Chờ sửa at yards and workshops, items with a standard weight, by unit. */
+  needsRepair: QuantityByUnit;
+  /** Scrap at yards in kg: kg items plus quantity × standard weight. */
   scrapKgMilli: number;
   convertedKgMilli: number;
-  convertedPieces: number;
+  /** Scrap counted in its own unit that was converted to kg, by unit. */
+  converted: QuantityByUnit;
+}
+
+function addTo(target: QuantityByUnit, unit: QuantityUnit, milli: number) {
+  target[unit] = (target[unit] ?? 0) + milli;
 }
 
 export interface StockFilter {
@@ -162,7 +173,7 @@ export async function getStockOverview(
       itemId: row.id,
       code: row.code,
       name: row.name,
-      unit: row.unit as QuantityUnit,
+      unit: unitFromDb(row.unit),
       groupId: row.groupId,
       groupName: row.groupName,
       yard,
@@ -176,33 +187,34 @@ export async function getStockOverview(
   const info = new Map(allItems.map((row) => [row.id, row]));
   const cards: StockCards = {
     totalValue: 0,
-    needsRepairPieces: 0,
+    needsRepair: {},
     scrapKgMilli: 0,
     convertedKgMilli: 0,
-    convertedPieces: 0,
+    converted: {},
   };
   for (const bucket of stock) {
     cards.totalValue += valueOf(bucket);
     const meta = info.get(bucket.itemId);
     if (!meta) continue;
+    const unit = unitFromDb(meta.unit);
     if (
       bucket.condition === "NEEDS_REPAIR" &&
       bucket.type !== "SITE" &&
-      meta.unit === "PIECE"
+      hasStandardWeight(unit)
     ) {
-      cards.needsRepairPieces += bucket.milli;
+      addTo(cards.needsRepair, unit, bucket.milli);
     }
     if (bucket.condition === "SCRAP" && bucket.type === "YARD") {
-      if (meta.unit === "KG") {
+      if (!hasStandardWeight(unit)) {
         cards.scrapKgMilli += bucket.milli;
       } else if (meta.weight) {
-        const kg = piecesToKg(
-          toQuantity(bucket.milli, "PIECE"),
+        const kg = unitsToKg(
+          toQuantity(bucket.milli, unit),
           quantityFromDb(meta.weight, "KG"),
         ).milli;
         cards.scrapKgMilli += kg;
         cards.convertedKgMilli += kg;
-        cards.convertedPieces += bucket.milli;
+        addTo(cards.converted, unit, bucket.milli);
       }
     }
   }
