@@ -108,6 +108,8 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 - **D4. Danh sách Hợp đồng / Báo giá** **[MVP]**: Lọc theo nhà thầu, công trình, loại (bán/thuê), trạng thái (gồm Chờ duyệt).
 - **D5. Chi tiết Hợp đồng** **[MVP]**: Nhà thầu + 1 công trình. Dòng hàng theo "Bộ" hoặc linh kiện (bộ tự rã để hiển thị linh kiện bên dưới). Đơn giá bán đứt hoặc giá thuê ngày/tháng (hiện giá ngày quy đổi). Bảng giá đền bù mất/hỏng. Approval Bar cho Giám đốc.
+- **D5a. Soạn hợp đồng / báo giá** **[MVP]**: Chọn loại (Cho thuê / Bán), nhà thầu, công trình. Số hợp đồng tự sinh theo 0.2 #40. Dòng hàng theo bộ hoặc mã, giá lấy từ danh mục, sửa riêng (đánh dấu giá khác danh mục). Điều khoản: thuê tối thiểu, chốt kỳ, hạn thanh toán, VAT. Bảng giá đền bù chép từ bảng chung (0.2 #49). Cọc tiền và bảo lãnh (0.2 #50). Kế hoạch giao theo đợt. Ô "Kiểm tra trước khi gửi duyệt" (tồn kho, bảo lãnh, giá khác, nợ quá hạn). Báo giá = in bản nháp.
+- **D5b. Lập phụ lục** **[MVP]**: Chỉ cho hợp đồng đã duyệt. Ngày hiệu lực (không trước kỳ đã chốt), lý do, bảng hiện tại ↔ mới cho số lượng, giá, điều khoản khác. Ô ảnh hưởng: kỳ đã chốt không đổi, kỳ đang mở tách giá cũ/mới tại ngày hiệu lực (0.2 #16). Gửi Giám đốc duyệt lại.
 - **D6. Tiến độ cấp hàng theo Công trình** **[MVP]**: Delivery Timeline các đợt xuất/trả. Số lượng đang ở công trình. Tạo phiếu xuất đợt mới (chỉ chọn hàng Mới/Tốt). Ghi cước vận chuyển chiều đi.
 - **D7. Tính tiền thuê (Billing)** **[MVP]**: Chọn kỳ. Bảng chi tiết từng linh kiện: ngày xuất, ngày trả, số ngày tính tiền (không tính ngày xuất, tính ngày trả, 0.2 #4), đơn giá ngày, thành tiền. Nút chốt kỳ để ghi công nợ.
 - **D8. Phiếu tính phí đền bù** **[MVP]**: Sinh tự động từ phiếu thu hồi. Số lượng hỏng/mất × đơn giá đền bù trong hợp đồng. Ảnh hiện trạng đính kèm. Approval Bar cho Giám đốc; duyệt xong mới cộng vào công nợ.
@@ -151,7 +153,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 | Giai đoạn | Desktop | Mobile |
 |---|---|---|
-| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D16, D17, D18 | M1, M2, M3, M4, M5, M6a, M6, M7 |
+| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D5a, D5b, D6, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D16, D17, D18 | M1, M2, M3, M4, M5, M6a, M6, M7 |
 | **Bản 2** | D1 (đầy đủ), D12 (đầy đủ), D14 (phải trả), D15 | M8 |
 
 ### 3.4. Thiết kế đã vẽ (Claude Design)
@@ -180,6 +182,8 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | M7 Lịch sử | `M7-History.dc.html` | `goods-receipt` | Đã duyệt |
 | D4 Danh sách hợp đồng | `D4-Contracts.dc.html` | `contracts` | Đã duyệt |
 | D5 Chi tiết hợp đồng | `D5-Contract.dc.html` | `contracts` | Đã duyệt |
+| D5a Soạn hợp đồng / báo giá | `D5a-ContractForm.dc.html` | `contracts` | Chờ duyệt |
+| D5b Lập phụ lục | `D5b-ContractAmendment.dc.html` | `contracts` | Chờ duyệt |
 | D6 Tiến độ cấp hàng | `D6-SiteDeliveries.dc.html` | `deliveries` | Đã duyệt |
 | M5 Nhặt hàng xuất kho | `M5-Picking.dc.html` | `deliveries` | Đã duyệt |
 | D8 Phiếu đền bù | `D8-Compensation.dc.html` | `returns-and-compensation` | Đã duyệt |
