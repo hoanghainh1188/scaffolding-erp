@@ -19,9 +19,9 @@ export interface CountsLike {
   locked: number;
 }
 
-/** "7 người đang dùng · 1 tài khoản đã khóa" */
+/** "7 tài khoản đang hoạt động · 1 tài khoản bị khóa" */
 export function describeCounts({ active, locked }: CountsLike): string {
-  const parts = [`${active} người đang dùng`];
-  if (locked > 0) parts.push(`${locked} tài khoản đã khóa`);
+  const parts = [`${active} tài khoản đang hoạt động`];
+  if (locked > 0) parts.push(`${locked} tài khoản bị khóa`);
   return parts.join(" · ");
 }

@@ -3,10 +3,13 @@ export const users = {
   roles: {
     descriptions: {
       DIRECTOR: "Duyệt hợp đồng, đền bù, quản lý người dùng. Dùng máy tính.",
-      ACCOUNTANT: "Tiền thuê, công nợ, xuất Excel. Dùng máy tính.",
-      SALES: "Thu mua, báo giá, hợp đồng. Dùng máy tính.",
-      WAREHOUSE: "Nhập, xuất, thu hồi tại bãi. Dùng điện thoại.",
-      WORKSHOP: "Ghi nhận sửa chữa. Dùng điện thoại.",
+      ACCOUNTANT:
+        "Chốt tiền thuê, theo dõi công nợ, xuất báo cáo Excel (máy tính).",
+      SALES: "Mua hàng, báo giá, lập hợp đồng (máy tính).",
+      WAREHOUSE:
+        "Quét mã, nhập kho, xuất kho, kiểm kê thực tế tại bãi (điện thoại).",
+      WORKSHOP:
+        "Lập phiếu sửa chữa, ghi nhận tân trang hàng hóa (điện thoại).",
     },
   },
 } as const;

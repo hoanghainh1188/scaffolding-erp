@@ -23,7 +23,7 @@ export async function signInThroughForm(
   await page.getByLabel("Mật khẩu", { exact: true }).fill(password);
   if (options.remember) {
     await page
-      .getByRole("checkbox", { name: "Giữ đăng nhập trên máy này" })
+      .getByRole("checkbox", { name: "Ghi nhớ đăng nhập" })
       .check();
   }
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

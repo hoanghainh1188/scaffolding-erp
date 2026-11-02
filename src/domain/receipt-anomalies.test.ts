@@ -1,3 +1,4 @@
+import { dict } from "@/locales";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -83,7 +84,7 @@ describe("receiptAnomalies (design D5b)", () => {
       {
         key: "line:khung",
         field: "lines.1.quantity",
-        question: "Nhận 2.000 cái, đơn chỉ còn 200. Đúng không?",
+        question: dict.receiving.anomalies.piecesOver("2.000", "200"),
         note: "nhận dư GG-K17 2.000/200 cái",
       },
     ]);
@@ -91,7 +92,7 @@ describe("receiptAnomalies (design D5b)", () => {
 
   it("asks about one extra piece and not about the exact count", () => {
     expect(anomalies([counted(CHEO, 401 * K)])[0]?.question).toBe(
-      "Nhận 401 cái, đơn chỉ còn 400. Đúng không?",
+      dict.receiving.anomalies.piecesOver("401", "400"),
     );
     expect(anomalies([counted(CHEO, 400 * K)])).toEqual([]);
   });
@@ -99,7 +100,7 @@ describe("receiptAnomalies (design D5b)", () => {
   it("lets a kg line pass at exactly 10 % and asks above it", () => {
     expect(anomalies([counted(SAT, 220 * K)])).toEqual([]);
     expect(anomalies([counted(SAT, 220_500)])[0]?.question).toBe(
-      "Nhận 220,5 kg, đơn chỉ còn 200 kg. Đúng không?",
+      dict.receiving.anomalies.kgOver("220,5", "200"),
     );
   });
 
@@ -108,7 +109,7 @@ describe("receiptAnomalies (design D5b)", () => {
       {
         key: "line:khung-kg",
         field: "lines.0.weighedKg",
-        question: "Nhận 2.250 kg, đơn chỉ còn 2.000 kg. Đúng không?",
+        question: dict.receiving.anomalies.kgOver("2.250", "2.000"),
         note: "nhận dư GG-K17 2.250/2.000 kg",
       },
     ]);
@@ -117,7 +118,7 @@ describe("receiptAnomalies (design D5b)", () => {
   it("counts what earlier receipts already brought", () => {
     const partly = { ...KHUNG, receivedMilli: 100 * K };
     expect(anomalies([counted(partly, 150 * K)])[0]?.question).toBe(
-      "Nhận 150 cái, đơn chỉ còn 100. Đúng không?",
+      dict.receiving.anomalies.piecesOver("150", "100"),
     );
   });
 
@@ -126,8 +127,10 @@ describe("receiptAnomalies (design D5b)", () => {
       {
         key: "costs",
         field: "costs",
-        question:
-          "Chi phí chuyến 35.000.000 ₫, cả đơn dự kiến 4.880.000 ₫. Đúng không?",
+        question: dict.receiving.anomalies.costsOver(
+          "35.000.000 ₫",
+          "4.880.000 ₫",
+        ),
         note: "chi phí cao 35.000.000 ₫",
       },
     ]);

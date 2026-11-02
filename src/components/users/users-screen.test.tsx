@@ -107,7 +107,7 @@ describe("UsersScreen (D17)", () => {
   it("counts active and locked accounts in the heading", () => {
     renderScreen();
     expect(
-      screen.getByText("7 người đang dùng · 1 tài khoản đã khóa"),
+      screen.getByText("7 tài khoản đang hoạt động · 1 tài khoản bị khóa"),
     ).toBeInTheDocument();
   });
 

@@ -74,11 +74,11 @@ test.describe("desktop", () => {
     await waitForHydration(page, DESKTOP_READY);
     await page.getByRole("button", { name: "Thao tác với GG-K17" }).click();
     await expect(page.getByRole("menuitem")).toHaveText([
-      "Sửa",
-      "Ngừng dùng",
+      "Chỉnh sửa",
+      "Ngừng sử dụng",
       "Xóa",
     ]);
-    await page.getByRole("menuitem", { name: "Sửa" }).click();
+    await page.getByRole("menuitem", { name: "Chỉnh sửa" }).click();
     const sheet = page.getByRole("dialog");
     await expect(
       sheet.getByRole("heading", { name: "Sửa GG-K17" }),
@@ -96,9 +96,9 @@ test.describe("desktop", () => {
     await page.goto("/catalog/items");
     await waitForHydration(page, DESKTOP_READY);
     await page.getByRole("button", { name: "Thao tác với GG-K17" }).click();
-    await page.getByRole("menuitem", { name: "Ngừng dùng" }).click();
+    await page.getByRole("menuitem", { name: "Ngừng sử dụng" }).click();
     const confirm = page.getByRole("alertdialog");
-    await confirm.getByRole("button", { name: "Ngừng dùng" }).click();
+    await confirm.getByRole("button", { name: "Ngừng sử dụng" }).click();
     await expect(confirm.getByRole("alert")).toHaveText(
       "Bỏ vật tư này khỏi bộ BO-17 hoặc ngừng dùng bộ trước",
     );

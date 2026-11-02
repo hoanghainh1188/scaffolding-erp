@@ -1,4 +1,5 @@
 // M3 (goods-receipt task 8.2, spec goods-receipts "Màn nhập hàng M3").
+import { dict } from "@/locales";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -237,7 +238,7 @@ describe("ReceiptFormView (M3)", () => {
     await user.click(confirmButton());
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent(
-      "Nhận 4.000 cái, đơn chỉ còn 400. Đúng không?",
+      dict.receiving.anomalies.piecesOver("4.000", "400"),
     );
     await user.click(within(dialog).getByRole("button", { name: "Sửa lại" }));
     expect(fetchMock).not.toHaveBeenCalled();
@@ -271,7 +272,7 @@ describe("ReceiptFormView (M3)", () => {
     await user.type(amount, "35000000");
     await user.click(confirmButton());
     expect(await screen.findByRole("alertdialog")).toHaveTextContent(
-      "Chi phí chuyến 36.380.000 ₫, cả đơn dự kiến 4.880.000 ₫. Đúng không?",
+      dict.receiving.anomalies.costsOver("36.380.000 ₫", "4.880.000 ₫"),
     );
   });
 
