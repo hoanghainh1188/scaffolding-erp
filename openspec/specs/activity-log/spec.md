@@ -69,6 +69,17 @@ Mỗi lệnh làm đổi hợp đồng hoặc phụ lục hợp đồng (Tạo, 
 - **WHEN** Giám đốc lọc D18 theo loại Phụ lục hợp đồng
 - **THEN** bảng chỉ hiện các dòng có mã dạng `112026/ANPHAT-MINHPHAT/01`
 
+### Requirement: Thao tác trên phiếu xuất được ghi
+Mỗi lệnh làm đổi phiếu xuất (Tạo, Sửa, Bắt đầu nhặt, Trả lại, Hủy, Ghi sổ) SHALL ghi đúng một dòng nhật ký. Lọc theo loại chứng từ trên D18 SHALL có Phiếu xuất.
+
+#### Scenario: Gửi lại cùng mã nháp phiếu xuất
+- **WHEN** điện thoại của `vantung` gửi lại lần xác nhận `PX-2026-140` cùng mã nháp sau khi phiếu đã ghi sổ
+- **THEN** vẫn chỉ có một dòng Ghi sổ `PX-2026-140`
+
+#### Scenario: Lọc phiếu xuất trên D18
+- **WHEN** Giám đốc lọc D18 theo loại Phiếu xuất
+- **THEN** bảng chỉ hiện các dòng có mã dạng `PX-2026-140`, gồm cả thao tác "Bắt đầu nhặt"
+
 ### Requirement: Thao tác trên danh mục, người dùng và đăng nhập được ghi
 Hệ thống SHALL ghi một dòng cho: tạo, sửa (cả ngừng dùng, dùng lại), xóa vật tư, nhóm hàng, bộ, nhà cung cấp, nhà thầu, công trình, kho/bãi/xưởng; tạo người dùng, đổi vai trò, khóa, mở khóa, đặt lại mật khẩu, tự đổi mật khẩu; sửa giá sắt vụn; mỗi lần đăng nhập thành công. Đăng nhập sai, đăng xuất, xem trang SHALL không ghi.
 
