@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import {
   DESKTOP_READY,
@@ -299,6 +299,83 @@ test.describe("return baselines @visual", () => {
         animations: "disabled",
         caret: "hide",
       });
+    });
+  }
+});
+
+// site-operations tasks 7.3: D6b, D6c, D6d of the An Phú rental and M9 of
+// the sample transfer (src/lib/site-transfers/sample.ts). Codes and ids
+// change with the database, so every page is reached from a list.
+test.describe("site operation baselines @visual", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "sets its own viewport");
+  });
+
+  async function anPhuDeliveries(page: Page): Promise<string> {
+    await page.goto("/sales/contracts?q=MINHPHAT");
+    await waitForHydration(page, DESKTOP_READY);
+    const href =
+      (await page
+        .getByRole("link", { name: /^062026\/ANPHAT-MINHPHAT$/ })
+        .getAttribute("href")) ?? "";
+    return `${href}/deliveries`;
+  }
+
+  async function shoot(page: Page, name: string, ready: string) {
+    await waitForHydration(page, ready);
+    await page.addStyleTag({
+      content: "nextjs-portal { display: none !important; }",
+    });
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page).toHaveScreenshot(`${name}.png`, {
+      fullPage: true,
+      mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
+      animations: "disabled",
+      caret: "hide",
+    });
+  }
+
+  for (const width of WIDTHS) {
+    test(`d6b-site-transfer at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      const d6 = await anPhuDeliveries(page);
+      await page.goto(d6.replace(/\/deliveries$/, "/site-transfer/new"));
+      await shoot(page, `d6b-site-transfer-${width}`, DESKTOP_READY);
+    });
+
+    test(`d6c-buy-back at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(await anPhuDeliveries(page));
+      await waitForHydration(page, DESKTOP_READY);
+      const href =
+        (await page
+          .getByRole("link", { name: /^Mua lại MLA-/ })
+          .first()
+          .getAttribute("href")) ?? "";
+      await page.goto(href);
+      await shoot(page, `d6c-buy-back-${width}`, DESKTOP_READY);
+    });
+
+    test(`d6d-exchange at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      const d6 = await anPhuDeliveries(page);
+      await page.goto(d6.replace(/\/deliveries$/, "/exchange/new"));
+      await shoot(page, `d6d-exchange-${width}`, DESKTOP_READY);
+    });
+
+    test(`m9-site-transfer at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/m");
+      await waitForHydration(page, MOBILE_READY);
+      const href =
+        (await page
+          .getByRole("article")
+          .filter({ hasText: "Chung cư An Phú – Block B →" })
+          .getByRole("link", { name: "Xác nhận" })
+          .first()
+          .getAttribute("href")) ?? "";
+      await page.goto(href);
+      await shoot(page, `m9-site-transfer-${width}`, MOBILE_READY);
     });
   }
 });

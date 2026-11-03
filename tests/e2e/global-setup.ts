@@ -6,6 +6,7 @@ import { and, eq, inArray, like, notInArray, sql } from "drizzle-orm";
 import { createDatabase, type Database } from "@/db/client";
 import {
   activityLog,
+  buyBackNote,
   contract,
   customer,
   deliveryNote,
@@ -22,6 +23,7 @@ import {
   repairOrder,
   session,
   site,
+  siteTransfer,
   stockAdjustmentLine,
   stocktake,
   user,
@@ -40,6 +42,9 @@ import { postDelivery } from "@/lib/deliveries/post";
 import { changeDeliveryStatus, createDelivery } from "@/lib/deliveries/service";
 import { onSiteByItem } from "@/lib/deliveries/records";
 import { seedReturns } from "@/lib/returns/sample";
+import { rejectBuyBack } from "@/lib/buy-backs/service";
+import { seedSiteOperations } from "@/lib/site-transfers/sample";
+import { changeSiteTransferStatus } from "@/lib/site-transfers/service";
 import { seedContracts } from "@/lib/contracts/sample";
 import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
@@ -494,10 +499,10 @@ async function ensureReturnStock(
     .from(item)
     .where(eq(item.code, E2E_STOCK_ITEMS[0]));
   if (!deal || !kho) return;
-  if (((await onSiteByItem(db, deal.id)).get(kho.id) ?? 0) >= 10_000) return;
+  if (((await onSiteByItem(db, deal.id)).get(kho.id) ?? 0) >= 20_000) return;
   const note = await createDelivery(db, seller, {
     contractId: deal.id,
-    lines: [{ itemId: kho.id, quantity: "20" }],
+    lines: [{ itemId: kho.id, quantity: "30" }],
     overContractConfirmed: true,
     note: E2E_ORDER_NOTE,
   });
@@ -512,9 +517,186 @@ async function ensureReturnStock(
     clientDraftId: crypto.randomUUID(),
     startedVersion: started.data.updatedAt,
     vehiclePlate: "51X-000.01",
-    picks: [{ lineId: line?.id, condition: "GOOD", quantity: "20" }],
+    picks: [{ lineId: line?.id, condition: "GOOD", quantity: "30" }],
   });
   if (!posted.ok) throw new Error(`E2E return stock: ${posted.error}`);
+}
+
+/** The customer part of the rental site-operations.spec.ts moves goods to. */
+export const E2E_TRANSFER_TOKEN = "E2ECHUYEN";
+
+/**
+ * site-operations.spec.ts moves E2E-KHO-01 from the E2E rental to a second
+ * E2E rental of the same customer, made once and kept. Transfers left draft
+ * or sent and buy-backs left pending by e2e.* accounts are cancelled or
+ * rejected (exchanges go with their batches, see ensureDeliveryContract).
+ */
+async function ensureTransferContract(
+  db: Database,
+  director: ActivityActor,
+  sales: ActivityActor,
+): Promise<void> {
+  const actor = { ...director, contractScope: "ALL" as const };
+  const seller = { ...sales, contractScope: "ALL" as const };
+  // Only documents of the two E2E rentals: the samples stay.
+  const e2eContracts = db
+    .select({ id: contract.id })
+    .from(contract)
+    .where(
+      inArray(contract.customerToken, [E2E_DELIVERY_TOKEN, E2E_TRANSFER_TOKEN]),
+    );
+  const open = await db
+    .select({ id: siteTransfer.id })
+    .from(siteTransfer)
+    .where(
+      and(
+        inArray(siteTransfer.status, ["DRAFT", "SENT"]),
+        inArray(siteTransfer.fromContractId, e2eContracts),
+      ),
+    );
+  for (const row of open) {
+    await changeSiteTransferStatus(db, actor, row.id, "CANCEL", {
+      reason: "E2E thử",
+    });
+  }
+  const pending = await db
+    .select({ id: buyBackNote.id })
+    .from(buyBackNote)
+    .where(
+      and(
+        eq(buyBackNote.status, "PENDING"),
+        inArray(buyBackNote.contractId, e2eContracts),
+      ),
+    );
+  for (const row of pending) {
+    await rejectBuyBack(db, actor, row.id, { reason: "E2E thử" });
+  }
+  const [found] = await db
+    .select({ id: contract.id })
+    .from(contract)
+    .where(eq(contract.customerToken, E2E_TRANSFER_TOKEN));
+  if (found) return;
+  const [buyer] = await db
+    .select({ id: customer.id })
+    .from(customer)
+    .where(eq(customer.name, "Cty TNHH Xây dựng Minh Phát"));
+  const [work] = await db
+    .select({ id: site.id })
+    .from(site)
+    .where(eq(site.name, "Chung cư An Phú – Block B"));
+  const items = await db
+    .select({ id: item.id })
+    .from(item)
+    .where(inArray(item.code, [...E2E_STOCK_ITEMS]));
+  if (!buyer || !work || items.length !== E2E_STOCK_ITEMS.length) return;
+  const saved = await createContract(db, seller, {
+    type: "RENTAL",
+    customerId: buyer.id,
+    siteId: work.id,
+    customerToken: E2E_TRANSFER_TOKEN,
+    signedDate: "2026-11-02",
+    startDate: "2026-11-05",
+    endDate: "2030-12-31",
+    lines: items.map((row) => ({
+      itemId: row.id,
+      quantity: "100000",
+      price: 100,
+    })),
+    compensations: items.map((row) => ({
+      itemId: row.id,
+      lostPrice: 100_000,
+      damagePrice: 20_000,
+    })),
+    note: E2E_ORDER_NOTE,
+  });
+  if (!saved.ok) throw new Error(`E2E transfer contract: ${saved.error}`);
+  const sent = await submitContract(db, seller, saved.data.id);
+  if (!sent.ok) throw new Error(`E2E transfer contract: ${sent.error}`);
+  const approved = await approveContract(db, actor, saved.data.id, null);
+  if (!approved.ok) throw new Error(`E2E transfer contract: ${approved.error}`);
+}
+
+/**
+ * site-operations.spec.ts moves, sells and swaps E2E-KHO-02 of the E2E
+ * rental (E2E-KHO-01 is measured there by deliveries.spec and returns.spec
+ * at the same time): keep at least 20 at its site, shipping 30 more from
+ * BAI-01 when short, and stock BAI-01 first when it lacks them.
+ */
+async function ensureSiteOperationStock(
+  db: Database,
+  director: ActivityActor,
+  sales: ActivityActor,
+  warehouse: ActivityActor,
+): Promise<void> {
+  const seller = { ...sales, contractScope: "ALL" as const };
+  const picker = { ...warehouse, contractScope: "ALL" as const };
+  const [deal] = await db
+    .select({ id: contract.id })
+    .from(contract)
+    .where(eq(contract.customerToken, E2E_DELIVERY_TOKEN));
+  const [kho] = await db
+    .select({ id: item.id })
+    .from(item)
+    .where(eq(item.code, E2E_STOCK_ITEMS[1]));
+  const [yard] = await db
+    .select({ id: location.id })
+    .from(location)
+    .where(eq(location.code, "BAI-01"));
+  if (!deal || !kho || !yard) return;
+  if (((await onSiteByItem(db, deal.id)).get(kho.id) ?? 0) >= 20_000) return;
+  const [atYard] = await db
+    .select({
+      total: sql<string>`coalesce(sum(${inventoryLedger.quantity}), 0)`,
+    })
+    .from(inventoryLedger)
+    .where(
+      and(
+        eq(inventoryLedger.itemId, kho.id),
+        eq(inventoryLedger.condition, "GOOD"),
+        eq(inventoryLedger.locationId, yard.id),
+      ),
+    );
+  if (Number(atYard?.total ?? 0) < 40) {
+    await db.transaction((tx) =>
+      postMovements(tx, director, {
+        documentType: "E2E",
+        documentId: null,
+        documentCode: "E2E-CHUYEN",
+        businessDate: toBusinessDate(new Date()),
+        lines: [
+          {
+            itemId: kho.id,
+            condition: "GOOD",
+            locationId: yard.id,
+            movement: "ADJUST_IN",
+            quantityMilli: 100_000,
+            unitCost: 100_000,
+            description: "E2E: hàng Tốt cho site-operations.spec",
+          },
+        ],
+      }),
+    );
+  }
+  const note = await createDelivery(db, seller, {
+    contractId: deal.id,
+    lines: [{ itemId: kho.id, quantity: "30" }],
+    overContractConfirmed: true,
+    note: E2E_ORDER_NOTE,
+  });
+  if (!note.ok) throw new Error(`E2E site stock: ${note.error}`);
+  const started = await changeDeliveryStatus(db, picker, note.data.id, "START");
+  if (!started.ok) throw new Error(`E2E site stock: ${started.error}`);
+  const [line] = await db
+    .select({ id: deliveryNoteLine.id })
+    .from(deliveryNoteLine)
+    .where(eq(deliveryNoteLine.noteId, note.data.id));
+  const posted = await postDelivery(db, picker, note.data.id, {
+    clientDraftId: crypto.randomUUID(),
+    startedVersion: started.data.updatedAt,
+    vehiclePlate: "51X-000.01",
+    picks: [{ lineId: line?.id, condition: "GOOD", quantity: "30" }],
+  });
+  if (!posted.ok) throw new Error(`E2E site stock: ${posted.error}`);
 }
 
 export default async function globalSetup(): Promise<void> {
@@ -585,6 +767,15 @@ export default async function globalSetup(): Promise<void> {
       if (warehouse) await seedReturns(handle.db, { warehouse });
       if (sales && warehouse) {
         await ensureReturnStock(handle.db, sales, warehouse);
+      }
+      // D6b / D6c / D6d / M9 samples (site-operations 7.1), once, and the
+      // second E2E rental site-operations.spec.ts moves goods to (7.2).
+      if (sales) {
+        await seedSiteOperations(handle.db, { director, sales });
+        await ensureTransferContract(handle.db, director, sales);
+        if (warehouse) {
+          await ensureSiteOperationStock(handle.db, director, sales, warehouse);
+        }
       }
       if (accountant && sales && warehouse) {
         await seedActivity(handle.db, {

@@ -131,12 +131,10 @@ describe("TransferForm", () => {
     expect(
       screen.getByText("Còn phải giao ở Dương Nội H1,7 600 → 550"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("An Phú (hợp đồng đi) tính đến hết 05/11"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Dương Nội (hợp đồng nhận) tính từ 06/11"),
-    ).toBeInTheDocument();
+    // The dates sit in their own spans (masked in screenshots).
+    const lines = screen.getAllByRole("listitem").map((li) => li.textContent);
+    expect(lines).toContain("An Phú (hợp đồng đi) tính đến hết 05/11");
+    expect(lines).toContain("Dương Nội (hợp đồng nhận) tính từ 06/11");
   });
 
   it("asks for the tick of another customer", async () => {

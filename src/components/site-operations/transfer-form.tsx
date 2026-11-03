@@ -400,17 +400,20 @@ export function TransferForm({ data, today, draft }: TransferFormProps) {
             {amountText(preview.totalMilli, unit)}
           </p>
           <p className="text-sm text-muted-foreground">
-            Ngày chuyển = ngày ghi sổ: {formatBusinessDate(today)}
+            Ngày chuyển = ngày ghi sổ:{" "}
+            <span data-clock>{formatBusinessDate(today)}</span>
           </p>
           <h3 className="text-h3">Ảnh hưởng tới tiền thuê</h3>
           <ul className="flex flex-col gap-1 text-sm">
             <li>
               {data.from.siteName} (hợp đồng đi) tính đến hết{" "}
-              {formatBusinessDate(today).slice(0, 5)}
+              <span data-clock>{formatBusinessDate(today).slice(0, 5)}</span>
             </li>
             <li>
               {toSite} (hợp đồng nhận) tính từ{" "}
-              {formatBusinessDate(addDays(today, 1)).slice(0, 5)}
+              <span data-clock>
+                {formatBusinessDate(addDays(today, 1)).slice(0, 5)}
+              </span>
             </li>
             <li>
               Tiền thuê 1 ngày ở {data.from.siteName} giảm{" "}

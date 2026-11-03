@@ -83,7 +83,7 @@ Quyết định đã chốt khi vẽ (PR #137, 0.2 #66–#68): chuyển công tr
 ## 7. Seed, E2E, ảnh mốc
 
 - [x] 7.1 `npm run db:seed:dev` thêm hợp đồng nhận Dương Nội (Đã duyệt, cùng Minh Phát), một `CCT` Chờ xác nhận như M9, một `MLA` Chờ duyệt như D6c, một đổi hàng Chờ thu hồi như D6d; `CLAUDE.md` bảng lệnh ghi thêm. Kiểm: chạy seed hai lần không lỗi, không trùng.
-- [ ] 7.2 E2E `e2e/site-operations.spec.ts` (dùng hợp đồng thuê E2E của `deliveries.spec.ts` và một hợp đồng thuê E2E thứ hai do global setup tạo một lần, ghi `E2E-KHO-01/02`, kiểm theo chênh lệch): chuyển công trình văn phòng xác nhận và qua M9 (D6 hai hợp đồng đổi đúng); Kinh doanh lập mua lại, Giám đốc duyệt (đang ở công trình giảm); đổi hàng: lập, M5 xuất, M4 nối. Global setup hủy phiếu chuyển Nháp / Chờ xác nhận và từ chối phiếu mua lại Chờ duyệt do `e2e.*` lập lần trước. Kiểm: `npm run test:e2e` xanh.
+- [x] 7.2 E2E `e2e/site-operations.spec.ts` (dùng hợp đồng thuê E2E của `deliveries.spec.ts` và một hợp đồng thuê E2E thứ hai do global setup tạo một lần, ghi `E2E-KHO-01/02`, kiểm theo chênh lệch): chuyển công trình văn phòng xác nhận và qua M9 (D6 hai hợp đồng đổi đúng); Kinh doanh lập mua lại, Giám đốc duyệt (đang ở công trình giảm); đổi hàng: lập, M5 xuất, M4 nối. Global setup hủy phiếu chuyển Nháp / Chờ xác nhận và từ chối phiếu mua lại Chờ duyệt do `e2e.*` lập lần trước. Kiểm: `npm run test:e2e` xanh.
 - [ ] 7.3 Ảnh mốc `@visual` cho D6b, D6c, D6d, M9 và D6 có cột chuyển (dữ liệu seed, ngày cố định). Kiểm: gắn nhãn `update-snapshots` vào PR, CI chạy lại xanh.
 
 ## 8. Kiểm tra toàn bộ
