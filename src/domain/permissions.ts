@@ -68,6 +68,9 @@ export const PERMISSIONS = {
   "contracts.rental.manage": ["DIRECTOR", "SALES"],
   "contracts.sale.manage": ["DIRECTOR", "SALES"],
   "contracts.approve": ["DIRECTOR"],
+  // deliveries design D11: the storekeeper picks and confirms the truck
+  // leaving; the director may stand in. Planning a batch uses canContract.
+  "deliveries.pick": ["DIRECTOR", "WAREHOUSE"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;

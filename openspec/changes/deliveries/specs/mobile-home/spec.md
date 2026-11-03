@@ -6,8 +6,8 @@
 Người có quyền `deliveries.pick` SHALL thấy khối "Xuất hàng" trên M1: mỗi phiếu Chờ nhặt hoặc Đang nhặt có ngày dự kiến tới hết hôm nay (kể cả trễ) là một thẻ, xếp theo giờ; phiếu không có ngày dự kiến xếp cuối. Thẻ SHALL có giờ hoặc nhãn ngày, số phiếu và đợt, công trình (hoặc nhà thầu với hợp đồng bán), tóm tắt hàng không có giá, trạng thái và nút mở M5. Mỗi thẻ SHALL tính vào số việc N của đầu trang.
 
 #### Scenario: Thẻ phiếu chờ nhặt
-- **WHEN** `PX-2026-140` Đợt 3 của An Phú – Block B, 60 bộ 1,7m, dự kiến 03/11/2026 10:00, Chờ nhặt, và hôm nay là 03/11/2026
-- **THEN** M1 có thẻ "10:00", "PX-2026-140 · Đợt 3 · An Phú – Block B", "60 bộ 1,7m = 120 khung, 120 chéo, 60 mâm" và nút "Bắt đầu nhặt"
+- **WHEN** `PX-2026-140` Đợt 3 của An Phú – Block B, 60 bộ giàn giáo 1,7m, dự kiến 03/11/2026 10:00, Chờ nhặt, và hôm nay là 03/11/2026
+- **THEN** M1 có thẻ "10:00", "PX-2026-140 · Đợt 3 · An Phú – Block B", "60 bộ giàn giáo 1,7m = 120 khung, 120 chéo, 60 mâm" và nút "Bắt đầu nhặt"
 
 #### Scenario: Đang nhặt có nháp trên máy
 - **WHEN** `PX-2026-140` Đang nhặt và máy của `vantung` có nháp 200 / 300 cái

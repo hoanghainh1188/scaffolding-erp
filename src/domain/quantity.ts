@@ -36,6 +36,11 @@ export function isCountUnit(unit: QuantityUnit): boolean {
   return (COUNT_UNITS as readonly string[]).includes(unit);
 }
 
+/** cái: the unit short texts leave unsaid ("120 khung", "9 bó ty"). */
+export function isPieceUnit(unit: QuantityUnit): boolean {
+  return unit === "PIECE";
+}
+
 /** Every unit but kg has a standard weight (kg per unit) for conversions. */
 export function hasStandardWeight(unit: QuantityUnit): boolean {
   return unit !== "KG";

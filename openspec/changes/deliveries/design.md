@@ -74,7 +74,7 @@
 
 ### D4. Rã bộ: theo danh mục lúc lập đợt (điểm cần chốt 4)
 
-- Khi lập/sửa đợt, bộ × n tách thành linh kiện bằng **thành phần bộ hiện tại trong danh mục** (`kit_component`, khóa `FOR SHARE`), dùng lại `explodeKits` của `src/domain/contract-lines.ts`, gộp với dòng lẻ cùng mã. Kết quả lưu thành **dòng theo mã** của phiếu (`delivery_note_line`); bộ đã chọn lưu ở `delivery_note_kit` để hiện "60 bộ 1,7m = 120 khung, 120 chéo, 60 mâm". Bộ đổi trong danh mục sau đó không đổi phiếu đã lập.
+- Khi lập/sửa đợt, bộ × n tách thành linh kiện bằng **thành phần bộ hiện tại trong danh mục** (`kit_component`, khóa `FOR SHARE`), dùng lại `explodeKits` của `src/domain/contract-lines.ts`, gộp với dòng lẻ cùng mã. Kết quả lưu thành **dòng theo mã** của phiếu (`delivery_note_line`); bộ đã chọn lưu ở `delivery_note_kit` để hiện "60 bộ giàn giáo 1,7m = 120 khung, 120 chéo, 60 mâm". Bộ đổi trong danh mục sau đó không đổi phiếu đã lập.
 - Mọi linh kiện phải có trên bản hợp đồng áp dụng: thiếu thì từ chối "Bộ BO-1,7 có mã MAM1,6 chưa có trên hợp đồng. Bạn chọn từng mã hoặc lập phụ lục thêm mã này."
 - Chỉ hợp đồng thuê chọn được bộ (dòng bán có tình trạng riêng nên chọn từng dòng).
 
@@ -139,7 +139,7 @@ Hai thủ kho bấm xác nhận cùng phiếu với hai mã nháp khác nhau: l�
 ### D11. Quyền, nhật ký, đồng thời
 
 - Bảng quyền thêm `deliveries.pick`: `DIRECTOR`, `WAREHOUSE`. Lập, sửa, rút về, hủy: `canContract(user, loại hợp đồng, "manage")`. Xem D6 và chi tiết phiếu: `canContract(user, loại, "view")`. M5 và M1 đọc qua `deliveries.pick`. API M5 **không trả** đơn giá, cước, tiền 1 ngày (lọc ở truy vấn, không chỉ ẩn trên giao diện).
-- Mỗi lệnh ghi một dòng nhật ký `DELIVERY_NOTE` trong transaction: Tạo ("Đợt 3 · 60 bộ 1,7m = 3 mã · cước 1.800.000 ₫"), Sửa (chỉ khi có trường đổi, `diffFields`), Bắt đầu nhặt, Trả lại (lý do; cả "Trả lại văn phòng" và "Rút về để sửa"), Hủy (lý do), Ghi sổ ("Xuất 120 khung, 80 chéo, 60 mâm · thiếu 40 chéo · hợp đồng sang Đang thực hiện"). Xuất vượt có xác nhận thì cờ "Có xác nhận bất thường". Lệnh bị từ chối không ghi. Test tĩnh `src/lib/activity/coverage.test.ts` thêm `src/lib/deliveries/`.
+- Mỗi lệnh ghi một dòng nhật ký `DELIVERY_NOTE` trong transaction: Tạo ("Đợt 3 · 60 bộ giàn giáo 1,7m = 3 mã · cước 1.800.000 ₫"), Sửa (chỉ khi có trường đổi, `diffFields`), Bắt đầu nhặt, Trả lại (lý do; cả "Trả lại văn phòng" và "Rút về để sửa"), Hủy (lý do), Ghi sổ ("Xuất 120 khung, 80 chéo, 60 mâm · thiếu 40 chéo · hợp đồng sang Đang thực hiện"). Xuất vượt có xác nhận thì cờ "Có xác nhận bất thường". Lệnh bị từ chối không ghi. Test tĩnh `src/lib/activity/coverage.test.ts` thêm `src/lib/deliveries/`.
 - Mọi lệnh sửa trạng thái khóa hợp đồng rồi phiếu `FOR UPDATE`, đọc lại rồi mới kiểm; sửa gửi `updatedAt`, lệch → 409.
 - Hủy hợp đồng (`src/lib/contracts/approval.ts`): sau khi khóa hợp đồng gọi `hasDeliveries` và `openDeliveries`; còn phiếu mở thì từ chối "Hợp đồng còn phiếu xuất PX-2026-141 chưa xong. Bạn hủy phiếu xuất đó trước rồi hủy hợp đồng." Lý do chặn thay vì hủy kèm: phiếu có thể đang được nhặt ngoài bãi.
 

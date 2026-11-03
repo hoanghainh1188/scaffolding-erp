@@ -10,3 +10,4 @@ export * from "./stocktakes";
 export * from "./activity";
 export * from "./company";
 export * from "./contracts";
+export * from "./deliveries";

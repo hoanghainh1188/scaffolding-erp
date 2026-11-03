@@ -60,7 +60,7 @@ Văn phòng SHALL lập đợt bằng bộ × số bộ hoặc mã + số lượ
 
 #### Scenario: Rã bộ
 - **WHEN** bộ `BO-1,7` gồm 2 `H1,7`, 2 `CHEO1,7`, 1 `MAM1,6` và `quocbao` lập đợt "60 bộ BO-1,7"
-- **THEN** phiếu có 3 dòng: 120 `H1,7`, 120 `CHEO1,7`, 60 `MAM1,6` **AND** D6 hiện "60 bộ 1,7m = 120 khung, 120 chéo, 60 mâm"
+- **THEN** phiếu có 3 dòng: 120 `H1,7`, 120 `CHEO1,7`, 60 `MAM1,6` **AND** D6 hiện "60 bộ giàn giáo 1,7m = 120 khung, 120 chéo, 60 mâm"
 
 #### Scenario: Bộ và mã lẻ cùng mã
 - **WHEN** `quocbao` lập "60 bộ BO-1,7" và thêm lẻ 40 `CHEO1,7`
@@ -366,8 +366,8 @@ Mỗi lệnh làm đổi phiếu xuất SHALL ghi đúng một dòng nhật ký 
 - **THEN** có đúng một dòng Ghi sổ `PX-2026-001` "Xuất 120 khung, 80 chéo, 60 mâm · thiếu 40 chéo · hợp đồng sang Đang thực hiện" **AND** không có dòng nhật ký riêng cho hợp đồng
 
 #### Scenario: Lập đợt
-- **WHEN** `quocbao` lập `PX-2026-140` "Đợt 3 · 60 bộ 1,7m", cước 1.800.000 ₫
-- **THEN** có một dòng Tạo `PX-2026-140` "Đợt 3 · 60 bộ 1,7m = 3 mã · cước 1.800.000 ₫"
+- **WHEN** `quocbao` lập `PX-2026-140` "Đợt 3 · 60 bộ giàn giáo 1,7m", cước 1.800.000 ₫
+- **THEN** có một dòng Tạo `PX-2026-140` "Đợt 3 · 60 bộ giàn giáo 1,7m = 3 mã · cước 1.800.000 ₫"
 
 #### Scenario: Lưu không đổi gì
 - **WHEN** `quocbao` bấm Lưu trên `PX-2026-141` mà không sửa trường nào
