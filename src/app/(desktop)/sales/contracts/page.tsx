@@ -72,13 +72,22 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
             )}
           </p>
         </div>
-        {canCreate ? (
-          <Button asChild>
-            <Link href="/sales/contracts/new">
-              <Plus aria-hidden /> Tạo hợp đồng
-            </Link>
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {canContract(user, "RENTAL", "view") ? (
+            <Button asChild variant="outline">
+              <Link href="/sales/compensations?status=PENDING">
+                Phiếu đền bù
+              </Link>
+            </Button>
+          ) : null}
+          {canCreate ? (
+            <Button asChild>
+              <Link href="/sales/contracts/new">
+                <Plus aria-hidden /> Tạo hợp đồng
+              </Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
       <section
         aria-labelledby="contracts-title"

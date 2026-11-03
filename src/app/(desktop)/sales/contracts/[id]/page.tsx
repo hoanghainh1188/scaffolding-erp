@@ -18,6 +18,7 @@ import {
   LinesTable,
   TermsSummary,
 } from "@/components/contracts/contract-view";
+import { CompensationStatusBadge } from "@/components/compensations/compensation-badge";
 import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
 import {
@@ -27,6 +28,7 @@ import {
 } from "@/domain/business-date";
 import { formatMoney, toMoney } from "@/domain/money";
 import { requirePermission } from "@/lib/auth/guard";
+import { contractCompensations } from "@/lib/compensations/queries";
 import { getContractDetail } from "@/lib/contracts/queries";
 
 export const metadata: Metadata = { title: "Hợp đồng" };
@@ -54,6 +56,10 @@ export default async function Page({
     notFound();
   }
   const { head, shown, checks, revisions, can, openAmendment } = found.data;
+  const compensations =
+    head.type === "RENTAL"
+      ? await contractCompensations(getDatabase(), head.id)
+      : [];
 
   return (
     <div className="flex w-full max-w-[1280px] flex-col gap-6">
@@ -165,6 +171,36 @@ export default async function Page({
                 Bảng giá đền bù
               </h2>
               <CompensationList view={shown} />
+            </section>
+          ) : null}
+
+          {compensations.length > 0 ? (
+            <section
+              aria-labelledby="compensation-notes-title"
+              className="flex flex-col gap-3 rounded-lg border bg-card p-5"
+            >
+              <h2 id="compensation-notes-title" className="text-h2">
+                Đền bù
+              </h2>
+              <ul className="flex flex-col gap-2 text-sm">
+                {compensations.map((row) => (
+                  <li
+                    key={row.id}
+                    className="flex flex-wrap items-center gap-2"
+                  >
+                    <Link
+                      href={`/sales/compensations/${row.code}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {row.code}
+                    </Link>
+                    <span>
+                      · {row.returnCode} · {money(row.amount)} ·
+                    </span>
+                    <CompensationStatusBadge status={row.status} />
+                  </li>
+                ))}
+              </ul>
             </section>
           ) : null}
 

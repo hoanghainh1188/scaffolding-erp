@@ -130,11 +130,11 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - chưa đăng nhập xem ảnh → 401;
   - header ảnh đúng;
   - `route-guards.test.ts` xanh.
-- [ ] 4.3 Cảnh báo dung lượng ảnh: `GET /api/health` thêm `data.photoStorage` (`sum(byte_size)` so `PHOTO_STORAGE_WARN_BYTES`, không trả số), trang Cài đặt hiện số MB và câu cảnh báo cho Giám đốc. Kiểm: route test health 210 MB → `"warning"`, 35 MB → `"ok"`, phản hồi không có số MB; component test câu cảnh báo của spec `system-health`; test cũ của health vẫn xanh.
+- [x] 4.3 Cảnh báo dung lượng ảnh: `GET /api/health` thêm `data.photoStorage` (`sum(byte_size)` so `PHOTO_STORAGE_WARN_BYTES`, không trả số), trang Cài đặt hiện số MB và câu cảnh báo cho Giám đốc. Kiểm: route test health 210 MB → `"warning"`, 35 MB → `"ok"`, phản hồi không có số MB; component test câu cảnh báo của spec `system-health`; test cũ của health vẫn xanh.
 
 ## 5. Giao diện Desktop
 
-- [ ] 5.1 D8 `/sales/compensations/[code]` theo `docs/design/screens/D8-Compensation.dc.html` (token thay hex, số theo 0.2 #40, menu "Cho thuê & Bán"):
+- [x] 5.1 D8 `/sales/compensations/[code]` theo `docs/design/screens/D8-Compensation.dc.html` (token thay hex, số theo 0.2 #40, menu "Cho thuê & Bán"):
   - thanh chờ duyệt;
   - nguồn, bảng hàng hỏng / mất, ô nhập giá cho dòng chưa có giá;
   - ảnh (mở lớn);
@@ -143,9 +143,9 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - tóm tắt, hạn trả; phiếu đã duyệt / từ chối chỉ xem;
   - `requireContractAccess(view)`.
   - Kiểm: component test theo spec "Màn D8 Phiếu đền bù" và "Quyền với phiếu đền bù" (Kế toán không có nút), hộp thoại từ chối có câu "Từ chối thì không thu 3.915.000 ₫ đền bù của PTH-2026-071…".
-- [ ] 5.2 Danh sách `/sales/compensations` (lọc trạng thái trên URL, mặc định Chờ duyệt) + mục menu dưới "Cho thuê & Bán"; khối "Đền bù" trên D5. Kiểm: component test lọc `?status=PENDING` và dòng D5 "ĐB-2026-009 · PTH-2026-071 · 3.915.000 ₫ · Chờ duyệt".
-- [ ] 5.3 Chi tiết phiếu thu hồi `/sales/returns/[code]`: dòng chia tình trạng, ảnh, giá trị giảm, giá trị mất, liên kết `ĐB`, câu "Không có hàng hỏng hay mất…". Kiểm: component test hai ca của spec "Chi tiết phiếu thu hồi trên Desktop".
-- [ ] 5.4 D6: cột "Đã trả" thật (chỉ hàng về bãi), cột "Mất" riêng, dòng thu hồi trong dòng thời gian (bấm mở `/sales/returns/[code]`), khối "Cần kiểm tra" có phiếu thu hồi gửi muộn. Kiểm: component test scenario "Phiếu thu hồi trong dòng thời gian" và "Thu hồi gửi muộn"; test D6 cũ vẫn xanh.
+- [x] 5.2 Danh sách `/sales/compensations` (lọc trạng thái trên URL, mặc định Chờ duyệt) + mục menu dưới "Cho thuê & Bán"; khối "Đền bù" trên D5. Kiểm: component test lọc `?status=PENDING` và dòng D5 "ĐB-2026-009 · PTH-2026-071 · 3.915.000 ₫ · Chờ duyệt".
+- [x] 5.3 Chi tiết phiếu thu hồi `/sales/returns/[code]`: dòng chia tình trạng, ảnh, giá trị giảm, giá trị mất, liên kết `ĐB`, câu "Không có hàng hỏng hay mất…". Kiểm: component test hai ca của spec "Chi tiết phiếu thu hồi trên Desktop".
+- [x] 5.4 D6: cột "Đã trả" thật (chỉ hàng về bãi), cột "Mất" riêng, dòng thu hồi trong dòng thời gian (bấm mở `/sales/returns/[code]`), khối "Cần kiểm tra" có phiếu thu hồi gửi muộn. Kiểm: component test scenario "Phiếu thu hồi trong dòng thời gian" và "Thu hồi gửi muộn"; test D6 cũ vẫn xanh.
 
 ## 6. Giao diện Mobile
 

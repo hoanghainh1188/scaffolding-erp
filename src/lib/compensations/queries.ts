@@ -1,7 +1,7 @@
 // Reading compensation notes (returns-and-compensation design D11, D12): the
 // list with its status filter, D8 and the block on D5. Rental contract
 // readers only; the storekeeper and the workshop see none of it.
-import { and, desc, eq, inArray, type SQL } from "drizzle-orm";
+import { desc, eq, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import type { Database } from "@/db/client";
