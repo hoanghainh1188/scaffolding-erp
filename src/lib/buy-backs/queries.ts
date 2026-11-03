@@ -16,7 +16,15 @@ import { toBusinessDate, type BusinessDate } from "@/domain/business-date";
 import { buyBackTotal, type BuyBackStatus } from "@/domain/buy-back";
 import { amountsText } from "@/domain/delivery-summary";
 import { quantityFromDb, type QuantityUnit } from "@/domain/quantity";
-import { isUuid, milliOf } from "@/lib/deliveries/records";
+import { contractTermsAt } from "@/lib/contracts/terms";
+import {
+  isUuid,
+  itemFacts,
+  milliOf,
+  onSiteByItem,
+  type ItemFacts,
+} from "@/lib/deliveries/records";
+import { contractPlace } from "@/lib/site-transfers/records";
 
 type Reader = Pick<Database, "select">;
 
@@ -182,4 +190,76 @@ export async function contractBuyBacks(
     });
   }
   return result;
+}
+
+export interface BuyBackFormItem {
+  itemId: string;
+  code: string;
+  name: string;
+  unit: QuantityUnit;
+  onSiteMilli: number;
+  /** Lost price on the contract today; null when it has none. */
+  lostPrice: number | null;
+  /** ₫ a day on the contract today. */
+  dailyPrice: number;
+}
+
+export interface BuyBackForm {
+  contract: {
+    id: string;
+    code: string;
+    siteName: string;
+    customerName: string;
+    customerId: string;
+  };
+  items: BuyBackFormItem[];
+  paymentTermsDays: number;
+}
+
+/** D6c: what is on site with the contract's lost and daily prices. */
+export async function buyBackForm(
+  db: Reader,
+  contractId: string,
+  today: BusinessDate,
+): Promise<BuyBackForm | null> {
+  const place = await contractPlace(db, contractId);
+  if (!place || place.type !== "RENTAL" || place.status !== "ACTIVE") {
+    return null;
+  }
+  const [onSite, terms] = await Promise.all([
+    onSiteByItem(db, place.id),
+    contractTermsAt(db, place.id, today),
+  ]);
+  const ids = [...onSite].filter(([, milli]) => milli > 0).map(([id]) => id);
+  const facts = await itemFacts(db, ids);
+  const lost = new Map(
+    (terms?.compensations ?? []).map((row) => [row.itemId, row.lostPrice]),
+  );
+  const daily = new Map(
+    (terms?.lines ?? []).map((line) => [line.itemId, line.price ?? 0]),
+  );
+  return {
+    contract: {
+      id: place.id,
+      code: place.code,
+      siteName: place.siteName,
+      customerName: place.customerName,
+      customerId: place.customerId,
+    },
+    items: ids
+      .map((itemId) => {
+        const info = facts.get(itemId) as ItemFacts;
+        return {
+          itemId,
+          code: info.code,
+          name: info.name,
+          unit: info.unit,
+          onSiteMilli: onSite.get(itemId) ?? 0,
+          lostPrice: lost.get(itemId) ?? null,
+          dailyPrice: daily.get(itemId) ?? 0,
+        };
+      })
+      .sort((a, b) => a.code.localeCompare(b.code, "vi")),
+    paymentTermsDays: terms?.paymentTermsDays ?? 0,
+  };
 }
