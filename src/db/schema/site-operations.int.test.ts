@@ -35,7 +35,6 @@ let contractId = "";
 let revisionId = "";
 let otherContractId = "";
 let otherSiteLocationId = "";
-let yardId = "";
 let siteLocationId = "";
 let itemId = "";
 
@@ -59,11 +58,6 @@ beforeEach(async () => {
       searchText: "minh phat nt-0003",
     })
     .returning({ id: customer.id });
-  const [yard] = await db
-    .select({ id: location.id })
-    .from(location)
-    .where(eq(location.code, "BAI-01"));
-  yardId = yard?.id ?? "";
   const [place] = await db
     .insert(location)
     .values({ code: "CT-0003", name: "Trường THCS Dương Nội", type: "SITE" })

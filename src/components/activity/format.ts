@@ -69,6 +69,10 @@ export function documentHref(
       return `/inventory/stocktakes/${path}`;
     case "ITEM":
       return `/inventory/items/${path}`;
+    case "SITE_TRANSFER":
+      return `/sales/site-transfers/${path}`;
+    case "BUY_BACK":
+      return `/sales/buy-backs/${path}`;
     default:
       return null;
   }

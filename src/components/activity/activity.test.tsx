@@ -7,7 +7,9 @@ import type { ActivityRow } from "@/lib/activity/queries";
 
 import { ActivityFilters } from "./activity-filters";
 import { ActivityTable } from "./activity-table";
-import { dayHeading, rangeText } from "./format";
+import { actionLabel } from "@/domain/activity";
+
+import { dayHeading, documentHref, rangeText } from "./format";
 
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -225,5 +227,41 @@ describe("format", () => {
     expect(
       rangeText("2026-09-30" as BusinessDate, "2026-10-28" as BusinessDate),
     ).toBe("30/09–28/10");
+  });
+});
+
+describe("D18 with site operations (site-operations task 6.6)", () => {
+  it("lists transfers and buy-backs among the document types", () => {
+    render(
+      <ActivityFilters
+        values={{
+          from: "2026-11-01",
+          to: "2026-11-05",
+          userId: null,
+          type: null,
+          code: null,
+          group: null,
+          review: false,
+        }}
+        people={[]}
+        reviewCount={0}
+      />,
+    );
+    expect(
+      screen.getByRole("option", { name: "Phiếu chuyển công trình" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Phiếu mua lại" }),
+    ).toBeInTheDocument();
+  });
+
+  it("links the rows to their screens and labels the phone send", () => {
+    expect(documentHref("SITE_TRANSFER", "CCT-2026-004")).toBe(
+      "/sales/site-transfers/CCT-2026-004",
+    );
+    expect(documentHref("BUY_BACK", "MLA-2026-003")).toBe(
+      "/sales/buy-backs/MLA-2026-003",
+    );
+    expect(actionLabel("SEND", "SITE_TRANSFER")).toBe("Gửi điện thoại");
   });
 });

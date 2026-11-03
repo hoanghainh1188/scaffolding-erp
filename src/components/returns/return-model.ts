@@ -47,6 +47,8 @@ export interface ReturnPayload {
   lines: Record<string, CountedLine>;
   photos: DraftPhoto[];
   savedOnDeviceAt: string | null;
+  /** The waiting exchange this note brings back; null when unticked. */
+  exchangeId?: string | null;
   /** Set when the note was confirmed: what the outbox sends. */
   body?: object;
 }
@@ -189,6 +191,7 @@ export function bodyOf(
     vehiclePlate: payload.vehiclePlate.trim() || null,
     note: payload.note.trim() || null,
     savedOnDeviceAt,
+    ...(payload.exchangeId ? { exchangeId: payload.exchangeId } : {}),
     lines: items.flatMap((item) => {
       const line = payload.lines[item.itemId];
       if (!line || checkLine(item, line).empty) return [];
