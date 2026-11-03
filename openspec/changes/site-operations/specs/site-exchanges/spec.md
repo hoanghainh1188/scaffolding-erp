@@ -22,7 +22,7 @@ Mã giao ra SHALL có trên bản hợp đồng đang áp dụng (như phiếu x
 
 #### Scenario: Mã giao ra chưa có trên hợp đồng
 - **WHEN** giao 100 `CHEO1,2` mà bản đang áp dụng chưa có `CHEO1,2`
-- **THEN** hệ thống từ chối với "CHEO1,2 chưa có trên hợp đồng đang áp dụng. Bạn lập phụ lục trước."
+- **THEN** hệ thống từ chối với "Mã CHEO1,2 chưa có trên hợp đồng. Bạn lập phụ lục nếu khách cần thêm mã này." (câu của phiếu xuất)
 
 #### Scenario: Nhận về quá số ở công trình
 - **WHEN** công trình đang có 260 `CHEO1,7` và dự kiến nhận về 300

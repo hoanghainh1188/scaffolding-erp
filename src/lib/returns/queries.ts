@@ -32,6 +32,7 @@ import { returnValueSummary } from "@/domain/return-note";
 import { returnedText } from "@/domain/return-summary";
 import { notFound, ok, type ServiceResult } from "@/lib/catalog/common";
 import { forbidden, type ContractActor } from "@/lib/contracts/common";
+import { waitingExchanges } from "@/lib/exchanges/records";
 import {
   isUuid,
   milliOf,
@@ -139,6 +140,17 @@ export interface ReturnContract {
   siteName: string;
   customerName: string;
   yards: { id: string; code: string; name: string }[];
+  /** Waiting exchanges of the contract (site-operations D6), no price. */
+  exchanges: {
+    id: string;
+    deliveryCode: string;
+    expected: {
+      itemId: string;
+      code: string;
+      unit: QuantityUnit;
+      milli: number;
+    }[];
+  }[];
   items: {
     itemId: string;
     code: string;
@@ -177,12 +189,27 @@ export async function returnContract(
     .from(location)
     .where(and(eq(location.type, "YARD"), eq(location.status, "ACTIVE")))
     .orderBy(asc(location.code));
+  const waiting = await waitingExchanges(db, head.id);
+  const expectedFacts = await unitsOf(
+    db,
+    waiting.flatMap((row) => row.expected.map((line) => line.itemId)),
+  );
   return ok({
     contractId: head.id,
     contractCode: head.code,
     siteName: head.siteName,
     customerName: head.customerName,
     yards,
+    exchanges: waiting.map((row) => ({
+      id: row.id,
+      deliveryCode: row.deliveryCode,
+      expected: row.expected.map((line) => ({
+        itemId: line.itemId,
+        code: expectedFacts.get(line.itemId)?.code ?? "",
+        unit: expectedFacts.get(line.itemId)?.unit ?? "PIECE",
+        milli: line.milli,
+      })),
+    })),
     items: [...totals]
       .filter(([, milli]) => milli > 0)
       .map(([itemId, milli]) => {

@@ -65,6 +65,7 @@ import {
 } from "@/lib/contracts/common";
 import { lockContract, type LockedContract } from "@/lib/contracts/records";
 import { contractTermsAt } from "@/lib/contracts/terms";
+import { cancelExchangeOfDelivery } from "@/lib/exchanges/records";
 import { nextDocumentCode } from "@/lib/inventory/counter";
 
 import {
@@ -430,6 +431,69 @@ function overAmounts(over: readonly OverLine[]) {
   }));
 }
 
+export interface InsertedDelivery {
+  note: NoteRow;
+  batchNo: number;
+  lines: PlannedLine[];
+  kits: { kitId: string; quantity: number }[];
+  over: OverLine[];
+  freightAmount: number | null;
+}
+
+/**
+ * Plans and writes a new batch inside the caller's transaction, after the
+ * contract was locked and checked; no activity row (the caller logs). An
+ * exchange makes its batch through here (site-operations design D6).
+ */
+export async function insertDelivery(
+  tx: Tx,
+  actor: ContractActor,
+  contract: LockedContract,
+  body: DeliveryBody,
+  now: Date,
+): Promise<InsertedDelivery> {
+  const today = toBusinessDate(now);
+  const planned = await plan(tx, contract, body, today, null);
+  const code = await nextDocumentCode(
+    tx,
+    DELIVERY_PREFIX,
+    Number(today.slice(0, 4)),
+  );
+  const [last] = await tx
+    .select({ batchNo: max(deliveryNote.batchNo) })
+    .from(deliveryNote)
+    .where(eq(deliveryNote.contractId, contract.id));
+  const batchNo = (last?.batchNo ?? 0) + 1;
+  const [row] = await tx
+    .insert(deliveryNote)
+    .values({
+      code,
+      contractId: contract.id,
+      batchNo,
+      sourceLocationId: planned.yard.id,
+      siteLocationId: await siteLocationOf(tx, contract),
+      plannedDate: planned.parsed.plannedDate,
+      ...planned.freight,
+      vehiclePlate: planned.parsed.vehiclePlate,
+      note: planned.parsed.note,
+      overContractConfirmed: planned.over.length > 0,
+      createdBy: actor.id,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+  const note = row as NoteRow;
+  await writeContent(tx, note.id, planned);
+  return {
+    note,
+    batchNo,
+    lines: planned.lines,
+    kits: planned.parsed.kits,
+    over: planned.over,
+    freightAmount: planned.freight.freightAmount,
+  };
+}
+
 /** "Tạo đợt xuất" (deliveries spec "Phiếu xuất theo đợt của hợp đồng"). */
 export function createDelivery(
   db: Database,
@@ -443,59 +507,32 @@ export function createDelivery(
     }
     const contractId = body.contractId;
     const now = options.now ?? new Date();
-    const today = toBusinessDate(now);
     const saved = await db.transaction(async (tx) => {
       const contract = await lockContract(tx, contractId);
       assertContractAccess(actor, contract.type, "manage");
-      const planned = await plan(tx, contract, body, today, null);
-      const code = await nextDocumentCode(
-        tx,
-        DELIVERY_PREFIX,
-        Number(today.slice(0, 4)),
-      );
-      const [last] = await tx
-        .select({ batchNo: max(deliveryNote.batchNo) })
-        .from(deliveryNote)
-        .where(eq(deliveryNote.contractId, contract.id));
-      const batchNo = (last?.batchNo ?? 0) + 1;
-      const [row] = await tx
-        .insert(deliveryNote)
-        .values({
-          code,
-          contractId: contract.id,
-          batchNo,
-          sourceLocationId: planned.yard.id,
-          siteLocationId: await siteLocationOf(tx, contract),
-          plannedDate: planned.parsed.plannedDate,
-          ...planned.freight,
-          vehiclePlate: planned.parsed.vehiclePlate,
-          note: planned.parsed.note,
-          overContractConfirmed: planned.over.length > 0,
-          createdBy: actor.id,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .returning();
-      const note = row as NoteRow;
-      await writeContent(tx, note.id, planned);
+      const made = await insertDelivery(tx, actor, contract, body, now);
       await logActivity(
         tx,
         actor,
         {
           action: "CREATE",
-          document: { type: DELIVERY_DOCUMENT_TYPE, id: note.id, code },
+          document: {
+            type: DELIVERY_DOCUMENT_TYPE,
+            id: made.note.id,
+            code: made.note.code,
+          },
           summary: createdSummary({
-            batchNo,
-            kits: await kitNames(tx, planned.parsed.kits),
-            lineCount: planned.lines.length,
-            freight: planned.freight.freightAmount,
-            over: overAmounts(planned.over),
+            batchNo: made.batchNo,
+            kits: await kitNames(tx, made.kits),
+            lineCount: made.lines.length,
+            freight: made.freightAmount,
+            over: overAmounts(made.over),
           }),
-          anomaly: planned.over.length > 0,
+          anomaly: made.over.length > 0,
         },
         { now },
       );
-      return savedOf(note);
+      return savedOf(made.note);
     });
     return ok(saved);
   });
@@ -762,6 +799,9 @@ export function changeDeliveryStatus(
         })
         .where(eq(deliveryNote.id, note.id))
         .returning();
+      if (command === "CANCEL" && text !== null) {
+        await cancelExchangeOfDelivery(tx, note.id, text, now);
+      }
       await logActivity(
         tx,
         actor,

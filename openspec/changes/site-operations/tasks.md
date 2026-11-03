@@ -57,19 +57,19 @@ Quyết định đã chốt khi vẽ (PR #137, 0.2 #66–#68): chuyển công tr
 
 ## 4. Phiếu mua lại (service + API)
 
-- [ ] 4.1 `src/lib/buy-backs/service.ts`: lập (Chờ duyệt, giá điền sẵn từ `contractTermsAt` hôm nay, lưu `contract_price`), sửa (`updatedAt` → 409). Kiểm: integration test giá điền sẵn, sửa giá được đánh dấu, thiếu giá mất bị chặn, mua quá bị chặn, một dòng nhật ký mỗi lệnh, giá khác hợp đồng gắn cờ.
-- [ ] 4.2 `src/lib/buy-backs/approve.ts`: duyệt (khóa hợp đồng → phiếu, kiểm lại đang ở công trình, `overdueDebt` → lý do, `SALE_OUT` ở công trình rút Mới trước, lưu `amount_due`, `approved_date`, `due_date`), từ chối (lý do). Kiểm: integration test:
+- [x] 4.1 `src/lib/buy-backs/service.ts`: lập (Chờ duyệt, giá điền sẵn từ `contractTermsAt` hôm nay, lưu `contract_price`), sửa (`updatedAt` → 409). Kiểm: integration test giá điền sẵn, sửa giá được đánh dấu, thiếu giá mất bị chặn, mua quá bị chặn, một dòng nhật ký mỗi lệnh, giá khác hợp đồng gắn cờ.
+- [x] 4.2 `src/lib/buy-backs/approve.ts`: duyệt (khóa hợp đồng → phiếu, kiểm lại đang ở công trình, `overdueDebt` → lý do, `SALE_OUT` ở công trình rút Mới trước, lưu `amount_due`, `approved_date`, `due_date`), từ chối (lý do). Kiểm: integration test:
   - **mua lại thôi tính thuê đúng ngày**: duyệt ngày 05/11/2026 → dòng sổ ngày 05/11, đang ở công trình giảm 20 `TR16` từ đó; tiền thuê 1 ngày giảm 3.000 ₫;
   - **ra tiền bán đúng**: `amount_due` 1.300.000 ₫, hạn trả 05/12/2026; giá BQ không đổi, `inventory:check` 0 lệch;
   - hàng đã trả về trước khi duyệt bị chặn, phiếu vẫn Chờ duyệt; từ chối không ghi sổ;
   - hai lệnh duyệt cùng lúc → một lần ghi sổ; một dòng nhật ký Duyệt / Từ chối.
-- [ ] 4.3 Route `/api/buy-backs` (D10) bọc `withAuth`, quyền theo D7. Kiểm: 403 cho `quocbao` duyệt, `thuyvy` lập; `route-guards.test.ts` xanh.
+- [x] 4.3 Route `/api/buy-backs` (D10) bọc `withAuth`, quyền theo D7. Kiểm: 403 cho `quocbao` duyệt, `thuyvy` lập; `route-guards.test.ts` xanh.
 
 ## 5. Đổi hàng (service + API, nối M4)
 
-- [ ] 5.1 `src/lib/exchanges/service.ts`: lập đổi hàng gọi hàm tạo đợt của `deliveries` và tạo `delivery_exchange` trong một transaction; bỏ chờ thu hồi (lý do); hủy phiếu xuất của lần đổi `WAITING` thì hủy lần đổi. Kiểm: integration test mã giao ra chưa có trên hợp đồng, nhận về quá, không có mã nhận về, nhật ký đúng một dòng Tạo "Đổi hàng · …", bỏ chờ thu hồi một dòng Sửa.
-- [ ] 5.2 `postReturn` nhận `exchangeId`: sau khóa hợp đồng, khóa `delivery_exchange` `FOR UPDATE`, kiểm cùng hợp đồng và `WAITING`, nối và `DONE`. Kiểm: integration test nối đúng; lần đổi của hợp đồng khác bị chặn; hai phiếu nối cùng lần đổi → một phiếu; không gửi `exchangeId` → như cũ; ngày đổi: xuất 06/11 và thu hồi 06/11 cho đúng dòng sổ hai ngày.
-- [ ] 5.3 Route `/api/exchanges` và trường `exchangeId` của `POST /api/m/returns`; `GET /api/m/returns/contracts/<id>` trả lần đổi chờ (mã, số dự kiến, không giá). Kiểm: integration test 403 cho `vantung` lập đổi hàng; API M4 không có giá.
+- [x] 5.1 `src/lib/exchanges/service.ts`: lập đổi hàng gọi hàm tạo đợt của `deliveries` và tạo `delivery_exchange` trong một transaction; bỏ chờ thu hồi (lý do); hủy phiếu xuất của lần đổi `WAITING` thì hủy lần đổi. Kiểm: integration test mã giao ra chưa có trên hợp đồng, nhận về quá, không có mã nhận về, nhật ký đúng một dòng Tạo "Đổi hàng · …", bỏ chờ thu hồi một dòng Sửa.
+- [x] 5.2 `postReturn` nhận `exchangeId`: sau khóa hợp đồng, khóa `delivery_exchange` `FOR UPDATE`, kiểm cùng hợp đồng và `WAITING`, nối và `DONE`. Kiểm: integration test nối đúng; lần đổi của hợp đồng khác bị chặn; hai phiếu nối cùng lần đổi → một phiếu; không gửi `exchangeId` → như cũ; ngày đổi: xuất 06/11 và thu hồi 06/11 cho đúng dòng sổ hai ngày.
+- [x] 5.3 Route `/api/exchanges` và trường `exchangeId` của `POST /api/m/returns`; `GET /api/m/returns/contracts/<id>` trả lần đổi chờ (mã, số dự kiến, không giá). Kiểm: integration test 403 cho `vantung` lập đổi hàng; API M4 không có giá.
 
 ## 6. Giao diện
 

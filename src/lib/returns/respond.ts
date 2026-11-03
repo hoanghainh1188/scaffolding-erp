@@ -26,6 +26,7 @@ export const returnBody = z.object({
     .max(200)
     .optional(),
   photoIds: z.array(id).max(20).optional(),
+  exchangeId: id.nullable().optional(),
 });
 
 const prices = z
