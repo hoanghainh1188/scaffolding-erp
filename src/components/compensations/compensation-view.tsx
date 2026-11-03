@@ -179,9 +179,12 @@ export function CompensationView(props: CompensationViewProps) {
               <h2 id="compensation-approval" className="text-h2">
                 Phiếu đền bù đang chờ bạn duyệt
               </h2>
-              <p data-mask className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Tự tạo từ phiếu thu hồi {props.returnCode} lúc{" "}
-                {props.createdAtText}. Duyệt xong mới cộng vào công nợ.
+                <span data-clock className="inline-block w-34">
+                  {props.createdAtText}
+                </span>
+                . Duyệt xong mới cộng vào công nợ.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -297,7 +300,11 @@ export function CompensationView(props: CompensationViewProps) {
             <p className="text-sm text-muted-foreground">
               Đơn giá lấy từ bảng giá đền bù của {props.contractCode}. Phế liệu
               tính như mất. Hàng mất thôi tính tiền thuê từ ngày lập phiếu thu
-              hồi ({formatBusinessDate(props.returnDate)}).
+              hồi (
+              <span data-clock className="inline-block w-24">
+                {formatBusinessDate(props.returnDate)}
+              </span>
+              ).
             </p>
           </section>
         </div>
