@@ -86,7 +86,10 @@ describe("D8", () => {
     render(<CompensationView {...D8} />);
     expect(
       screen.getByText(
-        "Tự tạo từ phiếu thu hồi PTH-2026-071 lúc 05/11/2026 09:40. Duyệt xong mới cộng vào công nợ.",
+        (_, element) =>
+          element?.tagName === "P" &&
+          element.textContent ===
+            "Tự tạo từ phiếu thu hồi PTH-2026-071 lúc 05/11/2026 09:40. Duyệt xong mới cộng vào công nợ.",
       ),
     ).toBeInTheDocument();
     expect(

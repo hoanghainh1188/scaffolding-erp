@@ -75,7 +75,10 @@ export default async function Page({
               >
                 {note.returnNote.code}
               </Link>{" "}
-              · {formatBusinessDate(note.returnNote.businessDate)}
+              ·{" "}
+              <span data-clock className="inline-block w-24">
+                {formatBusinessDate(note.returnNote.businessDate)}
+              </span>
             </dd>
           </div>
           <div>
