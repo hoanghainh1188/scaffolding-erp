@@ -402,6 +402,14 @@ export function checkOverDelivery(
     const extra = line.requestedMilli - row.unplannedMilli;
     if (extra <= 0) continue;
     const unit = lineUnit(row.line);
+    // By kg the whole sale may reach the contract + 10 % (0.2 #57).
+    const kgWithin =
+      byWeight(row.line.pricingUnit ?? "") &&
+      withinTolerance(
+        row.doneMilli + row.openMilli + line.requestedMilli,
+        row.contractMilli,
+      );
+    if (type === "SALE" && kgWithin) continue;
     if (type === "SALE") {
       fail(
         DELIVERY_MESSAGES.overSale(
@@ -581,22 +589,27 @@ export interface SaleCheckLine {
   line: TermsLine;
   /** What this note delivers on the line (weighed kg for a sale by kg). */
   deliveredMilli: number;
-  /** Left before this note. */
-  remainingMilli: number;
+  /** Delivered by earlier notes (weighed kg for a sale by kg). */
+  doneMilli: number;
 }
 
-/** A sale cannot go past the contract when posted; kg within 10 % (0.2 #57). */
+/**
+ * A sale cannot go past the contract when posted. By kg, the whole of what
+ * was delivered, this trip included, may reach the contract + 10 % (0.2
+ * #57): a last trip weighing 25 kg when 20 kg were left still goes.
+ */
 export function assertSaleWithinRemaining(
   lines: readonly SaleCheckLine[],
 ): void {
-  for (const { line, deliveredMilli, remainingMilli } of lines) {
+  for (const { line, deliveredMilli, doneMilli } of lines) {
+    const total = doneMilli + deliveredMilli;
     const ok = byWeight(line.pricingUnit ?? "")
-      ? withinTolerance(deliveredMilli, remainingMilli)
-      : deliveredMilli <= remainingMilli;
+      ? withinTolerance(total, line.quantityMilli)
+      : total <= line.quantityMilli;
     if (!ok) {
       fail(
         DELIVERY_MESSAGES.overSaleAtPosting(
-          amount(remainingMilli, lineUnit(line)),
+          amount(Math.max(line.quantityMilli - doneMilli, 0), lineUnit(line)),
           lineLabel(line),
         ),
       );

@@ -209,39 +209,45 @@ describe("two postings at once", () => {
     }
   });
 
-  it("archiving an item and posting it take turns", async () => {
-    for (let round = 0; round < ROUNDS; round += 1) {
-      await setupInventoryFixture(ctx).then((fresh) => {
-        fx = fresh;
-      });
-      const [posted, archived] = await settle([
-        post(ctx.db, "A", [
-          line("OT-06", "OPENING", 5, { amount: 5 * 450_000 }),
-        ]),
-        updateItem(other.db, fx.director, fx.item("OT-06"), {
-          status: "ARCHIVED",
-        }),
-      ]);
-      const archiveResult =
-        archived?.status === "fulfilled"
-          ? (archived.value as { ok: boolean; error?: string })
-          : null;
-      if (posted?.status === "fulfilled") {
-        // The posting went first: the archive saw the stock.
-        expect(archiveResult).toEqual({
-          ok: false,
-          status: 409,
-          error: "OT-06 còn tồn 5 cái, chỉ ngừng dùng được khi tồn về 0",
+  it(
+    "archiving an item and posting it take turns",
+    async () => {
+      for (let round = 0; round < ROUNDS; round += 1) {
+        await setupInventoryFixture(ctx).then((fresh) => {
+          fx = fresh;
         });
-      } else {
-        // The archive went first: the posting saw an archived item.
-        expect(archiveResult?.ok).toBe(true);
-        expect((posted as PromiseRejectedResult).reason.result.error).toBe(
-          "Vật tư OT-06 đã ngừng dùng",
-        );
+        const [posted, archived] = await settle([
+          post(ctx.db, "A", [
+            line("OT-06", "OPENING", 5, { amount: 5 * 450_000 }),
+          ]),
+          updateItem(other.db, fx.director, fx.item("OT-06"), {
+            status: "ARCHIVED",
+          }),
+        ]);
+        const archiveResult =
+          archived?.status === "fulfilled"
+            ? (archived.value as { ok: boolean; error?: string })
+            : null;
+        if (posted?.status === "fulfilled") {
+          // The posting went first: the archive saw the stock.
+          expect(archiveResult).toEqual({
+            ok: false,
+            status: 409,
+            error: "OT-06 còn tồn 5 cái, chỉ ngừng dùng được khi tồn về 0",
+          });
+        } else {
+          // The archive went first: the posting saw an archived item.
+          expect(archiveResult?.ok).toBe(true);
+          expect((posted as PromiseRejectedResult).reason.result.error).toBe(
+            "Vật tư OT-06 đã ngừng dùng",
+          );
+        }
       }
-    }
-  });
+      // Each round rebuilds the whole fixture (every table, delivery notes
+      // included), so the default 5 s is too tight for eight rounds.
+    },
+    ROUNDS * 4_000,
+  );
 });
 
 describe("document numbers", () => {

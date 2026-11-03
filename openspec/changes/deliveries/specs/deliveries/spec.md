@@ -109,7 +109,7 @@ Hệ thống SHALL tính "còn phải giao" mỗi lần đọc, không lưu, t�
 - **THEN** D6 hiện còn phải giao 0 kèm "đã giao vượt 20"
 
 ### Requirement: Số cần vượt số còn phải giao
-Lập hoặc sửa đợt có số cần lớn hơn "chưa lên phiếu" SHALL: với hợp đồng thuê, cảnh báo và chỉ lưu khi người lập xác nhận xuất vượt; với hợp đồng bán, từ chối. Lúc ghi sổ, hợp đồng bán SHALL từ chối nếu số giao vượt số còn phải giao lúc đó. Dòng bán theo kg SHALL được vượt tới 10 % kg cân (đúng 10 % vẫn qua); vượt hơn mới từ chối.
+Lập hoặc sửa đợt có số cần lớn hơn "chưa lên phiếu" SHALL: với hợp đồng thuê, cảnh báo và chỉ lưu khi người lập xác nhận xuất vượt; với hợp đồng bán, từ chối. Lúc ghi sổ, hợp đồng bán SHALL từ chối nếu số giao vượt số còn phải giao lúc đó. Dòng bán theo kg SHALL cho tổng đã giao (kể cả chuyến này và các phiếu đang mở khi lập) vượt số trên hợp đồng tới 10 % (đúng 10 % vẫn qua); vượt hơn mới từ chối.
 
 #### Scenario: Thuê vượt chưa xác nhận
 - **WHEN** `CHEO1,7` chưa lên phiếu 80 và `quocbao` lưu đợt cần 100 mà không tích xác nhận
@@ -130,6 +130,12 @@ Lập hoặc sửa đợt có số cần lớn hơn "chưa lên phiếu" SHALL: 
 #### Scenario: Cân vượt dung sai
 - **WHEN** cùng dòng đó và thủ kho cân được 1.400 kg (hơn 1.375,55 kg = 1.250,5 + 10 %)
 - **THEN** hệ thống từ chối với "Kg cân của H1,7 Tốt (1.400 kg) vượt số cần 1.250,5 kg quá 10 %. Văn phòng cần sửa phiếu hoặc lập phụ lục." **AND** không ghi sổ
+
+#### Scenario: Chuyến cuối nặng hơn phần còn lại
+- **WHEN** hợp đồng bán 1.000 kg `H1,7` Tốt đã giao 980 kg, văn phòng lập chuyến cuối 25 kg và thủ kho cân 25 kg
+- **THEN** phiếu được lập và ghi sổ (tổng 1.005 kg ≤ 1.100 kg)
+- **AND WHEN** sau đó văn phòng lập thêm 100 kg (tổng 1.105 kg)
+- **THEN** hệ thống từ chối với "Hợp đồng bán chỉ còn phải giao 0 kg H1,7 Tốt. Bạn lập phụ lục nếu khách mua thêm."
 
 #### Scenario: Bán vượt lúc ghi sổ
 - **WHEN** hai phiếu bán Đang nhặt cùng cần 100 cái `H1,7` Mới khi còn phải giao 150, phiếu A đã ghi sổ 100, rồi thủ kho xác nhận phiếu B nhặt 100

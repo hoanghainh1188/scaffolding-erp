@@ -106,8 +106,8 @@ Chi tiết ở `docs/requirements.md` Mục 0. Tóm tắt:
 - **Sổ kho (inventory ledger)** chỉ ghi thêm. Không UPDATE/DELETE dòng cũ. Sai thì ghi dòng điều chỉnh.
 - Tồn kho, giá vốn, tiền thuê **luôn tính từ sổ kho**, không lưu số "cộng dồn" ở chỗ khác mà không đối chiếu.
 - **Giá vốn bình quân** theo (mã hàng + tình trạng).
-- 4 tình trạng: `NEW`, `GOOD`, `NEEDS_REPAIR`, `SCRAP`. Chỉ `NEW`, `GOOD` được xuất bán/cho thuê.
-- **Tiền thuê:** đếm từ ngày sau ngày xuất (N+1) đến hết ngày trả: số ngày = ngày trả − ngày xuất. Tiền thuê = giá ngày × số ngày thực tế (tháng 28–31 ngày), thuê tối thiểu 45 ngày (0.2 #4, #39). Giá tháng hiển thị = giá ngày × 30, chỉ để quy đổi.
+- 4 tình trạng: `NEW`, `GOOD`, `NEEDS_REPAIR`, `SCRAP`. Cho thuê chỉ xuất `NEW`, `GOOD`; hợp đồng bán bán được `NEW`, `GOOD` và Phế liệu (`SCRAP`, chỉ theo kg).
+- **Tiền thuê:** đếm từ ngày sau ngày xuất (N+1) đến hết ngày trả: số ngày = ngày trả − ngày xuất. Tiền thuê = giá ngày × số ngày thực tế (tháng 28–31 ngày), thuê tối thiểu 45 ngày (0.2 #4, #39). Giá tháng chỉ để hiện: màn hợp đồng hiện theo số ngày thực của tháng (giá ngày × 30 và × 31); riêng cột giá tháng ở D9 (danh mục) vẫn giá ngày × 30 để quy đổi.
 - Hợp đồng và phiếu đền bù chỉ có hiệu lực sau khi **Giám đốc duyệt**.
 
 ## Quy ước code

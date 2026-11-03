@@ -534,6 +534,37 @@ describe("assertPicks", () => {
   });
 });
 
+describe("checkOverDelivery by kg", () => {
+  it("plans a last sale trip within 10 % of the contract", () => {
+    const line: TermsLine = {
+      itemId: "h17",
+      itemCode: "H1,7",
+      unit: "PIECE",
+      condition: "GOOD",
+      pricingUnit: "KG",
+      quantityMilli: 1_000_000,
+    };
+    const rows = remainingToDeliver({
+      type: "SALE",
+      terms: [line],
+      done: new Map([[lineKey("h17", "GOOD", "KG"), 980_000]]),
+      open: new Map(),
+    });
+    const ask = (requestedMilli: number) => [
+      {
+        itemId: "h17",
+        condition: "GOOD" as const,
+        pricingUnit: "KG" as const,
+        requestedMilli,
+      },
+    ];
+    expect(checkOverDelivery("SALE", ask(25_000), rows, false)).toEqual([]);
+    expect(() => checkOverDelivery("SALE", ask(125_000), rows, false)).toThrow(
+      "Hợp đồng bán chỉ còn phải giao 20 kg H1,7 Tốt. Bạn lập phụ lục nếu khách mua thêm.",
+    );
+  });
+});
+
 describe("assertSaleWithinRemaining", () => {
   const pieces: TermsLine = {
     itemId: "h17",
@@ -553,22 +584,38 @@ describe("assertSaleWithinRemaining", () => {
   it("refuses a second sale note past what is left", () => {
     expect(() =>
       assertSaleWithinRemaining([
-        { line: pieces, deliveredMilli: 100_000, remainingMilli: 50_000 },
+        { line: pieces, deliveredMilli: 100_000, doneMilli: 100_000 },
       ]),
     ).toThrow("Hợp đồng bán chỉ còn phải giao 50 cái H1,7 Mới.");
   });
 
-  it("lets kg through within 10 %", () => {
+  it("lets kg through within 10 % of the contract", () => {
     expect(() =>
       assertSaleWithinRemaining([
-        { line: byKg, deliveredMilli: 1_258_000, remainingMilli: 1_250_500 },
+        { line: byKg, deliveredMilli: 1_258_000, doneMilli: 0 },
       ]),
     ).not.toThrow();
     expect(() =>
       assertSaleWithinRemaining([
-        { line: byKg, deliveredMilli: 1_400_000, remainingMilli: 1_250_500 },
+        { line: byKg, deliveredMilli: 1_400_000, doneMilli: 0 },
       ]),
     ).toThrow("Hợp đồng bán chỉ còn phải giao 1.250,5 kg H1,7 Tốt.");
+  });
+
+  it("lets a heavy last trip through when the whole stays within 10 %", () => {
+    const thousand: TermsLine = { ...byKg, quantityMilli: 1_000_000 };
+    // 980 kg delivered, 20 kg left, the last heap weighs 25 kg.
+    expect(() =>
+      assertSaleWithinRemaining([
+        { line: thousand, deliveredMilli: 25_000, doneMilli: 980_000 },
+      ]),
+    ).not.toThrow();
+    // 980 + 125 = 1.105 kg > 1.100 kg.
+    expect(() =>
+      assertSaleWithinRemaining([
+        { line: thousand, deliveredMilli: 125_000, doneMilli: 980_000 },
+      ]),
+    ).toThrow("Hợp đồng bán chỉ còn phải giao 20 kg H1,7 Tốt.");
   });
 });
 

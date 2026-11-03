@@ -374,7 +374,7 @@ async function postInTransaction(
         .map((line) => ({
           line: byKey.get(keyOf(line)) as TermsLine,
           deliveredMilli: pickedMilli(line),
-          remainingMilli: remainingByKey.get(keyOf(line))?.remainingMilli ?? 0,
+          doneMilli: remainingByKey.get(keyOf(line))?.doneMilli ?? 0,
         })),
     );
   }

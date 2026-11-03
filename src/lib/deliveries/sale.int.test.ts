@@ -201,6 +201,66 @@ describe("a sale picked up at the yard", () => {
   });
 });
 
+describe("weighing tolerance on the whole sale", () => {
+  it("lets a heavy last trip through and refuses going past 10 %", async () => {
+    const deal = await approvedContract(ctx, fx, {
+      ...kgSale(fx),
+      lines: [
+        {
+          itemId: fx.item("GG-K17"),
+          condition: "GOOD",
+          pricingUnit: "KG",
+          quantity: "1000",
+          price: 14_000,
+        },
+      ],
+    });
+    const trip = async (requested: string, pieces: string, weighed: string) => {
+      const note = await planned(ctx, fx, {
+        contractId: deal.id,
+        lines: [
+          {
+            itemId: fx.item("GG-K17"),
+            condition: "GOOD",
+            pricingUnit: "KG",
+            quantity: requested,
+          },
+        ],
+      });
+      const version = await started(ctx, fx, note.id);
+      return confirm(ctx, fx, note.id, version, [
+        {
+          lineId: await lineId(note.id),
+          condition: "GOOD",
+          quantity: pieces,
+          weighedKg: weighed,
+        },
+      ]);
+    };
+    expect((await trip("980", "72", "980")).ok).toBe(true);
+    // 20 kg left; the last heap weighs 25 kg: 1.005 kg ≤ 1.100 kg.
+    expect((await trip("25", "2", "25")).ok).toBe(true);
+    // 1.005 + 100 = 1.105 kg > 1.100 kg: refused when planned.
+    expect(
+      await createDelivery(ctx.db, fx.sales, {
+        contractId: deal.id,
+        lines: [
+          {
+            itemId: fx.item("GG-K17"),
+            condition: "GOOD",
+            pricingUnit: "KG",
+            quantity: "100",
+          },
+        ],
+      }),
+    ).toMatchObject({
+      ok: false,
+      error:
+        "Hợp đồng bán chỉ còn phải giao 0 kg GG-K17 Tốt. Bạn lập phụ lục nếu khách mua thêm.",
+    });
+  });
+});
+
 describe("edge inputs", () => {
   it("answers 404 and 403 on the office reads", async () => {
     const deal = await approvedRental(ctx, fx);
