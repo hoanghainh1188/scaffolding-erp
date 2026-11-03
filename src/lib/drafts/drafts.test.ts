@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createOutbox,
+  deliverySender,
   nextRetryDelay,
   draftSender,
   receiptSender,
@@ -321,5 +322,96 @@ describe("stocktakeSender", () => {
     release(Response.json({ data: { code: "KK-2026-003" } }));
     expect(await first).toEqual({ kind: "POSTED", code: "KK-2026-003" });
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("deliverySender", () => {
+  const deliveryDraft = (overrides: Partial<DraftRecord> = {}) =>
+    draft({
+      draftId: "9b2e0000-0000-4000-8000-000000000004",
+      kind: "DELIVERY",
+      documentRef: "PX-2026-140",
+      title: "Xuất PX-2026-140 · An Phú – Block B",
+      progress: "200 / 300 cái",
+      payload: {
+        body: {
+          startedVersion: "2026-11-03T02:40:00.000Z",
+          vehiclePlate: "51X-000.01",
+          picks: [{ lineId: "l1", condition: "GOOD", quantity: "120" }],
+        },
+      },
+      ...overrides,
+    });
+
+  it("posts the picks with the draft id as client draft id", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      Response.json({ data: { code: "PX-2026-140" } }, { status: 201 }),
+    );
+    expect(await deliverySender(fetcher)(deliveryDraft())).toEqual({
+      kind: "POSTED",
+      code: "PX-2026-140",
+    });
+    const [url, init] = fetcher.mock.calls[0] ?? [];
+    expect(url).toBe("/api/m/deliveries/PX-2026-140/post");
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      clientDraftId: deliveryDraft().draftId,
+      startedVersion: "2026-11-03T02:40:00.000Z",
+      vehiclePlate: "51X-000.01",
+    });
+  });
+
+  it("keeps the picks when the office changed the note (409)", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      Response.json(
+        {
+          data: null,
+          error:
+            "Văn phòng đã đổi phiếu PX-2026-140 sau khi bạn bắt đầu nhặt. Bạn mở lại phiếu để nhặt theo số mới.",
+        },
+        { status: 409 },
+      ),
+    );
+    const store = memoryDraftStore();
+    const outbox = createOutbox({
+      store,
+      userId: "vantung",
+      send: draftSender(fetcher),
+    });
+    await store.put(deliveryDraft());
+    expect(await outbox.submit(deliveryDraft().draftId)).toMatchObject({
+      kind: "REJECTED",
+    });
+    const kept = await store.get(deliveryDraft().draftId);
+    expect(kept?.state).toBe("REJECTED");
+    expect(kept?.payload).toEqual(deliveryDraft().payload);
+  });
+
+  it("stays queued when offline and when signed out", async () => {
+    const store = memoryDraftStore();
+    const offline = createOutbox({
+      store,
+      userId: "vantung",
+      send: deliverySender(
+        vi.fn<typeof fetch>(async () => {
+          throw new TypeError("offline");
+        }),
+      ),
+    });
+    await store.put(deliveryDraft());
+    expect(await offline.submit(deliveryDraft().draftId)).toEqual({
+      kind: "RETRY",
+    });
+    expect((await store.get(deliveryDraft().draftId))?.state).toBe("QUEUED");
+    const signedOut = createOutbox({
+      store,
+      userId: "vantung",
+      send: deliverySender(
+        vi.fn<typeof fetch>(async () => new Response(null, { status: 401 })),
+      ),
+    });
+    expect(await signedOut.submit(deliveryDraft().draftId)).toEqual({
+      kind: "SIGNED_OUT",
+    });
+    expect((await store.get(deliveryDraft().draftId))?.state).toBe("QUEUED");
   });
 });

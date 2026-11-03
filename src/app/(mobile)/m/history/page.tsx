@@ -13,6 +13,7 @@ import {
 } from "@/domain/business-date";
 import { can } from "@/domain/permissions";
 import { requireUser } from "@/lib/auth/guard";
+import { deliveriesByDay } from "@/lib/deliveries/queries";
 import { receiptsByDay } from "@/lib/receiving/queries";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ type Search = Promise<Record<string, string | string[] | undefined>>;
 const TYPES = [
   { key: "all", label: "Tất cả" },
   { key: "receipt", label: "Nhập" },
+  { key: "delivery", label: "Xuất" },
 ] as const;
 
 function dayLabel(date: BusinessDate, today: BusinessDate): string {
@@ -33,31 +35,52 @@ function dayLabel(date: BusinessDate, today: BusinessDate): string {
   return `${short}/${year}`;
 }
 
-/** M7 (spec mobile-history). Xuất and Thu hồi join when they exist. */
+/** M7 (spec mobile-history). Thu hồi joins when it exists. */
 export default async function Page({ searchParams }: { searchParams: Search }) {
   const user = await requireUser();
   await connection();
   const now = new Date();
   const today = toBusinessDate(now);
   const params = await searchParams;
-  const type = params.type === "receipt" ? "receipt" : "all";
+  const type =
+    params.type === "receipt" || params.type === "delivery"
+      ? params.type
+      : "all";
   const before =
     typeof params.before === "string" && isBusinessDate(params.before)
       ? params.before
       : undefined;
-  const receipts = can(user.role, "receiving.manage")
-    ? await receiptsByDay(getDatabase(), {
-        ...(before ? { before } : {}),
-        days: before ? 7 : 2,
-      })
-    : null;
-  const oldest = receipts?.days.at(-1)?.date;
+  const page = { ...(before ? { before } : {}), days: before ? 7 : 2 };
+  const receipts =
+    type !== "delivery" && can(user.role, "receiving.manage")
+      ? await receiptsByDay(getDatabase(), page)
+      : null;
+  const deliveries =
+    type !== "receipt" && can(user.role, "deliveries.pick")
+      ? await deliveriesByDay(getDatabase(), page)
+      : null;
+  // Both kinds on one list: the newest days of either, older ones paged.
+  const union = [
+    ...new Set(
+      [...(receipts?.days ?? []), ...(deliveries?.days ?? [])].map(
+        (day) => day.date,
+      ),
+    ),
+  ]
+    .sort()
+    .reverse();
+  const dates = union.slice(0, page.days);
+  const oldest = dates.at(-1);
+  const hasMore =
+    Boolean(receipts?.hasMore) ||
+    Boolean(deliveries?.hasMore) ||
+    union.length > dates.length;
   const olderHref =
-    receipts?.hasMore && oldest
-      ? `/m/history?${new URLSearchParams({ ...(type === "receipt" ? { type } : {}), before: oldest })}`
+    hasMore && oldest
+      ? `/m/history?${new URLSearchParams({ ...(type !== "all" ? { type } : {}), before: oldest })}`
       : null;
   const dayLabels = Object.fromEntries(
-    (receipts?.days ?? []).map((day) => [day.date, dayLabel(day.date, today)]),
+    dates.map((date) => [date, dayLabel(date as BusinessDate, today)]),
   );
   return (
     <MobilePage title="Lịch sử phiếu">
@@ -83,6 +106,9 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       <HistoryList
         userId={user.id}
         receipts={receipts}
+        deliveries={deliveries}
+        type={type}
+        dates={dates}
         dayLabels={dayLabels}
         olderHref={olderHref}
         now={now.toISOString()}

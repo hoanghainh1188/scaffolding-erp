@@ -7,12 +7,24 @@ import Link from "next/link";
 import { DraftList } from "@/components/drafts/draft-list";
 import { formatDateTime } from "@/domain/business-date";
 import { useDrafts } from "@/hooks/use-drafts";
+import type { DeliveriesByDay } from "@/lib/deliveries/queries";
 import type { ReceiptsByDay } from "@/lib/receiving/queries";
+import {
+  formatQuantity,
+  QUANTITY_UNIT_LABELS,
+  toQuantity,
+} from "@/domain/quantity";
 
 interface HistoryListProps {
   userId: string;
   /** Null when the role does not receive goods. */
   receipts: ReceiptsByDay | null;
+  /** Null when the role does not pick deliveries. */
+  deliveries?: DeliveriesByDay | null;
+  /** The filter on the URL: all, receipt, delivery. */
+  type?: "all" | "receipt" | "delivery";
+  /** The days shown, newest first (both kinds together). */
+  dates?: string[];
   /** Day headings, by business date: "Hôm nay, 26/10". */
   dayLabels: Record<string, string>;
   olderHref: string | null;
@@ -21,15 +33,51 @@ interface HistoryListProps {
 
 const KIND_SHORT = { NEW: "hàng mới", USED: "hàng cũ" } as const;
 
+const delivered = (
+  rows: { unit: keyof typeof QUANTITY_UNIT_LABELS; milli: number }[],
+) =>
+  rows
+    .map(
+      (row) =>
+        `${formatQuantity(toQuantity(row.milli, row.unit))} ${QUANTITY_UNIT_LABELS[row.unit]}`,
+    )
+    .join(", ");
+
 export function HistoryList({
   userId,
   receipts,
+  deliveries = null,
+  type = "all",
+  dates,
   dayLabels,
   olderHref,
   now,
 }: HistoryListProps) {
-  const drafts = useDrafts(userId);
-  const days = receipts?.days ?? [];
+  const allDrafts = useDrafts(userId);
+  const drafts =
+    allDrafts?.filter((draft) =>
+      type === "receipt"
+        ? draft.kind === "GOODS_RECEIPT"
+        : type === "delivery"
+          ? draft.kind === "DELIVERY"
+          : true,
+    ) ?? null;
+  const shownDates =
+    dates ??
+    [
+      ...new Set(
+        [...(receipts?.days ?? []), ...(deliveries?.days ?? [])].map(
+          (day) => day.date,
+        ),
+      ),
+    ]
+      .sort()
+      .reverse();
+  const days = shownDates.map((date) => ({
+    date,
+    receipts: receipts?.days.find((day) => day.date === date)?.receipts ?? [],
+    deliveries: deliveries?.days.find((day) => day.date === date)?.notes ?? [],
+  }));
   const empty = drafts !== null && drafts.length === 0 && days.length === 0;
   return (
     <div className="flex flex-col gap-6">
@@ -55,6 +103,24 @@ export function HistoryList({
                   </span>
                   <span className="text-body text-muted-foreground tabular-nums">
                     {formatDateTime(new Date(receipt.createdAt)).slice(11)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+            {day.deliveries.map((note) => (
+              <li key={note.code}>
+                <Link
+                  href={`/m/deliveries/${note.code}`}
+                  className="flex min-h-16 items-center gap-3 px-4 py-3 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="text-label">Xuất {note.code}</span>
+                    <span className="truncate text-body text-muted-foreground">
+                      {note.place} · {delivered(note.delivered)}
+                    </span>
+                  </span>
+                  <span className="text-body text-muted-foreground tabular-nums">
+                    {formatDateTime(new Date(note.postedAt)).slice(11)}
                   </span>
                 </Link>
               </li>

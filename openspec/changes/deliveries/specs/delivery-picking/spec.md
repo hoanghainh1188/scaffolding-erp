@@ -7,11 +7,11 @@ Màn nhặt hàng xuất kho trên điện thoại (M5) cho Thủ kho: danh sác
 ## ADDED Requirements
 
 ### Requirement: Mở phiếu nhặt hàng
-Trang `/m/deliveries/<số phiếu>` SHALL hiện đầu trang "Xuất <số phiếu>", công trình (hoặc nhà thầu với hợp đồng bán) và giờ dự kiến, tiến độ "Đã nhặt X / Y" theo từng đơn vị, câu nhắc bộ đã tự tách và luật tình trạng, ô biển số xe, danh sách nhặt và hai nút "Lưu nháp", "Xác nhận xe rời bãi". Phiếu Chờ nhặt SHALL có nút "Bắt đầu nhặt" và chưa cho nhập số.
+Trang `/m/deliveries/<số phiếu>` SHALL hiện đầu trang "Xuất <số phiếu>", công trình (hoặc nhà thầu với hợp đồng bán), ngày xe dự kiến và đợt, tiến độ "Đã nhặt X / Y" theo từng đơn vị, câu nhắc bộ đã tự tách và luật tình trạng, ô biển số xe, danh sách nhặt và hai nút "Lưu nháp", "Xác nhận xe rời bãi". Phiếu Chờ nhặt SHALL có nút "Bắt đầu nhặt" và chưa cho nhập số.
 
 #### Scenario: Phiếu đang nhặt
-- **WHEN** `vantung` mở `/m/deliveries/PX-2026-140` (An Phú – Block B, xe 10:00, 60 bộ giàn giáo 1,7m, đã nhặt 200 / 300 cái)
-- **THEN** trang hiện "Xuất PX-2026-140", "An Phú – Block B · xe 10:00", "Đã nhặt 200 / 300 cái" và "60 bộ giàn giáo 1,7m đã tự tách thành linh kiện. Chỉ lấy hàng Mới hoặc Tốt."
+- **WHEN** `vantung` mở `/m/deliveries/PX-2026-140` (An Phú – Block B, xe ngày 03/11/2026, Đợt 3, 60 bộ giàn giáo 1,7m, đã nhặt 200 / 300 cái)
+- **THEN** trang hiện "Xuất PX-2026-140", "An Phú – Block B · xe 03/11/2026 · Đợt 3", "200 / 300 cái" và "60 bộ giàn giáo 1,7m đã tự tách thành linh kiện. Chỉ lấy hàng Mới hoặc Tốt."
 
 #### Scenario: Phiếu chờ nhặt
 - **WHEN** `vantung` mở `PX-2026-141` đang Chờ nhặt

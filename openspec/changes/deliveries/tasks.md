@@ -41,9 +41,9 @@
 
 ## 6. Giao diện Mobile
 
-- [ ] 6.1 Nháp: `DRAFT_KINDS` thêm `DELIVERY`, payload theo design D13, outbox gửi `…/post` với `clientDraftId`; trả lại văn phòng xóa nháp. Kiểm: `drafts.test.ts` thêm ca phiếu xuất: tự lưu, "Chờ gửi" khi mất mạng, 409 → "Bị từ chối" giữ số, 401 giữ "Chờ gửi", hai tab không gửi song song.
-- [ ] 6.2 M5 `/m/deliveries/[code]` theo `docs/design/screens/M5-Picking.dc.html`: đầu trang, tiến độ theo đơn vị, "Bắt đầu nhặt" (cần mạng), dòng thuê chia Mới/Tốt có "Nhặt đủ" + stepper, dòng bán theo kg (số cần là kg, tiến độ theo kg cân, dư trong 10 % vẫn "đủ", số cái + kg, ước tính phế liệu không quá tồn bãi kèm câu báo), biển số bắt buộc, hỏi lại khi thiếu, "Lưu nháp", "Xác nhận xe rời bãi" (chặn bấm hai lần), "Trả lại văn phòng", phiếu đã xuất chỉ xem; không có số tiền. Kiểm: component test theo spec `delivery-picking` (nhập vượt số cần, thiếu biển số, câu hỏi lại "Còn 100 cái chưa nhặt…", chỉ có Mới và Tốt cho thuê).
-- [ ] 6.3 M1 khối "Xuất hàng" và M7 phiếu xuất + bộ lọc "Xuất" (`?type=delivery`). Kiểm: component test theo spec `mobile-home` "Xuất hàng trên Việc hôm nay" và `mobile-history` (thẻ trễ, "Tiếp tục nhặt", Kế toán không thấy khối).
+- [x] 6.1 Nháp: `DRAFT_KINDS` thêm `DELIVERY`, payload theo design D13, outbox gửi `…/post` với `clientDraftId`; trả lại văn phòng xóa nháp. Kiểm: `drafts.test.ts` thêm ca phiếu xuất: tự lưu, "Chờ gửi" khi mất mạng, 409 → "Bị từ chối" giữ số, 401 giữ "Chờ gửi", hai tab không gửi song song.
+- [x] 6.2 M5 `/m/deliveries/[code]` theo `docs/design/screens/M5-Picking.dc.html`: đầu trang, tiến độ theo đơn vị, "Bắt đầu nhặt" (cần mạng), dòng thuê chia Mới/Tốt có "Nhặt đủ" + stepper, dòng bán theo kg (số cần là kg, tiến độ theo kg cân, dư trong 10 % vẫn "đủ", số cái + kg, ước tính phế liệu không quá tồn bãi kèm câu báo), biển số bắt buộc, hỏi lại khi thiếu, "Lưu nháp", "Xác nhận xe rời bãi" (chặn bấm hai lần), "Trả lại văn phòng", phiếu đã xuất chỉ xem; không có số tiền. Kiểm: component test theo spec `delivery-picking` (nhập vượt số cần, thiếu biển số, câu hỏi lại "Còn 100 cái chưa nhặt…", chỉ có Mới và Tốt cho thuê).
+- [x] 6.3 M1 khối "Xuất hàng" và M7 phiếu xuất + bộ lọc "Xuất" (`?type=delivery`). Kiểm: component test theo spec `mobile-home` "Xuất hàng trên Việc hôm nay" và `mobile-history` (thẻ trễ, "Tiếp tục nhặt", Kế toán không thấy khối).
 
 ## 7. Seed, E2E và kiểm tra cuối
 
