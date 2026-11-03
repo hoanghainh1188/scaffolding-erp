@@ -213,7 +213,7 @@ export function DeliveryChecks({
       </h2>
       <ul className="flex flex-col gap-1">
         {checks.map((check) => (
-          <li key={check.code}>
+          <li key={check.code} data-mask>
             {check.code} · ngày giao {formatBusinessDate(check.businessDate)},
             xác nhận trên máy {formatBusinessDate(check.phoneDate)}
           </li>
@@ -261,7 +261,10 @@ export function DeliveryTimeline({
           key={entry.id}
           className="grid grid-cols-[110px_minmax(0,1fr)] gap-3 border-b py-3 last:border-b-0"
         >
-          <span className="text-sm text-muted-foreground tabular-nums">
+          <span
+            data-mask
+            className="text-sm text-muted-foreground tabular-nums"
+          >
             {entry.date ? formatBusinessDate(entry.date) : "Chưa hẹn ngày"}
           </span>
           <div className="flex min-w-0 flex-col gap-1">
@@ -281,7 +284,7 @@ export function DeliveryTimeline({
                 : ""}
             </span>
             {entry.phoneDifferentDay ? (
-              <span className="text-caption text-warning">
+              <span data-mask className="text-caption text-warning">
                 Xác nhận trên máy lúc {formatDateTime(entry.phoneDifferentDay)}
               </span>
             ) : null}

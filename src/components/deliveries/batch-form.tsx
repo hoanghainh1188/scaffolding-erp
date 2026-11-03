@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { byWeight } from "@/domain/contract-lines";
 import { CONDITION_LABELS } from "@/domain/condition";
 import type { ContractType } from "@/domain/contract";
 import {
@@ -71,7 +72,7 @@ const itemLabel = (item: FormItem) =>
   item.condition === null
     ? `${item.code} · ${item.name}`
     : `${item.code} · ${item.name} · ${CONDITION_LABELS[item.condition]}${
-        item.pricingUnit === "KG" ? " · theo kg" : ""
+        byWeight(item.pricingUnit ?? "") ? " · theo kg" : ""
       }`;
 
 /** "Tạo đợt xuất" / "Sửa đợt xuất" on D6 (deliveries spec, design D3, D4). */

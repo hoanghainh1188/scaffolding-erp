@@ -1,4 +1,5 @@
 // Lines of a delivery note on the office detail and the print page.
+import { byWeight } from "@/domain/contract-lines";
 import { CONDITION_LABELS } from "@/domain/condition";
 import { hasStandardWeight } from "@/domain/quantity";
 import type { DeliveryDetail } from "@/lib/deliveries/queries";
@@ -102,7 +103,7 @@ export function NoteLines({
                 <>
                   <td className={`${cell} text-right tabular-nums`}>
                     {moneyText(line.unitPrice)}
-                    {line.pricingUnit === "KG" ? "/kg" : ""}
+                    {byWeight(line.pricingUnit ?? "") ? "/kg" : ""}
                   </td>
                   <td className={`${cell} text-right tabular-nums`}>
                     {moneyText(line.amount)}
