@@ -8,7 +8,7 @@ import type { Database } from "@/db/client";
 import { item } from "@/db/schema";
 import { revisionAt } from "@/domain/contract-revision";
 
-import { readContent } from "./content";
+import { readContent, type StoredBatch } from "./content";
 import { readRevisions } from "./records";
 
 type Reader = Pick<Database, "select">;
@@ -18,11 +18,14 @@ export interface TermsLine {
   itemCode: string;
   condition: string | null;
   pricingUnit: string;
+  /** Stored numeric text: in the item's unit, or kg for a sale by kg. */
+  quantity: string;
   /** ₫ per day (rental) or per unit / kg (sale). */
   price: number | null;
 }
 
 export interface ContractTerms {
+  revisionId: string;
   /** The revision that applies: the contract code or code + "/01". */
   revisionCode: string;
   revisionNumber: number;
@@ -31,6 +34,8 @@ export interface ContractTerms {
   paymentTermsDays: number;
   vatEnabled: boolean;
   vatRate: string | null;
+  companyTruck: boolean;
+  freightPerTrip: number | null;
   lines: TermsLine[];
   compensations: {
     itemId: string;
@@ -38,6 +43,8 @@ export interface ContractTerms {
     lostPrice: number | null;
     damagePrice: number | null;
   }[];
+  /** The delivery plan: a hint for deliveries only (contracts design D6). */
+  batches: StoredBatch[];
 }
 
 /** The terms on `date` (YYYY-MM-DD), or null before the contract is approved. */
@@ -63,6 +70,7 @@ export async function contractTermsAt(
     : [];
   const codes = new Map(rows.map((row) => [row.id, row.code]));
   return {
+    revisionId: revision.id,
     revisionCode: revision.code,
     revisionNumber: revision.number,
     effectiveFrom: revision.effectiveFrom,
@@ -70,11 +78,14 @@ export async function contractTermsAt(
     paymentTermsDays: revision.paymentTermsDays,
     vatEnabled: revision.vatEnabled,
     vatRate: revision.vatRate,
+    companyTruck: revision.companyTruck,
+    freightPerTrip: revision.freightPerTrip,
     lines: content.lines.map((line) => ({
       itemId: line.itemId,
       itemCode: codes.get(line.itemId) ?? "",
       condition: line.condition,
       pricingUnit: line.pricingUnit,
+      quantity: line.quantity,
       price: line.price,
     })),
     compensations: content.compensations.map((entry) => ({
@@ -83,5 +94,6 @@ export async function contractTermsAt(
       lostPrice: entry.lostPrice,
       damagePrice: entry.damagePrice,
     })),
+    batches: content.batches,
   };
 }

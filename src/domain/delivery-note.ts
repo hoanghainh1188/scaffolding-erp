@@ -313,12 +313,16 @@ export function explodeDelivery(input: ExplodeInput): PlannedLine[] {
       missing(line.itemId, line.itemCode ?? line.itemId);
     }
   }
-  return explodeKits(input.kits, input.own).map((line) => ({
-    itemId: line.itemId,
-    condition: null,
-    pricingUnit: null,
-    requestedMilli: line.quantityMilli,
-  }));
+  // In the order of the contract lines: kit parts have no order of their own.
+  const order = new Map(input.terms.map((line, index) => [line.itemId, index]));
+  return explodeKits(input.kits, input.own)
+    .map((line) => ({
+      itemId: line.itemId,
+      condition: null,
+      pricingUnit: null,
+      requestedMilli: line.quantityMilli,
+    }))
+    .sort((a, b) => (order.get(a.itemId) ?? 0) - (order.get(b.itemId) ?? 0));
 }
 
 // ----------------------------------------------------------- remaining

@@ -35,6 +35,8 @@ export const NOT_LOGGED: Readonly<Record<string, string>> = {
     "row lock shared by the contract commands; the command logs",
   "contracts/records.ts#lockRevision":
     "row lock shared by the contract commands; the command logs",
+  "deliveries/records.ts#lockNote":
+    "row lock shared by the delivery commands; the command logs",
   "scan/detector.ts#createQrDetector": "camera QR reader in the browser",
   "stocktakes/queries.ts#startOptions": "reads the M6a choices",
 };

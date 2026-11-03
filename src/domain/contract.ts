@@ -102,6 +102,8 @@ export const CONTRACT_MESSAGES = {
   notPending: "Hợp đồng không ở trạng thái chờ duyệt.",
   approvedAlready: "Hợp đồng đã được duyệt.",
   delivered: "Hợp đồng đã xuất hàng nên không hủy được.",
+  openDeliveries: (code: string) =>
+    `Hợp đồng còn phiếu xuất ${code} chưa xong. Bạn hủy phiếu xuất đó trước rồi hủy hợp đồng.`,
   cancelNotAllowed: "Hợp đồng ở trạng thái này không hủy được.",
   ended: "Hợp đồng đã kết thúc nên không đổi trạng thái được.",
   notStarted: "Hợp đồng chưa duyệt nên chưa xuất hàng được.",
