@@ -299,7 +299,7 @@ Khi tạo hợp đồng, hệ thống SHALL chép nhân viên phụ trách của
 - **THEN** hợp đồng cũ vẫn ghi `quocbao`
 
 ### Requirement: Trạng thái hợp đồng
-Hợp đồng SHALL có một trong các trạng thái: Nháp, Chờ duyệt, Đã duyệt, Đang thực hiện, Thanh lý, Đã hủy. Chuyển trạng thái SHALL theo bảng: Nháp → Chờ duyệt (gửi duyệt); Chờ duyệt → Đã duyệt (duyệt) hoặc → Nháp (trả lại, kèm lý do); Nháp → Đã hủy; Đã duyệt → Đã hủy khi chưa xuất hàng; Đã duyệt → Đang thực hiện và → Thanh lý do change sau. Chuyển khác SHALL bị từ chối.
+Hợp đồng SHALL có một trong các trạng thái: Nháp, Chờ duyệt, Đã duyệt, Đang thực hiện, Thanh lý, Đã hủy. Chuyển trạng thái SHALL theo bảng: Nháp → Chờ duyệt (gửi duyệt); Chờ duyệt → Đã duyệt (duyệt) hoặc → Nháp (trả lại, kèm lý do); Nháp → Đã hủy; Đã duyệt → Đã hủy khi chưa có phiếu xuất đã xuất và không còn phiếu xuất chưa xong; Đã duyệt → Đang thực hiện tự động khi phiếu xuất đầu tiên ghi sổ; → Thanh lý do change sau. Chuyển khác SHALL bị từ chối.
 
 #### Scenario: Gửi duyệt
 - **WHEN** `quocbao` bấm "Gửi Giám đốc duyệt" trên hợp đồng Nháp đủ dữ liệu
@@ -320,6 +320,14 @@ Hợp đồng SHALL có một trong các trạng thái: Nháp, Chờ duyệt, Đ
 #### Scenario: Chuyển không hợp lệ
 - **WHEN** có lệnh gửi duyệt cho hợp đồng đang Đã duyệt
 - **THEN** hệ thống từ chối với "Hợp đồng đã được duyệt nên không gửi duyệt lại được. Bạn lập phụ lục nếu cần đổi." và không đổi dữ liệu
+
+#### Scenario: Phiếu xuất đầu tiên
+- **WHEN** hợp đồng `112026/ANPHAT-MINHPHAT` Đã duyệt và thủ kho xác nhận phiếu xuất đầu tiên `PX-2026-001`
+- **THEN** hợp đồng sang Đang thực hiện trong cùng lần ghi sổ **AND** D5 hiện trạng thái "Đang thực hiện"
+
+#### Scenario: Hủy hợp đồng còn phiếu xuất chưa xong
+- **WHEN** hợp đồng Đã duyệt có `PX-2026-141` Chờ nhặt và Giám đốc hủy hợp đồng
+- **THEN** hệ thống từ chối với "Hợp đồng còn phiếu xuất PX-2026-141 chưa xong. Bạn hủy phiếu xuất đó trước rồi hủy hợp đồng." và không đổi dữ liệu
 
 ### Requirement: Kiểm tra trước khi gửi duyệt
 Gửi duyệt SHALL bị chặn khi thiếu: ít nhất một dòng hàng, giá mỗi dòng, ngày bắt đầu, ngày kết thúc dự kiến (hợp đồng thuê), đủ giá đền bù (hợp đồng thuê). D5a và thanh duyệt SHALL hiện ô kiểm tra không chặn: tồn Mới + Tốt ở bãi đủ cho đợt giao đầu, giá khác danh mục, bảo lãnh, nhà thầu đang nợ quá hạn.
