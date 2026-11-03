@@ -178,7 +178,7 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - Kế toán không thấy nút duyệt.
   - Tìm theo chữ dùng `.filter({ visible: true })`. Ảnh mốc `@visual` cho M4 và D8 (dữ liệu seed).
   - Kiểm: `npm run test:e2e` xanh.
-- [ ] 7.3 Kiểm tra máy: `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate returns-and-compensation --strict` đều xanh; coverage ≥ 80 % cho `src/domain`, `src/lib`; gắn nhãn `update-snapshots` vào PR apply và chờ CI xanh.
+- [x] 7.3 Kiểm tra máy: `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate returns-and-compensation --strict` đều xanh; coverage ≥ 80 % cho `src/domain`, `src/lib`; gắn nhãn `update-snapshots` vào PR apply và chờ CI xanh.
 - [ ] 7.4 Kiểm tra tay trên điện thoại thật (bước 9 issue #11):
   - thu hồi có chụp ảnh, chia Tốt / Chờ sửa / Phế liệu / Mất;
   - D6 cột "Đã trả" và "Đang ở công trình" đổi đúng;
@@ -187,6 +187,7 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - ảnh tải về không còn GPS;
   - trang Cài đặt hiện dung lượng ảnh.
   - Chưa làm được trước archive thì ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33.
+  - **Làm sau, theo dõi ở #33** (mục 12).
 
 ## Workflow follow-up
 
