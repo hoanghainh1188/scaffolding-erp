@@ -181,17 +181,20 @@ export function TransferConfirmScreen({
         </p>
       </fieldset>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 flex flex-col gap-2 border-t bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <span className="text-caption text-muted-foreground">
-          {totalText(transfer.lines, payload)} · nháp đã lưu trên máy
-        </span>
-        <Button
-          className="h-12"
-          disabled={locked}
-          onClick={() => void confirm()}
-        >
-          Xác nhận đã chuyển tới {transfer.to.siteName}
-        </Button>
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 border-t bg-card">
+        <div className="mx-auto flex max-w-[640px] flex-col gap-2 px-4 py-3">
+          <span className="text-caption text-muted-foreground">
+            {totalText(transfer.lines, payload)} · nháp đã lưu trên máy
+          </span>
+          <Button
+            type="button"
+            className="h-12"
+            disabled={locked}
+            onClick={() => void confirm()}
+          >
+            Xác nhận đã chuyển tới {transfer.to.siteName}
+          </Button>
+        </div>
       </div>
     </div>
   );

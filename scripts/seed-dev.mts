@@ -15,6 +15,7 @@ import { seedPurchasing } from "@/lib/purchasing/sample";
 import { seedReceiving } from "@/lib/receiving/sample";
 import { seedRepairs } from "@/lib/repairs/sample";
 import { seedReturns } from "@/lib/returns/sample";
+import { seedSiteOperations } from "@/lib/site-transfers/sample";
 import { seedStocktakes } from "@/lib/stocktakes/sample";
 import { DEV_ACCOUNTS, seedAccounts } from "@/lib/users/seed";
 
@@ -90,6 +91,14 @@ async function main(): Promise<number> {
     // Sample return note with photos and a pending D8 (returns 7.1).
     const returns = warehouse ? await seedReturns(handle.db, { warehouse }) : 0;
     process.stdout.write(`Phiếu thu hồi mẫu: thêm ${returns} phiếu.\n`);
+    // Sample transfer, buy-back and exchange (site-operations 7.1).
+    const siteOperations =
+      director && sales
+        ? await seedSiteOperations(handle.db, { director, sales })
+        : 0;
+    process.stdout.write(
+      `Chuyển công trình, mua lại, đổi hàng mẫu: thêm ${siteOperations} chứng từ.\n`,
+    );
     // Sample activity log like drawing D18 (activity-log design D13).
     const activity =
       director && accountant && sales && warehouse
