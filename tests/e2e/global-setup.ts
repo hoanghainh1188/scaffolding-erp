@@ -8,6 +8,7 @@ import {
   activityLog,
   contract,
   customer,
+  deliveryNote,
   goodsReceipt,
   inventoryCost,
   inventoryLedger,
@@ -26,7 +27,15 @@ import {
 } from "@/db/schema";
 import { actorByUsername, type ActivityActor } from "@/lib/activity/actor";
 import { seedActivity } from "@/lib/activity/sample";
-import { cancelContract, returnContract } from "@/lib/contracts/approval";
+import {
+  approveContract,
+  cancelContract,
+  returnContract,
+  submitContract,
+} from "@/lib/contracts/approval";
+import { createContract } from "@/lib/contracts/service";
+import { seedDeliveries } from "@/lib/deliveries/sample";
+import { changeDeliveryStatus } from "@/lib/deliveries/service";
 import { seedContracts } from "@/lib/contracts/sample";
 import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
@@ -341,6 +350,125 @@ async function cancelTestContracts(
   }
 }
 
+/** The customer part of the rental deliveries.spec.ts ships on. */
+export const E2E_DELIVERY_TOKEN = "E2EXUAT";
+
+/**
+ * deliveries.spec.ts ships E2E-KHO-01 on one approved rental, made once and
+ * kept (its ledger lines stay). Notes earlier runs left waiting or being
+ * picked are cancelled, so the contract always has room for a new batch.
+ */
+async function ensureDeliveryContract(
+  db: Database,
+  director: ActivityActor,
+  sales: ActivityActor,
+): Promise<void> {
+  const actor = { ...director, contractScope: "ALL" as const };
+  const seller = { ...sales, contractScope: "ALL" as const };
+  const [found] = await db
+    .select({ id: contract.id })
+    .from(contract)
+    .where(eq(contract.customerToken, E2E_DELIVERY_TOKEN));
+  if (found) {
+    const open = await db
+      .select({ id: deliveryNote.id })
+      .from(deliveryNote)
+      .where(
+        and(
+          eq(deliveryNote.contractId, found.id),
+          inArray(deliveryNote.status, ["PLANNED", "PICKING"]),
+        ),
+      );
+    for (const note of open) {
+      await changeDeliveryStatus(db, actor, note.id, "CANCEL", "E2E thử");
+    }
+    return;
+  }
+  const [buyer] = await db
+    .select({ id: customer.id })
+    .from(customer)
+    .where(eq(customer.name, "Cty TNHH Xây dựng Minh Phát"));
+  const [work] = await db
+    .select({ id: site.id })
+    .from(site)
+    .where(eq(site.name, "Trường THCS Dương Nội"));
+  const items = await db
+    .select({ id: item.id, code: item.code })
+    .from(item)
+    .where(inArray(item.code, [...E2E_STOCK_ITEMS]));
+  if (!buyer || !work || items.length !== E2E_STOCK_ITEMS.length) return;
+  const saved = await createContract(db, seller, {
+    type: "RENTAL",
+    customerId: buyer.id,
+    siteId: work.id,
+    customerToken: E2E_DELIVERY_TOKEN,
+    signedDate: "2026-10-30",
+    startDate: "2026-11-01",
+    endDate: "2030-12-31",
+    lines: items.map((row) => ({
+      itemId: row.id,
+      quantity: "100000",
+      price: 100,
+    })),
+    compensations: items.map((row) => ({
+      itemId: row.id,
+      lostPrice: 100_000,
+      damagePrice: 20_000,
+    })),
+    note: E2E_ORDER_NOTE,
+  });
+  if (!saved.ok) throw new Error(`E2E delivery contract: ${saved.error}`);
+  const sent = await submitContract(db, seller, saved.data.id);
+  if (!sent.ok) throw new Error(`E2E delivery contract: ${sent.error}`);
+  const approved = await approveContract(db, actor, saved.data.id, null);
+  if (!approved.ok) throw new Error(`E2E delivery contract: ${approved.error}`);
+}
+
+/** At least 50 Tốt E2E-KHO-01 at BAI-01 to ship; at the current average. */
+async function ensureDeliveryStock(db: Database, actor: ActivityActor) {
+  const [kho] = await db
+    .select({ id: item.id })
+    .from(item)
+    .where(eq(item.code, E2E_STOCK_ITEMS[0]));
+  const [yard] = await db
+    .select({ id: location.id })
+    .from(location)
+    .where(eq(location.code, "BAI-01"));
+  if (!kho || !yard) return;
+  const [atYard] = await db
+    .select({
+      total: sql<string>`coalesce(sum(${inventoryLedger.quantity}), 0)`,
+    })
+    .from(inventoryLedger)
+    .where(
+      and(
+        eq(inventoryLedger.itemId, kho.id),
+        eq(inventoryLedger.condition, "GOOD"),
+        eq(inventoryLedger.locationId, yard.id),
+      ),
+    );
+  if (Number(atYard?.total ?? 0) >= 50) return;
+  await db.transaction((tx) =>
+    postMovements(tx, actor, {
+      documentType: "E2E",
+      documentId: null,
+      documentCode: "E2E-XUAT",
+      businessDate: toBusinessDate(new Date()),
+      lines: [
+        {
+          itemId: kho.id,
+          condition: "GOOD",
+          locationId: yard.id,
+          movement: "ADJUST_IN",
+          quantityMilli: 100_000,
+          unitCost: 100_000,
+          description: "E2E: hàng Tốt cho deliveries.spec",
+        },
+      ],
+    }),
+  );
+}
+
 export default async function globalSetup(): Promise<void> {
   const env = getEnv();
   if (!env.E2E_PASSWORD) {
@@ -397,6 +525,13 @@ export default async function globalSetup(): Promise<void> {
       // D4 / D5 / D5b sample contracts (contracts tasks 7.6), once.
       await cancelTestContracts(handle.db, director);
       if (sales) await seedContracts(handle.db, { director, sales });
+      // D6 / M5 samples: Đợt 1 posted, Đợt 2 waiting (deliveries 7.1), once.
+      if (sales && warehouse) {
+        await seedDeliveries(handle.db, { sales, warehouse });
+      }
+      // The rental deliveries.spec.ts ships on, and its stock (deliveries 7.2).
+      await ensureDeliveryStock(handle.db, director);
+      if (sales) await ensureDeliveryContract(handle.db, director, sales);
       if (accountant && sales && warehouse) {
         await seedActivity(handle.db, {
           director,

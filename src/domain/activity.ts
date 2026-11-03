@@ -16,6 +16,7 @@ export const ACTIVITY_ACTIONS = [
   "DELETE_DRAFT",
   "DELETE",
   "SIGN_IN",
+  "START",
 ] as const;
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
@@ -31,6 +32,7 @@ export const ACTION_LABELS: Readonly<Record<ActivityAction, string>> = {
   DELETE_DRAFT: "Xóa nháp",
   DELETE: "Xóa",
   SIGN_IN: "Đăng nhập",
+  START: "Bắt đầu nhặt",
 };
 
 export const ACTION_GROUPS = [
@@ -55,7 +57,7 @@ export const GROUP_ACTIONS: Readonly<
   Record<ActionGroup, readonly ActivityAction[]>
 > = {
   CREATE: ["CREATE"],
-  UPDATE: ["UPDATE"],
+  UPDATE: ["UPDATE", "START"],
   APPROVAL: ["SUBMIT", "APPROVE", "POST"],
   REVERSAL: ["RETURN", "CANCEL", "CLOSE", "DELETE_DRAFT", "DELETE"],
   SIGN_IN: ["SIGN_IN"],
@@ -96,6 +98,7 @@ export const DOCUMENT_TYPES = [
   "COMPANY_PROFILE",
   "CONTRACT",
   "CONTRACT_AMENDMENT",
+  "DELIVERY_NOTE",
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
@@ -118,6 +121,7 @@ export const DOCUMENT_TYPE_LABELS: Readonly<Record<DocumentType, string>> = {
   COMPANY_PROFILE: "Cài đặt công ty",
   CONTRACT: "Hợp đồng",
   CONTRACT_AMENDMENT: "Phụ lục hợp đồng",
+  DELIVERY_NOTE: "Phiếu xuất",
 };
 
 /** The label of an action on a document: submitting an order places it. */

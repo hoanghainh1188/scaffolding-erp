@@ -43,6 +43,7 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "contracts.rental.manage": ["DIRECTOR", "SALES"],
   "contracts.sale.manage": ["DIRECTOR", "SALES"],
   "contracts.approve": ["DIRECTOR"],
+  "deliveries.pick": ["DIRECTOR", "WAREHOUSE"],
 };
 
 const PAIRS = (Object.keys(PERMISSIONS) as Permission[]).flatMap((permission) =>
@@ -66,7 +67,7 @@ describe("can", () => {
     ]);
   });
 
-  it("gives the phone roles only reading, and the storekeeper receiving and counting", () => {
+  it("gives the phone roles only reading, and the storekeeper receiving, counting and picking", () => {
     const phone: readonly Permission[] = [
       "catalog.read",
       "stock.lookup",
@@ -75,7 +76,9 @@ describe("can", () => {
     for (const permission of Object.keys(PERMISSIONS) as Permission[]) {
       if (phone.includes(permission)) continue;
       expect(can("WAREHOUSE", permission)).toBe(
-        permission === "receiving.manage" || permission === "stocktake.count",
+        permission === "receiving.manage" ||
+          permission === "stocktake.count" ||
+          permission === "deliveries.pick",
       );
       expect(can("WORKSHOP", permission)).toBe(false);
     }
@@ -124,6 +127,13 @@ describe("canContract", () => {
   it("lets only the director approve", () => {
     expect(ROLES.filter((role) => can(role, "contracts.approve"))).toEqual([
       "DIRECTOR",
+    ]);
+  });
+
+  it("lets the director and the storekeeper pick deliveries", () => {
+    expect(ROLES.filter((role) => can(role, "deliveries.pick"))).toEqual([
+      "DIRECTOR",
+      "WAREHOUSE",
     ]);
   });
 

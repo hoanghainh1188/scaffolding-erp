@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 
+import { DeliveryHome } from "@/components/delivery-picking/delivery-home";
 import { DraftBanner } from "@/components/drafts/draft-banner";
 import { ArrivalList } from "@/components/receiving/arrival-list";
 import { MobilePage } from "@/components/shell/mobile/mobile-page";
@@ -13,6 +14,7 @@ import {
 } from "@/domain/business-date";
 import { can } from "@/domain/permissions";
 import { requireUser } from "@/lib/auth/guard";
+import { mobileTasks, type MobileTask } from "@/lib/deliveries/queries";
 import { arrivals, type Arrivals } from "@/lib/receiving/queries";
 import { openStocktakes, type OpenStocktake } from "@/lib/stocktakes/queries";
 
@@ -41,10 +43,15 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const counts: OpenStocktake[] | null = can(user.role, "stocktake.count")
     ? await openStocktakes(getDatabase())
     : null;
-  // A session still being counted is today's work too (spec mobile-home).
+  const shipping: MobileTask[] | null = can(user.role, "deliveries.pick")
+    ? await mobileTasks(getDatabase(), today)
+    : null;
+  // A session still being counted is today's work too (spec mobile-home),
+  // and so is every delivery note due by today.
   const due =
     (work?.dueToday ?? 0) +
-    (counts?.filter((session) => session.status === "COUNTING").length ?? 0);
+    (counts?.filter((session) => session.status === "COUNTING").length ?? 0) +
+    (shipping?.length ?? 0);
   const day = weekday.format(now);
   return (
     <MobilePage title="Việc hôm nay">
@@ -66,6 +73,9 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         <p className="rounded-lg border bg-card p-4 text-body text-muted-foreground">
           Xe sắp về sẽ hiện ở đây.
         </p>
+      )}
+      {shipping && (
+        <DeliveryHome tasks={shipping} today={today} userId={user.id} />
       )}
       {counts && <StocktakeHome sessions={counts} userId={user.id} />}
     </MobilePage>

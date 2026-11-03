@@ -7,6 +7,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
 import { contract, contractRevision, item } from "@/db/schema";
+import { DomainValueError } from "@/domain/errors";
 import { reasonSummary } from "@/domain/activity-summary";
 import {
   approvalReason,
@@ -27,7 +28,7 @@ import {
   type Tx,
 } from "./common";
 import { readContent } from "./content";
-import { hasDeliveries } from "./deliveries";
+import { hasDeliveries, openDeliveries } from "./deliveries";
 import { overdueDebt } from "./overdue";
 import {
   lockContract,
@@ -237,6 +238,10 @@ export function cancelContract(
         },
         "CANCEL",
       );
+      const [openNote] = await openDeliveries(tx, locked.id);
+      if (openNote !== undefined) {
+        throw new DomainValueError(CONTRACT_MESSAGES.openDeliveries(openNote));
+      }
       const text = requiredReason(reason, CONTRACT_MESSAGES.cancelReason);
       const now = new Date();
       if (locked.status === "DRAFT") {

@@ -87,12 +87,32 @@ export function stocktakeSender(
   };
 }
 
+/**
+ * "Xác nhận xe rời bãi" (deliveries design D13): the draft id goes as the
+ * client draft id, so a resend answers with the note already posted.
+ */
+export function deliverySender(fetcher: typeof fetch = fetch): Sender {
+  return (record) => {
+    const payload = record.payload as { body?: object } | null;
+    return postJson(
+      fetcher,
+      `/api/m/deliveries/${encodeURIComponent(record.documentRef)}/post`,
+      { ...payload?.body, clientDraftId: record.draftId },
+    );
+  };
+}
+
 /** Picks the sender of the draft's kind. */
 export function draftSender(fetcher: typeof fetch = fetch): Sender {
   const receipt = receiptSender(fetcher);
   const stocktake = stocktakeSender(fetcher);
+  const delivery = deliverySender(fetcher);
   return (record) =>
-    record.kind === "STOCKTAKE" ? stocktake(record) : receipt(record);
+    record.kind === "STOCKTAKE"
+      ? stocktake(record)
+      : record.kind === "DELIVERY"
+        ? delivery(record)
+        : receipt(record);
 }
 
 /** Drafts this tab is sending now. */

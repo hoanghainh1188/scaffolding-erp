@@ -105,6 +105,12 @@ const PAGES = [
     ready: MOBILE_READY,
   },
   // M7 before any receipt: the list other tests feed is not in the image.
+  // M5: Đợt 2 of the delivery seed, waiting to be picked (deliveries 7.2).
+  {
+    path: `/m/deliveries/PX-${new Date().getFullYear()}-002`,
+    name: "m5-picking",
+    ready: MOBILE_READY,
+  },
   {
     path: "/m/history?before=2000-01-01",
     name: "m7-history",
@@ -187,6 +193,13 @@ const CONTRACT_PAGES = [
     from: "/sales/contracts?q=MINHPHAT",
     link: /^062026\/ANPHAT-MINHPHAT$/,
   },
+  // deliveries tasks 7.2: D6 of the An Phú rental with the seed batches
+  // (src/lib/deliveries/sample.ts); their dates are masked.
+  {
+    name: "d6-site-deliveries",
+    from: "/sales/contracts?q=MINHPHAT",
+    link: /^062026\/ANPHAT-MINHPHAT$/,
+  },
 ] as const;
 
 test.describe("contract baselines @visual", () => {
@@ -209,7 +222,12 @@ test.describe("contract baselines @visual", () => {
             (await page
               .getByRole("link", { name: link })
               .getAttribute("href")) ?? "";
-          path = name === "d5b-amendment" ? `${href}/amendments/1` : href;
+          path =
+            name === "d5b-amendment"
+              ? `${href}/amendments/1`
+              : name === "d6-site-deliveries"
+                ? `${href}/deliveries`
+                : href;
         }
         await page.goto(path);
         await waitForHydration(page, DESKTOP_READY);

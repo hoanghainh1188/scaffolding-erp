@@ -18,13 +18,7 @@ import {
   QUANTITY_UNIT_LABELS,
   toQuantity,
 } from "./quantity";
-
-/**
- * More than 10 % over on a measured line (kg, m); exactly 10 % passes (scale
- * or tape drift). Count units have no tolerance.
- */
-const KG_TOLERANCE_NUMERATOR = 11n;
-const KG_TOLERANCE_DENOMINATOR = 10n;
+import { withinTolerance } from "./tolerance";
 
 export const COSTS_ANOMALY_KEY = "costs";
 
@@ -58,10 +52,8 @@ export function lineAnomalyKey(orderLineId: string): string {
 function isOver(open: ReceivingLine, received: number, left: number): boolean {
   if (received <= left) return false;
   if (isCountUnit(open.lineUnit)) return true;
-  return (
-    BigInt(received) * KG_TOLERANCE_DENOMINATOR >
-    BigInt(left) * KG_TOLERANCE_NUMERATOR
-  );
+  // More than 10 % over on a measured line (kg, m); see tolerance.ts.
+  return !withinTolerance(received, left);
 }
 
 function lineAnomaly(

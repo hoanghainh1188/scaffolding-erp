@@ -6,6 +6,7 @@ import { actorByUsername } from "@/lib/activity/actor";
 import { seedActivity } from "@/lib/activity/sample";
 import { createAuth } from "@/lib/auth/auth";
 import { seedContracts } from "@/lib/contracts/sample";
+import { seedDeliveries } from "@/lib/deliveries/sample";
 import { getEnv } from "@/lib/env";
 import { seedCatalog } from "@/lib/catalog/seed";
 import { seedValueAdjustments } from "@/lib/inventory/revaluation-sample";
@@ -79,6 +80,12 @@ async function main(): Promise<number> {
         ? await seedContracts(handle.db, { director, sales })
         : 0;
     process.stdout.write(`Hợp đồng mẫu: thêm ${contracts} hợp đồng.\n`);
+    // Sample delivery notes: Đợt 1 posted, Đợt 2 waiting (deliveries 7.1).
+    const deliveries =
+      sales && warehouse
+        ? await seedDeliveries(handle.db, { sales, warehouse })
+        : 0;
+    process.stdout.write(`Phiếu xuất mẫu: thêm ${deliveries} phiếu.\n`);
     // Sample activity log like drawing D18 (activity-log design D13).
     const activity =
       director && accountant && sales && warehouse

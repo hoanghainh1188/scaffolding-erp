@@ -56,7 +56,9 @@ export function OutboxRunner({ userId }: { userId: string }) {
       <span className="flex-1">
         {notice.kind === "STOCKTAKE"
           ? `Đã gửi ${notice.code} về văn phòng`
-          : `Đã nhập kho ${notice.code} · ${notice.title}`}
+          : notice.kind === "DELIVERY"
+            ? `Đã xuất ${notice.code}`
+            : `Đã nhập kho ${notice.code} · ${notice.title}`}
       </span>
       <Button
         variant="ghost"
