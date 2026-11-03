@@ -71,6 +71,11 @@ export const PERMISSIONS = {
   // deliveries design D11: the storekeeper picks and confirms the truck
   // leaving; the director may stand in. Planning a batch uses canContract.
   "deliveries.pick": ["DIRECTOR", "WAREHOUSE"],
+  // returns-and-compensation design D11: the storekeeper counts returns on
+  // the phone; the director may stand in. Office roles read return notes,
+  // compensation notes and photos through canContract("RENTAL", "view").
+  "returns.receive": ["DIRECTOR", "WAREHOUSE"],
+  "compensations.approve": ["DIRECTOR"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;

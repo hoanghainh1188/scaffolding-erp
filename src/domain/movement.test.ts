@@ -22,8 +22,8 @@ const line = (
 });
 
 describe("movement types", () => {
-  it("has 14 types; opening, purchase, repaired and revalue change the average", () => {
-    expect(MOVEMENTS).toHaveLength(14);
+  it("has 15 types; opening, purchase, repaired and revalue change the average", () => {
+    expect(MOVEMENTS).toHaveLength(15);
     expect(MOVEMENTS.filter(changesAverage)).toEqual([
       "OPENING",
       "PURCHASE_IN",
@@ -36,6 +36,21 @@ describe("movement types", () => {
     expect(isInbound("OPENING")).toBe(true);
     expect(isInbound("RETURN_IN")).toBe(true);
     expect(isInbound("SALE_OUT")).toBe(false);
+  });
+
+  it("books lost goods out of the site without changing the average", () => {
+    expect(isInbound("LOSS_OUT")).toBe(false);
+    expect(changesAverage("LOSS_OUT")).toBe(false);
+    expect(() =>
+      assertMovementLine(
+        line({ movement: "LOSS_OUT", quantityMilli: 2000, hasAmount: false }),
+      ),
+    ).toThrow("Dòng xuất phải có số lượng âm");
+    expect(() =>
+      assertMovementLine(
+        line({ movement: "LOSS_OUT", quantityMilli: -2000, hasAmount: false }),
+      ),
+    ).not.toThrow();
   });
 });
 

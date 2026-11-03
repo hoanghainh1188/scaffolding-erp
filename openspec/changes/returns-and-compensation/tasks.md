@@ -29,8 +29,8 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
 
 ## 2. Logic thuần + unit test (viết test trước)
 
-- [ ] 2.1 `src/domain/movement.ts` thêm `LOSS_OUT` (nhãn thẻ kho "Mất ở công trình", không đổi giá). Kiểm: `movement.test.ts`: `isInbound("LOSS_OUT")` sai, `changesAverage` sai, số dương báo "Dòng xuất phải có số lượng âm".
-- [ ] 2.2 `src/domain/return-note.ts` gồm `assertReturnLines` (chia tình trạng, số nguyên, bỏ dòng 0, phiếu rỗng, mã lạ, trả quá) và `allocateReturn` (Mới trước rồi Tốt; nhóm Tốt → Chờ sửa → Phế liệu → Mất) ra `MovementDraft[]` có `pairedWith`. Kiểm: unit test **chia tình trạng phải khớp tổng**:
+- [x] 2.1 `src/domain/movement.ts` thêm `LOSS_OUT` (nhãn thẻ kho "Mất ở công trình", không đổi giá). Kiểm: `movement.test.ts`: `isInbound("LOSS_OUT")` sai, `changesAverage` sai, số dương báo "Dòng xuất phải có số lượng âm".
+- [x] 2.2 `src/domain/return-note.ts` gồm `assertReturnLines` (chia tình trạng, số nguyên, bỏ dòng 0, phiếu rỗng, mã lạ, trả quá) và `allocateReturn` (Mới trước rồi Tốt; nhóm Tốt → Chờ sửa → Phế liệu → Mất) ra `MovementDraft[]` có `pairedWith`. Kiểm: unit test **chia tình trạng phải khớp tổng**:
   - 82 / 15 / 3 / 2 với tổng 100 → đủ; 250 + 5 với tổng 260 → "Còn 5 cái chưa phân loại";
   - 10,5 cái → lỗi số nguyên;
   - **không trả quá**: 115 + 10 / 120 → đúng câu spec;
@@ -39,8 +39,8 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - chỉ Mất → chỉ có `LOSS_OUT`;
   - **Phế liệu lần đầu**: nhóm chưa có giá → `unitCost` = min(13,6 kg × 7.500, 167.000) = 102.000; giá sắt vụn cao hơn giá dòng ra → giá dòng ra; nhóm đã có giá BQ → không đặt `unitCost`; chưa có giá sắt vụn / chưa có trọng lượng chuẩn → câu của 0.2 #23;
   - hàng kg (số lẻ) qua.
-- [ ] 2.3 `returnValueSummary(postedLines)`: giá trị giảm do đổi tình trạng, giá trị hàng mất, tính từ dòng sổ. Kiểm: unit test: ví dụ trên ra 6.870.000 ₫ và 800.000 ₫; trả đúng tình trạng ra 0 ₫.
-- [ ] 2.4 `src/domain/compensation.ts`: `compensationLines`, `compensationTotal`, `assertDiscount`, `amountDue`, `dueDate`, `transition()`, `COMPENSATION_MESSAGES` (design D10). Kiểm: unit test:
+- [x] 2.3 `returnValueSummary(postedLines)`: giá trị giảm do đổi tình trạng, giá trị hàng mất, tính từ dòng sổ. Kiểm: unit test: ví dụ trên ra 6.870.000 ₫ và 800.000 ₫; trả đúng tình trạng ra 0 ₫.
+- [x] 2.4 `src/domain/compensation.ts`: `compensationLines`, `compensationTotal`, `assertDiscount`, `amountDue`, `dueDate`, `transition()`, `COMPENSATION_MESSAGES` (design D10). Kiểm: unit test:
   - **đơn giá theo tình trạng, Phế liệu = giá mất**: 15 × 50.000, 3 × 450.000, 2 × 450.000;
   - tổng D8 3.915.000 ₫ và tóm tắt 22 / 3 / 4;
   - số 0 không thành dòng; không có hỏng / mất → không có dòng;
@@ -49,8 +49,8 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - hạn 06/11 + 15 = 21/11, + 0 = 06/11, qua tháng / năm (25/12 + 15 = 09/01);
   - kg lẻ làm tròn 1 ₫;
   - mọi cặp trạng thái × lệnh.
-- [ ] 2.5 `src/domain/return-photo.ts`: `PHOTO_MAX_UPLOAD_BYTES` (4 MB), `PHOTO_MAX_PER_NOTE` (6), `PHOTO_MAX_EDGE` (1.280), `PHOTO_QUALITY` (70), `PHOTO_STORAGE_WARN_BYTES` (200 MB), `photoStorageStatus(bytes)`. `src/domain/image-type.ts` `detectImageType(bytes)`: JPEG, PNG, WebP theo magic bytes, còn lại `null`. Kiểm: unit test: PDF đổi đuôi `.jpg` → `null`; PNG thật; WebP thật; `RIFF` không phải `WEBP` → `null`; file rỗng / 3 byte → `null`; `photoStorageStatus`: 200 MB − 1 byte → `ok`, 200 MB + 1 byte → `warning`.
-- [ ] 2.6 `src/domain/permissions.ts` thêm `returns.receive` (`DIRECTOR`, `WAREHOUSE`), `compensations.approve` (`DIRECTOR`). `src/domain/activity.ts` thêm `RETURN_NOTE` ("Phiếu thu hồi"), `COMPENSATION_NOTE` ("Phiếu đền bù"), `REJECT` ("Từ chối", nhóm Trả lại / hủy / xóa). Tóm tắt nhật ký ở `src/domain/return-summary.ts`. Kiểm: `permissions.test.ts` scenario "Đọc bảng quyền thu hồi"; `return-summary.test.ts` có đúng câu spec ("Duyệt ĐB-2026-009: 3.500.000 ₫ (giảm 415.000 ₫: …)", "Sửa ĐB-…: đơn giá … trống → 380.000 ₫").
+- [x] 2.5 `src/domain/return-photo.ts`: `PHOTO_MAX_UPLOAD_BYTES` (4 MB), `PHOTO_MAX_PER_NOTE` (6), `PHOTO_MAX_EDGE` (1.280), `PHOTO_QUALITY` (70), `PHOTO_STORAGE_WARN_BYTES` (200 MB), `photoStorageStatus(bytes)`. `src/domain/image-type.ts` `detectImageType(bytes)`: JPEG, PNG, WebP theo magic bytes, còn lại `null`. Kiểm: unit test: PDF đổi đuôi `.jpg` → `null`; PNG thật; WebP thật; `RIFF` không phải `WEBP` → `null`; file rỗng / 3 byte → `null`; `photoStorageStatus`: 200 MB − 1 byte → `ok`, 200 MB + 1 byte → `warning`.
+- [x] 2.6 `src/domain/permissions.ts` thêm `returns.receive` (`DIRECTOR`, `WAREHOUSE`), `compensations.approve` (`DIRECTOR`). `src/domain/activity.ts` thêm `RETURN_NOTE` ("Phiếu thu hồi"), `COMPENSATION_NOTE` ("Phiếu đền bù"), `REJECT` ("Từ chối", nhóm Trả lại / hủy / xóa). Tóm tắt nhật ký ở `src/domain/return-summary.ts`. Kiểm: `permissions.test.ts` scenario "Đọc bảng quyền thu hồi"; `return-summary.test.ts` có đúng câu spec ("Duyệt ĐB-2026-009: 3.500.000 ₫ (giảm 415.000 ₫: …)", "Sửa ĐB-…: đơn giá … trống → 380.000 ₫").
 
 ## 3. Service (integration test, mỗi lệnh một transaction)
 

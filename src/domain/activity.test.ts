@@ -26,6 +26,7 @@ describe("actions and groups (design D3)", () => {
     expect(GROUP_ACTIONS.APPROVAL).toEqual(["SUBMIT", "APPROVE", "POST"]);
     expect(GROUP_ACTIONS.REVERSAL).toEqual([
       "RETURN",
+      "REJECT",
       "CANCEL",
       "CLOSE",
       "DELETE_DRAFT",
@@ -47,6 +48,7 @@ describe("actions and groups (design D3)", () => {
     expect(actionLabel("SUBMIT", "STOCKTAKE")).toBe("Gửi duyệt");
     expect(actionLabel("DELETE_DRAFT", "REPAIR_ORDER")).toBe("Xóa nháp");
     expect(actionLabel("SIGN_IN", null)).toBe("Đăng nhập");
+    expect(actionLabel("REJECT", "COMPENSATION_NOTE")).toBe("Từ chối");
   });
 
   it("labels every document type", () => {
