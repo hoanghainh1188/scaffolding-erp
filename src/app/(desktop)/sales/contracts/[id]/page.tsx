@@ -1,3 +1,4 @@
+import { Truck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { forbidden, notFound } from "next/navigation";
@@ -17,6 +18,7 @@ import {
   LinesTable,
   TermsSummary,
 } from "@/components/contracts/contract-view";
+import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
 import {
   formatBusinessDate,
@@ -80,12 +82,22 @@ export default async function Page({
             {shown.number > 0 ? <span>Đang áp dụng {shown.code}</span> : null}
           </span>
         </div>
-        <ContractActions
-          id={id}
-          code={head.code}
-          can={can}
-          openAmendment={openAmendment?.number ?? null}
-        />
+        <div className="flex flex-wrap items-start justify-end gap-2">
+          {head.status === "APPROVED" || head.status === "ACTIVE" ? (
+            <Button asChild variant="outline">
+              <Link href={`/sales/contracts/${id}/deliveries`}>
+                <Truck aria-hidden />{" "}
+                {head.type === "RENTAL" ? "Tiến độ cấp hàng" : "Giao hàng"}
+              </Link>
+            </Button>
+          ) : null}
+          <ContractActions
+            id={id}
+            code={head.code}
+            can={can}
+            openAmendment={openAmendment?.number ?? null}
+          />
+        </div>
       </div>
       {shown.returnedReason && head.status === "DRAFT" ? (
         <p

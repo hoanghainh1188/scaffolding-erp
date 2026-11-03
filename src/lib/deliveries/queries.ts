@@ -21,7 +21,9 @@ import {
   customer,
   deliveryNote,
   inventoryLedger,
+  item,
   kit,
+  kitComponent,
   location,
   site,
   user,
@@ -68,6 +70,9 @@ import {
 } from "./records";
 
 type Reader = Pick<Database, "select" | "selectDistinct">;
+
+/** Who reads: the role and the contract scope are enough (canContract). */
+type ReadingActor = Pick<ContractActor, "role" | "contractScope">;
 
 // ----------------------------------------------------------- shared
 
@@ -328,7 +333,12 @@ export interface ContractDeliveries {
     condition: Condition | null;
     pricingUnit: "ITEM" | "KG" | null;
   }[];
-  kits: { id: string; code: string; name: string }[];
+  kits: {
+    id: string;
+    code: string;
+    name: string;
+    components: { itemId: string; itemCode: string; quantity: number }[];
+  }[];
   yards: { id: string; code: string; name: string }[];
 }
 
@@ -391,7 +401,7 @@ async function deliveredOnSite(db: Reader, contractId: string) {
 /** D6 of one contract; null when it does not exist or may not be read. */
 export async function contractDeliveries(
   db: Database,
-  actor: ContractActor,
+  actor: ReadingActor,
   contractId: string,
   today: BusinessDate,
 ): Promise<ServiceResult<ContractDeliveries>> {
@@ -505,7 +515,7 @@ export async function contractDeliveries(
     .from(location)
     .where(and(eq(location.type, "YARD"), eq(location.status, "ACTIVE")))
     .orderBy(asc(location.code));
-  const kits =
+  const kitRows =
     head.type === "RENTAL"
       ? await db
           .select({ id: kit.id, code: kit.code, name: kit.name })
@@ -513,6 +523,33 @@ export async function contractDeliveries(
           .where(eq(kit.status, "ACTIVE"))
           .orderBy(asc(kit.code))
       : [];
+  const parts = kitRows.length
+    ? await db
+        .select({
+          kitId: kitComponent.kitId,
+          itemId: kitComponent.itemId,
+          itemCode: item.code,
+          quantity: kitComponent.quantity,
+        })
+        .from(kitComponent)
+        .innerJoin(item, eq(item.id, kitComponent.itemId))
+        .where(
+          inArray(
+            kitComponent.kitId,
+            kitRows.map((row) => row.id),
+          ),
+        )
+    : [];
+  const kits = kitRows.map((row) => ({
+    ...row,
+    components: parts
+      .filter((part) => part.kitId === row.id)
+      .map(({ itemId, itemCode, quantity }) => ({
+        itemId,
+        itemCode,
+        quantity,
+      })),
+  }));
 
   return ok({
     contract: head,
@@ -592,7 +629,7 @@ export interface DeliveryDetail {
 /** The office view of a note (with prices); null when not readable. */
 export async function deliveryDetail(
   db: Database,
-  actor: ContractActor,
+  actor: ReadingActor,
   idOrCode: string,
 ): Promise<ServiceResult<DeliveryDetail>> {
   const [row] = await db
