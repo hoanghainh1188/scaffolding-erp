@@ -33,6 +33,7 @@ import {
   progressText,
   SPLIT_FIELDS,
   SPLIT_LABELS,
+  withTotal,
   type CountedLine,
   type ReturnItem,
   type ReturnPayload,
@@ -57,13 +58,19 @@ export interface ReturnScreenProps {
 
 /** A small preview of a photo kept as a Blob in the draft. */
 function Thumb({ blob, alt }: { blob: Blob; alt: string }) {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (typeof URL.createObjectURL !== "function") return;
-    const made = URL.createObjectURL(blob);
-    setUrl(made);
-    return () => URL.revokeObjectURL(made);
-  }, [blob]);
+  const url = useMemo(
+    () =>
+      typeof URL.createObjectURL === "function"
+        ? URL.createObjectURL(blob)
+        : null,
+    [blob],
+  );
+  useEffect(
+    () => () => {
+      if (url) URL.revokeObjectURL(url);
+    },
+    [url],
+  );
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element -- a local Blob URL
     <img
@@ -238,7 +245,7 @@ export function ReturnScreen(props: ReturnScreenProps) {
     <div className="flex flex-col gap-6 pb-40">
       <section className="flex flex-col gap-2">
         {savedAt ? (
-          <p className="text-caption text-muted-foreground">
+          <p data-clock className="text-caption text-muted-foreground">
             Nháp · đã lưu trên máy lúc {savedAt}
           </p>
         ) : null}
@@ -336,17 +343,9 @@ export function ReturnScreen(props: ReturnScreenProps) {
                   label={`${item.code} tổng trả về`}
                   value={value(line.total)}
                   onValueChange={(next) =>
-                    setLine(item.itemId, (current) => ({
-                      ...current,
-                      total: formatQuantityForInput(next),
-                      // A first count is all Tốt until split otherwise.
-                      good:
-                        current.good === "" &&
-                        current.repair === "" &&
-                        current.scrap === ""
-                          ? formatQuantityForInput(next)
-                          : current.good,
-                    }))
+                    setLine(item.itemId, (current) =>
+                      withTotal(current, formatQuantityForInput(next)),
+                    )
                   }
                 />
               </div>
@@ -496,22 +495,24 @@ export function ReturnScreen(props: ReturnScreenProps) {
         />
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 flex gap-2 border-t bg-card p-4">
-        <Button
-          variant="secondary"
-          className="h-12 flex-1"
-          disabled={locked}
-          onClick={() => void draft.saveNow()}
-        >
-          Lưu nháp
-        </Button>
-        <Button
-          className="h-12 flex-1"
-          disabled={locked || problems.length > 0}
-          onClick={() => void save()}
-        >
-          {busy ? "Đang lưu…" : "Lưu phiếu thu hồi"}
-        </Button>
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 border-t bg-card">
+        <div className="mx-auto grid max-w-[640px] grid-cols-[auto_1fr] gap-2 px-4 py-3">
+          <Button
+            variant="secondary"
+            className="h-12"
+            disabled={locked}
+            onClick={() => void draft.saveNow()}
+          >
+            Lưu nháp
+          </Button>
+          <Button
+            className="h-12"
+            disabled={locked || problems.length > 0}
+            onClick={() => void save()}
+          >
+            {busy ? "Đang lưu…" : "Lưu phiếu thu hồi"}
+          </Button>
+        </div>
       </div>
     </div>
   );

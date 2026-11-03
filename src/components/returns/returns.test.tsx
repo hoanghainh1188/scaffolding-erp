@@ -22,6 +22,7 @@ import {
   checkLine,
   emptyLine,
   progressText,
+  withTotal,
   type ReturnItem,
   type ReturnPayload,
 } from "./return-model";
@@ -112,6 +113,14 @@ describe("return model", () => {
     expect(checkLine(h, { ...emptyLine(), lost: "20" }).text).toBe(
       "Mất 20 cái",
     );
+  });
+
+  it("lets Tốt follow the total until something is split off", () => {
+    const one = withTotal(emptyLine(), "1");
+    const three = withTotal(one, "3");
+    expect(three).toMatchObject({ total: "3", good: "3" });
+    const split = withTotal({ ...three, repair: "1", good: "2" }, "4");
+    expect(split).toMatchObject({ total: "4", good: "2", repair: "1" });
   });
 
   it("counts progress and blocks an empty note", () => {

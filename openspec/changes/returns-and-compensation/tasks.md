@@ -20,8 +20,8 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - hai phiếu đền bù cùng `return_note_id` bị unique chặn;
   - `LOSS_OUT` số dương bị check chặn.
 - [x] 1.4 Quyền DB: kiểm `src/db/grants.ts` cấp CRUD cho năm bảng mới, không thêm vào `APPEND_ONLY_TABLES`. Kiểm: `grants.test.ts` và `privileges.int.test.ts` xanh.
-- [ ] 1.5 Thêm `sharp` vào `dependencies`, tạo lại `package-lock.json` bằng npm 11.19. Kiểm: `npm ci` sạch, `npm run build` xanh.
-- [ ] 1.6 `CLAUDE.md`:
+- [x] 1.5 Thêm `sharp` vào `dependencies`, tạo lại `package-lock.json` bằng npm 11.19. Kiểm: `npm ci` sạch, `npm run build` xanh.
+- [x] 1.6 `CLAUDE.md`:
   - Quy ước code thêm gạch **Phiếu thu hồi và đền bù** (`src/lib/returns/`, `src/lib/compensations/`): `postReturn` khóa hợp đồng trước; rút Mới trước; `LOSS_OUT`; phiếu đền bù tự sinh; ảnh `bytea` không chọn `content` trong danh sách; M4 không giá;
   - từ điển thêm "Phiếu thu hồi ↔ `return_note`", "Hàng mất ↔ `LOSS_OUT`";
   - Lưu ý E2E như design.
@@ -169,8 +169,8 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
 
 ## 7. Seed, E2E và kiểm tra cuối
 
-- [ ] 7.1 Seed dev: một phiếu thu hồi của hợp đồng An Phú – Block B (qua `postReturn`) có Chờ sửa, Phế liệu, Mất, 2 ảnh mẫu tạo bằng `sharp`, và phiếu đền bù Chờ duyệt như D8; chạy lại không tạo thêm; cập nhật dòng `db:seed:dev` trong `CLAUDE.md`. Kiểm: `npm run db:seed:dev` hai lần, `npm run inventory:check` khớp, `sample.int.test.ts` của returns xanh.
-- [ ] 7.2 E2E `tests/e2e/returns.spec.ts` (Edge), dùng hợp đồng E2E của `deliveries` (`E2EXUAT`):
+- [x] 7.1 Seed dev: một phiếu thu hồi của hợp đồng An Phú – Block B (qua `postReturn`) có Chờ sửa, Phế liệu, Mất, 2 ảnh mẫu tạo bằng `sharp`, và phiếu đền bù Chờ duyệt như D8; chạy lại không tạo thêm; cập nhật dòng `db:seed:dev` trong `CLAUDE.md`. Kiểm: `npm run db:seed:dev` hai lần, `npm run inventory:check` khớp, `sample.int.test.ts` của returns xanh.
+- [x] 7.2 E2E `tests/e2e/returns.spec.ts` (Edge), dùng hợp đồng E2E của `deliveries` (`E2EXUAT`):
   - global setup bảo đảm có hàng `E2E-KHO-01` ở công trình (xuất thêm khi thiếu);
   - Thủ kho (`statePath("WAREHOUSE")`) thu hồi trên M4: Tốt + Chờ sửa + Mất, một ảnh mẫu;
   - D6 "Đã trả" và "Đang ở công trình" đổi theo chênh lệch;

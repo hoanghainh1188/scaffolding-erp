@@ -92,7 +92,12 @@ export async function deliverMore(
   if (!result.ok) throw new Error(result.error);
 }
 
-export type Counts = [good: number, repair: number, scrap: number, lost: number];
+export type Counts = [
+  good: number,
+  repair: number,
+  scrap: number,
+  lost: number,
+];
 
 export const lineBody = (
   itemId: string,

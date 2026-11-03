@@ -60,7 +60,6 @@ import {
 } from "@/lib/returns/queries";
 
 import {
-  DELIVERY_DOCUMENT_TYPE,
   doneByLine,
   isUuid,
   itemFacts,

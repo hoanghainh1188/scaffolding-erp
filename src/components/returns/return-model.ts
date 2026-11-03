@@ -165,6 +165,18 @@ export function blockers(
   return [];
 }
 
+/**
+ * A new total: Tốt follows it while nothing went to Chờ sửa / Phế liệu and
+ * Tốt still equals the old total, so a plain count needs no split.
+ */
+export function withTotal(line: CountedLine, total: string): CountedLine {
+  const follows =
+    line.repair === "" &&
+    line.scrap === "" &&
+    (line.good === "" || line.good === line.total);
+  return { ...line, total, good: follows ? total : line.good };
+}
+
 /** The body of POST /api/m/returns (the outbox adds the draft and photos). */
 export function bodyOf(
   items: readonly ReturnItem[],

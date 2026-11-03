@@ -245,3 +245,60 @@ test.describe("contract baselines @visual", () => {
     }
   }
 });
+
+// returns-and-compensation tasks 7.2: M4 and D8 of the seed return at
+// Chung cư An Phú – Block B (src/lib/returns/sample.ts). Ids and codes
+// change with the database, so both are reached from a list.
+test.describe("return baselines @visual", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "sets its own viewport");
+  });
+
+  for (const width of WIDTHS) {
+    test(`d8-compensation at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/sales/compensations?status=ALL");
+      await waitForHydration(page, DESKTOP_READY);
+      const href =
+        (await page
+          .getByRole("row")
+          .filter({ hasText: "Chung cư An Phú – Block B" })
+          .first()
+          .getByRole("link")
+          .getAttribute("href")) ?? "";
+      await page.goto(href);
+      await waitForHydration(page, DESKTOP_READY);
+      await page.addStyleTag({
+        content: "nextjs-portal { display: none !important; }",
+      });
+      await page.evaluate(() => document.fonts.ready);
+      await expect(page).toHaveScreenshot(`d8-compensation-${width}.png`, {
+        fullPage: true,
+        mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
+        animations: "disabled",
+        caret: "hide",
+      });
+    });
+
+    test(`m4-return at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/m/returns/new?q=An%20Ph%C3%BA");
+      await waitForHydration(page, MOBILE_READY);
+      await page
+        .getByRole("link", { name: /Chung cư An Phú – Block B/ })
+        .click();
+      await waitForHydration(page, MOBILE_READY);
+      await expect(page.getByText(/mã đã đếm/)).toBeVisible();
+      await page.addStyleTag({
+        content: "nextjs-portal { display: none !important; }",
+      });
+      await page.evaluate(() => document.fonts.ready);
+      await expect(page).toHaveScreenshot(`m4-return-${width}.png`, {
+        fullPage: true,
+        mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
+        animations: "disabled",
+        caret: "hide",
+      });
+    });
+  }
+});
