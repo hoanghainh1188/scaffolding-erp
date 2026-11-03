@@ -54,6 +54,10 @@ import { toMoney } from "@/domain/money";
 import { notFound, ok, type ServiceResult } from "@/lib/catalog/common";
 import { forbidden, type ContractActor } from "@/lib/contracts/common";
 import { contractTermsAt, type ContractTerms } from "@/lib/contracts/terms";
+import {
+  contractReturns,
+  type ReturnTimelineEntry,
+} from "@/lib/returns/queries";
 
 import {
   DELIVERY_DOCUMENT_TYPE,
@@ -61,12 +65,13 @@ import {
   isUuid,
   itemFacts,
   milliOf,
-  onSiteByItem,
   openByLine,
   readNoteContent,
+  siteMovements,
   termsLines,
   type ItemFacts,
   type NoteContent,
+  type SiteMovement,
 } from "./records";
 
 type Reader = Pick<Database, "select" | "selectDistinct">;
@@ -275,7 +280,10 @@ export interface SiteRow {
   itemName: string;
   unit: QuantityUnit;
   deliveredMilli: number;
+  /** Back at a yard (RETURN_OUT at the site). */
   returnedMilli: number;
+  /** Lost at the site (LOSS_OUT), its own D6 column. */
+  lostMilli: number;
   onSiteMilli: number;
   /** ₫ per day of what is on site (rental). */
   dayRent: number;
@@ -316,8 +324,11 @@ export interface ContractDeliveries {
   site: SiteRow[];
   remaining: (RemainingLine & { itemName: string; unit: QuantityUnit })[];
   timeline: TimelineEntry[];
+  /** Rental: return notes, latest first (returns-and-compensation). */
+  returns: ReturnTimelineEntry[];
   /** Notes confirmed on the phone another day than their delivery date. */
   checks: {
+    kind: "DELIVERY" | "RETURN";
     code: string;
     businessDate: BusinessDate;
     phoneDate: BusinessDate;
@@ -378,24 +389,26 @@ async function contractHead(
 }
 
 /** Delivered (all lines in) per item at the site, for this contract. */
-async function deliveredOnSite(db: Reader, contractId: string) {
-  const rows = await db
-    .select({
-      itemId: inventoryLedger.itemId,
-      quantity: sql<string>`sum(${inventoryLedger.quantity}) filter (where ${inventoryLedger.quantity} > 0)`,
-    })
-    .from(inventoryLedger)
-    .innerJoin(
-      deliveryNote,
-      and(
-        eq(deliveryNote.id, inventoryLedger.documentId),
-        eq(inventoryLedger.documentType, DELIVERY_DOCUMENT_TYPE),
-        eq(inventoryLedger.locationId, deliveryNote.siteLocationId),
-      ),
-    )
-    .where(eq(deliveryNote.contractId, contractId))
-    .groupBy(inventoryLedger.itemId);
-  return new Map(rows.map((row) => [row.itemId, milliOf(row.quantity ?? "0")]));
+/** D6 columns from the site's ledger lines (returns-and-compensation D8). */
+function siteColumns(rows: readonly SiteMovement[]) {
+  const columns = new Map<
+    string,
+    { delivered: number; returned: number; lost: number; onSite: number }
+  >();
+  for (const row of rows) {
+    const entry = columns.get(row.itemId) ?? {
+      delivered: 0,
+      returned: 0,
+      lost: 0,
+      onSite: 0,
+    };
+    if (row.movement === "DELIVERY_IN") entry.delivered += row.milli;
+    if (row.movement === "RETURN_OUT") entry.returned -= row.milli;
+    if (row.movement === "LOSS_OUT") entry.lost -= row.milli;
+    entry.onSite += row.milli;
+    columns.set(row.itemId, entry);
+  }
+  return columns;
 }
 
 /** D6 of one contract; null when it does not exist or may not be read. */
@@ -425,23 +438,24 @@ export async function contractDeliveries(
     ]),
   );
 
-  const onSite =
-    head.type === "RENTAL" ? await onSiteByItem(db, head.id) : new Map();
-  const delivered =
-    head.type === "RENTAL" ? await deliveredOnSite(db, head.id) : new Map();
+  const columns =
+    head.type === "RENTAL"
+      ? siteColumns(await siteMovements(db, head.id))
+      : new Map();
   const siteRows: SiteRow[] =
     head.type === "RENTAL"
       ? tLines.map((line) => {
           const info = facts.get(line.itemId) as ItemFacts;
-          const now = onSite.get(line.itemId) ?? 0;
-          const out = delivered.get(line.itemId) ?? 0;
+          const column = columns.get(line.itemId);
+          const now = column?.onSite ?? 0;
           return {
             itemId: line.itemId,
             itemCode: info.code,
             itemName: info.name,
             unit: info.unit,
-            deliveredMilli: out,
-            returnedMilli: Math.max(out - now, 0),
+            deliveredMilli: column?.delivered ?? 0,
+            returnedMilli: column?.returned ?? 0,
+            lostMilli: column?.lost ?? 0,
             onSiteMilli: now,
             dayRent: lineAmount(now, toMoney(priceOf.get(line.itemId) ?? 0)),
           };
@@ -485,6 +499,7 @@ export async function contractDeliveries(
       phoneDate !== note.businessDate;
     if (different) {
       checks.push({
+        kind: "DELIVERY",
         code: note.code,
         businessDate: note.businessDate as BusinessDate,
         phoneDate: phoneDate as BusinessDate,
@@ -551,12 +566,24 @@ export async function contractDeliveries(
       })),
   }));
 
+  const returns =
+    head.type === "RENTAL" ? await contractReturns(db, head.id) : [];
+  for (const entry of returns) {
+    if (!entry.phoneDifferentDay) continue;
+    checks.push({
+      kind: "RETURN",
+      code: entry.code,
+      businessDate: entry.businessDate,
+      phoneDate: toBusinessDate(entry.phoneDifferentDay),
+    });
+  }
   return ok({
     contract: head,
     canManage: canContract(actor, head.type, "manage"),
     site: siteRows,
     remaining,
     timeline,
+    returns,
     checks,
     plan: (terms?.batches ?? []).map((batch, index) => ({
       seq: index + 1,

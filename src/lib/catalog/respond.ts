@@ -16,8 +16,12 @@ export const catalogDb = getDatabase;
 /** Envelope for a service result. */
 export function respond<T>(result: ServiceResult<T>, status = 200): Response {
   if (result.ok) return ok(result.data, status);
-  return result.field
-    ? fail(result.error, result.status, { field: result.field })
+  const extra = {
+    ...(result.field ? { field: result.field } : {}),
+    ...(result.details ?? {}),
+  };
+  return Object.keys(extra).length > 0
+    ? fail(result.error, result.status, extra)
     : fail(result.error, result.status);
 }
 

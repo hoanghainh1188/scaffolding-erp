@@ -54,12 +54,12 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
 
 ## 3. Service (integration test, mỗi lệnh một transaction)
 
-- [ ] 3.1 `src/lib/deliveries/records.ts`: `onSiteByItem` cộng nhánh `RETURN_NOTE` (`UNION ALL`), thêm `onSiteByItemCondition`; D6 tính "Đã trả" từ dòng ra ở công trình của phiếu thu hồi. Kiểm: `queries.int.test.ts` thêm:
+- [x] 3.1 `src/lib/deliveries/records.ts`: `onSiteByItem` cộng nhánh `RETURN_NOTE` (`UNION ALL`), thêm `onSiteByItemCondition`; D6 tính "Đã trả" từ dòng ra ở công trình của phiếu thu hồi. Kiểm: `queries.int.test.ts` thêm:
   - **sau thu hồi**: 320 xuất, trả 100, mất 2 → đã trả 102, đang ở 218, còn phải giao 82;
   - mất hết `MAM1,6` → đang ở 0, tiền 1 ngày 0 ₫;
   - hai hợp đồng cùng công trình không cộng lẫn;
   - test cũ "Trả rồi lấy lại" chạy bằng phiếu thu hồi thật.
-- [ ] 3.2 `src/lib/returns/post.ts` `postReturn` theo design D7: mã nháp trước, khóa hợp đồng, kiểm hợp đồng / bãi, đọc đang ở công trình, `allocateReturn`, `postMovements`, chèn phiếu + dòng, gắn ảnh, `nextDocumentCode('PTH')`. Kiểm: `post.int.test.ts`:
+- [x] 3.2 `src/lib/returns/post.ts` `postReturn` theo design D7: mã nháp trước, khóa hợp đồng, kiểm hợp đồng / bãi, đọc đang ở công trình, `allocateReturn`, `postMovements`, chèn phiếu + dòng, gắn ảnh, `nextDocumentCode('PTH')`. Kiểm: `post.int.test.ts`:
   - ghi đúng vị trí (`RETURN_OUT` `CT-0003`, `RETURN_IN` `BAI-01`, `LOSS_OUT` `CT-0003`);
   - **ghi theo giá BQ hiện tại, giá BQ không đổi**, kể cả khi đổi tình trạng;
   - **`reconcile` / `npm run inventory:check` khớp** sau phiếu đổi tình trạng và có hàng mất;
@@ -67,12 +67,12 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - hợp đồng bán / Đã duyệt / Thanh lý → từ chối; nhận về xưởng → câu spec;
   - **không trả quá** (kể cả sau một phiếu xuất mới trong lúc đếm);
   - ngày trả = hôm nay giờ VN (giả 21:50 rồi gửi 07:10 hôm sau → ngày sau, lưu `saved_on_device_at`).
-- [ ] 3.3 Chống ghi trùng và đồng thời trong `post.int.test.ts`:
+- [x] 3.3 Chống ghi trùng và đồng thời trong `post.int.test.ts`:
   - **gửi lại cùng mã nháp** → cùng `PTH`, không thêm dòng sổ / phiếu đền bù / nhật ký;
   - mã nháp của người khác → 409;
   - **hai phiếu cùng lúc** mỗi phiếu 70 / 120 (`Promise.all`, hai kết nối) → đúng một phiếu ghi sổ, phiếu kia nhận câu trả quá với 50 cái;
   - thu hồi và phiếu xuất cùng hợp đồng cùng lúc không lệch "đang ở công trình".
-- [ ] 3.4 Phiếu đền bù tự sinh trong `postReturn` (`src/lib/compensations/create.ts`): `contractTermsAt(ngày trả)`, `compensationLines`, `nextDocumentCode('ĐB')`. Kiểm: integration test:
+- [x] 3.4 Phiếu đền bù tự sinh trong `postReturn` (`src/lib/compensations/create.ts`): `contractTermsAt(ngày trả)`, `compensationLines`, `nextDocumentCode('ĐB')`. Kiểm: integration test:
   - có hỏng / mất → một `ĐB` `PENDING` đúng dòng và giá;
   - **chỉ Tốt → không có phiếu đền bù, bảng đếm `ĐB` không tăng**;
   - **giá theo bản hợp đồng tại ngày trả**: phụ lục 01/11 đổi 450.000 → 480.000, trả 05/11 → 480.000, trả 31/10 → 450.000;

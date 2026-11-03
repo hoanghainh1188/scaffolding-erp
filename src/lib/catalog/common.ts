@@ -16,10 +16,12 @@ export type ServiceResult<T> =
   | { ok: true; data: T }
   | {
       ok: false;
-      status: 400 | 403 | 404 | 409 | 422;
+      status: 400 | 403 | 404 | 409 | 413 | 422;
       error: string;
       /** The form field the error belongs to ("lines.0.quantity"). */
       field?: string;
+      /** Extra data a client acts on (`PHOTOS_EXPIRED` and its photo ids). */
+      details?: Readonly<Record<string, unknown>>;
     };
 
 export const COMMON_MESSAGES = {
