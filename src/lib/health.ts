@@ -1,8 +1,15 @@
+import {
+  photoStorageStatus,
+  type PhotoStorageStatus,
+} from "@/domain/return-photo";
+
 import { fail, ok } from "./api-response";
 
 export interface HealthReport {
   status: "ok" | "degraded";
   database: "ok" | "unreachable";
+  /** Return photos above the warning threshold (0.2 #65); no figures. */
+  photoStorage?: PhotoStorageStatus;
 }
 
 export const HEALTH_TIMEOUT_MS = 3000;
@@ -27,6 +34,23 @@ export async function checkHealth(
     // Driver details stay in the server log; the response only says "unreachable".
     console.error("[health] database check failed:", error);
     return { status: "degraded", database: "unreachable" };
+  }
+}
+
+/**
+ * Adds the photo storage status once the database answered. A failed sum
+ * leaves the report as it was: the check is a warning, not a health state.
+ */
+export async function withPhotoStorage(
+  report: HealthReport,
+  totalBytes: () => Promise<number>,
+): Promise<HealthReport> {
+  if (report.database !== "ok") return report;
+  try {
+    return { ...report, photoStorage: photoStorageStatus(await totalBytes()) };
+  } catch (error: unknown) {
+    console.error("[health] photo storage check failed:", error);
+    return report;
   }
 }
 

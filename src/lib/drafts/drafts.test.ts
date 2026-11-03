@@ -6,7 +6,9 @@ import {
   nextRetryDelay,
   draftSender,
   receiptSender,
+  returnSender,
   stocktakeSender,
+  type ReturnDraftPayload,
   type SendOutcome,
   type Sender,
 } from "./outbox";
@@ -413,5 +415,176 @@ describe("deliverySender", () => {
       kind: "SIGNED_OUT",
     });
     expect((await store.get(deliveryDraft().draftId))?.state).toBe("QUEUED");
+  });
+});
+
+describe("returnSender", () => {
+  const photo = (index: number, uploadedId: string | null = null) => ({
+    clientPhotoId: `00000000-0000-4000-8000-00000000000${index}`,
+    caption: `Ảnh ${index}`,
+    blob: new Blob([new Uint8Array([0xff, 0xd8, 0xff, index])]),
+    uploadedId,
+  });
+
+  function returnDraft(photos: ReturnType<typeof photo>[]): DraftRecord {
+    return draft({
+      kind: "RETURN",
+      documentRef: "112026/ANPHAT-MINHPHAT",
+      title: "Thu hồi An Phú – Block B",
+      payload: {
+        body: { contractId: "c1", yardLocationId: "y1", lines: [] },
+        photos,
+      },
+    });
+  }
+
+  /** A server that names each photo and posts the note. */
+  function server(
+    options: { photoFails?: number; expiredOnce?: string[] } = {},
+  ) {
+    let failures = options.photoFails ?? Infinity;
+    let expired = options.expiredOnce ?? [];
+    const photos: string[] = [];
+    const posts: unknown[] = [];
+    const fetcher = vi.fn<typeof fetch>(async (url, init) => {
+      if (String(url).endsWith("/photos")) {
+        if (photos.length >= failures) {
+          failures = Infinity;
+          throw new TypeError("offline");
+        }
+        const form = init?.body as FormData;
+        const id = `srv-${String(form.get("clientPhotoId")).slice(-1)}`;
+        photos.push(id);
+        return Response.json({ data: { id } }, { status: 201 });
+      }
+      const body = JSON.parse(String(init?.body)) as { photoIds: string[] };
+      posts.push(body);
+      if (expired.length > 0) {
+        const gone = expired;
+        expired = [];
+        return Response.json(
+          { data: { code: "PHOTOS_EXPIRED", expiredPhotoIds: gone } },
+          { status: 422 },
+        );
+      }
+      return Response.json({ data: { code: "PTH-2026-071" } }, { status: 201 });
+    });
+    return { fetcher, photos, posts };
+  }
+
+  it("sends the photos, then the note with their ids", async () => {
+    const store = memoryDraftStore();
+    const record = returnDraft([photo(1), photo(2)]);
+    await store.put(record);
+    const api = server();
+    expect(await returnSender(store, api.fetcher)(record)).toEqual({
+      kind: "POSTED",
+      code: "PTH-2026-071",
+    });
+    expect(api.posts[0]).toMatchObject({
+      clientDraftId: record.draftId,
+      photoIds: ["srv-1", "srv-2"],
+    });
+  });
+
+  it("resends only the photos the server has not got", async () => {
+    const store = memoryDraftStore();
+    const record = returnDraft([photo(1), photo(2), photo(3), photo(4)]);
+    await store.put(record);
+    const api = server({ photoFails: 2 });
+    const outbox = createOutbox({
+      store,
+      userId: "vantung",
+      send: returnSender(store, api.fetcher),
+    });
+    expect(await outbox.submit(record.draftId)).toEqual({ kind: "RETRY" });
+    const kept = await store.get(record.draftId);
+    expect(kept?.state).toBe("QUEUED");
+    expect(
+      (kept?.payload as ReturnDraftPayload).photos.map((p) => p.uploadedId),
+    ).toEqual(["srv-1", "srv-2", null, null]);
+    expect(await outbox.submit(record.draftId)).toMatchObject({
+      kind: "POSTED",
+    });
+    expect(api.photos).toEqual(["srv-1", "srv-2", "srv-3", "srv-4"]);
+  });
+
+  it("sends expired photos again from the draft, without a rejection", async () => {
+    const store = memoryDraftStore();
+    const record = returnDraft([photo(1, "srv-1"), photo(2, "old-2")]);
+    await store.put(record);
+    const api = server({ expiredOnce: ["old-2"] });
+    expect(await returnSender(store, api.fetcher)(record)).toMatchObject({
+      kind: "POSTED",
+    });
+    expect(api.photos).toEqual(["srv-2"]);
+    expect(api.posts[1]).toMatchObject({ photoIds: ["srv-1", "srv-2"] });
+  });
+
+  it("keeps it queued when photos expire twice", async () => {
+    const store = memoryDraftStore();
+    const record = returnDraft([photo(1, "old-1")]);
+    await store.put(record);
+    const fetcher = vi.fn<typeof fetch>(async (url) =>
+      String(url).endsWith("/photos")
+        ? Response.json({ data: { id: "srv-1" } }, { status: 201 })
+        : Response.json(
+            {
+              data: {
+                code: "PHOTOS_EXPIRED",
+                expiredPhotoIds: ["old-1", "srv-1"],
+              },
+            },
+            { status: 422 },
+          ),
+    );
+    expect(await returnSender(store, fetcher)(record)).toEqual({
+      kind: "RETRY",
+    });
+  });
+
+  it("rejects a note the server refuses, keeping the counts", async () => {
+    const store = memoryDraftStore();
+    const record = returnDraft([]);
+    await store.put(record);
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      Response.json(
+        {
+          error:
+            "GG-K17: trả về và mất (125 cái) nhiều hơn số đang ở công trình (120 cái). Kiểm tra lại số đếm.",
+        },
+        { status: 409 },
+      ),
+    );
+    const outbox = createOutbox({
+      store,
+      userId: "vantung",
+      send: returnSender(store, fetcher),
+    });
+    expect(await outbox.submit(record.draftId)).toMatchObject({
+      kind: "REJECTED",
+    });
+    expect((await store.get(record.draftId))?.state).toBe("REJECTED");
+  });
+
+  it("keeps it queued when signed out", async () => {
+    const store = memoryDraftStore();
+    const record = returnDraft([photo(1)]);
+    await store.put(record);
+    const fetcher = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 401 }),
+    );
+    expect(await returnSender(store, fetcher)(record)).toEqual({
+      kind: "SIGNED_OUT",
+    });
+  });
+
+  it("is picked by draftSender for RETURN drafts", async () => {
+    const store = memoryDraftStore();
+    const record = returnDraft([]);
+    await store.put(record);
+    const api = server();
+    await draftSender(api.fetcher, store)(record);
+    expect(String(api.fetcher.mock.calls[0]?.[0])).toBe("/api/m/returns");
   });
 });

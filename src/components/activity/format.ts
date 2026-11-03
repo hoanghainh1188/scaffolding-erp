@@ -19,6 +19,7 @@ const ACTION_TONES: Readonly<Record<ActivityAction, BadgeTone>> = {
   APPROVE: "success",
   POST: "success",
   RETURN: "warning",
+  REJECT: "destructive",
   CANCEL: "destructive",
   CLOSE: "warning",
   DELETE_DRAFT: "destructive",

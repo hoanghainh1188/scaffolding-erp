@@ -44,6 +44,8 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "contracts.sale.manage": ["DIRECTOR", "SALES"],
   "contracts.approve": ["DIRECTOR"],
   "deliveries.pick": ["DIRECTOR", "WAREHOUSE"],
+  "returns.receive": ["DIRECTOR", "WAREHOUSE"],
+  "compensations.approve": ["DIRECTOR"],
 };
 
 const PAIRS = (Object.keys(PERMISSIONS) as Permission[]).flatMap((permission) =>
@@ -78,7 +80,8 @@ describe("can", () => {
       expect(can("WAREHOUSE", permission)).toBe(
         permission === "receiving.manage" ||
           permission === "stocktake.count" ||
-          permission === "deliveries.pick",
+          permission === "deliveries.pick" ||
+          permission === "returns.receive",
       );
       expect(can("WORKSHOP", permission)).toBe(false);
     }
@@ -134,6 +137,16 @@ describe("canContract", () => {
     expect(ROLES.filter((role) => can(role, "deliveries.pick"))).toEqual([
       "DIRECTOR",
       "WAREHOUSE",
+    ]);
+  });
+
+  it("lets the director and the storekeeper receive returns, only the director approve compensation", () => {
+    expect(ROLES.filter((role) => can(role, "returns.receive"))).toEqual([
+      "DIRECTOR",
+      "WAREHOUSE",
+    ]);
+    expect(ROLES.filter((role) => can(role, "compensations.approve"))).toEqual([
+      "DIRECTOR",
     ]);
   });
 

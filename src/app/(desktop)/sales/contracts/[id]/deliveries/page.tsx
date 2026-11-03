@@ -122,7 +122,7 @@ export default async function Page({
             <h2 id="timeline-title" className="text-h2">
               {rental ? "Các đợt xuất và trả" : "Các đợt giao"}
             </h2>
-            <DeliveryTimeline entries={view.timeline} />
+            <DeliveryTimeline entries={view.timeline} returns={view.returns} />
           </section>
         </div>
         <aside className="flex flex-col gap-4 lg:sticky lg:top-4">

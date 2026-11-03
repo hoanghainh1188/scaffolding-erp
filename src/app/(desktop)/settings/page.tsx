@@ -1,14 +1,23 @@
 import { Building2, ChevronRight, History, Recycle, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 
+import { PhotoStorage } from "@/components/settings/photo-storage";
 import { UnderConstruction } from "@/components/shell/placeholder-page";
+import { getDatabase } from "@/db/client";
+import { can } from "@/domain/permissions";
 import { requirePermission } from "@/lib/auth/guard";
+import { photoStorageBytes } from "@/lib/returns/photos";
 
 export const metadata: Metadata = { title: "Cài đặt" };
 
 export default async function Page() {
-  await requirePermission("settings.view");
+  const user = await requirePermission("settings.view");
+  await connection();
+  const photoBytes = can(user.role, "company.manage")
+    ? await photoStorageBytes(getDatabase())
+    : null;
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-h1">Cài đặt</h1>
@@ -73,6 +82,7 @@ export default async function Page() {
         </span>
         <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
       </Link>
+      {photoBytes === null ? null : <PhotoStorage bytes={photoBytes} />}
       <UnderConstruction description="Các cài đặt khác của công ty làm ở change sau." />
     </div>
   );

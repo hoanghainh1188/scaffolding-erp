@@ -14,6 +14,7 @@ import {
   item,
   kit,
   kitComponent,
+  returnNote,
 } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import type { Condition } from "@/domain/condition";
@@ -316,32 +317,108 @@ export async function readNoteContent(
 const add = (map: Map<string, number>, key: string, milli: number) =>
   map.set(key, (map.get(key) ?? 0) + milli);
 
+/** Ledger document type of return notes (returns-and-compensation). */
+export const RETURN_DOCUMENT_TYPE = "RETURN_NOTE";
+
+export interface SiteMovement {
+  itemId: string;
+  condition: Condition;
+  movement: string;
+  milli: number;
+}
+
 /**
- * Rental: what is on site for this contract, by item (design D3, 0.2 #56):
- * every ledger line at the site location of a document of the contract.
- * Only delivery notes so far; returns add theirs in returns-and-compensation.
+ * Ledger lines at the contract's site, summed by item, condition and
+ * movement: those of its delivery notes and of its return notes (design D8
+ * of returns-and-compensation). Other contracts at the same site are not
+ * counted.
+ */
+export async function siteMovements(
+  tx: Reader,
+  contractId: string,
+): Promise<SiteMovement[]> {
+  const columns = {
+    itemId: inventoryLedger.itemId,
+    condition: inventoryLedger.condition,
+    movement: inventoryLedger.movement,
+    quantity: sql<string>`sum(${inventoryLedger.quantity})`,
+  };
+  const groups = [
+    inventoryLedger.itemId,
+    inventoryLedger.condition,
+    inventoryLedger.movement,
+  ] as const;
+  const [delivered, returned] = await Promise.all([
+    tx
+      .select(columns)
+      .from(inventoryLedger)
+      .innerJoin(
+        deliveryNote,
+        and(
+          eq(deliveryNote.id, inventoryLedger.documentId),
+          eq(inventoryLedger.documentType, DELIVERY_DOCUMENT_TYPE),
+          eq(inventoryLedger.locationId, deliveryNote.siteLocationId),
+        ),
+      )
+      .where(eq(deliveryNote.contractId, contractId))
+      .groupBy(...groups),
+    tx
+      .select(columns)
+      .from(inventoryLedger)
+      .innerJoin(
+        returnNote,
+        and(
+          eq(returnNote.id, inventoryLedger.documentId),
+          eq(inventoryLedger.documentType, RETURN_DOCUMENT_TYPE),
+          eq(inventoryLedger.locationId, returnNote.siteLocationId),
+        ),
+      )
+      .where(eq(returnNote.contractId, contractId))
+      .groupBy(...groups),
+  ]);
+  return [...delivered, ...returned].map((row) => ({
+    itemId: row.itemId,
+    condition: row.condition as Condition,
+    movement: row.movement,
+    milli: milliOf(row.quantity),
+  }));
+}
+
+const sumBy = <K>(
+  rows: readonly SiteMovement[],
+  key: (row: SiteMovement) => K,
+): Map<K, number> => {
+  const sums = new Map<K, number>();
+  for (const row of rows) {
+    sums.set(key(row), (sums.get(key(row)) ?? 0) + row.milli);
+  }
+  return sums;
+};
+
+/**
+ * Rental: what is at the contract's site by item (in − out), Mới and Tốt
+ * together, after deliveries, returns and lost goods (0.2 #56, #61).
  */
 export async function onSiteByItem(
   tx: Reader,
   contractId: string,
 ): Promise<Map<string, number>> {
-  const rows = await tx
-    .select({
-      itemId: inventoryLedger.itemId,
-      quantity: sql<string>`sum(${inventoryLedger.quantity})`,
-    })
-    .from(inventoryLedger)
-    .innerJoin(
-      deliveryNote,
-      and(
-        eq(deliveryNote.id, inventoryLedger.documentId),
-        eq(inventoryLedger.documentType, DELIVERY_DOCUMENT_TYPE),
-        eq(inventoryLedger.locationId, deliveryNote.siteLocationId),
-      ),
-    )
-    .where(eq(deliveryNote.contractId, contractId))
-    .groupBy(inventoryLedger.itemId);
-  return new Map(rows.map((row) => [row.itemId, milliOf(row.quantity)]));
+  return sumBy(await siteMovements(tx, contractId), (row) => row.itemId);
+}
+
+/** The same by item and condition: what a return note draws on (D1). */
+export async function onSiteByItemCondition(
+  tx: Reader,
+  contractId: string,
+): Promise<Map<string, Record<"NEW" | "GOOD", number>>> {
+  const sums = new Map<string, Record<"NEW" | "GOOD", number>>();
+  for (const row of await siteMovements(tx, contractId)) {
+    if (row.condition !== "NEW" && row.condition !== "GOOD") continue;
+    const entry = sums.get(row.itemId) ?? { NEW: 0, GOOD: 0 };
+    entry[row.condition] += row.milli;
+    sums.set(row.itemId, entry);
+  }
+  return sums;
 }
 
 /** Sale: delivered so far by line key, weighed kg on lines by kg. */

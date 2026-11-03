@@ -7,6 +7,9 @@ import { CONDITION_LABELS } from "@/domain/condition";
 import type { ContractType } from "@/domain/contract";
 import type { ContractDeliveries } from "@/lib/deliveries/queries";
 
+import { CompensationStatusBadge } from "@/components/compensations/compensation-badge";
+import { COMPENSATION_STATUS_LABELS } from "@/domain/compensation";
+
 import { DeliveryStatusBadge } from "./delivery-badges";
 import { amountText, moneyText, numberText, totalsText } from "./format";
 
@@ -36,6 +39,9 @@ export function SiteTable({ rows }: { rows: ContractDeliveries["site"] }) {
               Đã trả
             </th>
             <th scope="col" className={`${head} text-right`}>
+              Mất
+            </th>
+            <th scope="col" className={`${head} text-right`}>
               Đang ở công trình
             </th>
             <th scope="col" className={`${head} text-right`}>
@@ -55,6 +61,9 @@ export function SiteTable({ rows }: { rows: ContractDeliveries["site"] }) {
               </td>
               <td className={`${cell} text-right tabular-nums`}>
                 {numberText(row.returnedMilli, row.unit)}
+              </td>
+              <td className={`${cell} text-right tabular-nums`}>
+                {numberText(row.lostMilli, row.unit)}
               </td>
               <td className={`${cell} text-right font-medium tabular-nums`}>
                 {amountText(row.onSiteMilli, row.unit)}
@@ -80,6 +89,12 @@ export function SiteTable({ rows }: { rows: ContractDeliveries["site"] }) {
               <td className="px-3 py-2 text-right tabular-nums">
                 {numberText(
                   sum((row) => row.returnedMilli),
+                  rows[0]?.unit ?? "PIECE",
+                )}
+              </td>
+              <td className="px-3 py-2 text-right tabular-nums">
+                {numberText(
+                  sum((row) => row.lostMilli),
                   rows[0]?.unit ?? "PIECE",
                 )}
               </td>
@@ -214,14 +229,15 @@ export function DeliveryChecks({
       <ul className="flex flex-col gap-1">
         {checks.map((check) => (
           <li key={check.code} data-mask>
-            {check.code} · ngày giao {formatBusinessDate(check.businessDate)},
-            xác nhận trên máy {formatBusinessDate(check.phoneDate)}
+            {check.kind === "RETURN"
+              ? `${check.code} · ngày trả ${formatBusinessDate(check.businessDate)}, lưu trên máy ${formatBusinessDate(check.phoneDate)}`
+              : `${check.code} · ngày giao ${formatBusinessDate(check.businessDate)}, xác nhận trên máy ${formatBusinessDate(check.phoneDate)}`}
           </li>
         ))}
       </ul>
       <p className="text-muted-foreground">
-        Điện thoại gửi muộn nên ngày giao là ngày gửi được. Kế toán xem lại khi
-        tính tiền thuê.
+        Điện thoại gửi muộn nên ngày giao, ngày trả là ngày gửi được. Kế toán
+        xem lại khi tính tiền thuê.
       </p>
     </section>
   );
@@ -244,58 +260,125 @@ function entryText(entry: ContractDeliveries["timeline"][number]): string {
 /** "Các đợt xuất và trả", newest first. */
 export function DeliveryTimeline({
   entries,
+  returns = [],
 }: {
   entries: ContractDeliveries["timeline"];
+  returns?: ContractDeliveries["returns"];
 }) {
-  if (entries.length === 0) {
+  if (entries.length === 0 && returns.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
         Chưa có đợt xuất nào. Bấm &ldquo;Tạo đợt xuất&rdquo; để lập đợt đầu.
       </p>
     );
   }
+  // Batches keep their order; each return goes before the first batch of
+  // an earlier day (returns arrive newest first too).
+  type Row =
+    | { kind: "DELIVERY"; entry: (typeof entries)[number] }
+    | { kind: "RETURN"; entry: (typeof returns)[number] };
+  const rows: Row[] = [];
+  const waiting = [...returns];
+  for (const entry of entries) {
+    while (
+      waiting[0] &&
+      entry.date !== null &&
+      waiting[0].businessDate >= entry.date
+    ) {
+      const next = waiting.shift();
+      if (next) rows.push({ kind: "RETURN", entry: next });
+    }
+    rows.push({ kind: "DELIVERY", entry });
+  }
+  for (const entry of waiting) rows.push({ kind: "RETURN", entry });
   return (
     <ol className="flex flex-col">
-      {entries.map((entry) => (
-        <li
-          key={entry.id}
-          className="grid grid-cols-[110px_minmax(0,1fr)] gap-3 border-b py-3 last:border-b-0"
-        >
-          <span
-            data-mask
-            className="text-sm text-muted-foreground tabular-nums"
-          >
-            {entry.date ? formatBusinessDate(entry.date) : "Chưa hẹn ngày"}
-          </span>
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="flex flex-wrap items-center gap-2">
-              <Link
-                href={`/sales/deliveries/${entry.code}`}
-                className="font-medium text-primary hover:underline"
-              >
-                {entry.code} · Đợt {entry.batchNo}
-              </Link>
-              <DeliveryStatusBadge status={entry.status} />
-            </span>
-            <span className="text-sm">
-              {entryText(entry)}
-              {entry.companyTruck && entry.freightAmount !== null
-                ? ` · cước ${moneyText(entry.freightAmount)}`
-                : ""}
-            </span>
-            {entry.phoneDifferentDay ? (
-              <span data-mask className="text-caption text-warning">
-                Xác nhận trên máy lúc {formatDateTime(entry.phoneDifferentDay)}
-              </span>
-            ) : null}
-            {entry.status === "PLANNED" && entry.returnedReason ? (
-              <span className="text-caption text-warning">
-                Trả lại: {entry.returnedReason}
-              </span>
-            ) : null}
-          </div>
-        </li>
-      ))}
+      {rows.map((row) =>
+        row.kind === "RETURN" ? (
+          <ReturnRow key={row.entry.id} entry={row.entry} />
+        ) : (
+          <DeliveryRow key={row.entry.id} entry={row.entry} />
+        ),
+      )}
     </ol>
+  );
+}
+
+function ReturnRow({
+  entry,
+}: {
+  entry: ContractDeliveries["returns"][number];
+}) {
+  return (
+    <li className="grid grid-cols-[110px_minmax(0,1fr)] gap-3 border-b py-3 last:border-b-0">
+      <span data-mask className="text-sm text-muted-foreground tabular-nums">
+        {formatBusinessDate(entry.businessDate)}
+      </span>
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/sales/returns/${entry.code}`}
+            className="font-medium text-primary hover:underline"
+          >
+            Thu hồi {entry.code}
+          </Link>
+          {entry.compensation ? (
+            <CompensationStatusBadge status={entry.compensation.status} />
+          ) : null}
+        </span>
+        <span className="text-sm">
+          {entry.text}
+          {entry.compensation
+            ? ` · Đền bù ${COMPENSATION_STATUS_LABELS[entry.compensation.status]}`
+            : ""}
+        </span>
+        {entry.phoneDifferentDay ? (
+          <span data-mask className="text-caption text-warning">
+            Lưu trên máy lúc {formatDateTime(entry.phoneDifferentDay)}
+          </span>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+function DeliveryRow({
+  entry,
+}: {
+  entry: ContractDeliveries["timeline"][number];
+}) {
+  return (
+    <li className="grid grid-cols-[110px_minmax(0,1fr)] gap-3 border-b py-3 last:border-b-0">
+      <span data-mask className="text-sm text-muted-foreground tabular-nums">
+        {entry.date ? formatBusinessDate(entry.date) : "Chưa hẹn ngày"}
+      </span>
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/sales/deliveries/${entry.code}`}
+            className="font-medium text-primary hover:underline"
+          >
+            {entry.code} · Đợt {entry.batchNo}
+          </Link>
+          <DeliveryStatusBadge status={entry.status} />
+        </span>
+        <span className="text-sm">
+          {entryText(entry)}
+          {entry.companyTruck && entry.freightAmount !== null
+            ? ` · cước ${moneyText(entry.freightAmount)}`
+            : ""}
+        </span>
+        {entry.phoneDifferentDay ? (
+          <span data-mask className="text-caption text-warning">
+            Xác nhận trên máy lúc {formatDateTime(entry.phoneDifferentDay)}
+          </span>
+        ) : null}
+        {entry.status === "PLANNED" && entry.returnedReason ? (
+          <span className="text-caption text-warning">
+            Trả lại: {entry.returnedReason}
+          </span>
+        ) : null}
+      </div>
+    </li>
   );
 }

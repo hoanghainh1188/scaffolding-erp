@@ -11,6 +11,11 @@ Tài liệu hướng dẫn thiết lập, vận hành, kiểm tra và khắc ph�
 - **Cơ sở dữ liệu**: Neon Serverless Postgres 17, vùng `aws-ap-southeast-1` (Singapore), tính năng phân nhánh (Database Branching).
 - **Bảo vệ chỉ mục**: Header `X-Robots-Tag: noindex, nofollow` được cấu hình trong `vercel.json` và metadata robots (`isDemoMode()`) chặn 100% bot tìm kiếm.
 - **Bảo vệ quyền truy cập**: Chế độ `DEMO_MODE=true` khóa tính năng đổi mật khẩu, xóa/khóa tài khoản quản trị viên và gắn banner cảnh báo trên giao diện.
+- **Ảnh thu hồi** (0.2 #65, change `returns-and-compensation`): lưu trong Postgres (`return_photo.content`), WebP cạnh dài 1.280 px, tối đa 6 ảnh / phiếu (khoảng 100 KB / ảnh).
+  - Neon Free có **0,5 GB cho cả DB**. Neon đầy thì **mọi lệnh ghi** dừng (nhập, xuất, sổ kho), không chỉ ảnh.
+  - Ứng dụng cảnh báo khi tổng ảnh vượt **200 MB**: Cài đặt (Giám đốc) hiện số MB, `/api/health` trả `photoStorage: "warning"`.
+  - Demo reset mỗi đêm về nhánh `seed` nên ảnh thử không dồn lại; chỉ cần để ý khi tắt reset.
+  - **Mốc chuyển sang kho đối tượng riêng tư** (Vercel Blob private hoặc S3/R2): trước khi lên production trả phí, hoặc khi tổng ảnh vượt 200 MB trên gói Free. Làm bằng change riêng, giữ API xem ảnh `/api/returns/photos/[id]`.
 
 ```
 Neon Project: scaffolding-erp-demo

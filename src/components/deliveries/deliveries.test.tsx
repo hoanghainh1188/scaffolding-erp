@@ -87,6 +87,7 @@ describe("D6 blocks", () => {
       unit: "PIECE",
       deliveredMilli: 320_000,
       returnedMilli: 200_000,
+      lostMilli: 0,
       onSiteMilli: 120_000,
       dayRent: 144_000,
     },
@@ -97,6 +98,7 @@ describe("D6 blocks", () => {
       unit: "PIECE",
       deliveredMilli: 360_000,
       returnedMilli: 100_000,
+      lostMilli: 0,
       onSiteMilli: 260_000,
       dayRent: 78_000,
     },
@@ -107,6 +109,7 @@ describe("D6 blocks", () => {
       unit: "PIECE",
       deliveredMilli: 160_000,
       returnedMilli: 100_000,
+      lostMilli: 0,
       onSiteMilli: 60_000,
       dayRent: 54_000,
     },
@@ -163,6 +166,7 @@ describe("D6 blocks", () => {
       <DeliveryChecks
         checks={[
           {
+            kind: "DELIVERY",
             code: "PX-2026-142",
             businessDate: "2026-11-06" as BusinessDate,
             phoneDate: "2026-11-05" as BusinessDate,

@@ -9,6 +9,7 @@ import {
   contract,
   customer,
   deliveryNote,
+  deliveryNoteLine,
   goodsReceipt,
   inventoryCost,
   inventoryLedger,
@@ -35,7 +36,10 @@ import {
 } from "@/lib/contracts/approval";
 import { createContract } from "@/lib/contracts/service";
 import { seedDeliveries } from "@/lib/deliveries/sample";
-import { changeDeliveryStatus } from "@/lib/deliveries/service";
+import { postDelivery } from "@/lib/deliveries/post";
+import { changeDeliveryStatus, createDelivery } from "@/lib/deliveries/service";
+import { onSiteByItem } from "@/lib/deliveries/records";
+import { seedReturns } from "@/lib/returns/sample";
 import { seedContracts } from "@/lib/contracts/sample";
 import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
@@ -469,6 +473,50 @@ async function ensureDeliveryStock(db: Database, actor: ActivityActor) {
   );
 }
 
+/**
+ * returns.spec.ts takes E2E-KHO-01 back from the E2E rental: keep at least
+ * 10 at its site, shipping 20 more through a posted batch when short. The
+ * ledger lines stay; the spec checks differences only.
+ */
+async function ensureReturnStock(
+  db: Database,
+  sales: ActivityActor,
+  warehouse: ActivityActor,
+): Promise<void> {
+  const seller = { ...sales, contractScope: "ALL" as const };
+  const picker = { ...warehouse, contractScope: "ALL" as const };
+  const [deal] = await db
+    .select({ id: contract.id })
+    .from(contract)
+    .where(eq(contract.customerToken, E2E_DELIVERY_TOKEN));
+  const [kho] = await db
+    .select({ id: item.id })
+    .from(item)
+    .where(eq(item.code, E2E_STOCK_ITEMS[0]));
+  if (!deal || !kho) return;
+  if (((await onSiteByItem(db, deal.id)).get(kho.id) ?? 0) >= 10_000) return;
+  const note = await createDelivery(db, seller, {
+    contractId: deal.id,
+    lines: [{ itemId: kho.id, quantity: "20" }],
+    overContractConfirmed: true,
+    note: E2E_ORDER_NOTE,
+  });
+  if (!note.ok) throw new Error(`E2E return stock: ${note.error}`);
+  const started = await changeDeliveryStatus(db, picker, note.data.id, "START");
+  if (!started.ok) throw new Error(`E2E return stock: ${started.error}`);
+  const [line] = await db
+    .select({ id: deliveryNoteLine.id })
+    .from(deliveryNoteLine)
+    .where(eq(deliveryNoteLine.noteId, note.data.id));
+  const posted = await postDelivery(db, picker, note.data.id, {
+    clientDraftId: crypto.randomUUID(),
+    startedVersion: started.data.updatedAt,
+    vehiclePlate: "51X-000.01",
+    picks: [{ lineId: line?.id, condition: "GOOD", quantity: "20" }],
+  });
+  if (!posted.ok) throw new Error(`E2E return stock: ${posted.error}`);
+}
+
 export default async function globalSetup(): Promise<void> {
   const env = getEnv();
   if (!env.E2E_PASSWORD) {
@@ -532,6 +580,12 @@ export default async function globalSetup(): Promise<void> {
       // The rental deliveries.spec.ts ships on, and its stock (deliveries 7.2).
       await ensureDeliveryStock(handle.db, director);
       if (sales) await ensureDeliveryContract(handle.db, director, sales);
+      // D8 / M4 samples (returns 7.1) and the stock returns.spec.ts takes
+      // back from the E2E rental (returns 7.2).
+      if (warehouse) await seedReturns(handle.db, { warehouse });
+      if (sales && warehouse) {
+        await ensureReturnStock(handle.db, sales, warehouse);
+      }
       if (accountant && sales && warehouse) {
         await seedActivity(handle.db, {
           director,

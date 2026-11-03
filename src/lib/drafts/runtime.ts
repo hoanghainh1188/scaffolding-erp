@@ -47,10 +47,11 @@ const outboxes = new Map<string, Outbox>();
 export function outboxFor(userId: string): Outbox {
   let outbox = outboxes.get(userId);
   if (!outbox) {
+    const store = draftStore();
     outbox = createOutbox({
-      store: draftStore(),
+      store,
       userId,
-      send: draftSender(),
+      send: draftSender(fetch, store),
       onPosted(record: DraftRecord, code: string) {
         lastPosted = { kind: record.kind, title: record.title, code };
         posted.emit();

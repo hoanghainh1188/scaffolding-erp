@@ -42,7 +42,7 @@ async function d6Numbers(page: Page, id: string) {
     .filter({ hasText: ITEM })
     .filter({ visible: true });
   return {
-    onSite: number(await site.getByRole("cell").nth(2).textContent()),
+    onSite: number(await site.getByRole("cell").nth(3).textContent()),
     remaining: number(await left.getByRole("cell").nth(2).textContent()),
   };
 }

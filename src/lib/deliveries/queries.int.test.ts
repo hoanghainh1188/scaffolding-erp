@@ -167,7 +167,12 @@ describe("D6 and what is left", () => {
       contractDeliveries(ctx.db, fx.sales, deal.id, TODAY),
     );
     expect(view?.checks).toEqual([
-      { code: note.code, businessDate: "2026-11-03", phoneDate: "2026-11-02" },
+      {
+        kind: "DELIVERY",
+        code: note.code,
+        businessDate: "2026-11-03",
+        phoneDate: "2026-11-02",
+      },
     ]);
   });
 });
