@@ -48,7 +48,7 @@
 ## 7. Seed, E2E và kiểm tra cuối
 
 - [x] 7.1 Seed dev: một phiếu đã xuất (Đợt 1, qua `postDelivery`) và một phiếu Chờ nhặt (Đợt 2) cho hợp đồng thuê mẫu đã duyệt; chạy lại không tạo thêm; cập nhật dòng `db:seed:dev` trong `CLAUDE.md`. Kiểm: `npm run db:seed:dev` hai lần, `npm run inventory:check` khớp, `sample.int.test.ts` của deliveries xanh.
-- [ ] 7.2 E2E `e2e/deliveries.spec.ts` (Edge) + global setup (hợp đồng E2E dùng lại, hủy phiếu mở của `e2e.*`): văn phòng lập đợt 2 mã `E2E-KHO-01/02` trên D6 → thủ kho (`statePath("WAREHOUSE")`) nhặt thiếu trên M5, xác nhận → D6 cộng số đang ở công trình theo chênh lệch, còn phải giao giữ phần thiếu, hợp đồng "Đang thực hiện"; tìm theo chữ dùng `.filter({ visible: true })`. Ảnh mốc `@visual` cho D6 và M5. Kiểm: `npm run test:e2e` xanh.
+- [x] 7.2 E2E `e2e/deliveries.spec.ts` (Edge) + global setup (hợp đồng E2E dùng lại, hủy phiếu mở của `e2e.*`): văn phòng lập đợt 2 mã `E2E-KHO-01/02` trên D6 → thủ kho (`statePath("WAREHOUSE")`) nhặt thiếu trên M5, xác nhận → D6 cộng số đang ở công trình theo chênh lệch, còn phải giao giữ phần thiếu, hợp đồng "Đang thực hiện"; tìm theo chữ dùng `.filter({ visible: true })`. Ảnh mốc `@visual` cho D6 và M5. Kiểm: `npm run test:e2e` xanh.
 - [ ] 7.3 Kiểm tra máy: `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate deliveries --strict` đều xanh; gắn nhãn `update-snapshots` vào PR apply và chờ CI xanh.
 - [ ] 7.4 Kiểm tra tay trên điện thoại thật và Edge (bước 9 issue #10): nhặt một đợt, xuất thiếu, xác nhận xe rời bãi; D6 cộng đúng số đang ở công trình; hợp đồng chuyển "Đang thực hiện"; in phiếu xuất trên Edge. Chưa làm được trước archive thì ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33.
 
