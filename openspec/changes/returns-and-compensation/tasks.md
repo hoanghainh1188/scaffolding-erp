@@ -5,12 +5,12 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
 ## 1. Tài liệu và cơ sở dữ liệu
 
 - [x] 1.1 Ghi quyết định vào `docs/requirements.md` 0.2 #61 (phiếu thu hồi, chặn hàng lạ, ngày trả), #62 (đổi tình trạng, Phế liệu lần đầu theo giá sắt vụn), #63 (`LOSS_OUT`), #64 (phiếu đền bù, số lưu khi duyệt, quyền xem), #65 (ảnh); `docs/ops/demo.md` ghi dung lượng ảnh và mốc chuyển kho; chốt 03/11/2026 khi review PR #134. Đã ghi trong PR propose #134. Kiểm: đọc lại bảng 0.2, `npm run format:check` xanh.
-- [ ] 1.2 Viết `drizzle/0016_returns.sql` và schema Drizzle `src/db/schema/returns.ts` (+ export ở `index.ts`) theo design D9:
+- [x] 1.2 Viết `drizzle/0016_returns.sql` và schema Drizzle `src/db/schema/returns.ts` (+ export ở `index.ts`) theo design D9:
   - bảng `return_note`, `return_note_line`, `compensation_note`, `compensation_note_line`, `return_photo` (check, unique, FK `ON DELETE RESTRICT`);
   - tạo lại `inventory_ledger_movement_check` có `LOSS_OUT`, check `activity_log` có `RETURN_NOTE`, `COMPENSATION_NOTE`, `REJECT`;
   - `MOVEMENTS_OUT` trong `src/db/schema/inventory.ts` thêm `LOSS_OUT`.
   - Kiểm: `npm run db:migrate` trên DB dev chạy được, `npm run typecheck` xanh.
-- [ ] 1.3 Ba trigger trong cùng migration: `return_note_frozen`, `compensation_note_frozen`, `return_photo_frozen`. Kiểm: integration test `src/db/schema/returns.int.test.ts` bằng `erp_app`, mỗi ý một ca:
+- [x] 1.3 Ba trigger trong cùng migration: `return_note_frozen`, `compensation_note_frozen`, `return_photo_frozen`. Kiểm: integration test `src/db/schema/returns.int.test.ts` bằng `erp_app`, mỗi ý một ca:
   - UPDATE / DELETE `return_note` và dòng bị chặn;
   - **chèn thêm dòng vào phiếu đã ghi sổ ở transaction khác bị chặn** (kiểm `created_xact`, không theo giờ); ghi sổ có `options.now` khác giờ DB vẫn chèn được dòng;
   - chèn dòng phiếu đền bù ở transaction khác bị chặn; gắn ảnh vào phiếu của transaction khác bị chặn;
@@ -19,7 +19,7 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - `APPROVED` thiếu `amount_due` bị check chặn; giảm trừ > 0 không lý do bị chặn;
   - hai phiếu đền bù cùng `return_note_id` bị unique chặn;
   - `LOSS_OUT` số dương bị check chặn.
-- [ ] 1.4 Quyền DB: kiểm `src/db/grants.ts` cấp CRUD cho năm bảng mới, không thêm vào `APPEND_ONLY_TABLES`. Kiểm: `grants.test.ts` và `privileges.int.test.ts` xanh.
+- [x] 1.4 Quyền DB: kiểm `src/db/grants.ts` cấp CRUD cho năm bảng mới, không thêm vào `APPEND_ONLY_TABLES`. Kiểm: `grants.test.ts` và `privileges.int.test.ts` xanh.
 - [ ] 1.5 Thêm `sharp` vào `dependencies`, tạo lại `package-lock.json` bằng npm 11.19. Kiểm: `npm ci` sạch, `npm run build` xanh.
 - [ ] 1.6 `CLAUDE.md`:
   - Quy ước code thêm gạch **Phiếu thu hồi và đền bù** (`src/lib/returns/`, `src/lib/compensations/`): `postReturn` khóa hợp đồng trước; rút Mới trước; `LOSS_OUT`; phiếu đền bù tự sinh; ảnh `bytea` không chọn `content` trong danh sách; M4 không giá;

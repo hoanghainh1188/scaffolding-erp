@@ -18,6 +18,7 @@ export const MOVEMENTS = [
   "DELIVERY_IN",
   "RETURN_OUT",
   "RETURN_IN",
+  "LOSS_OUT",
   "TRANSFER_OUT",
   "TRANSFER_IN",
   "SALE_OUT",
