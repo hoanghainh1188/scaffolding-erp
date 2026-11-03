@@ -78,6 +78,10 @@ Phiếu đền bù SHALL có trạng thái Chờ duyệt, Đã duyệt, Đã t�
 - **WHEN** `minhanh` từ chối `ĐB-2026-009` với lý do "Hàng hỏng do bãi xếp, không phải lỗi khách"
 - **THEN** phiếu Đã từ chối **AND** tiền phải thu không có
 
+#### Scenario: Hộp thoại từ chối nêu số tiền
+- **WHEN** `minhanh` bấm "Từ chối" trên `ĐB-2026-009` tổng 3.915.000 ₫
+- **THEN** hộp thoại hiện "Từ chối thì không thu 3.915.000 ₫ đền bù của PTH-2026-071. Bạn không mở lại được phiếu này." kèm ô lý do
+
 #### Scenario: Từ chối không lý do
 - **WHEN** `minhanh` bấm từ chối với lý do trống
 - **THEN** hệ thống từ chối với "Bạn cần ghi lý do từ chối."

@@ -10,8 +10,8 @@ Hàng đã ra công trình (`deliveries`) nhưng chưa có cách đưa về. Hi�
   - **D8** Phiếu đền bù (Giám đốc duyệt).
   - Sửa **D6** (cột "Đã trả", dòng thu hồi trong dòng thời gian), **M1**, **M7**.
 - Thiết kế: `docs/design/screens/M4-ReturnNote.dc.html`, `D8-Compensation.dc.html`. Hai bản vẽ còn dùng số kiểu `HĐ-2026-031` và nhãn menu "Bán & Thuê". Khi code dùng số theo 0.2 #40 (VD `112026/ANPHAT-MINHPHAT`) và nhãn "Cho thuê & Bán" (0.2 #43).
-- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #4, #6, #11, #15, #18, #20, #21, #22, #24, #33, #35, #45, #51, #55, #56.
-- Các điểm cần chốt của issue có phương án đề xuất trong `design.md` (D1–D6). Khi được duyệt sẽ ghi vào 0.2 trong cùng PR.
+- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #4, #6, #11, #15, #18, #20, #21, #22, #23, #24, #27, #33, #35, #45, #51, #55, #56.
+- Các điểm cần chốt của issue có phương án trong `design.md` (D1–D6). Anh đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 **#61–#65** trong PR này.
 
 ## What Changes
 
@@ -27,8 +27,9 @@ Hàng đã ra công trình (`deliveries`) nhưng chưa có cách đưa về. Hi�
 - **Ghi sổ trong một transaction** (phiếu + sổ kho + phiếu đền bù + nhật ký) qua `postMovements`. Khóa hợp đồng rồi phiếu, như `postDelivery`.
   - Hàng trả về: `RETURN_OUT` ở vị trí công trình, `RETURN_IN` ở bãi. Ghi theo **giá BQ hiện tại**, không đổi giá BQ (0.2 #11, #24).
   - Ở công trình hàng là Mới hoặc Tốt; về bãi thành Tốt / Chờ sửa / Phế liệu. Hệ thống tự rút **Mới trước, rồi Tốt** (design D1).
+  - Phế liệu chưa từng có giá: đơn giá = min(kg × giá sắt vụn, giá dòng ra), như 0.2 #23, #27 (0.2 #62).
   - Hàng Mất: loại dòng sổ mới **`LOSS_OUT`** ở vị trí công trình, giá trị = số × giá BQ. Hàng ra khỏi sổ công ty (design D2).
-- **"Đang ở công trình" tính cả thu hồi và hàng mất.** `onSiteByItem` đọc thêm dòng sổ của phiếu thu hồi. Nhờ đó "còn phải giao" (0.2 #56) và cột "Đã trả" của D6 đúng. Dòng thời gian D6 có thêm phiếu thu hồi.
+- **"Đang ở công trình" tính cả thu hồi và hàng mất.** `onSiteByItem` đọc thêm dòng sổ của phiếu thu hồi. Nhờ đó "còn phải giao" (0.2 #56) đúng. D6 có cột "Đã trả" (hàng về bãi) và cột "Mất" riêng. Dòng thời gian D6 có thêm phiếu thu hồi.
 - **Phiếu đền bù** (`ĐB-2026-001`) **tự sinh cùng lúc ghi sổ** khi phiếu có hàng Chờ sửa, Phế liệu hoặc Mất. Không có dòng nào như vậy thì không có phiếu đền bù.
   - Đơn giá theo 0.2 #20: Chờ sửa = giá "hỏng, sửa được"; **Phế liệu = giá mất**; Mất = giá mất.
   - Giá lấy từ **bản hợp đồng đang áp dụng tại ngày trả** (`contractTermsAt`).
@@ -47,7 +48,9 @@ Hàng đã ra công trình (`deliveries`) nhưng chưa có cách đưa về. Hi�
   - kiểm loại file theo nội dung (magic bytes JPEG / PNG / WebP);
   - xóa EXIF, nén lại ở server;
   - lưu riêng tư trong Postgres, xem qua route bọc `withAuth`;
-  - tên do server sinh; giới hạn **4 MB / ảnh**, **10 ảnh / phiếu**.
+  - tên do server sinh; giới hạn **4 MB / ảnh gửi lên**, **6 ảnh / phiếu**, lưu WebP 1.280 px chất lượng 70 (khoảng 100 KB);
+  - cảnh báo trên `/api/health` và Cài đặt khi tổng ảnh vượt **200 MB** (Neon Free 0,5 GB cho cả DB); mốc chuyển sang kho đối tượng ghi ở `docs/ops/demo.md`;
+  - ảnh nháp đã bị dọn (sau 7 ngày) thì server trả 422, máy gửi lại ảnh từ nháp.
   - Ảnh của phiếu đã ghi sổ chỉ ghi thêm.
 - **Nháp điện thoại** như phiếu xuất:
   - nháp loại mới `RETURN` trong IndexedDB (`src/lib/drafts/`);
@@ -108,8 +111,9 @@ Hàng đã ra công trình (`deliveries`) nhưng chưa có cách đưa về. Hi�
 
 ### Modified Capabilities
 
-- `inventory-ledger`: thêm loại biến động `LOSS_OUT` (hàng mất ở công trình).
-- `deliveries`: "đang ở công trình", "còn phải giao", cột "Đã trả" của D6 tính cả phiếu thu hồi và hàng mất; dòng thời gian D6 có phiếu thu hồi.
+- `inventory-ledger`: thêm loại biến động `LOSS_OUT` (hàng mất ở công trình); thu hồi về Phế liệu chưa từng có giá lấy giá theo giá sắt vụn.
+- `system-health`: cảnh báo dung lượng ảnh thu hồi.
+- `deliveries`: "đang ở công trình", "còn phải giao" tính cả phiếu thu hồi và hàng mất; D6 có cột "Đã trả" và "Mất"; dòng thời gian D6 có phiếu thu hồi.
 - `auth`: bảng quyền thêm `returns.receive`, `compensations.approve`.
 - `activity-log`: phiếu thu hồi và phiếu đền bù được ghi nhật ký, lọc được trên D18.
 - `mobile-home`: khối "Thu hồi" trên Việc hôm nay.
@@ -124,7 +128,7 @@ Hàng đã ra công trình (`deliveries`) nhưng chưa có cách đưa về. Hi�
   - Trigger khóa phiếu đền bù đã duyệt / từ chối và phiếu thu hồi đã ghi sổ.
   - Tạo lại check `inventory_ledger` cho `LOSS_OUT`, check `activity_log` cho loại `RETURN_NOTE`, `COMPENSATION_NOTE` và thao tác `REJECT`.
   - Bảng thường (CRUD) cho `erp_app`.
-- **Thư viện mới:** `sharp` (xóa EXIF, nén ảnh ở server). Cần anh đồng ý khi duyệt (design D4).
+- **Thư viện mới:** `sharp` (xóa EXIF, nén ảnh ở server). Anh đã đồng ý khi review PR #134.
 - **Code:**
   - `src/domain/return-note.ts`: chia tình trạng, thứ tự rút Mới / Tốt, giới hạn đang ở công trình.
   - `src/domain/compensation.ts`: đơn giá theo tình trạng, tổng, giảm trừ, hạn trả.
@@ -140,6 +144,8 @@ Hàng đã ra công trình (`deliveries`) nhưng chưa có cách đưa về. Hi�
 - **Trang:**
   - `/m/returns/new` (M4), `/m/returns/[code]` (chỉ xem);
   - `/sales/returns/[code]`, `/sales/compensations`, `/sales/compensations/[code]` (D8);
-  - sửa `/sales/contracts/[id]/deliveries` (D6), `/m`, `/m/history`.
+  - sửa `/sales/contracts/[id]/deliveries` (D6), `/m`, `/m/history`, Cài đặt (cảnh báo dung lượng ảnh);
+  - `/api/health` thêm `photoStorage`.
+- **Tài liệu:** `docs/requirements.md` 0.2 #61–#65, `docs/ops/demo.md` (dung lượng ảnh và mốc chuyển kho) trong PR propose này.
 - **Seed dev:** một phiếu thu hồi của hợp đồng An Phú – Block B có hàng Chờ sửa, Phế liệu, Mất và phiếu đền bù Chờ duyệt như D8.
 - **Change sau đọc:** `rental-billing` (ngày trả, số trả và hàng mất ở công trình), `receivables` (tiền đền bù đã duyệt, hạn trả), `site-operations` (đang ở công trình theo tình trạng).

@@ -5,18 +5,18 @@
 ## ADDED Requirements
 
 ### Requirement: Chụp ảnh trên M4
-M4 SHALL có khối "Ảnh hiện trạng" với nút "Chụp ảnh" mở camera của điện thoại (chọn ảnh có sẵn cũng được), mỗi ảnh có chú thích ngắn không bắt buộc (tối đa 100 ký tự). Ảnh SHALL được thu nhỏ trên máy (cạnh dài tối đa 1.600 px) trước khi lưu nháp và gửi. Mỗi phiếu SHALL có tối đa 10 ảnh; ảnh không bắt buộc.
+M4 SHALL có khối "Ảnh hiện trạng" với nút "Chụp ảnh" mở camera của điện thoại (chọn ảnh có sẵn cũng được), mỗi ảnh có chú thích ngắn không bắt buộc (tối đa 100 ký tự). Ảnh SHALL được thu nhỏ trên máy (cạnh dài tối đa 1.280 px) trước khi lưu nháp và gửi. Mỗi phiếu SHALL có tối đa 6 ảnh; ảnh không bắt buộc.
 
 #### Scenario: Chụp hai ảnh
 - **WHEN** `vantung` chụp 2 ảnh, chú thích "Khung móp chân" và "Chéo cong"
 - **THEN** M4 hiện 2 ảnh nhỏ kèm chú thích **AND** nháp trên máy giữ cả hai ảnh
 
-#### Scenario: Ảnh thứ 11
-- **WHEN** phiếu đã có 10 ảnh và `vantung` bấm "Chụp ảnh"
-- **THEN** M4 hiện "Mỗi phiếu thu hồi có tối đa 10 ảnh. Xóa bớt ảnh nếu cần chụp thêm."
+#### Scenario: Ảnh thứ 7
+- **WHEN** phiếu đã có 6 ảnh và `vantung` bấm "Chụp ảnh"
+- **THEN** M4 hiện "Mỗi phiếu thu hồi có tối đa 6 ảnh. Xóa bớt ảnh nếu cần chụp thêm."
 
 ### Requirement: Kiểm loại và dung lượng ảnh ở server
-Server SHALL nhận ảnh chỉ khi nội dung là JPEG, PNG hoặc WebP (kiểm theo các byte đầu của file), không tin đuôi file hay `Content-Type`. Ảnh lớn hơn 4 MB SHALL bị từ chối. Ảnh thứ 11 của cùng một phiếu (hoặc cùng mã nháp) SHALL bị từ chối.
+Server SHALL nhận ảnh chỉ khi nội dung là JPEG, PNG hoặc WebP (kiểm theo các byte đầu của file), không tin đuôi file hay `Content-Type`. Ảnh gửi lên lớn hơn 4 MB SHALL bị từ chối. Ảnh thứ 7 của cùng một mã nháp SHALL bị từ chối.
 
 #### Scenario: File giả dạng ảnh
 - **WHEN** gửi file `bao-cao.jpg` có `Content-Type: image/jpeg` nhưng nội dung là PDF
@@ -27,15 +27,15 @@ Server SHALL nhận ảnh chỉ khi nội dung là JPEG, PNG hoặc WebP (kiểm
 - **THEN** API trả 413 với "Ảnh lớn hơn 4 MB. Chụp lại hoặc chọn ảnh nhỏ hơn."
 
 #### Scenario: Quá số ảnh
-- **WHEN** mã nháp đã có 10 ảnh và gửi thêm ảnh thứ 11
-- **THEN** API trả 400 với "Mỗi phiếu thu hồi có tối đa 10 ảnh."
+- **WHEN** mã nháp đã có 6 ảnh và gửi thêm ảnh thứ 7
+- **THEN** API trả 400 với "Mỗi phiếu thu hồi có tối đa 6 ảnh."
 
 ### Requirement: Xóa EXIF và nén lại
-Server SHALL giải mã ảnh, xoay theo hướng chụp, bỏ toàn bộ dữ liệu EXIF (vị trí GPS, tên máy, giờ chụp gốc) và nén lại thành WebP cạnh dài tối đa 1.600 px trước khi lưu. File gốc SHALL không được lưu.
+Server SHALL giải mã ảnh, xoay theo hướng chụp, bỏ toàn bộ dữ liệu EXIF (vị trí GPS, tên máy, giờ chụp gốc) và nén lại thành WebP cạnh dài tối đa 1.280 px, chất lượng 70, trước khi lưu. File gốc SHALL không được lưu.
 
 #### Scenario: Ảnh có GPS
-- **WHEN** gửi ảnh JPEG có EXIF chứa tọa độ GPS và tên máy
-- **THEN** ảnh lưu là WebP **AND** không còn trường EXIF, GPS hay tên máy nào
+- **WHEN** gửi ảnh JPEG 3.000 × 4.000 px có EXIF chứa tọa độ GPS và tên máy
+- **THEN** ảnh lưu là WebP 960 × 1.280 px **AND** không còn trường EXIF, GPS hay tên máy nào
 
 #### Scenario: Ảnh không giải mã được
 - **WHEN** gửi file có byte đầu của JPEG nhưng phần sau bị hỏng
@@ -83,8 +83,19 @@ Server SHALL giải mã ảnh, xoay theo hướng chụp, bỏ toàn bộ dữ l
 - **THEN** lần dọn kế tiếp xóa 2 ảnh đó
 
 ### Requirement: Ảnh chờ gửi khi mất sóng
-Ảnh SHALL lưu trong nháp trên máy cho tới khi server nhận. Khi có mạng, máy SHALL gửi từng ảnh còn thiếu với mã nháp, rồi mới gửi lưu phiếu. Gửi lại cùng ảnh (cùng mã ảnh phía máy) SHALL không tạo ảnh trùng.
+Ảnh SHALL lưu trong nháp trên máy cho tới khi phiếu được ghi sổ. Khi có mạng, máy SHALL gửi từng ảnh còn thiếu với mã nháp, rồi mới gửi lưu phiếu. Gửi lại cùng ảnh (cùng mã ảnh phía máy) SHALL không tạo ảnh trùng.
 
 #### Scenario: Mạng chập chờn
 - **WHEN** máy gửi được 2 / 4 ảnh rồi mất sóng, sau đó có mạng lại
 - **THEN** máy chỉ gửi 2 ảnh còn lại **AND** phiếu có đúng 4 ảnh
+
+### Requirement: Ảnh nháp đã bị dọn khi lưu phiếu
+Khi lệnh lưu phiếu tham chiếu ảnh không còn trên server (đã bị dọn sau 7 ngày, hoặc không thuộc mã nháp và người gửi), server SHALL trả 422 kèm danh sách mã ảnh hết hạn và không ghi sổ gì. Máy SHALL bỏ mã server của các ảnh đó, gửi lại chúng từ ảnh còn trong nháp, rồi gửi lưu phiếu lần nữa. Lỗi này SHALL không làm nháp thành "Bị từ chối".
+
+#### Scenario: Gửi muộn hơn 7 ngày
+- **WHEN** `vantung` gửi 4 ảnh của nháp ngày 01/11/2026, mất sóng, và tới 09/11/2026 mới gửi lưu phiếu
+- **THEN** server trả 422 với 4 mã ảnh hết hạn **AND** máy gửi lại 4 ảnh từ nháp rồi lưu phiếu **AND** `PTH` có 4 ảnh, nháp không qua trạng thái "Bị từ chối"
+
+#### Scenario: Một phần ảnh hết hạn
+- **WHEN** lệnh lưu phiếu có 3 mã ảnh còn và 1 mã đã bị dọn
+- **THEN** server trả 422 chỉ với 1 mã đó **AND** không có dòng sổ nào cho tới khi máy gửi lại ảnh đó

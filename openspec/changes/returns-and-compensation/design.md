@@ -57,15 +57,19 @@
 - **Vì sao:** cùng cách với phiếu điều chỉnh đổi tình trạng (`stock-adjustments`, `adjustmentMovements` loại `CONDITION`). `inventory:check` đối chiếu từng nhóm nên vẫn khớp.
 - **Đã cân nhắc:** mang giá Tốt sang Chờ sửa (như dòng ra). Cách này làm đổi giá BQ của Chờ sửa, trái 0.2 #11 ("thu hồi không đổi giá BQ").
 
-**(Mã + tình trạng) vào chưa từng có giá: lấy giá của dòng ra đi cùng.**
+**(Mã + tình trạng) vào chưa từng có giá: lấy giá của dòng ra đi cùng; riêng Phế liệu theo giá sắt vụn (0.2 #62, chốt khi review PR #134).**
 
-- Đây đúng là spec `inventory-ledger` "Dòng vào tình trạng chưa từng có giá", có sẵn scenario "Thu hồi phế liệu lần đầu".
-- Hệ quả: lần đầu một mã có Phế liệu, Phế liệu mang giá Tốt (cao). Giá trị đó vào kho, chưa thành lỗ.
-- Đề xuất **giữ nguyên spec**, không thêm luật giá sắt vụn ở đây. Lý do:
-  - giữ một luật duy nhất cho mọi dòng không đổi giá;
-  - giá phế liệu được sửa đúng ở lần sửa chữa / bán phế liệu;
-  - nếu cần, sửa bằng phiếu điều chỉnh giá trị (0.2 #35).
-- Nếu anh muốn Phế liệu lần đầu lấy min(kg × giá sắt vụn, giá Tốt) như 0.2 #23 thì đổi trong `postMovements` cho riêng `RETURN_IN` Phế liệu. Đây là câu hỏi mở 1.
+- Chờ sửa / Tốt chưa có giá: lấy đơn giá dòng ra, như spec `inventory-ledger` hiện có.
+- **Phế liệu chưa từng có giá**: đơn giá = **min(kg quy đổi × giá sắt vụn tham khảo lúc ghi sổ, đơn giá dòng ra)**, làm tròn 1 ₫.
+  - Cùng luật với phế liệu từ sửa chữa (0.2 #23) và từ mua lô cũ (0.2 #27): ba đường vào Phế liệu dùng một luật.
+  - Lý do: giá lần đầu trở thành giá BQ Phế liệu, mà thu hồi các lần sau không đổi giá BQ (0.2 #11). Vào ở giá Tốt thì cả nhóm Phế liệu bị định giá cao rất lâu. VD khung 13,6 kg × 7.500 ₫ = 102.000 ₫ thay vì 400.000 ₫.
+  - Phế liệu đã có giá BQ thì dùng giá BQ như mọi dòng khác.
+- **Cách làm:** `allocateReturn` đặt `unitCost` trên dòng `RETURN_IN` Phế liệu bằng `scrapValue` (dùng lại hàm của `src/domain/repair-order.ts`, tách sang `src/domain/scrap-value.ts` nếu cần dùng chung).
+  - `postMovements` chỉ dùng `unitCost` khi nhóm chưa có giá BQ, nên đúng luật "đã có giá BQ thì dùng giá BQ".
+  - `postReturn` đọc giá sắt vụn hiện tại (`scrap_price`, bản mới nhất) và trọng lượng chuẩn trong transaction, chỉ khi có dòng Phế liệu.
+  - Chưa có giá sắt vụn hoặc mã chưa có trọng lượng chuẩn, mà nhóm Phế liệu chưa có giá → từ chối cả phiếu với câu của 0.2 #23. Nháp trên máy thành "Bị từ chối" giữ số, gửi lại sau khi Giám đốc nhập giá.
+  - Mã tính theo kg: kg = số lượng.
+- Phần chênh giữa giá dòng ra và giá phế liệu nằm trong "Giá trị giảm do đổi tình trạng" của phiếu, như mọi đổi tình trạng khác.
 
 ### D2. Hàng Mất ghi bằng loại dòng sổ nào (điểm cần chốt 2)
 
@@ -89,7 +93,13 @@
 **Phiếu thu hồi không có trạng thái trên server.**
 
 - Nháp chỉ nằm trên máy. Server chỉ có phiếu khi đã ghi sổ.
-- Phiếu đã ghi sổ không sửa, không hủy. Trigger chặn `UPDATE` / `DELETE` trên `return_note` và `return_note_line`. Dòng con chỉ chèn được trong transaction tạo phiếu: trigger so `return_note.posted_at = now()`, vì `now()` là giờ bắt đầu transaction.
+- Phiếu đã ghi sổ không sửa, không hủy. Trigger chặn `UPDATE` / `DELETE` trên `return_note` và `return_note_line`.
+- **Dòng con chỉ chèn được trong transaction tạo phiếu**, kiểm bằng mã transaction, không bằng giờ (review PR #134):
+  - `return_note.created_xact xid8 not null default pg_current_xact_id()`. Code không truyền cột này.
+  - Trigger `BEFORE INSERT` trên `return_note_line` từ chối khi `created_xact` của phiếu ≠ `pg_current_xact_id()`.
+  - Không dùng `posted_at = now()`: `postReturn` nhận `options.now` để test (như `postDelivery`). Giờ truyền từ JS sẽ lệch `now()` của DB và chặn nhầm, hoặc trùng giờ thì lọt.
+  - `posted_at` vẫn lấy theo `options.now` (giờ nghiệp vụ, ngày trả). Nó chỉ là dữ liệu, trigger không đọc.
+  - Cùng cách cho `compensation_note_line` (chèn chỉ trong transaction tạo phiếu đền bù) và để gắn ảnh: `return_photo.return_note_id` chỉ được đặt khi phiếu có `created_xact` = transaction hiện tại.
 - **Vì sao:** thu hồi diễn ra một lần khi xe hạ tải. Không có bước văn phòng lập trước như phiếu xuất. Thêm Nháp / Chờ duyệt trên server chỉ thêm việc.
 - Đếm sai thì sửa tồn bằng phiếu điều chỉnh (`stock-adjustments`), còn tiền thì sửa bằng giảm trừ trên phiếu đền bù.
 
@@ -106,7 +116,7 @@
   - số tiền giảm trừ và lý do.
   - Không sửa số lượng (đến từ sổ kho). Không sửa giá đã có trong hợp đồng: muốn bớt thì dùng giảm trừ, để dấu vết rõ.
 - **Từ chối**: bắt buộc lý do, phiếu thành Đã từ chối, không có tiền phải thu. Không mở lại.
-  - Mỗi phiếu thu hồi chỉ có một phiếu đền bù, nên từ chối là thôi thu hẳn. D8 nhắc trước khi từ chối: "Từ chối thì không thu tiền đền bù của phiếu thu hồi này nữa."
+  - Mỗi phiếu thu hồi chỉ có một phiếu đền bù, nên từ chối là thôi thu hẳn. Hộp thoại từ chối nêu rõ số tiền sẽ bỏ: "Từ chối thì không thu 3.915.000 ₫ đền bù của PTH-2026-071. Bạn không mở lại được phiếu này." (review PR #134).
   - Duyệt với giảm trừ là cách để thu một phần.
 - **Đã cân nhắc:**
   - Kế toán lập phiếu đền bù tay: chậm, dễ sót.
@@ -115,7 +125,7 @@
 
 ### D4. Lưu ảnh ở đâu (điểm cần chốt 4)
 
-**Lưu trong Postgres, bảng `return_photo` cột `bytea`.** Ảnh đã nén lại ở server thành WebP.
+**Lưu trong Postgres, bảng `return_photo` cột `bytea`, ảnh nhỏ, có cảnh báo dung lượng** (0.2 #65, chốt khi review PR #134). Ảnh nén lại ở server thành **WebP cạnh dài 1.280 px, chất lượng 70** (khoảng 100 KB), **tối đa 6 ảnh / phiếu**.
 
 - **Vì sao:**
   1. Không thêm dịch vụ, không thêm khóa bí mật, CSP không đổi (ảnh cùng tên miền, `img-src 'self'`).
@@ -123,27 +133,34 @@
   3. Sao lưu và khôi phục theo thời điểm của Neon gồm cả ảnh.
   4. Mỗi công ty một DB (0.2 #33): ảnh đi theo DB, không lẫn công ty.
   5. Kho riêng tư mặc định. Chỉ xem qua route `withAuth`.
-- **Dung lượng ước tính:**
-  - WebP 1.600 px chất lượng 75: khoảng 150–250 KB / ảnh;
-  - 10 ảnh × 30 phiếu / tháng: khoảng 75 MB / tháng, dưới 1 GB / năm.
+- **Dung lượng (review PR #134):**
+  - Demo chạy **Neon Free: 0,5 GB cho cả DB**. Neon đầy thì **mọi lệnh ghi** dừng (nhập, xuất, sổ kho), không chỉ ảnh. Vì vậy ảnh phải nhỏ và có cảnh báo sớm.
+  - WebP 1.280 px chất lượng 70: khoảng 100 KB / ảnh. 6 ảnh × 30 phiếu / tháng: khoảng 18 MB / tháng.
+  - **Ngưỡng cảnh báo 200 MB** (`PHOTO_STORAGE_WARN_BYTES` trong `src/domain/return-photo.ts`, một chỗ theo quy ước 5 của 0.2 #33). Tổng tính bằng `sum(byte_size)` của `return_photo`, có chỉ mục.
+    - `GET /api/health` thêm `data.photoStorage: "ok" | "warning"`, không kèm số liệu (route không cần đăng nhập).
+    - Trang Cài đặt hiện cho Giám đốc số MB đang dùng và câu cảnh báo khi vượt.
+  - Demo reset mỗi đêm về nhánh `seed` nên ảnh thử không dồn lại. Ngưỡng có ích khi chạy thật trên gói Free.
   - Truy vấn danh sách **không bao giờ** chọn cột `content`. Postgres để giá trị lớn ngoài bảng chính (TOAST) nên bảng vẫn nhẹ.
 - **Đã cân nhắc:**
   - **Vercel Blob (store private)**: rẻ hơn khi nhiều.
     - Nhược: thêm token, CSP `connect-src`, tải lên từ trình duyệt hoặc qua server. Hai hệ thống không cùng transaction, phải dọn ảnh mồ côi.
     - Mỗi công ty sau này cần store riêng.
-    - **Chuyển sang đây khi ảnh vượt khoảng 5 GB**, bằng một change riêng: giữ nguyên API xem ảnh `/api/returns/photos/[id]`, chỉ đổi chỗ đọc.
+    - **Mốc chuyển (ghi ở `docs/ops/demo.md`):** trước khi lên production trả phí, hoặc khi ảnh vượt 200 MB trên gói Free. Làm bằng change riêng, giữ nguyên API xem ảnh `/api/returns/photos/[id]`, chỉ đổi chỗ đọc.
   - **S3 / R2**: như trên, thêm nhà cung cấp mới.
 - **Luồng an toàn (theo comment bảo mật của #11):**
   1. **Trên điện thoại:**
-     - thu nhỏ bằng canvas (cạnh dài 1.600 px, JPEG 0,8). Việc này cũng bỏ phần lớn EXIF, nhưng không được tin;
+     - thu nhỏ bằng canvas (cạnh dài 1.280 px, JPEG 0,8). Việc này cũng bỏ phần lớn EXIF, nhưng không được tin;
      - lưu vào nháp IndexedDB.
   2. `POST /api/m/returns/photos` (multipart: `draftId`, `clientPhotoId`, `caption`, `file`), bọc `withAuth` + `returns.receive`. Server kiểm theo thứ tự:
      - **dung lượng ≤ 4 MB** (đọc tối đa 4 MB + 1 byte rồi dừng; dưới giới hạn body của Vercel);
      - **magic bytes** JPEG (`FF D8 FF`), PNG (`89 50 4E 47 0D 0A 1A 0A`), WebP (`RIFF....WEBP`). Hàm thuần `src/domain/image-type.ts`. Không đọc đuôi file hay `Content-Type`;
-     - **≤ 10 ảnh** cho mã nháp đó;
-     - **`sharp`**: giải mã, giới hạn số điểm ảnh (`limitInputPixels` 40 MP, chống "bom" ảnh), `rotate()` theo EXIF rồi xuất WebP **không kèm metadata** (mặc định của `sharp`), resize 1.600 px. Giải mã lỗi trả 400.
+     - **≤ 6 ảnh** cho mã nháp đó;
+     - **`sharp`**: giải mã, giới hạn số điểm ảnh (`limitInputPixels` 40 MP, chống "bom" ảnh), `rotate()` theo EXIF rồi xuất WebP **không kèm metadata** (mặc định của `sharp`), resize 1.280 px, WebP chất lượng 70. Giải mã lỗi trả 400.
   3. **Tên / mã ảnh** = `gen_random_uuid()` do server sinh. Tên file gửi lên bị bỏ. `(client_draft_id, client_photo_id)` unique: gửi lại cùng ảnh trả mã cũ.
-  4. Ghi sổ phiếu thu hồi: trong transaction, `UPDATE return_photo SET return_note_id = … WHERE client_draft_id = … AND uploaded_by = <người ghi sổ> AND return_note_id IS NULL`.
+  4. Ghi sổ phiếu thu hồi, trong transaction:
+     - kiểm mọi `photoIds` còn tồn tại với `client_draft_id` của lệnh, `uploaded_by` = người ghi sổ, `return_note_id IS NULL`;
+     - **thiếu ảnh nào → 422** `{ code: "PHOTOS_EXPIRED", expiredPhotoIds: [...] }`, rollback, không ghi sổ gì (review PR #134 mục 3: ảnh nháp có thể đã bị dọn sau 7 ngày);
+     - đủ thì `UPDATE return_photo SET return_note_id = …, position = …` theo thứ tự `photoIds`.
   5. **Xem:** `GET /api/returns/photos/[id]`.
      - Bọc `withAuth`; cho người có `returns.receive` hoặc `canContract(RENTAL, view)` trên hợp đồng của phiếu.
      - Ảnh nháp chỉ người tải lên xem được.
@@ -151,10 +168,10 @@
      - Không tồn tại / không quyền đều **404**, để không dò được mã.
   6. **Chỉ ghi thêm:** trigger `return_photo_frozen` chặn `DELETE` và mọi `UPDATE` khi `return_note_id` đã có (chỉ cho đổi `return_note_id` từ trống sang có một lần).
   7. **Dọn ảnh nháp bỏ dở:** mỗi lần tải ảnh, xóa ảnh `return_note_id IS NULL` cũ hơn 7 ngày (cùng bảng, không cần cron).
-- **Giữ ảnh bao lâu:** **giữ cùng chứng từ, không tự xóa** ở MVP. Ảnh là bằng chứng đền bù, công nợ có thể tranh chấp lâu. Luật xóa theo năm làm sau, nếu dung lượng thành vấn đề.
+- **Giữ ảnh bao lâu:** **giữ cùng chứng từ, không tự xóa** ở MVP. Ảnh là bằng chứng đền bù, công nợ có thể tranh chấp lâu. Dung lượng được canh bằng ngưỡng cảnh báo ở trên.
 - **Thư viện mới `sharp`:**
   - Next.js đã dùng `sharp` để tối ưu ảnh và nó chạy được trên Vercel.
-  - Đây là thư viện xử lý ảnh, không phải thư viện UI, nhưng vẫn **cần anh đồng ý** khi duyệt.
+  - Đây là thư viện xử lý ảnh, không phải thư viện UI. **Anh đã đồng ý** khi review PR #134.
   - Không có `sharp` thì chỉ còn cách tự viết bộ đọc / xóa EXIF cho JPEG. Cách đó không nén lại được PNG / WebP và dễ sót.
 
 ### D5. Phiếu đền bù đã duyệt lưu gì (điểm cần chốt 5)
@@ -201,7 +218,7 @@ Khi duyệt, cùng transaction, lưu trên `compensation_note`:
 4. Đọc **đang ở công trình theo (mã + tình trạng)** của hợp đồng (D8).
 5. Kiểm chia tình trạng, số nguyên, mã lạ, trả quá (`src/domain/return-note.ts`). Rồi `allocateReturn` dựng `MovementDraft[]`.
 6. `postMovements(tx, posting, drafts)`, ngày = hôm nay giờ Việt Nam. `postMovements` tự gọi `lockForPosting` (vật tư → vị trí → giá) và chặn tồn âm.
-7. Chèn `return_note` (`posted_at = now()`), `return_note_line`. Gắn ảnh.
+7. Chèn `return_note` (`created_xact` do DB đặt), `return_note_line`. Kiểm và gắn ảnh; thiếu ảnh → 422 `PHOTOS_EXPIRED`, rollback (D4).
 8. Nếu có hỏng / mất:
    - `contractTermsAt(tx, contractId, ngày trả)`;
    - `compensationLines()` (hàm thuần);
@@ -223,22 +240,22 @@ Duyệt / từ chối / sửa phiếu đền bù:
   - Viết bằng `UNION ALL` hai nhánh, giữ chỉ mục `inventory_ledger_document_idx`.
 - Thêm `onSiteByItemCondition` (cùng truy vấn, nhóm thêm `condition`) cho D7 bước 4 và M4.
 - D6:
-  - "Đã trả" = Σ |dòng ra ở công trình của phiếu thu hồi| (gồm `LOSS_OUT`);
+  - "Đã trả" = Σ |dòng `RETURN_OUT` ở công trình của phiếu thu hồi| (chỉ hàng về bãi); "Mất" = Σ |dòng `LOSS_OUT`| (review PR #134: không gộp, để văn phòng không hiểu nhầm là đã về bãi);
   - "Đã xuất" giữ như cũ;
-  - kiểm `đã xuất − đã trả = đang ở công trình` bằng test.
+  - kiểm `đã xuất − đã trả − mất = đang ở công trình` bằng test.
 - `site-operations` sau này thêm nhánh thứ ba (phiếu chuyển công trình).
 
 ### D9. Dữ liệu (migration `drizzle/0016_returns.sql`)
 
 - **`return_note`**
-  - Cột: `id`, `code` unique, `contract_id` → `contract` RESTRICT, `site_location_id`, `yard_location_id` → `location` RESTRICT, `business_date` `date`, `vehicle_plate` (1–20), `note` (1–500), `client_draft_id` `uuid` unique not null, `posting_id` `uuid` not null, `saved_on_device_at` `timestamptz`, `posted_by` → `user`, `posted_at`.
+  - Cột: `id`, `code` unique, `contract_id` → `contract` RESTRICT, `site_location_id`, `yard_location_id` → `location` RESTRICT, `business_date` `date`, `vehicle_plate` (1–20), `note` (1–500), `client_draft_id` `uuid` unique not null, `posting_id` `uuid` not null, `saved_on_device_at` `timestamptz`, `posted_by` → `user`, `posted_at`, `created_xact` `xid8` not null default `pg_current_xact_id()` (code không truyền; D3).
   - Index `(contract_id)`, `(business_date)`.
 - **`return_note_line`**
   - Cột: `note_id` cascade, `line_no`, `item_id` RESTRICT, `good_quantity`, `repair_quantity`, `scrap_quantity`, `lost_quantity` `numeric(14,3)` ≥ 0.
   - Check: tổng > 0.
   - Unique `(note_id, item_id)`, `(note_id, line_no)`.
 - **`compensation_note`**
-  - Cột: `id`, `code` unique, `return_note_id` unique → `return_note`, `contract_id`, `revision_id` → `contract_revision`, `status` check, `discount_amount` `bigint` default 0 ≥ 0, `discount_reason`, `approval_reason`, `rejected_reason` (1–500), `amount_due` `bigint`, `approved_by`, `approved_at`, `approved_date`, `due_date`, `rejected_by`, `rejected_at`, `created_at`, `updated_at`.
+  - Cột: `id`, `code` unique, `return_note_id` unique → `return_note`, `contract_id`, `revision_id` → `contract_revision`, `status` check, `discount_amount` `bigint` default 0 ≥ 0, `discount_reason`, `approval_reason`, `rejected_reason` (1–500), `amount_due` `bigint`, `approved_by`, `approved_at`, `approved_date`, `due_date`, `rejected_by`, `rejected_at`, `created_at`, `updated_at`, `created_xact` `xid8` default `pg_current_xact_id()`.
   - Check hình dạng theo trạng thái:
     - `APPROVED` có đủ cột duyệt;
     - `REJECTED` có lý do;
@@ -249,13 +266,13 @@ Duyệt / từ chối / sửa phiếu đền bù:
   - PK `(note_id, item_id, kind)`.
   - Thành tiền tính ra (`lineAmount`), không lưu.
 - **`return_photo`**
-  - Cột: `id` `uuid` default `gen_random_uuid()`, `client_draft_id` `uuid` not null, `client_photo_id` `uuid` not null, `return_note_id` → `return_note` (trống khi còn nháp), `position` `smallint`, `caption` (≤ 100), `content` `bytea` not null, `byte_size` `integer` (≤ 4.194.304), `width`, `height`, `uploaded_by` → `user`, `uploaded_at`.
+  - Cột: `id` `uuid` default `gen_random_uuid()`, `client_draft_id` `uuid` not null, `client_photo_id` `uuid` not null, `return_note_id` → `return_note` (trống khi còn nháp), `position` `smallint`, `caption` (≤ 100), `content` `bytea` not null (WebP đã nén), `byte_size` `integer` (kích thước sau nén), `width`, `height`, `uploaded_by` → `user`, `uploaded_at`.
   - Unique `(client_draft_id, client_photo_id)`.
-  - Index `(return_note_id)`, `(uploaded_at) where return_note_id is null`.
+  - Index `(return_note_id)`, `(client_draft_id)`, `(uploaded_at) where return_note_id is null`.
 - **Trigger:**
-  - `return_note_frozen` (chặn UPDATE / DELETE; dòng con chỉ chèn khi `posted_at = now()`);
-  - `compensation_note_frozen` (chặn UPDATE / DELETE khi `OLD.status` ≠ `PENDING`, cả dòng con);
-  - `return_photo_frozen` (D4).
+  - `return_note_frozen` (chặn UPDATE / DELETE; dòng con chỉ chèn khi `created_xact` của phiếu = `pg_current_xact_id()`, D3);
+  - `compensation_note_frozen` (chặn UPDATE / DELETE khi `OLD.status` ≠ `PENDING`, cả dòng con; dòng con chỉ chèn trong transaction tạo phiếu);
+  - `return_photo_frozen` (D4; gắn `return_note_id` chỉ khi phiếu được tạo trong transaction hiện tại).
 - **Sửa check cũ:**
   - `inventory_ledger_movement_check` thêm `LOSS_OUT`;
   - `activity_log` thêm loại chứng từ `RETURN_NOTE`, `COMPENSATION_NOTE` và thao tác `REJECT` ("Từ chối", nhóm "Trả lại, hủy, xóa").
@@ -291,8 +308,8 @@ Duyệt / từ chối / sửa phiếu đền bù:
 
 - `GET /api/m/returns/contracts?q=`: hợp đồng thuê `ACTIVE` còn hàng ở công trình (D8), không giá.
 - `GET /api/m/returns/contracts/[id]`: công trình, nhà thầu, bãi chọn được, từng mã đang ở công trình (gộp Mới / Tốt), không giá.
-- `POST /api/m/returns/photos`: tải ảnh (D4) → `{ id }`.
-- `POST /api/m/returns`: `{ draftId, contractId, yardLocationId, vehiclePlate?, note?, savedOnDeviceAt, lines: [{ itemId, good, repair, scrap, lost }], photoIds }` → `{ code }`, kể cả khi gửi lại.
+- `POST /api/m/returns/photos`: tải ảnh (D4) → `{ id }`. 400 sai loại / quá 6 ảnh, 413 quá 4 MB.
+- `POST /api/m/returns`: `{ draftId, contractId, yardLocationId, vehiclePlate?, note?, savedOnDeviceAt, lines: [{ itemId, good, repair, scrap, lost }], photoIds }` → `{ code }`, kể cả khi gửi lại. **422** `{ code: "PHOTOS_EXPIRED", expiredPhotoIds }` khi ảnh nháp đã bị dọn (D4, D13).
 - `GET /api/m/returns/[code]`: chỉ xem cho M7, không giá.
 - `GET /api/returns/[code]`: chi tiết desktop (giá trị giảm, giá trị mất tính từ sổ).
 - `GET /api/returns/photos/[id]`: ảnh (D4).
@@ -304,7 +321,8 @@ Duyệt / từ chối / sửa phiếu đền bù:
   - `/m/returns/new` (M4: bước chọn công trình → đếm), `/m/returns/[code]`;
   - `/sales/returns/[code]`, `/sales/compensations`, `/sales/compensations/[code]` (D8);
   - khối "Đền bù" trên D5;
-  - D6 thêm "Đã trả" và dòng thu hồi;
+  - D6 cột "Đã trả" (chỉ hàng về bãi) và cột "Mất" riêng, dòng thu hồi trong dòng thời gian;
+  - Cài đặt (Giám đốc): cảnh báo dung lượng ảnh;
   - M1 khối "Thu hồi", M7 loại "Thu hồi".
 - Ô ngày (lọc danh sách) dùng `DateInput`. Tiền viết `3.915.000 ₫`.
 
@@ -315,19 +333,21 @@ Duyệt / từ chối / sửa phiếu đền bù:
 - Người gửi (`returnSender` trong `src/lib/drafts/outbox.ts`):
   1. Gửi từng ảnh chưa có `uploadedId`, ghi lại `uploadedId` ngay sau mỗi ảnh. Mất sóng giữa chừng thì lần sau chỉ gửi phần còn lại.
   2. Gửi lưu phiếu kèm `photoIds`.
-  3. Lỗi 4xx (trả quá, mã lạ) → nháp thành `REJECTED` với thông báo của server để Thủ kho sửa. Lỗi mạng / 5xx → thử lại.
+  3. **422 `PHOTOS_EXPIRED`** (review PR #134 mục 3): xóa `uploadedId` của các ảnh trong `expiredPhotoIds`, quay lại bước 1 (gửi lại từ `Blob` trong nháp), rồi gửi lưu phiếu lần nữa. **Không** chuyển nháp sang `REJECTED`. Chỉ lặp lại một lần mỗi lượt gửi; lần thứ hai vẫn 422 thì để `QUEUED` và thử ở lượt sau.
+  4. Lỗi 4xx khác (trả quá, mã lạ, chưa có giá sắt vụn) → nháp thành `REJECTED` với thông báo của server để Thủ kho sửa. Lỗi mạng / 5xx → thử lại.
 - Nháp cũ hơn 3 ngày được nhắc như các loại khác (`STALE_AFTER_MS`).
 - Mỗi lần đổi số (+ / −) lưu nháp ngay.
 
 ## Risks / Trade-offs
 
-- **[Ảnh trong DB làm DB to]** → Ước tính < 1 GB / năm. Danh sách không chọn `content`. Có đường chuyển sang kho đối tượng (D4) mà không đổi API xem ảnh.
+- **[Ảnh trong DB làm đầy Neon Free 0,5 GB]** → Ảnh ~100 KB, tối đa 6 ảnh / phiếu (~18 MB / tháng). Cảnh báo ở 200 MB trên `/api/health` và Cài đặt. Danh sách không chọn `content`. Mốc chuyển sang kho đối tượng ghi ở `docs/ops/demo.md`, không đổi API xem ảnh.
 - **[`sharp` là gói native]** → Next.js đã dựa vào nó, Vercel hỗ trợ sẵn. Test CI chạy trên Linux như Vercel. Thêm test tích hợp xử lý ảnh thật (JPEG có EXIF GPS).
 - **[Thu hồi chặn mã lạ làm Thủ kho phải lập nhiều phiếu]** → M4 cho lập phiếu tiếp theo cho hợp đồng khác ngay sau khi lưu, giữ biển số.
 - **[Phân bổ Mới trước có thể khác thực tế]** → Không ảnh hưởng tiền thuê. Giá trị chênh Mới → Tốt vẫn ghi đúng là giá trị giảm.
-- **[Phế liệu lần đầu mang giá Tốt]** → Theo spec hiện có (D1). Có câu hỏi mở 1 để đổi nếu anh muốn.
+- **[Thu hồi Phế liệu bị chặn vì chưa có giá sắt vụn]** → Chỉ khi nhóm Phế liệu của mã chưa từng có giá. Seed và production đều đã có giá sắt vụn; câu báo chỉ đúng chỗ sửa (Cài đặt).
 - **[Phiếu thu hồi không sửa được]** → Giống phiếu nhập và phiếu xuất. Sai thì điều chỉnh tồn + giảm trừ đền bù. Ghi rõ ở "Ngoài phạm vi".
 - **[Body 4,5 MB của Vercel]** → Mỗi ảnh một request ≤ 4 MB. Lưu phiếu chỉ gửi JSON.
+- **[Ảnh nháp bị dọn trước khi phiếu được lưu]** → 422 `PHOTOS_EXPIRED`, máy gửi lại từ nháp (D13). Nháp trên máy là bản gốc cho tới khi phiếu ghi sổ.
 - **[`overdueDebt` còn là hàm chờ]** → Cảnh báo nợ quá hạn chỉ thật khi có `receivables`. Test dùng bản giả trả nợ quá hạn.
 
 ## Migration Plan
@@ -340,6 +360,9 @@ Duyệt / từ chối / sửa phiếu đền bù:
 
 ## Open Questions
 
-1. **Phế liệu lần đầu** (D1): giữ luật hiện có (lấy giá dòng ra), hay lấy min(kg × giá sắt vụn, giá Tốt) như phế liệu từ sửa chữa (0.2 #23)? Đề xuất: **giữ luật hiện có**.
-2. **`sharp`** (D4): anh đồng ý thêm thư viện này không? Đề xuất: **có**.
-3. **Kinh doanh xem D8**: hiện theo quyền xem hợp đồng thuê, nên Kinh doanh (phạm vi có cho thuê) xem được phiếu đền bù và ảnh, không duyệt được. Có cần giới hạn hơn không? Đề xuất: **giữ**, để người phụ trách hợp đồng giải thích với khách.
+Đã chốt hết khi review PR #134 (03/11/2026), ghi ở `docs/requirements.md` 0.2 #61–#65:
+
+1. **Phế liệu lần đầu**: min(kg quy đổi × giá sắt vụn, giá dòng ra) (D1, 0.2 #62).
+2. **Chỗ lưu ảnh**: Postgres, ảnh nhỏ, 6 ảnh / phiếu, cảnh báo 200 MB (D4, 0.2 #65).
+3. **`sharp`**: đồng ý (D4).
+4. **Kinh doanh xem D8 và ảnh, không duyệt**: giữ (D11, 0.2 #64).
