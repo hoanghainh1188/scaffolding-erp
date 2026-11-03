@@ -77,6 +77,17 @@ export function dailyTotal(lines: readonly PricedQuantity[]): Money {
   return toMoney(Number(roundHalfUp(exact, MILLI)));
 }
 
+/**
+ * Change of "tiền thuê 1 ngày" when `added` arrives and `removed` leaves a
+ * site (D6b, D6c, D6d): negative when the day gets cheaper.
+ */
+export function dailyChange(
+  added: readonly PricedQuantity[],
+  removed: readonly PricedQuantity[],
+): number {
+  return dailyTotal(added) - dailyTotal(removed);
+}
+
 export interface ExpectedValueInput {
   dailyTotal: number;
   startDate: BusinessDate;

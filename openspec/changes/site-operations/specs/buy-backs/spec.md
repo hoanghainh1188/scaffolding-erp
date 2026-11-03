@@ -126,7 +126,7 @@ Mỗi lệnh Tạo, Sửa (chỉ khi có trường đổi), Duyệt, Từ chối
 
 #### Scenario: Duyệt
 - **WHEN** `minhanh` duyệt `MLA-2026-003`
-- **THEN** có đúng một dòng Duyệt `MLA-2026-003` "Mua lại 20 ty ren, 50 bát chuồn · 1.300.000 ₫" **AND** không có dòng nhật ký riêng cho sổ kho
+- **THEN** có đúng một dòng Duyệt `MLA-2026-003` "Mua lại 20 ty, 50 bát · 1.300.000 ₫" **AND** không có dòng nhật ký riêng cho sổ kho
 
 #### Scenario: Giá khác hợp đồng
 - **WHEN** `quocbao` tạo phiếu có đơn giá `TR16` 30.000 ₫ khác giá hợp đồng 35.000 ₫

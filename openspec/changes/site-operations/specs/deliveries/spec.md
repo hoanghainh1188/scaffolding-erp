@@ -57,7 +57,7 @@ Bảng hàng ở công trình của D6 SHALL có thêm cột "Chuyển đến", 
 
 #### Scenario: Phiếu mua lại chờ duyệt trong dòng thời gian
 - **WHEN** `MLA-2026-003` Chờ duyệt
-- **THEN** D6 có dòng "Mua lại MLA-2026-003 · Chờ duyệt · 20 ty ren, 50 bát chuồn · 1.300.000 ₫"
+- **THEN** D6 có dòng "Mua lại MLA-2026-003 · Chờ duyệt · 20 ty, 50 bát · 1.300.000 ₫"
 
 #### Scenario: Không có chuyển, mua lại
 - **WHEN** hợp đồng chưa có phiếu chuyển hay phiếu mua lại nào đã ghi sổ

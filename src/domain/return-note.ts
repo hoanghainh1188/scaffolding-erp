@@ -4,6 +4,12 @@
 // lost on the way. Pure: the service reads stock and costs, then calls these.
 import { lineAmount } from "./average-cost";
 import { type Condition } from "./condition";
+import {
+  drawNewFirst,
+  SITE_DRAW_ORDER,
+  type SiteCondition,
+  type SiteStock,
+} from "./condition-split";
 import { DomainValueError } from "./errors";
 import { lineWeightKgMilli } from "./landed-cost";
 import { toMoney, type Money } from "./money";
@@ -37,8 +43,7 @@ export const RETURN_OUTCOME_LABELS: Readonly<Record<ReturnOutcome, string>> = {
 };
 
 /** The site is drawn in this order for every outcome (design D1). */
-export const SITE_DRAW_ORDER = ["NEW", "GOOD"] as const;
-export type SiteCondition = (typeof SITE_DRAW_ORDER)[number];
+export { SITE_DRAW_ORDER, type SiteCondition };
 
 const amount = (milli: number, unit: QuantityUnit) =>
   `${formatQuantity(toQuantity(milli, unit))} ${QUANTITY_UNIT_LABELS[unit]}`;
@@ -203,17 +208,16 @@ interface Chunk {
 
 /** Splits each outcome over the site's Mới, then Tốt (design D1). */
 export function drawFromSite(counts: ReturnCounts, onSite: OnSite): Chunk[] {
-  const left: Record<SiteCondition, number> = { ...onSite };
+  let left: SiteStock = onSite;
   const chunks: Chunk[] = [];
   for (const outcome of RETURN_OUTCOMES) {
-    let need = outcomeMilli(counts, outcome);
+    const draw = drawNewFirst(outcomeMilli(counts, outcome), left);
     for (const source of SITE_DRAW_ORDER) {
-      const take = Math.min(need, left[source]);
-      if (take <= 0) continue;
-      chunks.push({ source, outcome, milli: take });
-      left[source] -= take;
-      need -= take;
+      if (draw.taken[source] > 0) {
+        chunks.push({ source, outcome, milli: draw.taken[source] });
+      }
     }
+    left = draw.left;
   }
   return chunks;
 }

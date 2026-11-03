@@ -188,7 +188,7 @@ Trang: `/sales/contracts/[id]/site-transfer/new` và `/sales/site-transfers/[cod
 Một dòng mỗi lệnh (spec `activity-log`), qua `logActivity(tx, actor, …)` trong transaction. Tóm tắt dùng hàm thuần mới trong `src/domain/activity-summary.ts`:
 
 - Phiếu chuyển Ghi sổ: "<đi> → <nhận> · 50 khung, 36 chéo · chở ít hơn 4 cái".
-- Phiếu mua lại Duyệt: "Mua lại 20 ty ren, 50 bát chuồn · 1.300.000 ₫".
+- Phiếu mua lại Duyệt: "Mua lại 20 ty, 50 bát · 1.300.000 ₫".
 - Lập đổi hàng: dòng Tạo của phiếu xuất "Đổi hàng · Đợt 4 · giao … · nhận về dự kiến …".
 
 `coverage.test.ts` bắt hàm ghi mới quên gọi `logActivity`.

@@ -108,4 +108,4 @@ Lập đổi hàng và bỏ chờ thu hồi SHALL cần quyền sửa hợp đ�
 
 #### Scenario: Nhật ký lập đổi hàng
 - **WHEN** `quocbao` lập đổi hàng tạo `PX-2026-152`
-- **THEN** có đúng một dòng Tạo `PX-2026-152` "Đổi hàng · Đợt 4 · giao 100 chéo 1,2m · nhận về dự kiến 100 chéo 1,7m"
+- **THEN** có đúng một dòng Tạo `PX-2026-152` "Đổi hàng · Đợt 4 · giao 100 CHEO1,2 · nhận về dự kiến 100 CHEO1,7"

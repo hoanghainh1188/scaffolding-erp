@@ -4,35 +4,35 @@ Quyết định đã chốt khi vẽ (PR #137, 0.2 #66–#68): chuyển công tr
 
 ## 1. Cơ sở dữ liệu
 
-- [ ] 1.1 Viết `drizzle/0017_site_operations.sql` và schema Drizzle `src/db/schema/site-operations.ts` (+ export ở `index.ts`) theo design D9:
+- [x] 1.1 Viết `drizzle/0017_site_operations.sql` và schema Drizzle `src/db/schema/site-operations.ts` (+ export ở `index.ts`) theo design D9:
   - bảng `site_transfer` (có `same_customer`, `posted_xact xid8`), `site_transfer_line`, `buy_back_note`, `buy_back_note_line`, `delivery_exchange`, `delivery_exchange_line` (check, unique, FK `ON DELETE RESTRICT`);
   - check `activity_log` thêm loại chứng từ `SITE_TRANSFER`, `BUY_BACK` và thao tác `SEND`.
   - Kiểm: `npm run db:migrate` trên DB dev chạy được, `npm run typecheck` xanh.
-- [ ] 1.2 Ba trigger trong cùng migration: `site_transfer_frozen`, `buy_back_note_frozen`, `delivery_exchange_frozen`. Kiểm: integration test `src/db/schema/site-operations.int.test.ts` bằng `erp_app`, mỗi ý một ca:
+- [x] 1.2 Ba trigger trong cùng migration: `site_transfer_frozen`, `buy_back_note_frozen`, `delivery_exchange_frozen`. Kiểm: integration test `src/db/schema/site-operations.int.test.ts` bằng `erp_app`, mỗi ý một ca:
   - UPDATE / DELETE phiếu chuyển `POSTED`, `CANCELLED` và dòng con bị chặn; `DRAFT` sửa được;
   - **cập nhật `moved_quantity` ở transaction khác** transaction ghi sổ (so `posted_xact` với `pg_current_xact_id()`, không so giờ) bị chặn; trong chính transaction ghi sổ, kể cả với `options.now` khác giờ DB, cập nhật được; cập nhật cột khác của dòng trong transaction ghi sổ vẫn bị chặn;
   - `moved_quantity` > `planned_quantity` bị check chặn; `from_contract_id = to_contract_id` bị check chặn;
   - UPDATE phiếu mua lại `APPROVED` / `REJECTED` và dòng con bị chặn; `APPROVED` thiếu `amount_due` bị check chặn;
   - `delivery_exchange` `DONE` không có `return_note_id` bị check chặn; hai lần đổi cùng `delivery_note_id` hoặc cùng `return_note_id` bị unique chặn; `DONE` không đổi được.
-- [ ] 1.3 Quyền DB: `src/db/grants.ts` cấp CRUD cho sáu bảng mới, không vào `APPEND_ONLY_TABLES`. Kiểm: `grants.test.ts` và `privileges.int.test.ts` xanh.
-- [ ] 1.4 `CLAUDE.md`: Quy ước code thêm gạch **Chuyển công trình, mua lại, đổi hàng** (`src/lib/site-transfers/`, `src/lib/buy-backs/`, `src/lib/exchanges/`): khóa hai hợp đồng theo id tăng dần; `TRANSFER_OUT/IN` thuộc hợp đồng theo dấu dòng; mua lại duyệt mới ghi `SALE_OUT` ở công trình; đổi hàng không có chứng từ riêng; M9 không giá. Từ điển thêm "Phiếu chuyển công trình ↔ `site_transfer`", "Phiếu mua lại ↔ `buy_back_note`", "Đổi hàng ↔ `delivery_exchange`". Lưu ý E2E theo mục 7. Kiểm: `npm run format:check` xanh.
+- [x] 1.3 Quyền DB: `src/db/grants.ts` cấp CRUD cho sáu bảng mới, không vào `APPEND_ONLY_TABLES`. Kiểm: `grants.test.ts` và `privileges.int.test.ts` xanh.
+- [x] 1.4 `CLAUDE.md`: Quy ước code thêm gạch **Chuyển công trình, mua lại, đổi hàng** (`src/lib/site-transfers/`, `src/lib/buy-backs/`, `src/lib/exchanges/`): khóa hai hợp đồng theo id tăng dần; `TRANSFER_OUT/IN` thuộc hợp đồng theo dấu dòng; mua lại duyệt mới ghi `SALE_OUT` ở công trình; đổi hàng không có chứng từ riêng; M9 không giá. Từ điển thêm "Phiếu chuyển công trình ↔ `site_transfer`", "Phiếu mua lại ↔ `buy_back_note`", "Đổi hàng ↔ `delivery_exchange`". Lưu ý E2E theo mục 7. Kiểm: `npm run format:check` xanh.
 
 ## 2. Logic thuần + unit test (viết test trước)
 
-- [ ] 2.1 Tách phần "rút Mới trước rồi Tốt" của `allocateReturn` thành hàm chung (`src/domain/condition-split.ts`), `allocateReturn` gọi lại. Kiểm: test cũ của `return-note.test.ts` vẫn xanh; test mới: 20 Mới + 100 Tốt rút 50 → 20 Mới, 30 Tốt; rút 0 → rỗng; rút quá → lỗi.
-- [ ] 2.2 `src/domain/site-transfer.ts`: `transition()` (bảng trạng thái D1), `assertTransferLines` (D3), `allocateTransfer` ra cặp `TRANSFER_OUT` / `TRANSFER_IN` có `pairedWith`, `assertMovedQuantities` (thực chở ≤ ghi, không tất cả 0). Kiểm: unit test từng câu spec `site-transfers`:
+- [x] 2.1 Tách phần "rút Mới trước rồi Tốt" của `allocateReturn` thành hàm chung (`src/domain/condition-split.ts`), `allocateReturn` gọi lại. Kiểm: test cũ của `return-note.test.ts` vẫn xanh; test mới: 20 Mới + 100 Tốt rút 50 → 20 Mới, 30 Tốt; rút 0 → rỗng; rút quá → lỗi.
+- [x] 2.2 `src/domain/site-transfer.ts`: `transition()` (bảng trạng thái D1), `assertTransferLines` (D3), `allocateTransfer` ra cặp `TRANSFER_OUT` / `TRANSFER_IN` có `pairedWith`, `assertMovedQuantities` (thực chở ≤ ghi, không tất cả 0). Kiểm: unit test từng câu spec `site-transfers`:
   - chuyển quá đang ở công trình (130 / 120) đúng câu; mã không có trên hợp đồng nhận; khác nhà thầu chưa tích; vượt còn phải giao chưa xác nhận;
   - 20 Mới + 100 Tốt chuyển 50 → −20 Mới, −30 Tốt ra, +20 Mới, +30 Tốt vào;
   - thực chở 55 / 50 bị chặn, 36 / 40 được, tất cả 0 bị chặn;
   - chuyển trạng thái không hợp lệ (sửa `SENT`, rút về `POSTED`) đúng câu.
-- [ ] 2.3 `src/domain/buy-back.ts`: `assertBuyBackLines` (số > 0, số nguyên, ≤ đang ở công trình, mã có ở công trình, đơn giá ≥ 0, thiếu giá mất), `buyBackTotal`, `isOffContractPrice`, `buyBackDueDate`, `transition()`. Kiểm: unit test tính tiền với trường hợp biên:
+- [x] 2.3 `src/domain/buy-back.ts`: `assertBuyBackLines` (số > 0, số nguyên, ≤ đang ở công trình, mã có ở công trình, đơn giá ≥ 0, thiếu giá mất), `buyBackTotal`, `isOffContractPrice`, `buyBackDueDate`, `transition()`. Kiểm: unit test tính tiền với trường hợp biên:
   - 20 × 35.000 + 50 × 12.000 = 1.300.000 ₫; đơn giá 0 → dòng 0 ₫, vẫn hợp lệ, đánh dấu khác giá;
   - mua 130 / 120 đúng câu; số lẻ với mã theo cái;
   - hạn trả 05/11/2026 + 30 = 05/12/2026; qua cuối tháng, qua năm (20/12/2026 + 30 = 19/01/2027);
   - đổi giá hợp đồng sau khi lập không đổi `unit_price` đã lưu.
-- [ ] 2.4 Hàm thuần "tiền thuê 1 ngày" và "ảnh hưởng" cho D6b / D6c / D6d (`src/domain/rental.ts` hoặc file mới): số × giá ngày; chuyển 50 × 1.200 + 40 × 300 → giảm 72.000 ₫; mua lại 20 × 100 + 50 × 20 → 3.000 ₫; đổi 100 × 300 → 100 × 280 → −2.000 ₫; còn phải giao 600 → 550; số 0 → 0 ₫. Kiểm: unit test các số đó.
-- [ ] 2.5 Tóm tắt nhật ký trong `src/domain/activity-summary.ts`; `src/domain/activity.ts` thêm `SITE_TRANSFER`, `BUY_BACK`, thao tác `SEND` (nhãn "Gửi điện thoại", nhóm `APPROVAL`, không vào ô Duyệt / ghi sổ). Kiểm: unit test câu tóm tắt đúng spec (ghi sổ chở ít hơn 4 cái; mua lại 1.300.000 ₫; đổi hàng); `activity-filter.test.ts` lọc được hai loại mới.
-- [ ] 2.6 Quyền `buybacks.approve` (Giám đốc) trong `src/domain/permissions.ts`. Kiểm: `permissions.test.ts` (chỉ `DIRECTOR`).
+- [x] 2.4 Hàm thuần "tiền thuê 1 ngày" và "ảnh hưởng" cho D6b / D6c / D6d (`src/domain/rental.ts` hoặc file mới): số × giá ngày; chuyển 50 × 1.200 + 40 × 300 → giảm 72.000 ₫; mua lại 20 × 100 + 50 × 20 → 3.000 ₫; đổi 100 × 300 → 100 × 280 → −2.000 ₫; còn phải giao 600 → 550; số 0 → 0 ₫. Kiểm: unit test các số đó.
+- [x] 2.5 Tóm tắt nhật ký trong `src/domain/site-operations-summary.ts` (như `delivery-summary.ts`, `return-summary.ts`); `src/domain/activity.ts` thêm `SITE_TRANSFER`, `BUY_BACK`, thao tác `SEND` (nhãn "Gửi điện thoại", nhóm `APPROVAL`, không vào ô Duyệt / ghi sổ). Kiểm: unit test câu tóm tắt đúng spec (ghi sổ chở ít hơn 4 cái; mua lại 1.300.000 ₫; đổi hàng); `activity-filter.test.ts` lọc được hai loại mới.
+- [x] 2.6 Quyền `buybacks.approve` (Giám đốc) trong `src/domain/permissions.ts`. Kiểm: `permissions.test.ts` (chỉ `DIRECTOR`).
 
 ## 3. Phiếu chuyển công trình (service + API)
 

@@ -76,6 +76,9 @@ export const PERMISSIONS = {
   // compensation notes and photos through canContract("RENTAL", "view").
   "returns.receive": ["DIRECTOR", "WAREHOUSE"],
   "compensations.approve": ["DIRECTOR"],
+  // site-operations design D7: only the director approves a buy-back; the
+  // office makes and edits it through canContract("RENTAL", "manage").
+  "buybacks.approve": ["DIRECTOR"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;

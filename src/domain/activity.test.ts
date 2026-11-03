@@ -23,7 +23,12 @@ describe("actions and groups (design D3)", () => {
   });
 
   it("groups like D18's filter chips", () => {
-    expect(GROUP_ACTIONS.APPROVAL).toEqual(["SUBMIT", "APPROVE", "POST"]);
+    expect(GROUP_ACTIONS.APPROVAL).toEqual([
+      "SUBMIT",
+      "SEND",
+      "APPROVE",
+      "POST",
+    ]);
     expect(GROUP_ACTIONS.REVERSAL).toEqual([
       "RETURN",
       "REJECT",
@@ -37,6 +42,7 @@ describe("actions and groups (design D3)", () => {
   it("counts approve and post, not submit, on the 'Duyệt, ghi sổ' tile", () => {
     expect(APPROVAL_TILE_ACTIONS).toEqual(["APPROVE", "POST"]);
     expect(APPROVAL_TILE_ACTIONS).not.toContain("SUBMIT");
+    expect(APPROVAL_TILE_ACTIONS).not.toContain("SEND");
   });
 
   it("counts edits and reversals on the 'Sửa, xóa, trả lại' tile", () => {
