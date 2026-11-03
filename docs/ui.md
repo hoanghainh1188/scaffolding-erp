@@ -112,6 +112,9 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 - **D5b. Lập phụ lục** **[MVP]**: Chỉ cho hợp đồng đã duyệt. Ngày hiệu lực (không trước kỳ đã chốt), lý do, bảng hiện tại ↔ mới cho số lượng, giá, điều khoản khác. Ô ảnh hưởng: kỳ đã chốt không đổi, kỳ đang mở tách giá cũ/mới tại ngày hiệu lực (0.2 #16). Gửi Giám đốc duyệt lại.
 - **D6. Tiến độ cấp hàng theo Công trình** **[MVP]**: Delivery Timeline các đợt xuất/trả. Số lượng đang ở công trình. Tạo phiếu xuất đợt mới (chỉ chọn hàng Mới/Tốt). Ghi cước vận chuyển chiều đi.
 - **D7. Tính tiền thuê (Billing)** **[MVP]**: Chọn kỳ. Bảng chi tiết từng linh kiện: ngày xuất, ngày trả, số ngày tính tiền (không tính ngày xuất, tính ngày trả, 0.2 #4), đơn giá ngày, thành tiền. Nút chốt kỳ để ghi công nợ.
+- **D6b. Chuyển công trình** **[MVP]**: Từ D6 của hợp đồng đi. Chọn hợp đồng nhận, số chuyển theo mã (rút Mới trước), ảnh hưởng tiền thuê hai hợp đồng. Văn phòng xác nhận ngay hoặc gửi điện thoại (M9) xác nhận (0.2 #66).
+- **D6c. Phiếu mua lại** **[MVP]**: Khách mua luôn hàng đang thuê. Giá điền sẵn bằng giá mất, Giám đốc duyệt (0.2 #67).
+- **D6d. Đổi hàng** **[MVP]**: Một chuyến xe giao mã mới, nhận mã cũ; tạo đợt xuất + phiếu thu hồi nối với nhau (0.2 #68).
 - **D8. Phiếu tính phí đền bù** **[MVP]**: Sinh tự động từ phiếu thu hồi. Số lượng hỏng/mất × đơn giá đền bù trong hợp đồng. Ảnh hiện trạng đính kèm. Approval Bar cho Giám đốc; duyệt xong mới cộng vào công nợ.
 
 #### Tài chính & Công nợ
@@ -147,13 +150,14 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 - **M6a. Bắt đầu kiểm kê** **[MVP]**: Chọn vị trí (chỉ bãi, xưởng) và nhóm hàng cần đếm.
 - **M6. Đếm hàng** **[MVP]**: Đếm mù (không hiện số sổ). Mỗi mã đếm theo tình trạng bằng Stepper, bấm "Xong mã này". Thêm hàng không có trong danh sách. Gửi kết quả về văn phòng (D13).
 - **M7. Lịch sử** **[MVP]**: Phiếu đã làm, lọc theo loại và ngày. Phiếu nháp chưa gửi hiện ở đầu danh sách.
+- **M9. Xác nhận chuyển công trình** **[MVP]**: Người đi xe xem lộ trình, sửa số thực chở bằng stepper, nhập biển số, bấm xác nhận khi hàng đã hạ ở công trình nhận. Không hiện giá (0.2 #66).
 - **M8. Sửa chữa tại Xưởng** **[Bản 2]**: Xem lệnh được giao. Ghi vật tư phụ và công thợ. Báo hoàn thành để văn phòng nghiệm thu.
 
 ### 3.3. Tổng hợp theo giai đoạn
 
 | Giai đoạn | Desktop | Mobile |
 |---|---|---|
-| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D5a, D5b, D6, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D16, D17, D18 | M1, M2, M3, M4, M5, M6a, M6, M7 |
+| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D5a, D5b, D6, D6b, D6c, D6d, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D16, D17, D18 | M1, M2, M3, M4, M5, M6a, M6, M7, M9 |
 | **Bản 2** | D1 (đầy đủ), D12 (đầy đủ), D14 (phải trả), D15 | M8 |
 
 ### 3.4. Thiết kế đã vẽ (Claude Design)
@@ -182,11 +186,15 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | M7 Lịch sử | `M7-History.dc.html` | `goods-receipt` | Đã duyệt |
 | D4 Danh sách hợp đồng | `D4-Contracts.dc.html` | `contracts` | Đã duyệt |
 | D5 Chi tiết hợp đồng | `D5-Contract.dc.html` | `contracts` | Đã duyệt |
-| D5a Soạn hợp đồng / báo giá | `D5a-ContractForm.dc.html` | `contracts` | Chờ duyệt |
-| D5b Lập phụ lục | `D5b-ContractAmendment.dc.html` | `contracts` | Chờ duyệt |
+| D5a Soạn hợp đồng / báo giá | `D5a-ContractForm.dc.html` | `contracts` | Đã duyệt |
+| D5b Lập phụ lục | `D5b-ContractAmendment.dc.html` | `contracts` | Đã duyệt |
 | D6 Tiến độ cấp hàng | `D6-SiteDeliveries.dc.html` | `deliveries` | Đã duyệt |
 | M5 Nhặt hàng xuất kho | `M5-Picking.dc.html` | `deliveries` | Đã duyệt |
 | D8 Phiếu đền bù | `D8-Compensation.dc.html` | `returns-and-compensation` | Đã duyệt |
+| D6b Chuyển công trình | `D6b-SiteTransfer.dc.html` | `site-operations` | Chờ duyệt |
+| D6c Phiếu mua lại | `D6c-BuyBack.dc.html` | `site-operations` | Chờ duyệt |
+| D6d Đổi hàng | `D6d-Exchange.dc.html` | `site-operations` | Chờ duyệt |
+| M9 Xác nhận chuyển công trình | `M9-SiteTransfer.dc.html` | `site-operations` | Chờ duyệt |
 | D12 Sửa chữa đơn giản | `D12-Repair.dc.html` | `simple-repair` | Đã duyệt |
 | D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Đã duyệt |
 | D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt |
