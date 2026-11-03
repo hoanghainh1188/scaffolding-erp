@@ -12,6 +12,7 @@ import {
   SiteTable,
 } from "@/components/deliveries/d6-view";
 import { BatchDialog } from "@/components/deliveries/new-batch";
+import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
 import { formatBusinessDate, toBusinessDate } from "@/domain/business-date";
 import { requirePermission } from "@/lib/auth/guard";
@@ -42,6 +43,11 @@ export default async function Page({
   const { contract } = view;
   const rental = contract.type === "RENTAL";
   const open = contract.status === "APPROVED" || contract.status === "ACTIVE";
+  // Site operations need a running rental with goods on site (D6b–D6d).
+  const onSite =
+    rental &&
+    contract.status === "ACTIVE" &&
+    view.site.some((row) => row.onSiteMilli > 0);
   const title = rental
     ? (contract.siteName ?? contract.code)
     : `Giao hàng · ${contract.code}`;
@@ -69,24 +75,45 @@ export default async function Page({
             <ContractStatusBadge status={contract.status} />
           </span>
         </div>
-        {view.canManage && open ? (
-          <BatchDialog
-            label="Tạo đợt xuất"
-            title="Tạo đợt xuất"
-            contractId={contract.id}
-            type={contract.type}
-            items={view.items}
-            kits={view.kits}
-            yards={view.yards}
-            plan={view.plan}
-            unplanned={Object.fromEntries(
-              view.remaining.map((row) => [row.key, row.unplannedMilli]),
-            )}
-            defaults={
-              view.terms ?? { companyTruck: false, freightPerTrip: null }
-            }
-          />
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {view.canManage && onSite ? (
+            <>
+              <Button asChild variant="outline">
+                <Link href={`/sales/contracts/${id}/site-transfer/new`}>
+                  Chuyển công trình
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={`/sales/contracts/${id}/buy-back/new`}>
+                  Khách mua lại
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={`/sales/contracts/${id}/exchange/new`}>
+                  Đổi hàng
+                </Link>
+              </Button>
+            </>
+          ) : null}
+          {view.canManage && open ? (
+            <BatchDialog
+              label="Tạo đợt xuất"
+              title="Tạo đợt xuất"
+              contractId={contract.id}
+              type={contract.type}
+              items={view.items}
+              kits={view.kits}
+              yards={view.yards}
+              plan={view.plan}
+              unplanned={Object.fromEntries(
+                view.remaining.map((row) => [row.key, row.unplannedMilli]),
+              )}
+              defaults={
+                view.terms ?? { companyTruck: false, freightPerTrip: null }
+              }
+            />
+          ) : null}
+        </div>
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
@@ -122,7 +149,13 @@ export default async function Page({
             <h2 id="timeline-title" className="text-h2">
               {rental ? "Các đợt xuất và trả" : "Các đợt giao"}
             </h2>
-            <DeliveryTimeline entries={view.timeline} returns={view.returns} />
+            <DeliveryTimeline
+              entries={view.timeline}
+              returns={view.returns}
+              transfers={view.transfers}
+              buyBacks={view.buyBacks}
+              exchanges={view.exchanges}
+            />
           </section>
         </div>
         <aside className="flex flex-col gap-4 lg:sticky lg:top-4">

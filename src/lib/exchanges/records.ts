@@ -152,3 +152,59 @@ export async function waitingExchanges(
       .map((line) => ({ itemId: line.itemId, milli: milliOf(line.quantity) })),
   }));
 }
+
+export interface ExchangeLink {
+  id: string;
+  status: ExchangeStatus;
+  deliveryNoteId: string;
+  deliveryCode: string;
+  returnNoteId: string | null;
+  returnCode: string | null;
+  /** "100 CHEO1,7" expected back, for "Chờ thu hồi …" on D6. */
+  expected: { itemId: string; milli: number }[];
+}
+
+/** Every exchange of a contract, for the labels of the D6 timeline. */
+export async function contractExchanges(
+  db: Pick<Database, "select">,
+  contractId: string,
+): Promise<ExchangeLink[]> {
+  const rows = await db
+    .select({
+      id: deliveryExchange.id,
+      status: deliveryExchange.status,
+      deliveryNoteId: deliveryExchange.deliveryNoteId,
+      deliveryCode: deliveryNote.code,
+      returnNoteId: deliveryExchange.returnNoteId,
+      returnCode: returnNote.code,
+    })
+    .from(deliveryExchange)
+    .innerJoin(
+      deliveryNote,
+      eq(deliveryNote.id, deliveryExchange.deliveryNoteId),
+    )
+    .leftJoin(returnNote, eq(returnNote.id, deliveryExchange.returnNoteId))
+    .where(eq(deliveryExchange.contractId, contractId));
+  if (rows.length === 0) return [];
+  const lines = await db
+    .select({
+      exchangeId: deliveryExchangeLine.exchangeId,
+      itemId: deliveryExchangeLine.itemId,
+      quantity: deliveryExchangeLine.expectedQuantity,
+    })
+    .from(deliveryExchangeLine)
+    .where(
+      inArray(
+        deliveryExchangeLine.exchangeId,
+        rows.map((row) => row.id),
+      ),
+    );
+  return rows.map((row) => ({
+    ...row,
+    status: row.status as ExchangeStatus,
+    returnCode: row.returnCode ?? null,
+    expected: lines
+      .filter((line) => line.exchangeId === row.id)
+      .map((line) => ({ itemId: line.itemId, milli: milliOf(line.quantity) })),
+  }));
+}

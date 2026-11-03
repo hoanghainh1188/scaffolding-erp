@@ -18,8 +18,18 @@ import {
   quantityFromDb,
   type QuantityUnit,
 } from "@/domain/quantity";
+import type { BusinessDate } from "@/domain/business-date";
+import { canContract, type ContractUser } from "@/domain/permissions";
 import type { TransferStatus } from "@/domain/site-transfer";
-import { isUuid } from "@/lib/deliveries/records";
+import { contractTermsAt } from "@/lib/contracts/terms";
+import {
+  isUuid,
+  itemFacts,
+  onSiteByItemCondition,
+  type ItemFacts,
+} from "@/lib/deliveries/records";
+
+import { contractPlace, transferContext } from "./records";
 
 type Reader = Pick<Database, "select">;
 
@@ -256,4 +266,120 @@ export async function listTransfers(
         };
       }),
   }));
+}
+
+export interface TransferFormItem {
+  itemId: string;
+  code: string;
+  name: string;
+  unit: QuantityUnit;
+  newMilli: number;
+  goodMilli: number;
+  /** ₫ a day on the source contract today. */
+  dailyPrice: number;
+}
+
+export interface TransferTarget {
+  id: string;
+  code: string;
+  siteName: string;
+  customerId: string;
+  customerName: string;
+  status: string;
+  /** ₫ a day by item on the target today; items missing are not on it. */
+  prices: Record<string, number | null>;
+  /** "Còn phải giao" by item, thousandths. */
+  remaining: Record<string, number>;
+}
+
+export interface TransferForm {
+  from: {
+    id: string;
+    code: string;
+    siteName: string;
+    customerId: string;
+    customerName: string;
+  };
+  items: TransferFormItem[];
+  targets: TransferTarget[];
+}
+
+/**
+ * D6b: what is at the source site by condition, and every rental the goods
+ * may go to (approved or running, not the source) with its prices and
+ * "còn phải giao". Null when the source cannot give goods.
+ */
+export async function transferForm(
+  db: Reader,
+  user: ContractUser,
+  contractId: string,
+  today: BusinessDate,
+): Promise<TransferForm | null> {
+  const from = await contractPlace(db, contractId);
+  if (!from || from.type !== "RENTAL" || from.status !== "ACTIVE") return null;
+  const [stock, fromTerms] = await Promise.all([
+    onSiteByItemCondition(db, from.id),
+    contractTermsAt(db, from.id, today),
+  ]);
+  const ids = [...stock]
+    .filter(([, s]) => s.NEW + s.GOOD > 0)
+    .map(([id]) => id);
+  const facts = await itemFacts(db, ids);
+  const prices = new Map(
+    (fromTerms?.lines ?? []).map((line) => [line.itemId, line.price ?? 0]),
+  );
+  const items = ids
+    .map((itemId) => {
+      const info = facts.get(itemId) as ItemFacts;
+      const s = stock.get(itemId) ?? { NEW: 0, GOOD: 0 };
+      return {
+        itemId,
+        code: info.code,
+        name: info.name,
+        unit: info.unit,
+        newMilli: s.NEW,
+        goodMilli: s.GOOD,
+        dailyPrice: prices.get(itemId) ?? 0,
+      };
+    })
+    .sort((a, b) => a.code.localeCompare(b.code, "vi"));
+  const candidates = await db
+    .select({ id: contract.id })
+    .from(contract)
+    .where(
+      and(
+        eq(contract.type, "RENTAL"),
+        inArray(contract.status, ["APPROVED", "ACTIVE"]),
+      ),
+    )
+    .orderBy(asc(contract.code));
+  const targets: TransferTarget[] = [];
+  const allowed = canContract(user, "RENTAL", "manage");
+  for (const candidate of allowed ? candidates : []) {
+    if (candidate.id === from.id) continue;
+    const place = await contractPlace(db, candidate.id);
+    if (!place?.siteLocationId) continue;
+    const context = await transferContext(db, from.id, place.id, today);
+    targets.push({
+      id: place.id,
+      code: place.code,
+      siteName: place.siteName,
+      customerId: place.customerId,
+      customerName: place.customerName,
+      status: place.status,
+      prices: Object.fromEntries(context.targetPrices),
+      remaining: Object.fromEntries(context.remaining),
+    });
+  }
+  return {
+    from: {
+      id: from.id,
+      code: from.code,
+      siteName: from.siteName,
+      customerId: from.customerId,
+      customerName: from.customerName,
+    },
+    items,
+    targets,
+  };
 }

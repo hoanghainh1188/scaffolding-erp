@@ -48,12 +48,26 @@ import {
   type NamedAmount,
 } from "@/domain/delivery-summary";
 import { canContract } from "@/domain/permissions";
-import type { QuantityUnit } from "@/domain/quantity";
+import {
+  formatQuantity,
+  QUANTITY_UNIT_LABELS,
+  toQuantity,
+  type QuantityUnit,
+} from "@/domain/quantity";
+import type { ExchangeStatus } from "@/domain/exchange";
+import { transferTotalText } from "@/domain/site-operations-summary";
+import type { TransferStatus } from "@/domain/site-transfer";
 import { lineAmount } from "@/domain/average-cost";
 import { toMoney } from "@/domain/money";
 import { notFound, ok, type ServiceResult } from "@/lib/catalog/common";
 import { forbidden, type ContractActor } from "@/lib/contracts/common";
+import {
+  contractBuyBacks,
+  type BuyBackTimelineEntry,
+} from "@/lib/buy-backs/queries";
 import { contractTermsAt, type ContractTerms } from "@/lib/contracts/terms";
+import { contractExchanges } from "@/lib/exchanges/records";
+import { listTransfers } from "@/lib/site-transfers/queries";
 import {
   contractReturns,
   type ReturnTimelineEntry,
@@ -283,6 +297,12 @@ export interface SiteRow {
   returnedMilli: number;
   /** Lost at the site (LOSS_OUT), its own D6 column. */
   lostMilli: number;
+  /** Moved in from another contract's site (site-operations D8). */
+  transferredInMilli: number;
+  /** Moved out to another contract's site. */
+  transferredOutMilli: number;
+  /** Bought by the customer on site (approved buy-backs). */
+  boughtMilli: number;
   onSiteMilli: number;
   /** ₫ per day of what is on site (rental). */
   dayRent: number;
@@ -309,6 +329,33 @@ export interface TimelineEntry {
   cancelledReason: string | null;
 }
 
+/** "100" for pieces, "1.250,5 kg" otherwise: "Chờ thu hồi 100 CHEO1,7". */
+const amountTextOf = (milli: number, unit: QuantityUnit) =>
+  unit === "PIECE"
+    ? formatQuantity(toQuantity(milli, unit))
+    : `${formatQuantity(toQuantity(milli, unit))} ${QUANTITY_UNIT_LABELS[unit]}`;
+
+export interface TransferTimelineEntry {
+  id: string;
+  code: string;
+  status: TransferStatus;
+  /** OUT: this contract gives; IN: this contract receives. */
+  direction: "OUT" | "IN";
+  otherSite: string;
+  /** Transfer day, or the day it was made while not posted. */
+  date: BusinessDate;
+  text: string;
+}
+
+export interface ExchangeTimelineLink {
+  status: ExchangeStatus;
+  deliveryNoteId: string;
+  deliveryCode: string;
+  returnNoteId: string | null;
+  returnCode: string | null;
+  expectedText: string;
+}
+
 export interface PlanBatchOption {
   seq: number;
   plannedDate: string;
@@ -325,6 +372,12 @@ export interface ContractDeliveries {
   timeline: TimelineEntry[];
   /** Rental: return notes, latest first (returns-and-compensation). */
   returns: ReturnTimelineEntry[];
+  /** Rental: site transfers out and in, latest first (site-operations). */
+  transfers: TransferTimelineEntry[];
+  /** Rental: buy-back notes, latest first. */
+  buyBacks: BuyBackTimelineEntry[];
+  /** Exchanges: which batch and which return note belong together. */
+  exchanges: ExchangeTimelineLink[];
   /** Notes confirmed on the phone another day than their delivery date. */
   checks: {
     kind: "DELIVERY" | "RETURN";
@@ -392,18 +445,32 @@ async function contractHead(
 function siteColumns(rows: readonly SiteMovement[]) {
   const columns = new Map<
     string,
-    { delivered: number; returned: number; lost: number; onSite: number }
+    {
+      delivered: number;
+      returned: number;
+      lost: number;
+      transferredIn: number;
+      transferredOut: number;
+      bought: number;
+      onSite: number;
+    }
   >();
   for (const row of rows) {
     const entry = columns.get(row.itemId) ?? {
       delivered: 0,
       returned: 0,
       lost: 0,
+      transferredIn: 0,
+      transferredOut: 0,
+      bought: 0,
       onSite: 0,
     };
     if (row.movement === "DELIVERY_IN") entry.delivered += row.milli;
     if (row.movement === "RETURN_OUT") entry.returned -= row.milli;
     if (row.movement === "LOSS_OUT") entry.lost -= row.milli;
+    if (row.movement === "TRANSFER_IN") entry.transferredIn += row.milli;
+    if (row.movement === "TRANSFER_OUT") entry.transferredOut -= row.milli;
+    if (row.movement === "SALE_OUT") entry.bought -= row.milli;
     entry.onSite += row.milli;
     columns.set(row.itemId, entry);
   }
@@ -455,6 +522,9 @@ export async function contractDeliveries(
             deliveredMilli: column?.delivered ?? 0,
             returnedMilli: column?.returned ?? 0,
             lostMilli: column?.lost ?? 0,
+            transferredInMilli: column?.transferredIn ?? 0,
+            transferredOutMilli: column?.transferredOut ?? 0,
+            boughtMilli: column?.bought ?? 0,
             onSiteMilli: now,
             dayRent: lineAmount(now, toMoney(priceOf.get(line.itemId) ?? 0)),
           };
@@ -567,6 +637,40 @@ export async function contractDeliveries(
 
   const returns =
     head.type === "RENTAL" ? await contractReturns(db, head.id) : [];
+  const rental = head.type === "RENTAL";
+  const transfers: TransferTimelineEntry[] = rental
+    ? (await listTransfers(db, { contractId: head.id })).map((row) => {
+        const out = row.fromContractId === head.id;
+        return {
+          id: row.id,
+          code: row.code,
+          status: row.status,
+          direction: out ? "OUT" : "IN",
+          otherSite: out ? row.toSite : row.fromSite,
+          date: (row.businessDate ??
+            toBusinessDate(new Date(row.createdAt))) as BusinessDate,
+          text: transferTotalText(row.lines),
+        };
+      })
+    : [];
+  const links = rental ? await contractExchanges(db, head.id) : [];
+  const linkFacts = await itemFacts(
+    db,
+    links.flatMap((link) => link.expected.map((line) => line.itemId)),
+  );
+  const exchanges: ExchangeTimelineLink[] = links.map((link) => ({
+    status: link.status,
+    deliveryNoteId: link.deliveryNoteId,
+    deliveryCode: link.deliveryCode,
+    returnNoteId: link.returnNoteId,
+    returnCode: link.returnCode,
+    expectedText: link.expected
+      .map((line) => {
+        const info = linkFacts.get(line.itemId);
+        return `${amountTextOf(line.milli, info?.unit ?? "PIECE")} ${info?.code ?? ""}`;
+      })
+      .join(", "),
+  }));
   for (const entry of returns) {
     if (!entry.phoneDifferentDay) continue;
     checks.push({
@@ -583,6 +687,9 @@ export async function contractDeliveries(
     remaining,
     timeline,
     returns,
+    transfers,
+    buyBacks: rental ? await contractBuyBacks(db, head.id) : [],
+    exchanges,
     checks,
     plan: (terms?.batches ?? []).map((batch, index) => ({
       seq: index + 1,
