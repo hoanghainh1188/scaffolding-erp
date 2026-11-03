@@ -28,11 +28,7 @@ import {
   type Tx,
 } from "./common";
 import { readContent } from "./content";
-import {
-  hasDeliveries,
-  openDeliveries,
-  openTransfersInto,
-} from "./deliveries";
+import { hasDeliveries, openDeliveries, openTransfersInto } from "./deliveries";
 import { overdueDebt } from "./overdue";
 import {
   lockContract,

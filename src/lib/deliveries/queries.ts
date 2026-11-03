@@ -50,6 +50,7 @@ import {
 import { canContract } from "@/domain/permissions";
 import {
   formatQuantity,
+  isPieceUnit,
   QUANTITY_UNIT_LABELS,
   toQuantity,
   type QuantityUnit,
@@ -331,7 +332,7 @@ export interface TimelineEntry {
 
 /** "100" for pieces, "1.250,5 kg" otherwise: "Chờ thu hồi 100 CHEO1,7". */
 const amountTextOf = (milli: number, unit: QuantityUnit) =>
-  unit === "PIECE"
+  isPieceUnit(unit)
     ? formatQuantity(toQuantity(milli, unit))
     : `${formatQuantity(toQuantity(milli, unit))} ${QUANTITY_UNIT_LABELS[unit]}`;
 

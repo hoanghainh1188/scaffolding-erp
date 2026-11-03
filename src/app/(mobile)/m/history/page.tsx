@@ -106,7 +106,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   );
   return (
     <MobilePage title="Lịch sử phiếu">
-      <nav aria-label="Loại phiếu" className="flex gap-2">
+      <nav aria-label="Loại phiếu" className="flex flex-wrap gap-2">
         {TYPES.map((option) => (
           <Link
             key={option.key}
