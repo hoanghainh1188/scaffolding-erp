@@ -1,6 +1,6 @@
 // What the screens read about site transfers (site-operations design D10):
 // M9 never gets a price; D6b and D6 get the transfer with its contracts.
-import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import type { Database } from "@/db/client";
@@ -20,6 +20,7 @@ import {
 } from "@/domain/quantity";
 import type { BusinessDate } from "@/domain/business-date";
 import { canContract, type ContractUser } from "@/domain/permissions";
+import { transferTotalText } from "@/domain/site-operations-summary";
 import type { TransferStatus } from "@/domain/site-transfer";
 import { contractTermsAt } from "@/lib/contracts/terms";
 import {
@@ -381,5 +382,61 @@ export async function transferForm(
     },
     items,
     targets,
+  };
+}
+
+export interface TransferDayRow {
+  code: string;
+  route: string;
+  text: string;
+  postedAt: Date;
+}
+
+export interface TransfersByDay {
+  days: { date: BusinessDate; transfers: TransferDayRow[] }[];
+  hasMore: boolean;
+}
+
+/** M7: posted transfers of the latest days, no price (spec mobile-history). */
+export async function transfersByDay(
+  db: Pick<Database, "select" | "selectDistinct">,
+  options: { before?: BusinessDate; days?: number } = {},
+): Promise<TransfersByDay> {
+  const count = options.days ?? 2;
+  const dates = await db
+    .selectDistinct({ date: siteTransfer.businessDate })
+    .from(siteTransfer)
+    .where(
+      and(
+        eq(siteTransfer.status, "POSTED"),
+        options.before
+          ? lt(siteTransfer.businessDate, options.before)
+          : undefined,
+      ),
+    )
+    .orderBy(desc(siteTransfer.businessDate))
+    .limit(count + 1);
+  const shown = dates
+    .slice(0, count)
+    .map((row) => row.date)
+    .filter((date): date is string => date !== null);
+  if (shown.length === 0) return { days: [], hasMore: false };
+  const rows = (await listTransfers(db, { statuses: ["POSTED"] })).filter(
+    (row) => row.businessDate !== null && shown.includes(row.businessDate),
+  );
+  return {
+    days: shown.map((date) => ({
+      date: date as BusinessDate,
+      transfers: rows
+        .filter((row) => row.businessDate === date)
+        .sort((a, b) => (b.postedAt ?? "").localeCompare(a.postedAt ?? ""))
+        .map((row) => ({
+          code: row.code,
+          route: `${row.fromSite} → ${row.toSite}`,
+          text: transferTotalText(row.lines),
+          postedAt: new Date(row.postedAt ?? row.createdAt),
+        })),
+    })),
+    hasMore: dates.length > count,
   };
 }

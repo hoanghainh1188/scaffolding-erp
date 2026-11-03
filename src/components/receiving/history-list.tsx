@@ -10,6 +10,7 @@ import { useDrafts } from "@/hooks/use-drafts";
 import type { DeliveriesByDay } from "@/lib/deliveries/queries";
 import type { ReturnsByDay } from "@/lib/returns/queries";
 import type { ReceiptsByDay } from "@/lib/receiving/queries";
+import type { TransfersByDay } from "@/lib/site-transfers/queries";
 import {
   formatQuantity,
   QUANTITY_UNIT_LABELS,
@@ -24,8 +25,10 @@ interface HistoryListProps {
   deliveries?: DeliveriesByDay | null;
   /** Null when the role does not receive returns. */
   returns?: ReturnsByDay | null;
-  /** The filter on the URL: all, receipt, delivery, return. */
-  type?: "all" | "receipt" | "delivery" | "return";
+  /** Null when the role does not pick deliveries (site transfers). */
+  transfers?: TransfersByDay | null;
+  /** The filter on the URL: all, receipt, delivery, return, transfer. */
+  type?: "all" | "receipt" | "delivery" | "return" | "transfer";
   /** The days shown, newest first (both kinds together). */
   dates?: string[];
   /** Day headings, by business date: "Hôm nay, 26/10". */
@@ -51,6 +54,7 @@ export function HistoryList({
   receipts,
   deliveries = null,
   returns = null,
+  transfers = null,
   type = "all",
   dates,
   dayLabels,
@@ -66,7 +70,9 @@ export function HistoryList({
           ? draft.kind === "DELIVERY"
           : type === "return"
             ? draft.kind === "RETURN"
-            : true,
+            : type === "transfer"
+              ? draft.kind === "TRANSFER"
+              : true,
     ) ?? null;
   const shownDates =
     dates ??
@@ -76,6 +82,7 @@ export function HistoryList({
           ...(receipts?.days ?? []),
           ...(deliveries?.days ?? []),
           ...(returns?.days ?? []),
+          ...(transfers?.days ?? []),
         ].map((day) => day.date),
       ),
     ]
@@ -86,6 +93,8 @@ export function HistoryList({
     receipts: receipts?.days.find((day) => day.date === date)?.receipts ?? [],
     deliveries: deliveries?.days.find((day) => day.date === date)?.notes ?? [],
     returns: returns?.days.find((day) => day.date === date)?.notes ?? [],
+    transfers:
+      transfers?.days.find((day) => day.date === date)?.transfers ?? [],
   }));
   const empty = drafts !== null && drafts.length === 0 && days.length === 0;
   return (
@@ -148,6 +157,24 @@ export function HistoryList({
                   </span>
                   <span className="text-body text-muted-foreground tabular-nums">
                     {formatDateTime(new Date(note.postedAt)).slice(11)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+            {day.transfers.map((transfer) => (
+              <li key={transfer.code}>
+                <Link
+                  href={`/m/site-transfers/${transfer.code}`}
+                  className="flex min-h-16 items-center gap-3 px-4 py-3 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="text-label">Chuyển {transfer.code}</span>
+                    <span className="truncate text-body text-muted-foreground">
+                      {transfer.route} · {transfer.text}
+                    </span>
+                  </span>
+                  <span className="text-body text-muted-foreground tabular-nums">
+                    {formatDateTime(new Date(transfer.postedAt)).slice(11)}
                   </span>
                 </Link>
               </li>
