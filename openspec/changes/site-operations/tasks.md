@@ -1,15 +1,16 @@
 # Tasks: site-operations
 
-Quyết định đã chốt khi vẽ (PR #137, 0.2 #66–#68): chuyển công trình hai cách xác nhận; mua lại giá điền sẵn bằng giá mất, Giám đốc duyệt; đổi hàng = đợt xuất + phiếu thu hồi nối với nhau. Quyết định mới khi review PR propose ghi thẳng vào 0.2 trong PR đó, không phải task ở đây.
+Quyết định đã chốt khi vẽ (PR #137, 0.2 #66–#68): chuyển công trình hai cách xác nhận; mua lại giá điền sẵn bằng giá mất, Giám đốc duyệt; đổi hàng = đợt xuất + phiếu thu hồi nối với nhau. Chi tiết chốt khi review PR #138 (04/11/2026), đã ghi 0.2 #69–#72 trong PR propose: chuyển vượt còn phải giao chỉ cảnh báo, M9 chỉ giảm số, cho chuyển giữa hai hợp đồng cùng công trình; cùng nhà thầu không áp tối thiểu 45 ngày ở hợp đồng đi; mua lại áp tối thiểu, không có Nháp, giá khác hợp đồng gắn cờ; đổi hàng số nhận về chỉ dự kiến, thứ tự tự do, "Bỏ chờ thu hồi".
 
 ## 1. Cơ sở dữ liệu
 
 - [ ] 1.1 Viết `drizzle/0017_site_operations.sql` và schema Drizzle `src/db/schema/site-operations.ts` (+ export ở `index.ts`) theo design D9:
-  - bảng `site_transfer`, `site_transfer_line`, `buy_back_note`, `buy_back_note_line`, `delivery_exchange`, `delivery_exchange_line` (check, unique, FK `ON DELETE RESTRICT`);
+  - bảng `site_transfer` (có `same_customer`, `posted_xact xid8`), `site_transfer_line`, `buy_back_note`, `buy_back_note_line`, `delivery_exchange`, `delivery_exchange_line` (check, unique, FK `ON DELETE RESTRICT`);
   - check `activity_log` thêm loại chứng từ `SITE_TRANSFER`, `BUY_BACK` và thao tác `SEND`.
   - Kiểm: `npm run db:migrate` trên DB dev chạy được, `npm run typecheck` xanh.
 - [ ] 1.2 Ba trigger trong cùng migration: `site_transfer_frozen`, `buy_back_note_frozen`, `delivery_exchange_frozen`. Kiểm: integration test `src/db/schema/site-operations.int.test.ts` bằng `erp_app`, mỗi ý một ca:
   - UPDATE / DELETE phiếu chuyển `POSTED`, `CANCELLED` và dòng con bị chặn; `DRAFT` sửa được;
+  - **cập nhật `moved_quantity` ở transaction khác** transaction ghi sổ (so `posted_xact` với `pg_current_xact_id()`, không so giờ) bị chặn; trong chính transaction ghi sổ, kể cả với `options.now` khác giờ DB, cập nhật được; cập nhật cột khác của dòng trong transaction ghi sổ vẫn bị chặn;
   - `moved_quantity` > `planned_quantity` bị check chặn; `from_contract_id = to_contract_id` bị check chặn;
   - UPDATE phiếu mua lại `APPROVED` / `REJECTED` và dòng con bị chặn; `APPROVED` thiếu `amount_due` bị check chặn;
   - `delivery_exchange` `DONE` không có `return_note_id` bị check chặn; hai lần đổi cùng `delivery_note_id` hoặc cùng `return_note_id` bị unique chặn; `DONE` không đổi được.
@@ -40,15 +41,17 @@ Quyết định đã chốt khi vẽ (PR #137, 0.2 #66–#68): chuyển công tr
   - sau chuyển 50 `H1,7` An Phú → Dương Nội: đang ở công trình An Phú −50, Dương Nội +50, còn phải giao Dương Nội 600 → 550;
   - **hai hợp đồng cùng một công trình**: tồn vị trí không đổi, hai hợp đồng tách đúng;
   - phiếu Nháp, Chờ xác nhận không tính; test cũ `deliveries`, `returns` vẫn xanh.
-- [ ] 3.3 `src/lib/site-transfers/service.ts`: lập, sửa (`updatedAt` → 409), gửi điện thoại, rút về, hủy (lý do); mã `CCT` qua `nextDocumentCode`; mỗi lệnh `logActivity` một dòng. Kiểm: integration test từng chuyển trạng thái, 409, câu từ chối, **mỗi thao tác đúng một dòng nhật ký**, lệnh bị từ chối không ghi.
+- [ ] 3.3 `src/lib/site-transfers/service.ts`: lập, sửa (`updatedAt` → 409; khóa hợp đồng đi + hợp đồng nhận cũ + mới theo id tăng dần rồi mới khóa phiếu, design D4), gửi điện thoại, rút về, hủy (lý do); mã `CCT` qua `nextDocumentCode`; mỗi lệnh `logActivity` một dòng. Kiểm: integration test từng chuyển trạng thái, 409, câu từ chối, **mỗi thao tác đúng một dòng nhật ký**, lệnh bị từ chối không ghi.
 - [ ] 3.4 `src/lib/site-transfers/post.ts` `postSiteTransfer` (design D4): mã nháp trước, khóa hai hợp đồng theo id, khóa phiếu, kiểm lại, `postMovements`, hợp đồng nhận `APPROVED` → `ACTIVE`, một dòng nhật ký. Văn phòng lập + xác nhận ngay trong một transaction. Kiểm: integration test:
   - **ghi đúng hai vị trí**: `TRANSFER_OUT` ở An Phú, `TRANSFER_IN` ở Dương Nội, cùng tình trạng, rút Mới trước; **tổng tồn và giá BQ không đổi**; `inventory:check` 0 lệch;
   - **chuyển nhiều hơn số đang ở công trình A bị chặn**, không dòng sổ, phiếu giữ trạng thái; hàng đã trả về trước khi ghi sổ bị chặn;
   - ngày chuyển = ngày ghi sổ (`options.now` 21:40 05/11 gửi lúc 06:50 06/11 → 06/11);
   - hợp đồng nhận Đã duyệt sang Đang thực hiện, không thêm dòng nhật ký hợp đồng;
   - gửi lại cùng mã nháp → một bộ dòng sổ, một dòng nhật ký; văn phòng và M9 cùng xác nhận → một lần ghi sổ;
-  - khác nhà thầu / vượt còn phải giao có xác nhận → nhật ký gắn cờ "Có xác nhận bất thường".
-- [ ] 3.5 Test đồng thời `src/lib/site-transfers/concurrency.int.test.ts`: **hai lệnh chuyển ngược chiều cùng lúc** (A → B và B → A, hai kết nối) đều xong, không lỗi deadlock (`40P01`), số đang ở công trình mỗi bên bằng trước; thêm ca chuyển A → B song song với `postReturn` của A trả hết hàng: đúng một lệnh thành công. Kiểm: chạy 20 lần liên tiếp xanh.
+  - khác nhà thầu / vượt còn phải giao có xác nhận → nhật ký gắn cờ "Có xác nhận bất thường";
+  - lưu `same_customer` đúng (cùng Minh Phát → true; Minh Phát → Phú Đạt → false);
+  - phiếu bị đổi hợp đồng nhận giữa lúc đọc và lúc khóa → 409, không ghi gì (đọc lại cặp hợp đồng sau khi khóa phiếu).
+- [ ] 3.5 Test đồng thời `src/lib/site-transfers/concurrency.int.test.ts`: **hai lệnh chuyển ngược chiều cùng lúc** (A → B và B → A, hai kết nối) đều xong, không lỗi deadlock (`40P01`), số đang ở công trình mỗi bên bằng trước; thêm ca chuyển A → B song song với `postReturn` của A trả hết hàng: đúng một lệnh thành công; thêm ca **sửa hợp đồng nhận (B → C) song song với "Xác nhận chuyển"**: không lần nào có dòng sổ ở C khi lệnh ghi sổ chỉ khóa A, B (hoặc ghi sang B rồi lệnh sửa bị từ chối, hoặc ghi sổ trả 409). Kiểm: chạy 20 lần liên tiếp xanh.
 - [ ] 3.6 Không hủy hợp đồng nhận còn phiếu chuyển chưa xong hoặc đã nhận hàng chuyển đến (sửa kiểm hủy ở `src/lib/contracts/`). Kiểm: integration test đúng câu spec `deliveries`.
 - [ ] 3.7 Route `/api/site-transfers` (D10) và `/api/m/site-transfers` bọc `withAuth`; quyền theo D7 (cả hai hợp đồng); M9 không trả giá. Kiểm: integration test 403 cho `thuyvy` (Chỉ bán), `vantung` lập, `quocbao` xác nhận M9; test API M9 không có trường giá; `route-guards.test.ts` xanh.
 
@@ -71,9 +74,9 @@ Quyết định đã chốt khi vẽ (PR #137, 0.2 #66–#68): chuyển công tr
 ## 6. Giao diện
 
 - [ ] 6.1 D6: ba cột "Chuyển đến", "Chuyển đi", "Mua lại" (chỉ khi khác 0), dòng thời gian phiếu chuyển / mua lại / nhãn "Đổi hàng" có liên kết, nút "Chuyển công trình", "Khách mua lại", "Đổi hàng" theo quyền. Kiểm: component test các ca spec `deliveries` (hai hợp đồng sau chuyển, không có cột khi 0, Kế toán không thấy nút).
-- [ ] 6.2 D6b `/sales/contracts/[id]/site-transfer/new` và `/sales/site-transfers/[code]` theo `D6b-SiteTransfer.dc.html` (token, không hex): chọn hợp đồng nhận, bảng hàng có "Rút từ", hai cách xác nhận, khối ảnh hưởng tiền thuê, ô xác nhận khác nhà thầu / vượt. Kiểm: component test cột rút từ, danh sách hợp đồng nhận, thông báo lỗi; trang chi tiết chỉ xem với Kế toán.
+- [ ] 6.2 D6b `/sales/contracts/[id]/site-transfer/new` và `/sales/site-transfers/[code]` theo `D6b-SiteTransfer.dc.html` (token, không hex): chọn hợp đồng nhận, bảng hàng có "Rút từ", hai cách xác nhận, khối ảnh hưởng tiền thuê, ô xác nhận khác nhà thầu / vượt; câu tối thiểu 45 ngày theo 0.2 #70 ("Cùng nhà thầu: hàng chuyển không tính tối thiểu 45 ngày ở <đi>, thuê nối tiếp sang <nhận>." / "Khác nhà thầu: mỗi hợp đồng tính tối thiểu 45 ngày riêng.") thay câu cũ của bản vẽ. Kiểm: component test cột rút từ, danh sách hợp đồng nhận, thông báo lỗi; trang chi tiết chỉ xem với Kế toán.
 - [ ] 6.3 M9 `/m/site-transfers/[code]` theo `M9-SiteTransfer.dc.html`: stepper thực chở (không vượt), câu "Chở ít hơn N cái", biển số, nháp loại `TRANSFER` trong `src/lib/drafts/`, mã nháp; M1 khối "Chuyển công trình"; M7 dòng "Chuyển" và bộ lọc `?type=transfer`. Kiểm: component test các ca spec `site-transfers`, `mobile-home`, `mobile-history`; không có giá trên M9.
-- [ ] 6.4 D6c `/sales/contracts/[id]/buy-back/new` và `/sales/buy-backs/[code]` theo `D6c-BuyBack.dc.html`: giá điền sẵn, nhãn "khác giá hợp đồng", khối "Khi duyệt", thanh duyệt cho Giám đốc (lý do khi nợ quá hạn, từ chối có lý do). Kiểm: component test các ca spec `buy-backs`.
+- [ ] 6.4 D6c `/sales/contracts/[id]/buy-back/new` và `/sales/buy-backs/[code]` theo `D6c-BuyBack.dc.html`: giá điền sẵn, nhãn "khác giá hợp đồng", khối "Khi duyệt", thanh duyệt cho Giám đốc (lý do khi nợ quá hạn, từ chối có lý do), dòng "Tính thuê tới khi duyệt" ngay dưới nút Duyệt. Kiểm: component test các ca spec `buy-backs`.
 - [ ] 6.5 D6d `/sales/contracts/[id]/exchange/new` theo `D6d-Exchange.dc.html`: giao ra từ bãi, nhận về, chuyến xe (ngày dự kiến bằng `DateInput`, biển số, cước mặc định từ hợp đồng), tiền thuê sau khi đổi, hai chứng từ sẽ tạo; M4 hiện lần đổi chờ và ô "Phiếu này là hàng đổi". Kiểm: component test xem trước −2.000 ₫ và ô tích sẵn trên M4.
 - [ ] 6.6 D18 lọc Phiếu chuyển công trình, Phiếu mua lại, thao tác "Gửi điện thoại". Kiểm: component test bộ lọc.
 

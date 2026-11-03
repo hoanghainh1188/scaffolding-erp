@@ -16,7 +16,7 @@ Ba việc hằng ngày ở công trình chưa làm được trên hệ thống (
   - **M9** Xác nhận chuyển công trình (điện thoại).
   - Sửa **D6** (bảng hàng ở công trình, dòng thời gian), **M1**, **M4**, **M7**, **D18**.
 - Thiết kế: `docs/design/screens/D6b-SiteTransfer.dc.html`, `D6c-BuyBack.dc.html`, `D6d-Exchange.dc.html`, `M9-SiteTransfer.dc.html`.
-- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #4, #5, #11, #15, #16, #18, #21, #24, #38, #51, #55, #56, #61–#68. Ba điểm chính đã chốt khi vẽ (#66 chuyển công trình, #67 mua lại, #68 đổi hàng); `design.md` chi tiết hóa. Câu hỏi còn lại nêu trong mô tả PR.
+- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #4, #5, #11, #15, #16, #18, #21, #24, #38, #51, #55, #56, #61–#68. Ba điểm chính đã chốt khi vẽ (#66 chuyển công trình, #67 mua lại, #68 đổi hàng); `design.md` chi tiết hóa. Các câu hỏi của PR #138 đã chốt 04/11/2026, ghi ở 0.2 **#69–#72**.
 
 ## What Changes
 
@@ -27,7 +27,7 @@ Ba việc hằng ngày ở công trình chưa làm được trên hệ thống (
   - số chuyển không quá **số đang ở công trình** của hợp đồng đi; vượt "còn phải giao" của hợp đồng nhận thì chỉ cảnh báo và xác nhận, như 0.2 #56;
   - **hai cách xác nhận** (0.2 #66): văn phòng bấm "Xác nhận chuyển" ghi sổ ngay, hoặc "Gửi điện thoại" để người đi xe xác nhận trên **M9**, được giảm số thực chở (không tăng);
   - ghi sổ **một transaction**: `TRANSFER_OUT` ở vị trí công trình đi, `TRANSFER_IN` ở vị trí công trình nhận, cùng (mã + tình trạng), theo **giá BQ hiện tại**, không đổi giá BQ (0.2 #11, #24); rút **Mới trước rồi Tốt** như thu hồi (0.2 #62); hàng giữ nguyên tình trạng;
-  - **ngày chuyển = ngày ghi sổ** (như 0.2 #55): hợp đồng đi tính thuê đến hết ngày đó, hợp đồng nhận tính từ hôm sau (0.2 #4); mỗi hợp đồng tính thuê tối thiểu 45 ngày riêng;
+  - **ngày chuyển = ngày ghi sổ** (như 0.2 #55): hợp đồng đi tính thuê đến hết ngày đó, hợp đồng nhận tính từ hôm sau (0.2 #4); **cùng nhà thầu** thì hàng chuyển không áp tối thiểu 45 ngày ở hợp đồng đi, khác nhà thầu thì áp riêng (0.2 #70);
   - chuyển vào hợp đồng **Đã duyệt** lần đầu thì hợp đồng đó sang **Đang thực hiện**, như phiếu xuất đầu tiên;
   - hàng hỏng phát hiện lúc chuyển **không chuyển**: về bãi bằng phiếu thu hồi để tính đền bù.
 - **Phiếu mua lại** (`MLA-2026-001`), Kinh doanh lập trên **D6c** (0.2 #67):

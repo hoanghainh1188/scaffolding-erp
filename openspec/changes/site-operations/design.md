@@ -28,7 +28,7 @@
 
 ## Decisions
 
-### D1. Chuyển công trình: ai lập, ai xác nhận (điểm cần chốt 1, đã chốt 0.2 #66)
+### D1. Chuyển công trình: ai lập, ai xác nhận (điểm cần chốt 1, đã chốt 0.2 #66, chi tiết #69, #70)
 
 **Chọn:** Kinh doanh (hoặc Giám đốc) lập trên **D6b** từ D6 của hợp đồng đi. Hai cách xác nhận, chọn trên phiếu:
 
@@ -73,26 +73,32 @@ Kiểm khi lưu nháp (để báo sớm) và **kiểm lại trong transaction gh
 `postSiteTransfer(tx, actor, id, input)`:
 
 1. Tìm mã nháp trước (gửi lại → trả phiếu đã có, như `postReturn`).
-2. Đọc `from_contract_id`, `to_contract_id` của phiếu (không khóa), rồi `lockContract` **hai hợp đồng theo id tăng dần** (`[a, b].sort()`), `FOR UPDATE`.
-3. Khóa phiếu `FOR UPDATE`, kiểm trạng thái (`DRAFT` với văn phòng, `SENT` với M9) và `updatedAt` với văn phòng (409).
-4. Đọc đang ở công trình, terms, còn phải giao; `assertTransferLines`.
-5. `postMovements`; ghi `site_transfer` `POSTED`, `business_date`, `posted_by`; hợp đồng nhận `APPROVED` → `ACTIVE`; `logActivity` một dòng.
+2. Đọc `from_contract_id`, `to_contract_id` của phiếu (chưa khóa), rồi `lockContract` **hai hợp đồng theo id tăng dần** (`[a, b].sort()`), `FOR UPDATE`.
+3. Khóa phiếu `FOR UPDATE` và **đọc lại** `from_contract_id`, `to_contract_id`. Khác cặp đã khóa (lệnh sửa nháp đổi hợp đồng nhận chạy xen giữa bước 2 và 3) → trả **409** "Phiếu vừa được người khác sửa…", không ghi gì. Không thử lại tự động: người bấm tải lại để thấy hợp đồng nhận mới trước khi xác nhận.
+4. Kiểm trạng thái (`DRAFT` với văn phòng, `SENT` với M9) và `updatedAt` với văn phòng (409).
+5. Đọc đang ở công trình, terms, còn phải giao; `assertTransferLines`.
+6. `postMovements`; ghi `site_transfer` `POSTED`, `business_date`, `same_customer`, `posted_by`; hợp đồng nhận `APPROVED` → `ACTIVE`; `logActivity` một dòng.
+
+**Lệnh sửa nháp** theo đúng thứ tự đó: đọc phiếu (chưa khóa) → khóa hợp đồng đi, hợp đồng nhận **cũ** và hợp đồng nhận **mới** theo id tăng dần → khóa phiếu, đọc lại cặp cũ và `updatedAt` (khác → 409) → ghi. Nhờ vậy lệnh sửa và lệnh ghi sổ luôn cùng giữ khóa hợp đồng nhận cũ: một trong hai chờ lệnh kia xong; ghi sổ không bao giờ ghi vào hợp đồng nó chưa khóa. Test: lệnh sửa (B → C) và "Xác nhận chuyển" chạy song song nhiều lần, không lần nào có dòng sổ ở hợp đồng C mà phiếu ghi sổ khi đang khóa A, B.
+
+*Cân nhắc:* khóa phiếu trước rồi mới khóa hợp đồng — bỏ, vì ngược thứ tự chung "hợp đồng → chứng từ" của `postDelivery`, `postReturn`, dễ deadlock với phiếu xuất / thu hồi của cùng hợp đồng.
 
 Mọi lệnh khác chạm một hợp đồng (`postDelivery`, `postReturn`, duyệt mua lại, lập đổi hàng) chỉ khóa **một** hợp đồng rồi chứng từ, nên thứ tự "hợp đồng (id tăng dần) → chứng từ → `lockForPosting`" là thứ tự chung, không có vòng khóa. Hàm nhỏ `lockContractsInOrder(tx, ids)` đặt ở `src/lib/contracts/records.ts`.
 
 "Văn phòng xác nhận ngay" khi phiếu chưa lưu: tạo phiếu và ghi sổ trong **cùng** transaction, chỉ ghi một dòng nhật ký Ghi sổ (spec `site-transfers`).
 
-### D5. Mua lại: giá, duyệt, ngày (điểm cần chốt 2, đã chốt 0.2 #67)
+### D5. Mua lại: giá, duyệt, ngày (điểm cần chốt 2, đã chốt 0.2 #67, chi tiết #71)
 
 - **Giá:** điền sẵn bằng **giá mất** của mã trên bản hợp đồng đang áp dụng **hôm lập phiếu** (`contractTermsAt`), lưu `contract_price` trên dòng để đánh dấu "khác giá hợp đồng". Kinh doanh sửa được `unit_price` (≥ 0). Không có giá mất → bắt buộc nhập.
   - *Cân nhắc:* giá bán trong danh mục (chưa có cột giá bán cho hàng cũ), nhập tay hoàn toàn (dễ sai, không có mốc). Giá mất là số khách đã ký, nên là mốc tốt nhất.
 - **Duyệt:** chỉ Giám đốc (quyền mới `buybacks.approve`), như phiếu đền bù: nợ quá hạn → bắt buộc lý do (`overdueDebt`, 0.2 #15); từ chối bắt buộc lý do, không quay lại.
 - **Không có trạng thái Nháp:** lưu là Chờ duyệt (như thiết kế D6c "Quốc Bảo gửi lúc…"). Kinh doanh sửa được khi Chờ duyệt, gửi `updatedAt` (409). Lập sai thì Giám đốc từ chối.
 - **Duyệt mới ghi sổ:** trong transaction duyệt: khóa hợp đồng → phiếu `FOR UPDATE`; kiểm lại số đang ở công trình; `SALE_OUT` ở vị trí công trình, rút Mới trước rồi Tốt, `document_type = 'BUY_BACK'`; lưu `amount_due` = tổng dòng, `approved_date`, `due_date` = `approved_date + payment_terms_days` của bản hợp đồng tại ngày duyệt (0.2 #18); một dòng nhật ký Duyệt.
+- **D6c nhắc Giám đốc:** ngay dưới nút Duyệt hiện "Tính thuê tới khi duyệt: duyệt hôm nay thì tính đến hết <hôm nay>", để thấy duyệt chậm thì khách trả thêm (review PR #138).
 - **Tính thuê tới ngày nào:** **ngày duyệt** là ngày "trả" của số hàng đó (tính đến hết ngày duyệt). *Cân nhắc:* ngày lập phiếu (khách nói mua từ hôm đó) — bỏ vì hàng vẫn có thể bị từ chối, sổ kho không ghi lùi được, và phải có một ngày trên sổ. Văn phòng muốn ngừng tính sớm thì gửi duyệt sớm.
 - **SALE_OUT ở công trình:** đúng nghĩa "hàng ra khỏi công ty vì bán"; báo cáo doanh thu bán (sau này) đọc `SALE_OUT` của cả phiếu xuất bán và phiếu mua lại. Giá trị kho giảm = số × giá BQ; lãi gộp = tiền bán − giá trị đó (tính ra, không lưu).
 
-### D6. Đổi hàng: ghép phiếu xuất + phiếu thu hồi (điểm cần chốt 3, đã chốt 0.2 #68)
+### D6. Đổi hàng: ghép phiếu xuất + phiếu thu hồi (điểm cần chốt 3, đã chốt 0.2 #68, chi tiết #72)
 
 **Chọn:** không có chứng từ đổi hàng. Bảng nối `delivery_exchange` (một dòng một lần đổi):
 
@@ -133,13 +139,14 @@ Quyền mới thêm vào `PERMISSIONS` (`src/domain/permissions.ts`); route mớ
 
 ### D9. Dữ liệu (migration `drizzle/0017_site_operations.sql`)
 
-- `site_transfer`: `id`, `code` unique (`CCT`), `from_contract_id`, `to_contract_id` (FK `contract`, `RESTRICT`, check khác nhau), `from_site_location_id`, `to_site_location_id` (FK `location`), `status` check (`DRAFT`, `SENT`, `POSTED`, `CANCELLED`), `confirm_mode` (`OFFICE`, `PHONE`), `vehicle_plate`, `note`, `other_customer_confirmed`, `over_contract_confirmed` (bool), `cancelled_reason` (bắt buộc khi `CANCELLED`), `client_draft_id` unique, `posting_id`, `business_date`, `confirmed_on_device_at`, `posted_by`, `posted_at`, `created_by`, `created_at`, `updated_at`.
+- `site_transfer`: `id`, `code` unique (`CCT`), `from_contract_id`, `to_contract_id` (FK `contract`, `RESTRICT`, check khác nhau), `from_site_location_id`, `to_site_location_id` (FK `location`), `status` check (`DRAFT`, `SENT`, `POSTED`, `CANCELLED`), `confirm_mode` (`OFFICE`, `PHONE`), `vehicle_plate`, `note`, `other_customer_confirmed`, `over_contract_confirmed` (bool), `same_customer` (bool, null tới khi ghi sổ; 0.2 #70), `posted_xact` (`xid8`, null tới khi ghi sổ), `cancelled_reason` (bắt buộc khi `CANCELLED`), `client_draft_id` unique, `posting_id`, `business_date`, `confirmed_on_device_at`, `posted_by`, `posted_at`, `created_by`, `created_at`, `updated_at`.
 - `site_transfer_line`: `transfer_id`, `line_no`, `item_id`, `planned_quantity` (số văn phòng ghi, > 0), `moved_quantity` (thực chở, null tới khi ghi sổ, 0 ≤ moved ≤ planned).
 - `buy_back_note`: `id`, `code` unique (`MLA`), `contract_id`, `site_location_id`, `revision_id` (bản lúc lập, lấy giá mất), `status` (`PENDING`, `APPROVED`, `REJECTED`), `reason` (bắt buộc), `approval_reason`, `rejected_reason`, `amount_due`, `approved_by`, `approved_at`, `approved_date`, `due_date`, `posting_id`, `created_by`, `created_at`, `updated_at`; check `APPROVED` ⇒ `amount_due`, `approved_date`, `due_date` có giá trị.
 - `buy_back_note_line`: `note_id`, `line_no`, `item_id`, `quantity` (> 0), `unit_price` (bigint ≥ 0), `contract_price` (bigint, null khi hợp đồng không có giá mất).
 - `delivery_exchange`: `id`, `contract_id`, `delivery_note_id` unique, `return_note_id` unique null, `status` (`WAITING`, `DONE`, `CANCELLED`), `cancelled_reason`, `created_by`, `created_at`, `updated_at`; check `DONE` ⇔ `return_note_id` có giá trị.
 - `delivery_exchange_line`: `exchange_id`, `item_id`, `expected_quantity` (> 0).
-- Trigger: `site_transfer_frozen` (phiếu `POSTED`/`CANCELLED` và dòng con không sửa, không xóa; chỉ cho cập nhật `moved_quantity` trong transaction ghi sổ), `buy_back_note_frozen` (như `compensation_note_frozen`), `delivery_exchange_frozen` (`DONE`/`CANCELLED` không đổi).
+- Trigger: `site_transfer_frozen`: phiếu `POSTED`/`CANCELLED` và dòng con không sửa, không xóa. Cột `posted_xact xid8` trên `site_transfer` đặt bằng `pg_current_xact_id()` khi phiếu sang `POSTED` (cùng câu UPDATE). Trigger dòng con cho UPDATE **chỉ cột `moved_quantity`** của phiếu `POSTED` khi `parent.posted_xact = pg_current_xact_id()`, tức chỉ trong chính transaction ghi sổ; transaction khác bị chặn. Cùng cách so mã transaction như `return_note.created_xact` (`drizzle/0016_returns.sql`), không so giờ, nên `options.now` khác giờ DB vẫn ghi được. Thứ tự trong `postSiteTransfer`: UPDATE phiếu sang `POSTED` (đặt `posted_xact`) rồi mới UPDATE `moved_quantity`.
+- Trigger khác: `buy_back_note_frozen` (như `compensation_note_frozen`), `delivery_exchange_frozen` (`DONE`/`CANCELLED` không đổi).
 - Check `activity_log.document_type` thêm `SITE_TRANSFER`, `BUY_BACK`; check `action` thêm `SEND` ("Gửi điện thoại", nhóm "Duyệt, ghi sổ", không vào ô Duyệt / ghi sổ).
 - Mọi bảng mới: CRUD cho `erp_app` qua `src/db/grants.ts`, không vào `APPEND_ONLY_TABLES`. Mã `CCT`, `MLA` đếm bằng `document_counter` (0.2 #33), không `CREATE SEQUENCE`.
 
@@ -165,9 +172,13 @@ Trang: `/sales/contracts/[id]/site-transfer/new` và `/sales/site-transfers/[cod
 | Dòng (thuộc hợp đồng theo D8) | Với tiền thuê |
 |---|---|
 | `DELIVERY_IN` (phiếu xuất), `TRANSFER_IN` (phiếu chuyển tới) | giao: tính từ **hôm sau** ngày nghiệp vụ |
-| `RETURN_OUT`, `LOSS_OUT` (phiếu thu hồi), `TRANSFER_OUT` (phiếu chuyển đi), `SALE_OUT` (phiếu mua lại) | trả: tính **đến hết** ngày nghiệp vụ |
+| `RETURN_OUT`, `LOSS_OUT` (phiếu thu hồi), `TRANSFER_OUT` (phiếu chuyển đi), `SALE_OUT` (phiếu mua lại) | trả: tính **đến hết** ngày nghiệp vụ; `TRANSFER_OUT` cùng nhà thầu không áp tối thiểu (dưới) |
 
-- Thuê tối thiểu 45 ngày tính **riêng từng hợp đồng** (D6b ghi rõ): hợp đồng đi coi như trả, hợp đồng nhận coi như giao.
+- Thuê tối thiểu 45 ngày (0.2 #70), đọc từ `site_transfer.same_customer`:
+  - **cùng nhà thầu**: phần hàng chuyển **không áp tối thiểu ở hợp đồng đi** (chỉ số ngày thật tới hết ngày chuyển), vì khách thuê liên tục;
+  - **khác nhà thầu**: áp riêng từng hợp đồng (hợp đồng đi coi như trả, hợp đồng nhận coi như giao);
+  - cách gộp chuỗi thuê nối tiếp khi tính tối thiểu ở **hợp đồng nhận** (cùng nhà thầu) do `rental-billing` chốt cùng 0.2b Q2; change này chỉ lưu cờ và ngày.
+- Hàng mua lại áp tối thiểu như hàng trả về, ngày trả = ngày duyệt (0.2 #71).
 - Hai ngày cùng một hôm (chuyển đi rồi chuyển lại, đổi hàng cùng ngày) không tính trùng: ngày đó chỉ tính cho bên "trả".
 - Ngày tính thuê lấy `business_date` của chứng từ (0.2 #55), không lấy giờ bấm trên máy.
 - Change này chỉ thêm hàm đọc "tiền thuê 1 ngày" cho D6, D6b, D6c, D6d (số đang ở công trình × giá ngày của bản đang áp dụng), không tính kỳ.

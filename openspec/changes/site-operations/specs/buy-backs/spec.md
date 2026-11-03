@@ -133,11 +133,11 @@ Mỗi lệnh Tạo, Sửa (chỉ khi có trường đổi), Duyệt, Từ chối
 - **THEN** dòng Tạo gắn cờ "Có xác nhận bất thường"
 
 ### Requirement: Màn D6c Phiếu mua lại
-D6c SHALL mở từ D6 (nút "Khách mua lại") và hiện nguồn (nhà thầu, công trình, hợp đồng thuê), lý do, bảng hàng (số đang ở công trình, số mua, đơn giá, thành tiền), tổng tiền bán, và khối "Khi duyệt" (dòng sổ sẽ ghi, ngày thôi tính thuê, tiền thuê 1 ngày giảm). Với Giám đốc và phiếu Chờ duyệt, D6c SHALL có thanh duyệt với nút "Từ chối" và "Duyệt <tổng>".
+D6c SHALL mở từ D6 (nút "Khách mua lại") và hiện nguồn (nhà thầu, công trình, hợp đồng thuê), lý do, bảng hàng (số đang ở công trình, số mua, đơn giá, thành tiền), tổng tiền bán, và khối "Khi duyệt" (dòng sổ sẽ ghi, ngày thôi tính thuê, tiền thuê 1 ngày giảm). Với Giám đốc và phiếu Chờ duyệt, D6c SHALL có thanh duyệt với nút "Từ chối" và "Duyệt <tổng>", và dòng "Tính thuê tới khi duyệt" ngay dưới nút Duyệt.
 
 #### Scenario: Giám đốc mở phiếu chờ duyệt
 - **WHEN** `minhanh` mở `MLA-2026-003` Chờ duyệt do Quốc Bảo gửi lúc 16:20 04/11/2026
-- **THEN** trang có "Phiếu mua lại đang chờ bạn duyệt", "Quốc Bảo gửi lúc 16:20 04/11/2026" và nút "Duyệt 1.300.000 ₫"
+- **THEN** trang có "Phiếu mua lại đang chờ bạn duyệt", "Quốc Bảo gửi lúc 16:20 04/11/2026" và nút "Duyệt 1.300.000 ₫" **AND** ngay dưới nút có "Tính thuê tới khi duyệt: duyệt hôm nay thì tính đến hết 05/11/2026"
 
 #### Scenario: Khối khi duyệt
 - **WHEN** mở `MLA-2026-003` mua 20 `TR16` (100 ₫/ngày) và 50 `BCH` (20 ₫/ngày)

@@ -148,11 +148,22 @@ Ghi sổ SHALL chạy trong một transaction (phiếu, sổ kho, trạng thái 
 - **THEN** không dòng nào của phiếu được ghi **AND** phiếu và hai hợp đồng giữ nguyên trạng thái
 
 ### Requirement: Ngày chuyển với tiền thuê hai hợp đồng
-Với hợp đồng đi, hàng chuyển SHALL tính là trả vào ngày chuyển (tính thuê đến hết ngày đó). Với hợp đồng nhận, hàng SHALL tính là giao vào ngày chuyển (tính thuê từ hôm sau). Thuê tối thiểu 45 ngày SHALL áp riêng cho từng hợp đồng. D6b SHALL hiện trước ảnh hưởng này.
+Với hợp đồng đi, hàng chuyển SHALL tính là trả vào ngày chuyển (tính thuê đến hết ngày đó). Với hợp đồng nhận, hàng SHALL tính là giao vào ngày chuyển (tính thuê từ hôm sau). D6b SHALL hiện trước ảnh hưởng này.
 
 #### Scenario: Ảnh hưởng trên D6b
 - **WHEN** phiếu chuyển 50 `H1,7` (giá ngày 1.200 ₫ ở An Phú) và 40 `CHEO1,7` (300 ₫) dự kiến ghi sổ 05/11/2026, Dương Nội còn phải giao 600 `H1,7`
 - **THEN** D6b hiện "An Phú (hợp đồng đi) tính đến hết 05/11", "Dương Nội (hợp đồng nhận) tính từ 06/11", "Tiền thuê 1 ngày ở An Phú giảm 72.000 ₫", "Còn phải giao ở Dương Nội H1,7 600 → 550"
+
+### Requirement: Thuê tối thiểu khi chuyển công trình
+Khi hai hợp đồng cùng nhà thầu, phần hàng chuyển SHALL không áp thuê tối thiểu 45 ngày ở hợp đồng đi (chỉ tính số ngày thật tới hết ngày chuyển). Khác nhà thầu, tối thiểu SHALL áp riêng từng hợp đồng. Phiếu đã chuyển SHALL lưu cờ cùng nhà thầu lúc ghi sổ. D6b SHALL ghi luật đang áp cho phiếu.
+
+#### Scenario: Cùng nhà thầu
+- **WHEN** 50 `H1,7` xuất cho An Phú (Minh Phát) ngày 01/11/2026 và chuyển sang Dương Nội (Minh Phát) ngày 11/11/2026
+- **THEN** phiếu lưu cờ cùng nhà thầu **AND** với An Phú, 50 cái đó chỉ tính 10 ngày thật (11/11 − 01/11), không kéo tới 45 ngày **AND** D6b hiện "Cùng nhà thầu: hàng chuyển không tính tối thiểu 45 ngày ở An Phú, thuê nối tiếp sang Dương Nội."
+
+#### Scenario: Khác nhà thầu
+- **WHEN** cùng số hàng đó chuyển sang hợp đồng của Phú Đạt ngày 11/11/2026, đã tích xác nhận khác nhà thầu
+- **THEN** phiếu lưu cờ khác nhà thầu **AND** An Phú vẫn áp tối thiểu 45 ngày cho 50 cái đó **AND** D6b hiện "Khác nhà thầu: mỗi hợp đồng tính tối thiểu 45 ngày riêng."
 
 #### Scenario: Số ngày thuê
 - **WHEN** 50 `H1,7` xuất cho An Phú ngày 01/09/2026 và chuyển sang Dương Nội ngày 05/11/2026, rồi Dương Nội trả về bãi ngày 30/11/2026
@@ -171,6 +182,13 @@ Ghi sổ phiếu chuyển SHALL khóa hai hợp đồng theo thứ tự cố đ�
 #### Scenario: Ngược chiều cùng lúc
 - **WHEN** `CCT-2026-004` (An Phú → Dương Nội, 10 `H1,7`) và `CCT-2026-005` (Dương Nội → An Phú, 10 `H1,7`) được xác nhận cùng lúc
 - **THEN** cả hai phiếu Đã chuyển **AND** không lệnh nào lỗi deadlock **AND** số đang ở công trình của mỗi hợp đồng bằng trước khi chuyển
+
+### Requirement: Không ghi sổ sang hợp đồng chưa khóa
+Ghi sổ SHALL chỉ ghi vào đúng hai hợp đồng đang giữ khóa. Sau khi khóa phiếu, nếu hợp đồng đi hoặc nhận của phiếu khác cặp đã khóa (phiếu vừa được sửa), lệnh SHALL trả 409 và không ghi gì. Sửa nháp đổi hợp đồng nhận SHALL khóa hợp đồng cũ và mới theo id tăng dần trước khi khóa phiếu.
+
+#### Scenario: Đổi hợp đồng nhận xen giữa
+- **WHEN** `quocbao` sửa `CCT-2026-004` Nháp đổi hợp đồng nhận từ Dương Nội sang Mỹ Đình trong lúc `ngocanh` bấm "Xác nhận chuyển" với dữ liệu cũ
+- **THEN** hoặc phiếu ghi sổ sang Dương Nội rồi lệnh sửa bị từ chối vì phiếu đã chuyển, hoặc lệnh sửa xong trước rồi lệnh xác nhận trả 409 "Phiếu vừa được người khác sửa. Bạn tải lại để xem bản mới." **AND** không có dòng sổ nào ở hợp đồng Mỹ Đình khi chưa khóa nó
 
 ### Requirement: Hàng hỏng không chuyển
 Phiếu chuyển SHALL chỉ chuyển hàng Mới, Tốt và giữ nguyên tình trạng. D6b và M9 SHALL nhắc: hàng hỏng phát hiện khi chuyển không chuyển được, đưa về bãi bằng phiếu thu hồi để tính đền bù.
