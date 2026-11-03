@@ -62,6 +62,21 @@ export async function lockContract(
   };
 }
 
+/**
+ * Several contracts FOR UPDATE in ascending id order (site-operations design
+ * D4): two commands that lock the same pair queue up instead of deadlocking.
+ * Returned in the order asked for.
+ */
+export async function lockContractsInOrder(
+  tx: Tx,
+  ids: readonly string[],
+): Promise<LockedContract[]> {
+  const unique = [...new Set(ids)].sort();
+  const locked = new Map<string, LockedContract>();
+  for (const id of unique) locked.set(id, await lockContract(tx, id));
+  return ids.map((id) => locked.get(id) as LockedContract);
+}
+
 export type RevisionRow = typeof contractRevision.$inferSelect;
 
 /** Every revision of a contract, original first. */

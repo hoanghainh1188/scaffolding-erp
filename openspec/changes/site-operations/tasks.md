@@ -36,13 +36,13 @@ Quyết định đã chốt khi vẽ (PR #137, 0.2 #66–#68): chuyển công tr
 
 ## 3. Phiếu chuyển công trình (service + API)
 
-- [ ] 3.1 `lockContractsInOrder(tx, ids)` trong `src/lib/contracts/records.ts`. Kiểm: integration test hai id bất kỳ luôn khóa theo thứ tự tăng dần.
-- [ ] 3.2 `siteMovements` thêm nhánh phiếu chuyển (dấu dòng theo hợp đồng đi / nhận) và phiếu mua lại (design D8). Kiểm: integration test:
+- [x] 3.1 `lockContractsInOrder(tx, ids)` trong `src/lib/contracts/records.ts`. Kiểm: integration test hai id bất kỳ luôn khóa theo thứ tự tăng dần.
+- [x] 3.2 `siteMovements` thêm nhánh phiếu chuyển (dấu dòng theo hợp đồng đi / nhận) và phiếu mua lại (design D8). Kiểm: integration test:
   - sau chuyển 50 `H1,7` An Phú → Dương Nội: đang ở công trình An Phú −50, Dương Nội +50, còn phải giao Dương Nội 600 → 550;
   - **hai hợp đồng cùng một công trình**: tồn vị trí không đổi, hai hợp đồng tách đúng;
   - phiếu Nháp, Chờ xác nhận không tính; test cũ `deliveries`, `returns` vẫn xanh.
-- [ ] 3.3 `src/lib/site-transfers/service.ts`: lập, sửa (`updatedAt` → 409; khóa hợp đồng đi + hợp đồng nhận cũ + mới theo id tăng dần rồi mới khóa phiếu, design D4), gửi điện thoại, rút về, hủy (lý do); mã `CCT` qua `nextDocumentCode`; mỗi lệnh `logActivity` một dòng. Kiểm: integration test từng chuyển trạng thái, 409, câu từ chối, **mỗi thao tác đúng một dòng nhật ký**, lệnh bị từ chối không ghi.
-- [ ] 3.4 `src/lib/site-transfers/post.ts` `postSiteTransfer` (design D4): mã nháp trước, khóa hai hợp đồng theo id, khóa phiếu, kiểm lại, `postMovements`, hợp đồng nhận `APPROVED` → `ACTIVE`, một dòng nhật ký. Văn phòng lập + xác nhận ngay trong một transaction. Kiểm: integration test:
+- [x] 3.3 `src/lib/site-transfers/service.ts`: lập, sửa (`updatedAt` → 409; khóa hợp đồng đi + hợp đồng nhận cũ + mới theo id tăng dần rồi mới khóa phiếu, design D4), gửi điện thoại, rút về, hủy (lý do); mã `CCT` qua `nextDocumentCode`; mỗi lệnh `logActivity` một dòng. Kiểm: integration test từng chuyển trạng thái, 409, câu từ chối, **mỗi thao tác đúng một dòng nhật ký**, lệnh bị từ chối không ghi.
+- [x] 3.4 `src/lib/site-transfers/post.ts` `postSiteTransfer` (design D4): mã nháp trước, khóa hai hợp đồng theo id, khóa phiếu, kiểm lại, `postMovements`, hợp đồng nhận `APPROVED` → `ACTIVE`, một dòng nhật ký. Văn phòng lập + xác nhận ngay trong một transaction. Kiểm: integration test:
   - **ghi đúng hai vị trí**: `TRANSFER_OUT` ở An Phú, `TRANSFER_IN` ở Dương Nội, cùng tình trạng, rút Mới trước; **tổng tồn và giá BQ không đổi**; `inventory:check` 0 lệch;
   - **chuyển nhiều hơn số đang ở công trình A bị chặn**, không dòng sổ, phiếu giữ trạng thái; hàng đã trả về trước khi ghi sổ bị chặn;
   - ngày chuyển = ngày ghi sổ (`options.now` 21:40 05/11 gửi lúc 06:50 06/11 → 06/11);
@@ -51,9 +51,9 @@ Quyết định đã chốt khi vẽ (PR #137, 0.2 #66–#68): chuyển công tr
   - khác nhà thầu / vượt còn phải giao có xác nhận → nhật ký gắn cờ "Có xác nhận bất thường";
   - lưu `same_customer` đúng (cùng Minh Phát → true; Minh Phát → Phú Đạt → false);
   - phiếu bị đổi hợp đồng nhận giữa lúc đọc và lúc khóa → 409, không ghi gì (đọc lại cặp hợp đồng sau khi khóa phiếu).
-- [ ] 3.5 Test đồng thời `src/lib/site-transfers/concurrency.int.test.ts`: **hai lệnh chuyển ngược chiều cùng lúc** (A → B và B → A, hai kết nối) đều xong, không lỗi deadlock (`40P01`), số đang ở công trình mỗi bên bằng trước; thêm ca chuyển A → B song song với `postReturn` của A trả hết hàng: đúng một lệnh thành công; thêm ca **sửa hợp đồng nhận (B → C) song song với "Xác nhận chuyển"**: không lần nào có dòng sổ ở C khi lệnh ghi sổ chỉ khóa A, B (hoặc ghi sang B rồi lệnh sửa bị từ chối, hoặc ghi sổ trả 409). Kiểm: chạy 20 lần liên tiếp xanh.
-- [ ] 3.6 Không hủy hợp đồng nhận còn phiếu chuyển chưa xong hoặc đã nhận hàng chuyển đến (sửa kiểm hủy ở `src/lib/contracts/`). Kiểm: integration test đúng câu spec `deliveries`.
-- [ ] 3.7 Route `/api/site-transfers` (D10) và `/api/m/site-transfers` bọc `withAuth`; quyền theo D7 (cả hai hợp đồng); M9 không trả giá. Kiểm: integration test 403 cho `thuyvy` (Chỉ bán), `vantung` lập, `quocbao` xác nhận M9; test API M9 không có trường giá; `route-guards.test.ts` xanh.
+- [x] 3.5 Test đồng thời `src/lib/site-transfers/concurrency.int.test.ts`: **hai lệnh chuyển ngược chiều cùng lúc** (A → B và B → A, hai kết nối) đều xong, không lỗi deadlock (`40P01`), số đang ở công trình mỗi bên bằng trước; thêm ca chuyển A → B song song với `postReturn` của A trả hết hàng: đúng một lệnh thành công; thêm ca **sửa hợp đồng nhận (B → C) song song với "Xác nhận chuyển"**: không lần nào có dòng sổ ở C khi lệnh ghi sổ chỉ khóa A, B (hoặc ghi sang B rồi lệnh sửa bị từ chối, hoặc ghi sổ trả 409). Kiểm: chạy 20 lần liên tiếp xanh.
+- [x] 3.6 Không hủy hợp đồng nhận còn phiếu chuyển chưa xong hoặc đã nhận hàng chuyển đến (sửa kiểm hủy ở `src/lib/contracts/`). Kiểm: integration test đúng câu spec `deliveries`.
+- [x] 3.7 Route `/api/site-transfers` (D10) và `/api/m/site-transfers` bọc `withAuth`; quyền theo D7 (cả hai hợp đồng); M9 không trả giá. Kiểm: integration test 403 cho `thuyvy` (Chỉ bán), `vantung` lập, `quocbao` xác nhận M9; test API M9 không có trường giá; `route-guards.test.ts` xanh.
 
 ## 4. Phiếu mua lại (service + API)
 
