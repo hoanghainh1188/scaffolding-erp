@@ -39,6 +39,9 @@ export const NOT_LOGGED: Readonly<Record<string, string>> = {
     "row lock shared by the delivery commands; the command logs",
   "scan/detector.ts#createQrDetector": "camera QR reader in the browser",
   "stocktakes/queries.ts#startOptions": "reads the M6a choices",
+  "returns/queries.ts#returnContracts": "reads the M4 contract list",
+  "returns/queries.ts#returnContract": "reads one M4 contract",
+  "returns/queries.ts#returnDetail": "reads a return note",
 };
 
 interface Found {

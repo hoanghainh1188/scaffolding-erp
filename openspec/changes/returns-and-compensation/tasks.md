@@ -77,7 +77,7 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - **chỉ Tốt → không có phiếu đền bù, bảng đếm `ĐB` không tăng**;
   - **giá theo bản hợp đồng tại ngày trả**: phụ lục 01/11 đổi 450.000 → 480.000, trả 05/11 → 480.000, trả 31/10 → 450.000;
   - hợp đồng không có giá `MAM1,6` → dòng `unit_price` trống.
-- [ ] 3.5 `src/lib/compensations/service.ts`: sửa giá / giảm trừ, duyệt, từ chối (design D7): khóa `FOR UPDATE`, `updatedAt` → 409, `transition()`, `overdueDebt`, lưu `amount_due`, `approved_date`, `due_date`. Kiểm: `service.int.test.ts`:
+- [x] 3.5 `src/lib/compensations/service.ts`: sửa giá / giảm trừ, duyệt, từ chối (design D7): khóa `FOR UPDATE`, `updatedAt` → 409, `transition()`, `overdueDebt`, lưu `amount_due`, `approved_date`, `due_date`. Kiểm: `service.int.test.ts`:
   - duyệt lưu đúng 3.500.000 / 06/11 / 21/11;
   - còn dòng chưa có giá → câu spec;
   - nhập giá rồi duyệt;
@@ -86,7 +86,7 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - sửa phiếu đã duyệt → 409;
   - hai tab sửa → 409;
   - **duyệt hai lần cùng lúc** (`Promise.all`) → một lần thành công, một dòng nhật ký.
-- [ ] 3.6 Ảnh: `src/lib/returns/photos.ts`:
+- [x] 3.6 Ảnh: `src/lib/returns/photos.ts`:
   - nhận ảnh: giới hạn 4 MB khi đọc, `detectImageType`, ≤ 6 ảnh / mã nháp, `sharp` (`limitInputPixels`, `rotate`, resize 1.280, WebP chất lượng 70 không metadata), trùng `(draft, clientPhotoId)` trả mã cũ, dọn ảnh nháp > 7 ngày;
   - đọc ảnh theo quyền;
   - `postReturn` kiểm `photoIds`: thiếu ảnh → lỗi `PHOTOS_EXPIRED` kèm danh sách, rollback.
@@ -102,14 +102,14 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
     - ảnh nháp của người khác → không tìm thấy;
     - dọn ảnh 8 ngày tuổi, giữ ảnh 6 ngày;
     - **lưu phiếu với ảnh đã bị dọn** → `PHOTOS_EXPIRED` chỉ với mã đã mất, không có dòng sổ, không có phiếu; gửi lại ảnh rồi lưu → ghi sổ đủ 4 ảnh.
-- [ ] 3.7 Truy vấn: `src/lib/returns/queries.ts` (M4 danh sách hợp đồng / mở hợp đồng không giá, chi tiết desktop, M1 hôm nay, M7 theo ngày) và `src/lib/compensations/queries.ts` (danh sách lọc trạng thái, D8, khối D5). Kiểm: integration test:
+- [x] 3.7 Truy vấn: `src/lib/returns/queries.ts` (M4 danh sách hợp đồng / mở hợp đồng không giá, chi tiết desktop, M1 hôm nay, M7 theo ngày) và `src/lib/compensations/queries.ts` (danh sách lọc trạng thái, D8, khối D5). Kiểm: integration test:
   - truy vấn M4 / M7 **không có khóa giá, tiền** (so khóa object);
   - danh sách M4 bỏ hợp đồng đã trả hết;
   - tìm "An Phú";
   - chi tiết có giá trị giảm và giá trị mất;
   - danh sách lọc `PENDING`;
   - danh sách không chọn cột `content`.
-- [ ] 3.8 Nhật ký: thêm `src/lib/returns/`, `src/lib/compensations/` vào `src/lib/activity/coverage.test.ts`. Kiểm: integration test **mỗi thao tác ghi đúng một dòng nhật ký**:
+- [x] 3.8 Nhật ký: thêm `src/lib/returns/`, `src/lib/compensations/` vào `src/lib/activity/coverage.test.ts`. Kiểm: integration test **mỗi thao tác ghi đúng một dòng nhật ký**:
   - Ghi sổ `PTH`, Tạo `ĐB`, Sửa, Duyệt, Từ chối;
   - lưu không đổi không ghi; lệnh bị từ chối không ghi;
   - duyệt có giảm trừ / nợ quá hạn gắn cờ "Có xác nhận bất thường";
