@@ -117,13 +117,13 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
 
 ## 4. API
 
-- [ ] 4.1 Route điện thoại theo design D12: `GET /api/m/returns/contracts`, `GET /api/m/returns/contracts/[id]`, `POST /api/m/returns/photos`, `POST /api/m/returns`, `GET /api/m/returns/[code]`. Quyền `returns.receive`, lỗi dịch qua `respond.ts` (413 cho ảnh quá lớn). Kiểm: route test:
+- [x] 4.1 Route điện thoại theo design D12: `GET /api/m/returns/contracts`, `GET /api/m/returns/contracts/[id]`, `POST /api/m/returns/photos`, `POST /api/m/returns`, `GET /api/m/returns/[code]`. Quyền `returns.receive`, lỗi dịch qua `respond.ts` (413 cho ảnh quá lớn). Kiểm: route test:
   - **trả lời M4 không có trường giá, tiền** (so khóa JSON);
   - `quocbao` `POST /api/m/returns` → 403, không có dòng sổ;
   - `WORKSHOP` → 403;
   - gửi lại cùng `draftId` → 200 cùng `PTH`;
   - ảnh hết hạn → 422 `{ code: "PHOTOS_EXPIRED", expiredPhotoIds }`.
-- [ ] 4.2 Route văn phòng: `GET /api/returns/[code]`, `GET /api/returns/photos/[id]` (`Cache-Control: private, no-store`, `nosniff`, 404 khi không quyền), `DELETE …` → 405, `GET /api/compensations`, `GET|PUT /api/compensations/[id]`, `POST …/approve`, `…/reject`. Kiểm: route test:
+- [x] 4.2 Route văn phòng: `GET /api/returns/[code]`, `GET /api/returns/photos/[id]` (`Cache-Control: private, no-store`, `nosniff`, 404 khi không quyền), `DELETE …` → 405, `GET /api/compensations`, `GET|PUT /api/compensations/[id]`, `POST …/approve`, `…/reject`. Kiểm: route test:
   - Kế toán `approve` → 403, `GET` D8 → 200;
   - Thủ kho `GET /api/compensations` → 403;
   - `thuyvy` (Chỉ bán) xem phiếu thu hồi → 403, xem ảnh → 404;

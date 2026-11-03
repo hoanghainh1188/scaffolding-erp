@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { checkHealth, healthResponse } from "./health";
+import { checkHealth, healthResponse, withPhotoStorage } from "./health";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -58,5 +58,34 @@ describe("healthResponse", () => {
       data: { status: "degraded", database: "unreachable" },
       error: "Không kết nối được cơ sở dữ liệu",
     });
+  });
+});
+
+describe("withPhotoStorage", () => {
+  const MB = 1024 * 1024;
+  const up = { status: "ok", database: "ok" } as const;
+
+  it("warns above 200 MB, without figures", async () => {
+    const report = await withPhotoStorage(up, async () => 210 * MB);
+    expect(report).toEqual({ ...up, photoStorage: "warning" });
+    expect(JSON.stringify(report)).not.toMatch(/\d/);
+  });
+
+  it("is ok below the threshold", async () => {
+    expect(await withPhotoStorage(up, async () => 35 * MB)).toEqual({
+      ...up,
+      photoStorage: "ok",
+    });
+  });
+
+  it("leaves a degraded report and a failed sum alone", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const down = { status: "degraded", database: "unreachable" } as const;
+    expect(await withPhotoStorage(down, async () => 210 * MB)).toEqual(down);
+    expect(
+      await withPhotoStorage(up, async () => {
+        throw new Error("boom");
+      }),
+    ).toEqual(up);
   });
 });
