@@ -29,8 +29,8 @@
 
 ## 4. API
 
-- [ ] 4.1 Route văn phòng theo design D12: `GET /api/contracts/[id]/deliveries`, `POST /api/deliveries`, `GET|PUT /api/deliveries/[id]`, `POST /api/deliveries/[id]/cancel`, `/recall`; bọc `withAuth`, đọc loại hợp đồng rồi `canContract`, lỗi dịch qua `respond.ts`. Kiểm: route test: **`thuyvy` (Chỉ bán) lập đợt cho hợp đồng thuê → 403, không có phiếu**; Thủ kho `POST /api/deliveries` → 403; Kế toán `PUT` → 403, `GET` → 200; `route-guards.test.ts` xanh.
-- [ ] 4.2 Route điện thoại: `GET /api/m/deliveries`, `GET /api/m/deliveries/[code]`, `POST …/start`, `/return`, `/post`; quyền `deliveries.pick`. Kiểm: route test: **trả lời M5 không có trường giá, cước, tiền** (so khóa JSON); `quocbao` `POST …/post` → 403, không có dòng sổ; `WORKSHOP` `…/start` → 403; 409 khi `startedVersion` lệch; gửi lại cùng `clientDraftId` → 200 cùng mã phiếu.
+- [x] 4.1 Route văn phòng theo design D12: `GET /api/contracts/[id]/deliveries`, `POST /api/deliveries`, `GET|PUT /api/deliveries/[id]`, `POST /api/deliveries/[id]/cancel`, `/recall`; bọc `withAuth`, đọc loại hợp đồng rồi `canContract`, lỗi dịch qua `respond.ts`. Kiểm: route test: **`thuyvy` (Chỉ bán) lập đợt cho hợp đồng thuê → 403, không có phiếu**; Thủ kho `POST /api/deliveries` → 403; Kế toán `PUT` → 403, `GET` → 200; `route-guards.test.ts` xanh.
+- [x] 4.2 Route điện thoại: `GET /api/m/deliveries`, `GET /api/m/deliveries/[code]`, `POST …/start`, `/return`, `/post`; quyền `deliveries.pick`. Kiểm: route test: **trả lời M5 không có trường giá, cước, tiền** (so khóa JSON); `quocbao` `POST …/post` → 403, không có dòng sổ; `WORKSHOP` `…/start` → 403; 409 khi `startedVersion` lệch; gửi lại cùng `clientDraftId` → 200 cùng mã phiếu.
 
 ## 5. Giao diện Desktop
 

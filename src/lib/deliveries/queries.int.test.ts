@@ -39,6 +39,14 @@ beforeEach(async () => {
   fx = await setupDeliveryFixture(ctx);
 });
 
+async function dataOf<T>(
+  pending: Promise<{ ok: true; data: T } | { ok: false; error: string }>,
+) {
+  const result = await pending;
+  if (!result.ok) throw new Error(result.error);
+  return result.data;
+}
+
 async function lineIds(noteId: string) {
   const rows = await ctx.db
     .select({ id: deliveryNoteLine.id, itemId: deliveryNoteLine.itemId })
@@ -68,8 +76,9 @@ describe("D6 and what is left", () => {
   it("keeps the shortage in what is left, without a new note", async () => {
     const deal = await approvedRental(ctx, fx);
     const note = await shortBatch(deal.id);
-    const view = await contractDeliveries(ctx.db, fx.sales, deal.id, TODAY);
-    if (!view) throw new Error("no view");
+    const result = await contractDeliveries(ctx.db, fx.sales, deal.id, TODAY);
+    if (!result.ok) throw new Error(result.error);
+    const view = result.data;
     const cheo = view.remaining.find(
       (row) => row.line.itemId === fx.item("GG-CH"),
     );
@@ -97,7 +106,9 @@ describe("D6 and what is left", () => {
       lines: [{ itemId: fx.item("GG-K17"), quantity: "120" }],
     });
     await started(ctx, fx, note.id);
-    const view = await contractDeliveries(ctx.db, fx.sales, deal.id, TODAY);
+    const view = await dataOf(
+      contractDeliveries(ctx.db, fx.sales, deal.id, TODAY),
+    );
     const site = view?.site.find((row) => row.itemId === fx.item("GG-K17"));
     expect(site?.deliveredMilli).toBe(0);
     const left = view?.remaining.find(
@@ -115,7 +126,9 @@ describe("D6 and what is left", () => {
       customerToken: "Minh Phát B",
     });
     await shortBatch(first.id);
-    const view = await contractDeliveries(ctx.db, fx.sales, second.id, TODAY);
+    const view = await dataOf(
+      contractDeliveries(ctx.db, fx.sales, second.id, TODAY),
+    );
     expect(view?.site.every((row) => row.onSiteMilli === 0)).toBe(true);
   });
 
@@ -124,7 +137,7 @@ describe("D6 and what is left", () => {
     const saleOnly = await fx.seller("thuyvy", "SALE");
     expect(
       await contractDeliveries(ctx.db, saleOnly, deal.id, TODAY),
-    ).toBeNull();
+    ).toMatchObject({ ok: false, status: 403 });
   });
 
   it("lists a note confirmed on the phone another day", async () => {
@@ -150,7 +163,9 @@ describe("D6 and what is left", () => {
       { now: NOW },
     );
     expect(result.ok).toBe(true);
-    const view = await contractDeliveries(ctx.db, fx.sales, deal.id, TODAY);
+    const view = await dataOf(
+      contractDeliveries(ctx.db, fx.sales, deal.id, TODAY),
+    );
     expect(view?.checks).toEqual([
       { code: note.code, businessDate: "2026-11-03", phoneDate: "2026-11-02" },
     ]);

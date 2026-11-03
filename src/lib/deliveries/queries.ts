@@ -49,7 +49,8 @@ import { canContract } from "@/domain/permissions";
 import type { QuantityUnit } from "@/domain/quantity";
 import { lineAmount } from "@/domain/average-cost";
 import { toMoney } from "@/domain/money";
-import type { ContractActor } from "@/lib/contracts/common";
+import { notFound, ok, type ServiceResult } from "@/lib/catalog/common";
+import { forbidden, type ContractActor } from "@/lib/contracts/common";
 import { contractTermsAt, type ContractTerms } from "@/lib/contracts/terms";
 
 import {
@@ -393,9 +394,10 @@ export async function contractDeliveries(
   actor: ContractActor,
   contractId: string,
   today: BusinessDate,
-): Promise<ContractDeliveries | null> {
+): Promise<ServiceResult<ContractDeliveries>> {
   const head = await contractHead(db, contractId);
-  if (!head || !canContract(actor, head.type, "view")) return null;
+  if (!head) return notFound();
+  if (!canContract(actor, head.type, "view")) return forbidden();
   const terms = await contractTermsAt(db, head.id, today);
   const tLines = terms ? await termsLines(db, terms) : [];
   const facts = await itemFacts(
@@ -512,7 +514,7 @@ export async function contractDeliveries(
           .orderBy(asc(kit.code))
       : [];
 
-  return {
+  return ok({
     contract: head,
     canManage: canContract(actor, head.type, "manage"),
     site: siteRows,
@@ -554,7 +556,7 @@ export async function contractDeliveries(
     }),
     kits,
     yards,
-  };
+  });
 }
 
 // ----------------------------------------------------------- detail
@@ -592,7 +594,7 @@ export async function deliveryDetail(
   db: Database,
   actor: ContractActor,
   idOrCode: string,
-): Promise<DeliveryDetail | null> {
+): Promise<ServiceResult<DeliveryDetail>> {
   const [row] = await db
     .select({
       ...headColumns(),
@@ -605,9 +607,10 @@ export async function deliveryDetail(
         ? eq(deliveryNote.id, idOrCode)
         : eq(deliveryNote.code, idOrCode),
     );
-  if (!row) return null;
+  if (!row) return notFound();
   const head = await contractHead(db, row.contractId);
-  if (!head || !canContract(actor, head.type, "view")) return null;
+  if (!head) return notFound();
+  if (!canContract(actor, head.type, "view")) return forbidden();
   const content = await readNoteContent(db, row.id);
   const facts = await itemFacts(
     db,
@@ -616,7 +619,7 @@ export async function deliveryDetail(
   const lines = linesView(content, facts);
   const kits = await kitAmounts(db, content.kits);
   const phoneDate = vnDate(row.departedAt);
-  return {
+  return ok({
     id: row.id,
     code: row.code,
     batchNo: row.batchNo,
@@ -671,7 +674,7 @@ export async function deliveryDetail(
     }),
     requested: requestedText(kits, lines),
     updatedAt: row.updatedAt.toISOString(),
-  };
+  });
 }
 
 // ----------------------------------------------------------- phone
