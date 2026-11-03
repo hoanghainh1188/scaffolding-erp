@@ -2,7 +2,12 @@
 // browser, a Map where IndexedDB is missing (tests, old browsers). Runs in
 // the browser only.
 
-export const DRAFT_KINDS = ["GOODS_RECEIPT", "STOCKTAKE", "DELIVERY"] as const;
+export const DRAFT_KINDS = [
+  "GOODS_RECEIPT",
+  "STOCKTAKE",
+  "DELIVERY",
+  "RETURN",
+] as const;
 export type DraftKind = (typeof DRAFT_KINDS)[number];
 
 /** EDITING: being filled in; QUEUED: confirmed, waiting for the network;

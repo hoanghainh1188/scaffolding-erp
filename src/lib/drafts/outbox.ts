@@ -102,17 +102,169 @@ export function deliverySender(fetcher: typeof fetch = fetch): Sender {
   };
 }
 
+/** A photo kept in a return draft until the note is posted (design D13). */
+export interface DraftPhoto {
+  clientPhotoId: string;
+  caption: string | null;
+  blob: Blob;
+  /** The server's id once sent; cleared when the server dropped it. */
+  uploadedId?: string | null;
+}
+
+export interface ReturnDraftPayload {
+  body: object;
+  photos: DraftPhoto[];
+}
+
+const RETURNS_URL = "/api/m/returns";
+const PHOTOS_URL = "/api/m/returns/photos";
+
+type PhotoOutcome =
+  | { kind: "SENT"; id: string }
+  | Exclude<SendOutcome, { kind: "POSTED" } | { kind: "BUSY" }>;
+
+async function sendPhoto(
+  fetcher: typeof fetch,
+  draftId: string,
+  photo: DraftPhoto,
+): Promise<PhotoOutcome> {
+  const form = new FormData();
+  form.set("draftId", draftId);
+  form.set("clientPhotoId", photo.clientPhotoId);
+  if (photo.caption) form.set("caption", photo.caption);
+  form.set("file", photo.blob, "photo.jpg");
+  let response: Response;
+  try {
+    response = await fetcher(PHOTOS_URL, { method: "POST", body: form });
+  } catch {
+    return { kind: "RETRY" };
+  }
+  if (response.status === 401) return { kind: "SIGNED_OUT" };
+  if (response.status >= 500) return { kind: "RETRY" };
+  const json = (await response.json().catch(() => null)) as {
+    data?: { id?: string } | null;
+    error?: string | null;
+  } | null;
+  if (response.ok && json?.data?.id) return { kind: "SENT", id: json.data.id };
+  return {
+    kind: "REJECTED",
+    error: json?.error ?? "Gửi ảnh không được, thử lại sau",
+    field: null,
+  };
+}
+
+/**
+ * "Lưu phiếu thu hồi" (returns-and-compensation design D13): every photo
+ * not yet on the server goes first, its id saved on the draft right away so
+ * a lost connection resends only the rest; then the note. Photos the server
+ * cleaned away (422 PHOTOS_EXPIRED) are sent again from the draft once.
+ */
+export function returnSender(
+  store: DraftStore,
+  fetcher: typeof fetch = fetch,
+): Sender {
+  async function upload(
+    record: DraftRecord,
+  ): Promise<
+    { ok: true; record: DraftRecord } | { ok: false; outcome: SendOutcome }
+  > {
+    let current = record;
+    const payload = current.payload as ReturnDraftPayload;
+    for (const [index, photo] of payload.photos.entries()) {
+      if (photo.uploadedId) continue;
+      const sent = await sendPhoto(fetcher, current.draftId, photo);
+      if (sent.kind !== "SENT") return { ok: false, outcome: sent };
+      const photos = [...(current.payload as ReturnDraftPayload).photos];
+      photos[index] = { ...photo, uploadedId: sent.id };
+      current = {
+        ...current,
+        payload: { ...(current.payload as ReturnDraftPayload), photos },
+      };
+      await store.put(current);
+    }
+    return { ok: true, record: current };
+  }
+
+  async function post(record: DraftRecord): Promise<{
+    outcome: SendOutcome;
+    expired: string[];
+  }> {
+    const payload = record.payload as ReturnDraftPayload;
+    let response: Response;
+    try {
+      response = await fetcher(RETURNS_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...payload.body,
+          clientDraftId: record.draftId,
+          photoIds: payload.photos.map((photo) => photo.uploadedId),
+        }),
+      });
+    } catch {
+      return { outcome: { kind: "RETRY" }, expired: [] };
+    }
+    if (response.status === 422) {
+      const json = (await response
+        .clone()
+        .json()
+        .catch(() => null)) as {
+        data?: { code?: string; expiredPhotoIds?: string[] } | null;
+      } | null;
+      if (json?.data?.code === "PHOTOS_EXPIRED") {
+        return {
+          outcome: { kind: "RETRY" },
+          expired: json.data.expiredPhotoIds ?? [],
+        };
+      }
+    }
+    return { outcome: await outcomeOf(response), expired: [] };
+  }
+
+  return async (record) => {
+    let current = record;
+    for (let round = 0; round < 2; round += 1) {
+      const sent = await upload(current);
+      if (!sent.ok) return sent.outcome;
+      current = sent.record;
+      const { outcome, expired } = await post(current);
+      if (expired.length === 0) return outcome;
+      const payload = current.payload as ReturnDraftPayload;
+      current = {
+        ...current,
+        payload: {
+          ...payload,
+          photos: payload.photos.map((photo) =>
+            photo.uploadedId && expired.includes(photo.uploadedId)
+              ? { ...photo, uploadedId: null }
+              : photo,
+          ),
+        },
+      };
+      await store.put(current);
+    }
+    // Still expired after one more round: keep it queued for later.
+    return { kind: "RETRY" };
+  };
+}
+
 /** Picks the sender of the draft's kind. */
-export function draftSender(fetcher: typeof fetch = fetch): Sender {
+export function draftSender(
+  fetcher: typeof fetch = fetch,
+  store?: DraftStore,
+): Sender {
   const receipt = receiptSender(fetcher);
   const stocktake = stocktakeSender(fetcher);
   const delivery = deliverySender(fetcher);
+  const returned = store ? returnSender(store, fetcher) : null;
   return (record) =>
     record.kind === "STOCKTAKE"
       ? stocktake(record)
       : record.kind === "DELIVERY"
         ? delivery(record)
-        : receipt(record);
+        : record.kind === "RETURN" && returned
+          ? returned(record)
+          : receipt(record);
 }
 
 /** Drafts this tab is sending now. */
@@ -179,18 +331,20 @@ export function createOutbox(options: OutboxOptions): Outbox {
         } catch {
           outcome = { kind: "RETRY" };
         }
+        // A sender may have saved progress on the draft (return photos).
+        const latest = (await store.get(draftId)) ?? sending;
         if (outcome.kind === "POSTED") {
           await store.remove(draftId);
           options.onPosted?.(sending, outcome.code);
         } else if (outcome.kind === "REJECTED") {
           await store.put({
-            ...sending,
+            ...latest,
             state: "REJECTED",
             error: outcome.error,
           });
           options.onRejected?.(sending, outcome.error);
         } else {
-          await store.put({ ...sending, state: "QUEUED" });
+          await store.put({ ...latest, state: "QUEUED" });
         }
         return outcome;
       },

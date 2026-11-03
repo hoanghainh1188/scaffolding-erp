@@ -149,7 +149,7 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
 
 ## 6. Giao diện Mobile
 
-- [ ] 6.1 Nháp: `DRAFT_KINDS` thêm `RETURN`, payload có ảnh `Blob` theo design D13; `returnSender` gửi từng ảnh còn thiếu rồi gửi phiếu; 4xx → "Bị từ chối" giữ số. Kiểm: `drafts.test.ts` thêm ca thu hồi:
+- [x] 6.1 Nháp: `DRAFT_KINDS` thêm `RETURN`, payload có ảnh `Blob` theo design D13; `returnSender` gửi từng ảnh còn thiếu rồi gửi phiếu; 4xx → "Bị từ chối" giữ số. Kiểm: `drafts.test.ts` thêm ca thu hồi:
   - tự lưu;
   - "Chờ gửi" khi mất mạng;
   - gửi được 2 / 4 ảnh rồi mất mạng → lần sau chỉ gửi 2 ảnh;
@@ -157,7 +157,7 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - **422 `PHOTOS_EXPIRED`** → xóa `uploadedId` của ảnh hết hạn, gửi lại ảnh từ `Blob`, lưu phiếu lần nữa; nháp không qua "Bị từ chối"; 422 lần hai → giữ "Chờ gửi";
   - 401 giữ "Chờ gửi";
   - hai tab không gửi song song.
-- [ ] 6.2 M4 `/m/returns/new` theo `docs/design/screens/M4-ReturnNote.dc.html`:
+- [x] 6.2 M4 `/m/returns/new` theo `docs/design/screens/M4-ReturnNote.dc.html`:
   - bước chọn công trình (tìm, bãi mặc định);
   - thẻ từng mã có "Đang ở công trình: N", tổng trả về, stepper Tốt / Chờ sửa / Phế liệu / Mất, câu "Đã chia đủ" / "Còn N cái chưa phân loại";
   - "Thêm mã hàng" chỉ mã đang ở công trình; biển số, ghi chú;
@@ -165,7 +165,7 @@ Các quyết định đã chốt khi review PR #134 (03/11/2026), ghi ở 0.2 #6
   - "Lưu nháp", "Lưu phiếu thu hồi" (chặn bấm hai lần), sau khi lưu cho lập tiếp hợp đồng khác giữ biển số;
   - không có số tiền.
   - Kiểm: component test theo spec `returns` (chưa chia hết khóa nút, ảnh thứ 7, không có chữ "₫") và `return-photos` "Chụp ảnh trên M4".
-- [ ] 6.3 `/m/returns/[code]` chỉ xem (có ảnh, không giá); M1 khối "Thu hồi"; M7 phiếu thu hồi + bộ lọc "Thu hồi" (`?type=return`). Kiểm: component test theo spec `mobile-home` "Thu hồi trên Việc hôm nay" và `mobile-history` (Kế toán không thấy khối, lọc Thu hồi).
+- [x] 6.3 `/m/returns/[code]` chỉ xem (có ảnh, không giá); M1 khối "Thu hồi"; M7 phiếu thu hồi + bộ lọc "Thu hồi" (`?type=return`). Kiểm: component test theo spec `mobile-home` "Thu hồi trên Việc hôm nay" và `mobile-history` (Kế toán không thấy khối, lọc Thu hồi).
 
 ## 7. Seed, E2E và kiểm tra cuối
 

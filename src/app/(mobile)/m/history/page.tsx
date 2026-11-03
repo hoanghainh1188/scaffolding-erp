@@ -15,6 +15,7 @@ import { can } from "@/domain/permissions";
 import { requireUser } from "@/lib/auth/guard";
 import { deliveriesByDay } from "@/lib/deliveries/queries";
 import { receiptsByDay } from "@/lib/receiving/queries";
+import { returnsByDay } from "@/lib/returns/queries";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Lịch sử" };
@@ -25,6 +26,7 @@ const TYPES = [
   { key: "all", label: "Tất cả" },
   { key: "receipt", label: "Nhập" },
   { key: "delivery", label: "Xuất" },
+  { key: "return", label: "Thu hồi" },
 ] as const;
 
 function dayLabel(date: BusinessDate, today: BusinessDate): string {
@@ -35,7 +37,7 @@ function dayLabel(date: BusinessDate, today: BusinessDate): string {
   return `${short}/${year}`;
 }
 
-/** M7 (spec mobile-history). Thu hồi joins when it exists. */
+/** M7 (spec mobile-history): receipts, deliveries and returns by day. */
 export default async function Page({ searchParams }: { searchParams: Search }) {
   const user = await requireUser();
   await connection();
@@ -43,7 +45,9 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const today = toBusinessDate(now);
   const params = await searchParams;
   const type =
-    params.type === "receipt" || params.type === "delivery"
+    params.type === "receipt" ||
+    params.type === "delivery" ||
+    params.type === "return"
       ? params.type
       : "all";
   const before =
@@ -51,20 +55,28 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       ? params.before
       : undefined;
   const page = { ...(before ? { before } : {}), days: before ? 7 : 2 };
+  const shows = (kind: "receipt" | "delivery" | "return") =>
+    type === "all" || type === kind;
   const receipts =
-    type !== "delivery" && can(user.role, "receiving.manage")
+    shows("receipt") && can(user.role, "receiving.manage")
       ? await receiptsByDay(getDatabase(), page)
       : null;
   const deliveries =
-    type !== "receipt" && can(user.role, "deliveries.pick")
+    shows("delivery") && can(user.role, "deliveries.pick")
       ? await deliveriesByDay(getDatabase(), page)
+      : null;
+  const returns =
+    shows("return") && can(user.role, "returns.receive")
+      ? await returnsByDay(getDatabase(), page)
       : null;
   // Both kinds on one list: the newest days of either, older ones paged.
   const union = [
     ...new Set(
-      [...(receipts?.days ?? []), ...(deliveries?.days ?? [])].map(
-        (day) => day.date,
-      ),
+      [
+        ...(receipts?.days ?? []),
+        ...(deliveries?.days ?? []),
+        ...(returns?.days ?? []),
+      ].map((day) => day.date),
     ),
   ]
     .sort()
@@ -74,6 +86,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const hasMore =
     Boolean(receipts?.hasMore) ||
     Boolean(deliveries?.hasMore) ||
+    Boolean(returns?.hasMore) ||
     union.length > dates.length;
   const olderHref =
     hasMore && oldest
@@ -107,6 +120,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         userId={user.id}
         receipts={receipts}
         deliveries={deliveries}
+        returns={returns}
         type={type}
         dates={dates}
         dayLabels={dayLabels}

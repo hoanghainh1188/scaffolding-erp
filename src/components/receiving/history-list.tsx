@@ -8,6 +8,7 @@ import { DraftList } from "@/components/drafts/draft-list";
 import { formatDateTime } from "@/domain/business-date";
 import { useDrafts } from "@/hooks/use-drafts";
 import type { DeliveriesByDay } from "@/lib/deliveries/queries";
+import type { ReturnsByDay } from "@/lib/returns/queries";
 import type { ReceiptsByDay } from "@/lib/receiving/queries";
 import {
   formatQuantity,
@@ -21,8 +22,10 @@ interface HistoryListProps {
   receipts: ReceiptsByDay | null;
   /** Null when the role does not pick deliveries. */
   deliveries?: DeliveriesByDay | null;
-  /** The filter on the URL: all, receipt, delivery. */
-  type?: "all" | "receipt" | "delivery";
+  /** Null when the role does not receive returns. */
+  returns?: ReturnsByDay | null;
+  /** The filter on the URL: all, receipt, delivery, return. */
+  type?: "all" | "receipt" | "delivery" | "return";
   /** The days shown, newest first (both kinds together). */
   dates?: string[];
   /** Day headings, by business date: "Hôm nay, 26/10". */
@@ -47,6 +50,7 @@ export function HistoryList({
   userId,
   receipts,
   deliveries = null,
+  returns = null,
   type = "all",
   dates,
   dayLabels,
@@ -60,15 +64,19 @@ export function HistoryList({
         ? draft.kind === "GOODS_RECEIPT"
         : type === "delivery"
           ? draft.kind === "DELIVERY"
-          : true,
+          : type === "return"
+            ? draft.kind === "RETURN"
+            : true,
     ) ?? null;
   const shownDates =
     dates ??
     [
       ...new Set(
-        [...(receipts?.days ?? []), ...(deliveries?.days ?? [])].map(
-          (day) => day.date,
-        ),
+        [
+          ...(receipts?.days ?? []),
+          ...(deliveries?.days ?? []),
+          ...(returns?.days ?? []),
+        ].map((day) => day.date),
       ),
     ]
       .sort()
@@ -77,6 +85,7 @@ export function HistoryList({
     date,
     receipts: receipts?.days.find((day) => day.date === date)?.receipts ?? [],
     deliveries: deliveries?.days.find((day) => day.date === date)?.notes ?? [],
+    returns: returns?.days.find((day) => day.date === date)?.notes ?? [],
   }));
   const empty = drafts !== null && drafts.length === 0 && days.length === 0;
   return (
@@ -117,6 +126,24 @@ export function HistoryList({
                     <span className="text-label">Xuất {note.code}</span>
                     <span className="truncate text-body text-muted-foreground">
                       {note.place} · {delivered(note.delivered)}
+                    </span>
+                  </span>
+                  <span className="text-body text-muted-foreground tabular-nums">
+                    {formatDateTime(new Date(note.postedAt)).slice(11)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+            {day.returns.map((note) => (
+              <li key={note.code}>
+                <Link
+                  href={`/m/returns/${note.code}`}
+                  className="flex min-h-16 items-center gap-3 px-4 py-3 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="text-label">Thu hồi {note.code}</span>
+                    <span className="truncate text-body text-muted-foreground">
+                      {note.siteName} · {note.text}
                     </span>
                   </span>
                   <span className="text-body text-muted-foreground tabular-nums">
