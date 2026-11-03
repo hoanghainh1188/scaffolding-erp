@@ -56,11 +56,23 @@ Mỗi dòng của phiếu thuê SHALL cho nhập số nhặt Mới và số nh�
 - **THEN** chỉ có Mới và Tốt
 
 ### Requirement: Nhặt dòng bán
-Dòng của phiếu bán SHALL dùng đúng tình trạng của dòng hợp đồng, không đổi được. Dòng bán theo kg SHALL có ô số cái và ô kg cân, cả hai bắt buộc trước khi xác nhận. Dòng Phế liệu của mã tính theo cái SHALL điền sẵn số cái ước tính từ kg cân khi thủ kho chưa nhập số cái.
+Dòng của phiếu bán SHALL dùng đúng tình trạng của dòng hợp đồng, không đổi được. Dòng bán theo kg SHALL có số cần tính bằng kg, ô số cái và ô kg cân, cả hai bắt buộc trước khi xác nhận; tiến độ và "nhặt đủ" so kg cân với số cần (vượt tới 10 % vẫn được), số cái chỉ để trừ tồn. Dòng Phế liệu của mã tính theo cái SHALL điền sẵn số cái ước tính từ kg cân khi thủ kho chưa nhập số cái.
 
 #### Scenario: Dòng bán theo kg
 - **WHEN** dòng bán `H1,7` Tốt theo kg và `vantung` nhập 90 cái, 1.250,5 kg
 - **THEN** dòng hiện "90 cái · 1.250,5 kg"
+
+#### Scenario: Số cần theo kg
+- **WHEN** dòng bán `H1,7` Tốt theo kg cần 1.250,5 kg và `vantung` nhập 80 cái, 1.100 kg
+- **THEN** dòng hiện "Còn 150,5 kg" **AND** số 80 cái không được so với số cần
+
+#### Scenario: Cân hơi dư
+- **WHEN** dòng cần 1.250,5 kg và `vantung` nhập 1.258 kg
+- **THEN** dòng hiện "Đã nhặt đủ" kèm "dư 7,5 kg" và xác nhận được
+
+#### Scenario: Cân dư quá 10 %
+- **WHEN** dòng cần 1.250,5 kg và `vantung` nhập 1.400 kg
+- **THEN** ô báo "Kg cân vượt số cần quá 10 %. Văn phòng cần sửa phiếu." **AND** không cho xác nhận tới khi sửa
 
 #### Scenario: Phế liệu chỉ cân
 - **WHEN** dòng bán `H1,7` Phế liệu (13,6 kg/cái) và `vantung` chỉ nhập 570,5 kg

@@ -47,7 +47,7 @@
 ### D2. Ngày giao = ngày ghi sổ (điểm cần chốt 2)
 
 - **Ngày giao** (ngày nghiệp vụ của dòng sổ, `business_date` của phiếu) = **ngày server ghi sổ** theo giờ Việt Nam, tức ngày xe rời bãi khi thủ kho bấm "Xác nhận xe rời bãi". Không có ô nhập ngày giao.
-- Giờ bấm trên điện thoại lưu ở `departed_at` chỉ để xem. Nháp "Chờ gửi" gửi được vào ngày sau thì phiếu mang ngày gửi được; D6 và phiếu in hiện thêm "Xác nhận trên máy lúc 22:10 05/11/2026".
+- Giờ bấm trên điện thoại lưu ở `departed_at` chỉ để xem. Nháp "Chờ gửi" gửi được vào ngày sau thì phiếu mang ngày gửi được; D6 và phiếu in hiện thêm "Xác nhận trên máy lúc 22:10 05/11/2026". D6 có khối **"Cần kiểm tra"** liệt kê các phiếu như vậy ("PX-2026-142 · ngày giao 06/11/2026, xác nhận trên máy 05/11/2026") để kế toán biết khi tính tiền thuê; khối ẩn khi không có phiếu nào.
 - **Xe đi tối, tới công trình sáng hôm sau**: ngày giao vẫn là ngày xe rời bãi. Tiền thuê không tính ngày giao, tính từ hôm sau (0.2 #4), đúng là ngày khách nhận hàng. Không cần luật riêng.
 - "Ngày dự kiến" (`planned_date`) văn phòng nhập trên D6 bằng `DateInput`, chỉ để sắp việc trên M1 và D6.
 
@@ -57,16 +57,17 @@
 
 ### D3. Xuất thiếu, còn phải giao, xuất vượt (điểm cần chốt 3)
 
-- **Còn phải giao** không lưu: tính mỗi lần đọc = số trên **bản hợp đồng áp dụng hôm nay** − tổng số **đã xuất** (phiếu `POSTED`). Khóa so:
-  - Thuê: theo **mã** (không theo tình trạng; Mới và Tốt cùng giá).
-  - Bán: theo **dòng hợp đồng** (mã + tình trạng + cách tính); dòng bán theo kg so bằng **kg cân**, dòng theo đơn vị của mã so bằng số lượng.
-  - Âm (đã xuất vượt, hoặc phụ lục giảm số) thì hiện 0 kèm "đã giao vượt N".
-- **Chưa lên phiếu** = còn phải giao − số cần của các phiếu `PLANNED`/`PICKING`. "Tạo đợt xuất" điền sẵn số này (hoặc số của đợt kế hoạch tiếp theo nếu người lập chọn đợt đó). Hàm thuần `remainingToDeliver(contractLines, postedPicks, openLines)`.
+- **Còn phải giao** không lưu: tính mỗi lần đọc từ **bản hợp đồng áp dụng hôm nay** (0.2 #56):
+  - **Thuê**: số trên hợp đồng − **số đang ở công trình** của hợp đồng, theo **mã** (gộp mọi tình trạng; Mới và Tốt cùng giá). "Đang ở công trình" = tổng số lượng các dòng sổ **tại vị trí công trình** của các chứng từ **thuộc hợp đồng này** (vào − ra). Change này chỉ có `DELIVERY_IN` của phiếu xuất; `returns-and-compensation` thêm dòng ra của phiếu thu hồi gắn hợp đồng, công thức không đổi. Lọc theo chứng từ của hợp đồng (không chỉ theo vị trí) để công trình có hai hợp đồng thuê không cộng lẫn. Trả 200 rồi lấy lại 200 không thành "xuất vượt".
+  - **Bán**: số trên hợp đồng − **tổng đã giao** (phiếu `POSTED`), theo **dòng hợp đồng** (mã + tình trạng + cách tính). Dòng theo kg so bằng **kg cân**, dòng theo đơn vị của mã so bằng số lượng. Hàng bán không quay lại nên không có "đang ở".
+  - Âm (đã giao vượt, hoặc phụ lục giảm số) thì hiện 0 kèm "đã giao vượt N".
+- **Chưa lên phiếu** = còn phải giao − số cần của các phiếu `PLANNED`/`PICKING`. "Tạo đợt xuất" điền sẵn số này (hoặc số của đợt kế hoạch tiếp theo nếu người lập chọn đợt đó). Hàm thuần `remainingToDeliver({ type, contractLines, onSite, delivered, openLines })`; service đọc `onSite` (thuê) hoặc `delivered` (bán) từ sổ kho / phiếu.
+- **Dung sai cân** (0.2 #57): dòng bán theo kg được vượt số cần và còn phải giao tới **10 %** kg cân; đúng 10 % vẫn qua, hơn thì chặn. Hằng số `WEIGHT_TOLERANCE` (tử 11, mẫu 10, so bằng bigint) chuyển ra **một chỗ** `src/domain/tolerance.ts`; `receipt-anomalies.ts` (nhận dư hàng kg, mét) import lại từ đó, không còn hằng riêng. Dòng theo đơn vị đếm không có dung sai.
 - **Xuất thiếu**: trên M5 số nhặt của một dòng được nhỏ hơn số cần, kể cả 0; thủ kho xác nhận lại "Còn 100 cái chưa nhặt. Xác nhận luôn thì phần thiếu chuyển sang đợt sau." Phần thiếu tự nằm trong "Còn phải giao" vì chỉ số đã xuất bị trừ. **Không tự tạo phiếu mới**: đợt sau do văn phòng lập theo tiến độ công trình. Phiếu ghi nhận số cần và số nhặt nên D6 hiện "Đợt 3 · xuất thiếu 40 chéo".
-- **Nhặt hơn số cần** của dòng: chặn trên M5 và ở server ("Bạn nhặt 130 cái, nhiều hơn số cần 120 cái. Văn phòng cần sửa phiếu nếu muốn xuất thêm."). Lý do: số cần do văn phòng (người có quyền hợp đồng) quyết.
+- **Nhặt hơn số cần** của dòng: chặn trên M5 và ở server ("Bạn nhặt 130 cái, nhiều hơn số cần 120 cái. Văn phòng cần sửa phiếu nếu muốn xuất thêm."). Lý do: số cần do văn phòng (người có quyền hợp đồng) quyết. Dòng bán theo kg so **kg cân** với số cần (kg), trong dung sai 10 %; số cái của dòng đó không so với số cần.
 - **Số cần vượt còn phải giao** khi lập/sửa đợt:
   - Thuê: **cảnh báo, không chặn**. Người lập tích "Tôi xác nhận xuất vượt số trên hợp đồng"; lưu `over_contract_confirmed`, nhật ký gắn cờ "Có xác nhận bất thường". Lý do: thực tế công trình hay cần thêm vài cây chéo trước khi kịp làm phụ lục, mã đã có giá thuê trên hợp đồng.
-  - Bán: **chặn** ("Hợp đồng bán chỉ còn phải giao 150 cái H1,7 Mới. Bạn lập phụ lục nếu khách mua thêm."). Lý do: tiền bán = số × giá; bán quá số đã ký là thay đổi hợp đồng.
+  - Bán: **chặn** ("Hợp đồng bán chỉ còn phải giao 150 cái H1,7 Mới. Bạn lập phụ lục nếu khách mua thêm."). Lý do: tiền bán = số × giá; bán quá số đã ký là thay đổi hợp đồng. Dòng theo kg chặn khi vượt quá dung sai 10 %.
   - Lúc ghi sổ kiểm lại theo cùng luật (đợt khác có thể đã xuất trước): bán vượt thì từ chối; thuê vượt mà phiếu chưa có xác nhận thì vẫn ghi (văn phòng đã duyệt số cần), tóm tắt nhật ký ghi "vượt hợp đồng N".
 
 Đã cân nhắc: tự tạo phiếu đợt sau cho phần thiếu (0.2 #17 "tự chuyển sang đợt sau"). Bỏ: sinh phiếu Chờ nhặt mà chưa ai hẹn xe, làm M1 đầy việc giả; "còn phải giao" tính ra đã giữ đúng phần thiếu.
@@ -82,8 +83,8 @@
 ### D5. Hợp đồng bán (điểm cần chốt 5)
 
 - **Dòng sổ**: `SALE_OUT` (số âm) ở bãi, tình trạng = tình trạng của dòng hợp đồng bán, đơn giá ghi sổ = giá BQ hiện tại. Không có dòng ở công trình (hàng đã thành của khách), kể cả hợp đồng bán có công trình.
-- **Số lượng ghi sổ luôn theo đơn vị của mã** (cái, cây, mét, kg...). Dòng bán **theo kg** của mã tính theo cái: thủ kho nhập **số cái** (trừ tồn) và **số kg cân** (tính tiền). Kg cân lưu ở `delivery_note_pick.weighed_kg` và `inventory_ledger.weighed_kg` (cột đã có); không đổi số lượng hay giá vốn. Mã đơn vị kg: số lượng chính là kg cân.
-- **Phế liệu không đếm được số cái** (đống phế liệu cân cả xe): thủ kho nhập kg cân; M5 điền sẵn **số cái ước tính** = kg ÷ trọng lượng chuẩn, làm tròn tới số nguyên gần nhất (tối thiểu 1), thủ kho sửa được. Lưu cờ `pieces_estimated`; D6, phiếu in hiện "≈ 42 cái (ước tính từ 570,5 kg)". Lệch thật với bãi sẽ lộ ra ở kiểm kê. Hàm thuần `estimatedPieces(kg, standardWeightKg)`. Lý do: sổ kho đếm phế liệu theo cái (0.2 #3), phải trừ một số cái; ước tính theo trọng lượng chuẩn là cách quy đổi đã dùng ở mọi chỗ khác.
+- **Số lượng ghi sổ luôn theo đơn vị của mã** (cái, cây, mét, kg...). Dòng bán **theo kg** của mã tính theo cái: **số cần của dòng phiếu là kg** (như dòng hợp đồng); thủ kho nhập **số cái** (chỉ để trừ tồn) và **số kg cân** (so với số cần, tính tiền). Kg cân lưu ở `delivery_note_pick.weighed_kg` và `inventory_ledger.weighed_kg` (cột đã có); không đổi số lượng hay giá vốn. Mã đơn vị kg: số lượng chính là kg cân.
+- **Phế liệu không đếm được số cái** (đống phế liệu cân cả xe): thủ kho nhập kg cân; M5 điền sẵn **số cái ước tính** = kg ÷ trọng lượng chuẩn, làm tròn tới số nguyên gần nhất (tối thiểu 1) và **không quá tồn của (mã + Phế liệu) ở bãi xuất**; bị cắt theo tồn thì M5 báo "Ước tính 45 cái nhưng bãi chỉ còn 42 cái Phế liệu, máy điền 42." Thủ kho sửa được. Lưu cờ `pieces_estimated`; D6, phiếu in hiện "≈ 42 cái (ước tính từ 570,5 kg)". Lệch thật với bãi sẽ lộ ra ở kiểm kê. Hàm thuần `estimatedPieces(kg, standardWeightKg)`. Lý do: sổ kho đếm phế liệu theo cái (0.2 #3), phải trừ một số cái; ước tính theo trọng lượng chuẩn là cách quy đổi đã dùng ở mọi chỗ khác.
 - **Bán không có công trình** ("Nhận hàng tại bãi"): lập đợt ở cùng màn D6 (mở từ D5 của hợp đồng), tiêu đề "Giao hàng · <số hợp đồng>". D6 là màn **theo hợp đồng** (1 hợp đồng = 1 công trình, 0.2 #5), nên không cần màn riêng cho bán.
 - Hợp đồng bán cũng chuyển `APPROVED → ACTIVE` ở phiếu đầu tiên.
 
@@ -125,7 +126,7 @@ Hai thủ kho bấm xác nhận cùng phiếu với hai mã nháp khác nhau: l�
 |---|---|---|
 | `delivery_note` | `id`, `code` unique, `contract_id`, `batch_no` int, `status`, `source_location_id`, `site_location_id` null, `planned_date` date null, `company_truck` bool, `freight_amount` bigint null, `vehicle_plate`, `note`, `over_contract_confirmed` bool, `picking_by`, `picking_started_at`, `returned_reason`, `cancelled_reason`, `client_draft_id` uuid null unique, `posting_id` null, `business_date` null, `departed_at` null, `contract_revision_id` null, `posted_by`, `posted_at`, `created_by`, `created_at`, `updated_at` | FK `ON DELETE RESTRICT` tới `contract`, `location`, `contract_revision`, `user`; unique `(contract_id, batch_no)`; check `status in ('PLANNED','PICKING','POSTED','CANCELLED')`; check `POSTED` ⇔ đủ `business_date`, `posting_id`, `client_draft_id`, `posted_by`; check `freight_amount >= 0`, `company_truck or freight_amount is null`; index `(contract_id)`, `(status, planned_date)` |
 | `delivery_note_kit` | `note_id`, `kit_id`, `quantity` int ≥ 1 | PK `(note_id, kit_id)`; cascade theo phiếu, restrict tới `kit` |
-| `delivery_note_line` | `id`, `note_id`, `item_id`, `condition` null, `pricing_unit` null, `requested_quantity numeric(14,3)` > 0, `unit_price` bigint null | thuê: `condition`, `pricing_unit` null, unique `(note_id, item_id)` một phần; bán: đủ hai cột, unique `(note_id, item_id, condition, pricing_unit)` một phần |
+| `delivery_note_line` | `id`, `note_id`, `item_id`, `condition` null, `pricing_unit` null, `requested_quantity numeric(14,3)` > 0 (**theo đơn vị của mã**, riêng dòng bán `pricing_unit = 'KG'` là **kg**), `unit_price` bigint null | thuê: `condition`, `pricing_unit` null, unique `(note_id, item_id)` một phần; bán: đủ hai cột, unique `(note_id, item_id, condition, pricing_unit)` một phần |
 | `delivery_note_pick` | `line_id`, `condition`, `quantity numeric(14,3)` > 0, `weighed_kg numeric(14,3)` null, `pieces_estimated` bool | PK `(line_id, condition)`; check `condition in ('NEW','GOOD','SCRAP')`; check `pieces_estimated` thì có `weighed_kg` |
 
 - Số phiếu `PX-YYYY-NNN` qua `nextDocumentCode(tx, 'PX', năm)` (bảng `document_counter`, không `SEQUENCE`). `batch_no` = max + 1 của hợp đồng, cấp sau khi khóa hợp đồng `FOR UPDATE`; phiếu hủy giữ số (không dùng lại).
@@ -165,6 +166,7 @@ Trang: `/sales/contracts/[id]/deliveries` (D6, nút "Tạo đợt xuất" mở f
 
 ## Risks / Trade-offs
 
+- [Thuê: tính theo số đang ở công trình thì hàng mất chưa lập phiếu thu hồi vẫn tính là đang ở] → đúng ý: hàng mất chỉ ra khỏi công trình khi có phiếu thu hồi / đền bù (0.2 #21). Không cần luật riêng.
 - [Phụ lục giảm số sau khi đã giao vượt] → "Còn phải giao" hiện 0 kèm "đã giao vượt N"; không chặn phụ lục (đó là việc của Giám đốc khi duyệt). Thu hồi phần vượt ở `returns-and-compensation`.
 - [Gửi muộn qua đêm làm ngày giao trễ một ngày] → khách được lợi một ngày thuê; D6 hiện giờ bấm trên máy để văn phòng thấy. Chấp nhận để giữ luật không ghi lùi.
 - [Số cái phế liệu ước tính sai] → cờ "ước tính" hiện rõ; kiểm kê bãi sửa lệch bằng `ADJUST_*`.

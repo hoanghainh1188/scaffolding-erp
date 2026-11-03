@@ -86,11 +86,15 @@ Kế hoạch giao của hợp đồng SHALL chỉ dùng để điền sẵn khi 
 - **THEN** phiếu được lưu bình thường, không có cảnh báo về kế hoạch
 
 ### Requirement: Còn phải giao
-Hệ thống SHALL tính "còn phải giao" mỗi lần đọc, không lưu: số trên bản hợp đồng áp dụng hôm nay − số đã xuất (chỉ phiếu Đã xuất). Thuê so theo mã, không phân Mới/Tốt; bán so theo dòng hợp đồng, dòng bán theo kg so bằng kg cân. Số âm SHALL hiện 0 kèm "đã giao vượt N". "Chưa lên phiếu" = còn phải giao − số cần của phiếu Chờ nhặt, Đang nhặt.
+Hệ thống SHALL tính "còn phải giao" mỗi lần đọc, không lưu, từ bản hợp đồng áp dụng hôm nay. Thuê: số trên hợp đồng − số đang ở công trình của hợp đồng (từ sổ kho, vào − ra), theo mã, gộp Mới/Tốt. Bán: số trên hợp đồng − tổng đã giao (phiếu Đã xuất), theo dòng hợp đồng; dòng theo kg tính bằng kg cân. Số âm SHALL hiện 0 kèm "đã giao vượt N". "Chưa lên phiếu" = còn phải giao − số cần của phiếu Chờ nhặt, Đang nhặt.
 
 #### Scenario: Sau hai đợt
 - **WHEN** hợp đồng thuê có 300 `CHEO1,7`, Đợt 1 đã xuất 120 (80 Mới + 40 Tốt), Đợt 2 Chờ nhặt cần 100
 - **THEN** D6 hiện `CHEO1,7` còn phải giao 180 **AND** chưa lên phiếu 80
+
+#### Scenario: Trả rồi lấy lại
+- **WHEN** hợp đồng thuê có 300 `H1,7`, đã xuất 300, công trình trả 200 (phiếu thu hồi của hợp đồng), rồi `quocbao` lập đợt 200 `H1,7`
+- **THEN** còn phải giao trước đợt đó là 200 **AND** phiếu được lưu không cần xác nhận xuất vượt **AND** nhật ký không gắn cờ "Có xác nhận bất thường"
 
 #### Scenario: Phụ lục tăng số
 - **WHEN** hợp đồng có 300 `H1,7`, đã xuất 300, rồi phụ lục đã duyệt hiệu lực hôm nay đổi thành 400
@@ -105,7 +109,7 @@ Hệ thống SHALL tính "còn phải giao" mỗi lần đọc, không lưu: s�
 - **THEN** D6 hiện còn phải giao 0 kèm "đã giao vượt 20"
 
 ### Requirement: Số cần vượt số còn phải giao
-Lập hoặc sửa đợt có số cần lớn hơn "chưa lên phiếu" SHALL: với hợp đồng thuê, cảnh báo và chỉ lưu khi người lập xác nhận xuất vượt; với hợp đồng bán, từ chối. Lúc ghi sổ, hợp đồng bán SHALL từ chối nếu số giao vượt số còn phải giao lúc đó.
+Lập hoặc sửa đợt có số cần lớn hơn "chưa lên phiếu" SHALL: với hợp đồng thuê, cảnh báo và chỉ lưu khi người lập xác nhận xuất vượt; với hợp đồng bán, từ chối. Lúc ghi sổ, hợp đồng bán SHALL từ chối nếu số giao vượt số còn phải giao lúc đó. Dòng bán theo kg SHALL được vượt tới 10 % kg cân (đúng 10 % vẫn qua); vượt hơn mới từ chối.
 
 #### Scenario: Thuê vượt chưa xác nhận
 - **WHEN** `CHEO1,7` chưa lên phiếu 80 và `quocbao` lưu đợt cần 100 mà không tích xác nhận
@@ -118,6 +122,14 @@ Lập hoặc sửa đợt có số cần lớn hơn "chưa lên phiếu" SHALL: 
 #### Scenario: Bán vượt
 - **WHEN** hợp đồng bán còn phải giao 150 cái `H1,7` Mới và `thuyvy` lập đợt 160 cái
 - **THEN** hệ thống từ chối với "Hợp đồng bán chỉ còn phải giao 150 cái H1,7 Mới. Bạn lập phụ lục nếu khách mua thêm." và không lưu
+
+#### Scenario: Cân lệch trong dung sai
+- **WHEN** dòng bán `H1,7` Tốt theo kg còn phải giao 1.250,5 kg, phiếu cần 1.250,5 kg và thủ kho cân được 1.258 kg
+- **THEN** phiếu ghi sổ được với kg cân 1.258 **AND** tiền dòng tính theo 1.258 kg
+
+#### Scenario: Cân vượt dung sai
+- **WHEN** cùng dòng đó và thủ kho cân được 1.400 kg (hơn 1.375,55 kg = 1.250,5 + 10 %)
+- **THEN** hệ thống từ chối với "Kg cân của H1,7 Tốt (1.400 kg) vượt số cần 1.250,5 kg quá 10 %. Văn phòng cần sửa phiếu hoặc lập phụ lục." **AND** không ghi sổ
 
 #### Scenario: Bán vượt lúc ghi sổ
 - **WHEN** hai phiếu bán Đang nhặt cùng cần 100 cái `H1,7` Mới khi còn phải giao 150, phiếu A đã ghi sổ 100, rồi thủ kho xác nhận phiếu B nhặt 100
@@ -234,11 +246,15 @@ Xác nhận phiếu của hợp đồng bán SHALL ghi một dòng bán (số â
 - **THEN** sổ chỉ có dòng `SALE_OUT` −50 `PK-KU` Mới tại bãi, không có dòng vào vị trí nào
 
 ### Requirement: Phế liệu không đếm được số cái
-Dòng bán Phế liệu của mã tính theo cái SHALL cho thủ kho nhập kg cân trước; hệ thống điền sẵn số cái ước tính = kg cân ÷ trọng lượng chuẩn, làm tròn tới số nguyên gần nhất, tối thiểu 1, thủ kho sửa được. Phiếu SHALL đánh dấu số cái là ước tính và D6, phiếu in hiện rõ điều đó.
+Dòng bán Phế liệu của mã tính theo cái SHALL cho thủ kho nhập kg cân trước; hệ thống điền sẵn số cái ước tính = kg cân ÷ trọng lượng chuẩn, làm tròn tới số nguyên gần nhất, tối thiểu 1, không quá tồn Phế liệu của mã ở bãi xuất, thủ kho sửa được. Phiếu SHALL đánh dấu số cái là ước tính và D6, phiếu in hiện rõ điều đó.
 
 #### Scenario: Ước tính từ kg
 - **WHEN** `H1,7` có trọng lượng chuẩn 13,6 kg/cái và thủ kho nhập kg cân 570,5 cho dòng Phế liệu mà không đếm số cái
 - **THEN** số cái điền sẵn là 42 **AND** sau khi ghi sổ D6 hiện "≈ 42 cái (ước tính từ 570,5 kg)"
+
+#### Scenario: Ước tính nhiều hơn tồn bãi
+- **WHEN** `H1,7` Phế liệu tại `BAI-01` còn 42 cái và thủ kho cân 612 kg (ước tính 45 cái)
+- **THEN** M5 điền 42 cái và báo "Ước tính 45 cái nhưng bãi chỉ còn 42 cái Phế liệu, máy điền 42."
 
 #### Scenario: Ít hơn một cái
 - **WHEN** kg cân là 5 với trọng lượng chuẩn 13,6 kg/cái
@@ -256,7 +272,7 @@ Phiếu xuất đầu tiên ghi sổ của hợp đồng Đã duyệt SHALL chuy
 - **THEN** hợp đồng vẫn Đã duyệt
 
 ### Requirement: Xuất thiếu
-Thủ kho SHALL xác nhận được phiếu với số nhặt của một dòng nhỏ hơn số cần, kể cả 0, sau khi được hỏi lại. Phần thiếu SHALL không mất mà nằm trong "còn phải giao" của hợp đồng để lập đợt sau; hệ thống SHALL không tự tạo phiếu mới. Số nhặt lớn hơn số cần của dòng SHALL bị từ chối. Phiếu không nhặt được dòng nào SHALL không xác nhận được.
+Thủ kho SHALL xác nhận được phiếu với số nhặt của một dòng nhỏ hơn số cần, kể cả 0, sau khi được hỏi lại. Phần thiếu SHALL không mất mà nằm trong "còn phải giao" của hợp đồng để lập đợt sau; hệ thống SHALL không tự tạo phiếu mới. Số nhặt lớn hơn số cần của dòng SHALL bị từ chối; dòng bán theo kg so kg cân với số cần (kg), được vượt tới 10 %. Phiếu không nhặt được dòng nào SHALL không xác nhận được.
 
 #### Scenario: Thiếu 40 chéo
 - **WHEN** `PX-2026-140` cần 120 khung, 120 chéo, 60 mâm và thủ kho nhặt 120, 80, 60 rồi xác nhận
@@ -375,6 +391,10 @@ D6 SHALL là màn theo hợp đồng, mở từ D5 khi hợp đồng Đã duyệ
 #### Scenario: Dòng thời gian
 - **WHEN** hợp đồng có `PX-2026-061` Đợt 1 xuất 15/06/2026, `PX-2026-074` Đợt 2 xuất 02/07/2026 và `PX-2026-140` Đợt 3 Đang nhặt
 - **THEN** dòng thời gian hiện Đợt 3 "Đang nhặt" trên cùng, rồi Đợt 2, Đợt 1 "Đã xuất", mỗi dòng có số đã xuất và cước
+
+#### Scenario: Nhắc phiếu gửi muộn
+- **WHEN** `PX-2026-142` có ngày giao 06/11/2026 nhưng được xác nhận trên máy lúc 22:10 ngày 05/11/2026
+- **THEN** D6 có khối "Cần kiểm tra" với dòng "PX-2026-142 · ngày giao 06/11/2026, xác nhận trên máy 05/11/2026"
 
 #### Scenario: Hợp đồng chưa duyệt
 - **WHEN** người dùng mở D5 của hợp đồng Nháp

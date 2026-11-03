@@ -6,7 +6,7 @@ Hợp đồng đã duyệt (`contracts`) nhưng chưa có cách đưa hàng ra c
 
 - Giai đoạn: **[MVP]**, issue #10, phụ thuộc `contracts` (đã xong).
 - Màn hình: **D6** Tiến độ cấp hàng (theo hợp đồng / công trình), **M5** Nhặt hàng xuất kho. Thiết kế ở `docs/design/screens/D6-SiteDeliveries.dc.html`, `M5-Picking.dc.html`. Bản vẽ còn số kiểu `HĐ-2026-031` và nhãn "Bán & Thuê": khi code dùng số theo 0.2 #40 (VD `112026/ANPHAT-MINHPHAT`) và nhãn "Cho thuê & Bán" (0.2 #43).
-- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #4, #5, #11, #17, #24, #33, #35, #38, #41, #43, #45, #50, #51. Điểm mới change này đề xuất (trạng thái phiếu, ngày giao, xuất vượt, phế liệu không đếm được...) nằm ở `design.md`; người dùng chốt khi review thì ghi vào 0.2 trong cùng PR.
+- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #4, #5, #11, #17, #24, #33, #35, #38, #41, #43, #45, #47, #50, #51, và **#54–#60** chốt 03/11/2026 khi review PR #130, ghi trong PR này (trạng thái phiếu, ngày giao = ngày ghi sổ, còn phải giao, dung sai cân 10 %, rã bộ, xuất bán và phế liệu, cước và mẫu in).
 
 ## What Changes
 
@@ -20,7 +20,9 @@ Hợp đồng đã duyệt (`contracts`) nhưng chưa có cách đưa hàng ra c
   - Bán: `SALE_OUT` ở bãi, theo tình trạng và cách tính của dòng hợp đồng bán; bán theo kg ghi **số cái theo đơn vị của mã** và **số kg cân** trên dòng sổ.
   - Phiếu xuất đầu tiên ghi sổ chuyển hợp đồng **Đã duyệt → Đang thực hiện**.
 - **Xuất thiếu** (0.2 #17): thủ kho xác nhận số thực nhặt; phần thiếu không mất mà nằm trong **"Còn phải giao"** của hợp đồng để lập đợt sau. Không tự tạo phiếu mới.
+- **Còn phải giao** (0.2 #56): thuê = số trên hợp đồng − **số đang ở công trình** (đọc từ sổ kho), nên trả rồi lấy lại không bị coi là vượt; bán = số trên hợp đồng − tổng đã giao.
 - **Xuất vượt số trên hợp đồng**: hợp đồng thuê chỉ cảnh báo, người lập phải xác nhận (nhật ký gắn cờ "Có xác nhận bất thường"); hợp đồng bán bị chặn (cần phụ lục).
+- **Bán theo kg** (0.2 #57): số cần là **kg**, so bằng kg cân; cân được vượt tới **10 %** (giống nhận dư hàng kg), hơn mới chặn. Hằng số dung sai một chỗ trong `src/domain`.
 - **Thuê chỉ xuất Mới hoặc Tốt.** Bán theo đúng tình trạng của dòng hợp đồng (có thể là Phế liệu, bán theo kg).
 - **Cước chiều đi**: "công ty gọi xe" và cước một chiều lấy từ hợp đồng làm mặc định, văn phòng sửa được trên phiếu; biển số xe gõ tay. Phiếu lưu số cước và đơn giá bán từng dòng để `receivables` đọc, không lưu số cộng dồn.
 - **`hasDeliveries` thật**: hủy hợp đồng đã có phiếu xuất ghi sổ bị chặn; hủy hợp đồng còn phiếu xuất chưa xong cũng bị chặn (hủy phiếu trước).
@@ -63,7 +65,7 @@ Hợp đồng đã duyệt (`contracts`) nhưng chưa có cách đưa hàng ra c
 ## Impact
 
 - **DB:** migration `drizzle/0015_deliveries.sql`: bảng `delivery_note`, `delivery_note_kit`, `delivery_note_line`, `delivery_note_pick`; trigger khóa phiếu đã xuất, đã hủy; tạo lại check `activity_log` cho loại `DELIVERY_NOTE` và thao tác `START`. Bảng thường (CRUD) cho `erp_app`.
-- **Code:** `src/domain/delivery-note.ts` (trạng thái, rã bộ, còn phải giao, tiền dòng bán, tóm tắt nhật ký), `src/lib/deliveries/` (service, ghi sổ, truy vấn D6/M5), thân thật của `src/lib/contracts/deliveries.ts` (`hasDeliveries`), `src/lib/contracts/approval.ts` (chặn hủy khi còn phiếu mở), `src/lib/drafts/` (loại nháp `DELIVERY`), `src/domain/permissions.ts` (`deliveries.pick`), `src/domain/activity.ts`.
+- **Code:** `src/domain/delivery-note.ts` (trạng thái, rã bộ, còn phải giao, tiền dòng bán, tóm tắt nhật ký), `src/domain/tolerance.ts` (dung sai 10 % dùng chung với nhận hàng `receipt-anomalies.ts`), `src/lib/deliveries/` (service, ghi sổ, truy vấn D6/M5), thân thật của `src/lib/contracts/deliveries.ts` (`hasDeliveries`), `src/lib/contracts/approval.ts` (chặn hủy khi còn phiếu mở), `src/lib/drafts/` (loại nháp `DELIVERY`), `src/domain/permissions.ts` (`deliveries.pick`), `src/domain/activity.ts`.
 - **API:** `/api/deliveries` (lập, sửa, hủy, rút về, bắt đầu nhặt, trả lại, ghi sổ), `/api/contracts/[id]/deliveries` (D6).
 - **Trang:** `/sales/contracts/[id]/deliveries` (D6), `/sales/deliveries/[code]` (chi tiết + in), `/m/deliveries/[code]` (M5); khối mới trên `/m` và `/m/history`.
 - **Seed dev:** một phiếu đã xuất và một phiếu Chờ nhặt cho hợp đồng thuê mẫu đã duyệt.
