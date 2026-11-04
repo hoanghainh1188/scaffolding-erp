@@ -111,7 +111,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 - **D5a. Soạn hợp đồng / báo giá** **[MVP]**: Chọn loại (Cho thuê / Bán), nhà thầu, công trình. Số hợp đồng tự sinh theo 0.2 #40. Dòng hàng theo bộ hoặc mã, giá lấy từ danh mục, sửa riêng (đánh dấu giá khác danh mục). Điều khoản: thuê tối thiểu, chốt kỳ, hạn thanh toán, VAT. Bảng giá đền bù chép từ bảng chung (0.2 #49). Cọc tiền và bảo lãnh (0.2 #50). Kế hoạch giao theo đợt. Ô "Kiểm tra trước khi gửi duyệt" (tồn kho, bảo lãnh, giá khác, nợ quá hạn). Báo giá = in bản nháp.
 - **D5b. Lập phụ lục** **[MVP]**: Chỉ cho hợp đồng đã duyệt. Ngày hiệu lực (không trước kỳ đã chốt), lý do, bảng hiện tại ↔ mới cho số lượng, giá, điều khoản khác. Ô ảnh hưởng: kỳ đã chốt không đổi, kỳ đang mở tách giá cũ/mới tại ngày hiệu lực (0.2 #16). Gửi Giám đốc duyệt lại.
 - **D6. Tiến độ cấp hàng theo Công trình** **[MVP]**: Delivery Timeline các đợt xuất/trả. Số lượng đang ở công trình. Tạo phiếu xuất đợt mới (chỉ chọn hàng Mới/Tốt). Ghi cước vận chuyển chiều đi.
-- **D7. Tính tiền thuê (Billing)** **[MVP]**: Chọn kỳ. Bảng chi tiết từng linh kiện: ngày xuất, ngày trả, số ngày tính tiền (không tính ngày xuất, tính ngày trả, 0.2 #4), đơn giá ngày, thành tiền. Nút chốt kỳ để ghi công nợ.
+- **D7. Tính tiền thuê (Billing)** **[MVP]**: Chọn kỳ (tháng). Băng ngày nghỉ trong kỳ (0.2 #73). Danh sách hợp đồng thuê trong kỳ kèm trạng thái chốt. Bảng chi tiết từng lượng hàng: từ ngày (đầu kỳ hoặc hôm sau ngày giao), đến ngày (cuối kỳ hoặc ngày trả, gồm), ngày lịch, trừ ngày nghỉ, ngày tính, giá ngày, thành tiền; tách dòng khi phụ lục đổi giá; dòng bù tối thiểu 45 ngày (0.2 #74); dòng điều chỉnh kỳ trước (0.2 #22). Cước vận chuyển trong kỳ, VAT, phải thu, hạn trả. Nút In bảng kê, Xuất Excel, Chốt kỳ và ghi công nợ.
 - **D6b. Chuyển công trình** **[MVP]**: Từ D6 của hợp đồng đi. Chọn hợp đồng nhận, số chuyển theo mã (rút Mới trước), ảnh hưởng tiền thuê hai hợp đồng. Văn phòng xác nhận ngay hoặc gửi điện thoại (M9) xác nhận (0.2 #66).
 - **D6c. Phiếu mua lại** **[MVP]**: Khách mua luôn hàng đang thuê. Giá điền sẵn bằng giá mất, Giám đốc duyệt (0.2 #67).
 - **D6d. Đổi hàng** **[MVP]**: Một chuyến xe giao mã mới, nhận mã cũ; tạo đợt xuất + phiếu thu hồi nối với nhau (0.2 #68).
@@ -196,7 +196,7 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | D6d Đổi hàng | `D6d-Exchange.dc.html` | `site-operations` | Chờ duyệt |
 | M9 Xác nhận chuyển công trình | `M9-SiteTransfer.dc.html` | `site-operations` | Chờ duyệt |
 | D12 Sửa chữa đơn giản | `D12-Repair.dc.html` | `simple-repair` | Đã duyệt |
-| D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Đã duyệt |
+| D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Chờ duyệt (vẽ lại 04/11/2026) |
 | D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt |
 | D13 Kết quả kiểm kê | `D13-Stocktake.dc.html` | `stocktake` | Đã duyệt |
 | M6a Bắt đầu kiểm kê | `M6a-StocktakeStart.dc.html` | `stocktake` | Đã duyệt |
