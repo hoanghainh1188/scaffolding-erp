@@ -42,7 +42,7 @@ import {
 import { readHolidays } from "@/lib/holidays/queries";
 
 import {
-  closeBlock,
+  whyNotClosable,
   loadBillingSource,
   statementOf,
   type BillingSource,
@@ -415,7 +415,7 @@ async function statementView(
       statement: stored.statement,
       holidays: periodHolidays(month, holidays),
       closed: stored.closed,
-      closeBlock: closeBlock(source, stored.statement, today, holidays),
+      closeBlock: whyNotClosable(source, stored.statement, today, holidays),
       pending: [],
     };
   }
@@ -426,7 +426,7 @@ async function statementView(
     statement,
     holidays: periodHolidays(month, holidays),
     closed: null,
-    closeBlock: closeBlock(source, statement, today, holidays),
+    closeBlock: whyNotClosable(source, statement, today, holidays),
     pending,
   };
 }

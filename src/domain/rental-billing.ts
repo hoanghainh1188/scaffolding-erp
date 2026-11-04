@@ -53,6 +53,8 @@ export const formatMonth = (month: string): string =>
 
 /** One approved revision as billing reads it. */
 export interface BillingTerms {
+  /** contract_revision.id; absent in pure tests. */
+  id?: string;
   number: number;
   status: string;
   effectiveFrom: string;
@@ -79,7 +81,11 @@ export function basisPointsOf(
 export const rateText = (basisPoints: number | null): string | null =>
   basisPoints === null ? null : (basisPoints / 100).toFixed(2);
 
-function termsOn(terms: readonly BillingTerms[], date: string): BillingTerms {
+/** The approved revision in force on a date. */
+export function termsOn(
+  terms: readonly BillingTerms[],
+  date: string,
+): BillingTerms {
   const found = revisionAt(terms, date);
   if (!found) throw new Error(`No approved revision on ${date}`);
   return found;

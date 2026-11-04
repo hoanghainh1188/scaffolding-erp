@@ -180,6 +180,7 @@ export async function billingTerms(
       ),
     );
   return revisions.map((revision) => ({
+    id: revision.id,
     number: revision.number,
     status: revision.status,
     effectiveFrom: revision.effectiveFrom,

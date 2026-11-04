@@ -202,7 +202,7 @@ const clock = new Intl.DateTimeFormat("vi-VN", {
 });
 
 /** Why `month` cannot be closed today, or null when it can (design D6). */
-export function closeBlock(
+export function whyNotClosable(
   source: BillingSource,
   statement: Statement,
   today: BusinessDate,
