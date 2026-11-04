@@ -1,11 +1,10 @@
-// Amendments (contract-amendments spec; tasks 5.1, 5.2, 5.3). The last
-// closed billing period comes from a placeholder until rental-billing;
-// here it is mocked.
+// Amendments (contract-amendments spec; tasks 5.1, 5.2, 5.3). Closed
+// billing periods are real rows (rental-billing task 4.4).
 import { eq } from "drizzle-orm";
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase } from "@/db/client";
-import { contractRevision } from "@/db/schema";
+import { billingPeriod, contractRevision } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import { CONTRACT_MESSAGES } from "@/domain/contract";
 import { REVISION_MESSAGES } from "@/domain/contract-revision";
@@ -27,13 +26,9 @@ import {
   type AmendmentBody,
 } from "./amendments";
 import { approveContract, cancelContract, submitContract } from "./approval";
+import { lastClosedPeriodEnd } from "./billing-lock";
 import { createContract, updateContract } from "./service";
 import { contractTermsAt } from "./terms";
-
-const closed = vi.hoisted(() => ({ end: null as string | null }));
-vi.mock("./billing-lock", () => ({
-  lastClosedPeriodEnd: async () => closed.end,
-}));
 
 const ctx = createTestContext();
 const other = createDatabase(process.env.TEST_DATABASE_URL ?? "");
@@ -47,7 +42,6 @@ let fx: ContractFixture;
 let contractId = "";
 beforeEach(async () => {
   fx = await setupContractFixture(ctx);
-  closed.end = null;
   const saved = await createContract(ctx.db, fx.sales, d5Rental(fx));
   if (!saved.ok) throw new Error(saved.error);
   contractId = saved.data.id;
@@ -55,6 +49,34 @@ beforeEach(async () => {
   const approved = await approveContract(ctx.db, fx.director, contractId, null);
   if (!approved.ok) throw new Error(approved.error);
 });
+
+/** A closed billing period of the contract ending on `end` (a month end). */
+async function closePeriodUntil(end: string) {
+  const [revision] = await ctx.db
+    .select({ id: contractRevision.id })
+    .from(contractRevision)
+    .where(eq(contractRevision.contractId, contractId));
+  const days = 30;
+  const due = new Date(`${end}T00:00:00Z`);
+  due.setUTCDate(due.getUTCDate() + days);
+  await ctx.db.insert(billingPeriod).values({
+    contractId,
+    month: `${end.slice(0, 7)}-01`,
+    periodEnd: end,
+    revisionId: revision?.id ?? "",
+    rentAmount: 0,
+    adjustmentAmount: 0,
+    freightAmount: 0,
+    vatAmount: 0,
+    totalAmount: 0,
+    paymentTermsDays: days,
+    dueDate: due.toISOString().slice(0, 10),
+    holidayDays: 0,
+    lineCount: 0,
+    closedBy: fx.accountant.id,
+    closedAt: new Date(),
+  });
+}
 
 async function open() {
   const result = await createAmendment(ctx.db, fx.sales, contractId, {
@@ -256,8 +278,13 @@ describe("what an amendment may change", () => {
 });
 
 describe("effective date and closed periods (0.2 #22)", () => {
+  it("reads no closed period before any is closed", async () => {
+    expect(await lastClosedPeriodEnd(ctx.db, contractId)).toBeNull();
+  });
+
   it("refuses the last day of a closed period, takes the next day", async () => {
-    closed.end = "2026-11-30";
+    await closePeriodUntil("2026-11-30");
+    expect(await lastClosedPeriodEnd(ctx.db, contractId)).toBe("2026-11-30");
     const draft = await open();
     expect(
       await updateAmendment(ctx.db, fx.sales, contractId, draft.number, {
@@ -287,7 +314,7 @@ describe("effective date and closed periods (0.2 #22)", () => {
       updatedAt: draft.updatedAt,
     });
     await submitAmendment(ctx.db, fx.sales, contractId, draft.number);
-    closed.end = "2026-12-31";
+    await closePeriodUntil("2026-12-31");
     expect(
       await approveAmendment(
         ctx.db,

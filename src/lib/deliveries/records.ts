@@ -1,7 +1,7 @@
 // Reading and locking delivery notes (deliveries design D3, D9, D10): the
 // note row FOR UPDATE, its lines and picks, the terms of the contract as
 // pure-rule input, and the three quantity maps of "còn phải giao".
-import { and, asc, eq, gt, inArray, lt, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
 import {
@@ -38,6 +38,8 @@ import {
   type QuantityUnit,
 } from "@/domain/quantity";
 import { notFound, ServiceFailure } from "@/lib/catalog/common";
+
+import { SITE_SOURCES } from "./site-ledger";
 import type { Tx } from "@/lib/contracts/common";
 import { readContent } from "@/lib/contracts/content";
 import type { ContractTerms } from "@/lib/contracts/terms";
@@ -46,7 +48,7 @@ type Reader = Pick<Database, "select">;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export const DELIVERY_DOCUMENT_TYPE = "DELIVERY_NOTE";
+export { DELIVERY_DOCUMENT_TYPE } from "./site-ledger";
 export const DELIVERY_PREFIX = "PX";
 
 /** Thousandths of a stored quantity, whatever its unit. */
@@ -319,11 +321,11 @@ export async function readNoteContent(
 const add = (map: Map<string, number>, key: string, milli: number) =>
   map.set(key, (map.get(key) ?? 0) + milli);
 
-/** Ledger document type of return notes (returns-and-compensation). */
-export const RETURN_DOCUMENT_TYPE = "RETURN_NOTE";
-/** Ledger document types of site-operations (design D2, D5). */
-export const SITE_TRANSFER_DOCUMENT_TYPE = "SITE_TRANSFER";
-export const BUY_BACK_DOCUMENT_TYPE = "BUY_BACK";
+export {
+  BUY_BACK_DOCUMENT_TYPE,
+  RETURN_DOCUMENT_TYPE,
+  SITE_TRANSFER_DOCUMENT_TYPE,
+} from "./site-ledger";
 
 export interface SiteMovement {
   itemId: string;
@@ -360,63 +362,26 @@ export async function siteMovements(
     tx
       .select(columns)
       .from(inventoryLedger)
-      .innerJoin(
-        deliveryNote,
-        and(
-          eq(deliveryNote.id, inventoryLedger.documentId),
-          eq(inventoryLedger.documentType, DELIVERY_DOCUMENT_TYPE),
-          eq(inventoryLedger.locationId, deliveryNote.siteLocationId),
-        ),
-      )
-      .where(eq(deliveryNote.contractId, contractId))
+      .innerJoin(deliveryNote, SITE_SOURCES.delivery.join)
+      .where(SITE_SOURCES.delivery.where(contractId))
       .groupBy(...groups),
     tx
       .select(columns)
       .from(inventoryLedger)
-      .innerJoin(
-        returnNote,
-        and(
-          eq(returnNote.id, inventoryLedger.documentId),
-          eq(inventoryLedger.documentType, RETURN_DOCUMENT_TYPE),
-          eq(inventoryLedger.locationId, returnNote.siteLocationId),
-        ),
-      )
-      .where(eq(returnNote.contractId, contractId))
+      .innerJoin(returnNote, SITE_SOURCES.return.join)
+      .where(SITE_SOURCES.return.where(contractId))
       .groupBy(...groups),
     tx
       .select(columns)
       .from(inventoryLedger)
-      .innerJoin(
-        siteTransfer,
-        and(
-          eq(siteTransfer.id, inventoryLedger.documentId),
-          eq(inventoryLedger.documentType, SITE_TRANSFER_DOCUMENT_TYPE),
-        ),
-      )
-      .where(
-        or(
-          and(
-            eq(siteTransfer.fromContractId, contractId),
-            lt(inventoryLedger.quantity, "0"),
-          ),
-          and(
-            eq(siteTransfer.toContractId, contractId),
-            gt(inventoryLedger.quantity, "0"),
-          ),
-        ),
-      )
+      .innerJoin(siteTransfer, SITE_SOURCES.transfer.join)
+      .where(SITE_SOURCES.transfer.where(contractId))
       .groupBy(...groups),
     tx
       .select(columns)
       .from(inventoryLedger)
-      .innerJoin(
-        buyBackNote,
-        and(
-          eq(buyBackNote.id, inventoryLedger.documentId),
-          eq(inventoryLedger.documentType, BUY_BACK_DOCUMENT_TYPE),
-        ),
-      )
-      .where(eq(buyBackNote.contractId, contractId))
+      .innerJoin(buyBackNote, SITE_SOURCES.buyBack.join)
+      .where(SITE_SOURCES.buyBack.where(contractId))
       .groupBy(...groups),
   ]);
   return [...delivered, ...returned, ...transferred, ...bought].map((row) => ({

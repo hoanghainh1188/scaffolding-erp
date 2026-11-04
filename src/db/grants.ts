@@ -7,6 +7,9 @@ import type { Sql } from "postgres";
 /** Tables the app may only read and append to (they have *_append_only triggers). */
 export const APPEND_ONLY_TABLES = [
   "activity_log",
+  "billing_period",
+  "billing_period_freight",
+  "billing_period_line",
   "inventory_ledger",
   "scrap_price",
 ] as const;

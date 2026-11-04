@@ -1,4 +1,4 @@
-import { Truck } from "lucide-react";
+import { Calculator, Truck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { forbidden, notFound } from "next/navigation";
@@ -27,6 +27,7 @@ import {
   toBusinessDate,
 } from "@/domain/business-date";
 import { formatMoney, toMoney } from "@/domain/money";
+import { can as canRole } from "@/domain/permissions";
 import { requirePermission } from "@/lib/auth/guard";
 import { contractCompensations } from "@/lib/compensations/queries";
 import { getContractDetail } from "@/lib/contracts/queries";
@@ -94,6 +95,15 @@ export default async function Page({
               <Link href={`/sales/contracts/${id}/deliveries`}>
                 <Truck aria-hidden />{" "}
                 {head.type === "RENTAL" ? "Tiến độ cấp hàng" : "Giao hàng"}
+              </Link>
+            </Button>
+          ) : null}
+          {head.type === "RENTAL" &&
+          (head.status === "ACTIVE" || head.status === "CLOSED") &&
+          canRole(user.role, "billing.view") ? (
+            <Button asChild variant="outline">
+              <Link href={`/receivables/billing?contract=${id}`}>
+                <Calculator aria-hidden /> Tiền thuê theo kỳ
               </Link>
             </Button>
           ) : null}
