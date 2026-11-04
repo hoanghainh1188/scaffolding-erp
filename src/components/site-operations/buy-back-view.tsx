@@ -91,8 +91,14 @@ export function BuyBackView({
               </h2>
               <p className="text-sm text-muted-foreground">
                 {view.createdByName} gửi lúc{" "}
-                <span data-clock>{createdAtText}</span>. Duyệt xong mới ghi sổ,
-                thôi tính thuê và tính tiền bán.
+                {/* The masked time has a fixed width and ends its line, so
+                    neither the mask nor the words move in screenshots. */}
+                <span data-clock className="inline-block w-[15ch]">
+                  {createdAtText}.
+                </span>
+                <span className="block">
+                  Duyệt xong mới ghi sổ, thôi tính thuê và tính tiền bán.
+                </span>
               </p>
             </div>
             <div className="flex flex-col items-end gap-1">
@@ -113,7 +119,9 @@ export function BuyBackView({
               </div>
               <span className="text-caption text-muted-foreground">
                 Tính thuê tới khi duyệt: duyệt hôm nay thì tính đến hết{" "}
-                <span data-clock>{formatBusinessDate(today)}</span>
+                <span data-clock className="inline-block w-[10ch]">
+                  {formatBusinessDate(today)}
+                </span>
               </span>
             </div>
           </div>
