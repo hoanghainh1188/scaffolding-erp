@@ -91,6 +91,8 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 70 | Thuê tối thiểu khi chuyển công trình | **Cùng nhà thầu**: phần hàng chuyển **không áp tối thiểu 45 ngày ở hợp đồng đi** (chỉ tính số ngày thật tới hết ngày chuyển), vì khách vẫn thuê liên tục, không trả hai lần cho thời gian chồng nhau. **Khác nhà thầu**: tối thiểu áp riêng từng hợp đồng. Phiếu chuyển lưu **cờ cùng nhà thầu**; cách gộp chuỗi thuê liên tục khi tính tối thiểu ở hợp đồng nhận do `rental-billing` chốt (liên quan 0.2b Q2) (chốt 04/11/2026 khi review PR #138, change `site-operations`) |
 | 71 | Phiếu mua lại: chi tiết | Hàng mua lại **áp tối thiểu 45 ngày** như hàng trả về, coi như trả vào **ngày duyệt**. Phiếu **không có Nháp**: lưu là Chờ duyệt, Kinh doanh sửa được khi còn Chờ duyệt, lập sai thì Giám đốc từ chối. Đơn giá **khác giá hợp đồng** (kể cả 0 ₫) thì nhật ký gắn cờ "Có xác nhận bất thường" (chốt 04/11/2026 khi review PR #138, change `site-operations`) |
 | 72 | Đổi hàng: chi tiết | Số nhận về chỉ là **dự kiến**, không chặn khi đếm khác. **Thứ tự hai phiếu tự do**: phiếu thu hồi lưu được trước khi đợt xuất ghi sổ. Văn phòng được **"Bỏ chờ thu hồi"** (bắt buộc lý do) khi khách giữ hàng cũ; đợt xuất giữ nguyên. Đổi hàng chỉ có cước chiều đi trên đợt xuất (chốt 04/11/2026 khi review PR #138, change `site-operations`) |
+| 73 | Ngày nghỉ không tính thuê (mặc định tạm, Q1) | Giám đốc khai **bảng ngày nghỉ chung** ở Cài đặt (VD Tết Nguyên đán, lễ): mỗi dòng có tên và khoảng ngày. Khi tính tiền thuê, những ngày đó **không tính** cho mọi hợp đồng thuê (thay cho việc gõ tay −9, −1, −2 trong Excel). Bảng kê hiện rõ số ngày bị trừ trên từng dòng. Chủ trả lời Q1 khác thì đổi sau (chốt tạm 04/11/2026, change `rental-billing`) |
+| 74 | Thuê tối thiểu theo từng lượng hàng (mặc định tạm, Q2) | Tối thiểu 45 ngày (#39) tính **theo từng lượng hàng xuất**: mỗi lượng tính từ ngày giao của nó; lượng nào trả (hoặc mất, mua lại) trước 45 ngày thì bù cho đủ 45 ngày, dù phần còn lại của hợp đồng vẫn đang thuê. Hàng chuyển công trình cùng nhà thầu theo #70. Chủ trả lời Q2 khác thì đổi sau (chốt tạm 04/11/2026, change `rental-billing`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 
@@ -98,8 +100,6 @@ Các quyết định dưới đây có thể đổi sau khi chủ trả lời c�
 
 | Quyết định | Điều có thể đổi | Câu hỏi |
 |---|---|---|
-| #4 Tính tiền thuê | Có trừ ngày Tết/lễ không (file Excel đang trừ số cố định −9, −1, −2) | Q1 |
-| #39 Thuê tối thiểu | 45 ngày tính theo từng đợt xuất hay cả hợp đồng; trả một phần trước 45 ngày thì tính sao | Q2 |
 | Sản xuất (`production-orders`) | Chi phí công thợ tính khoán theo thành phẩm hay chi phí chung | Q11 |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
