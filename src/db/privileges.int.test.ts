@@ -30,6 +30,18 @@ async function errorCode(statement: ReturnType<typeof sql>): Promise<string> {
   return "no error";
 }
 
+/** A column of each append-only table for the UPDATE probe. */
+const UPDATE_COLUMN: Readonly<
+  Record<(typeof APPEND_ONLY_TABLES)[number], string>
+> = {
+  activity_log: "created_at",
+  billing_period: "closed_at",
+  billing_period_freight: "amount",
+  billing_period_line: "amount",
+  inventory_ledger: "created_at",
+  scrap_price: "created_at",
+};
+
 describe("app role", () => {
   it("connects as erp_app", async () => {
     const [row] = await db.execute<{ role: string }>(
@@ -51,8 +63,9 @@ describe("app role", () => {
     "may not UPDATE, DELETE or TRUNCATE %s",
     async (table) => {
       const name = sql.identifier(table);
+      const column = sql.identifier(UPDATE_COLUMN[table]);
       expect(
-        await errorCode(sql`update ${name} set created_at = created_at`),
+        await errorCode(sql`update ${name} set ${column} = ${column}`),
       ).toBe(INSUFFICIENT_PRIVILEGE);
       expect(await errorCode(sql`delete from ${name}`)).toBe(
         INSUFFICIENT_PRIVILEGE,

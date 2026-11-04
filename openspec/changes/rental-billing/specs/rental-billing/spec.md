@@ -57,12 +57,12 @@ Với mỗi phần lượng hàng, trong một kỳ hệ thống SHALL tính: T�
 - **THEN** dòng có Từ 11/11, Đến 30/11, 20 ngày, thành tiền 2.400.000 ₫
 
 #### Scenario: Trả trong kỳ, gồm ngày trả
-- **WHEN** 100 `H1,7` giá 1.200 ₫/ngày giao 15/10/2026, trả 20/11/2026, tính kỳ 11/2026
+- **WHEN** 100 `H1,7` giá 1.200 ₫/ngày giao 15/09/2026, trả 20/11/2026, tính kỳ 11/2026
 - **THEN** dòng có Từ 01/11, Đến 20/11, 20 ngày, thành tiền 2.400.000 ₫
 
 #### Scenario: Trả đúng ngày đầu kỳ
 - **WHEN** 100 `H1,7` giá 1.200 ₫/ngày giao 15/10/2026, trả 01/11/2026
-- **THEN** kỳ 10/2026 có dòng 16/10 – 31/10, 16 ngày, 1.920.000 ₫ **AND** kỳ 11/2026 có dòng 01/11 – 01/11, 1 ngày, 120.000 ₫
+- **THEN** kỳ 10/2026 có dòng 16/10 – 31/10, 16 ngày, 1.920.000 ₫ **AND** kỳ 11/2026 có dòng 01/11 – 01/11, 1 ngày, 120.000 ₫ và dòng bù 28 ngày (lượng này mới thuê 17 ngày), 3.360.000 ₫
 
 #### Scenario: Giao ngày cuối kỳ
 - **WHEN** 100 `H1,7` giao 30/11/2026

@@ -19,6 +19,7 @@ export const ACTIVITY_ACTIONS = [
   "START",
   "REJECT",
   "SEND",
+  "CLOSE_PERIOD",
 ] as const;
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
@@ -37,6 +38,7 @@ export const ACTION_LABELS: Readonly<Record<ActivityAction, string>> = {
   START: "Bắt đầu nhặt",
   REJECT: "Từ chối",
   SEND: "Gửi điện thoại",
+  CLOSE_PERIOD: "Chốt kỳ",
 };
 
 export const ACTION_GROUPS = [
@@ -62,7 +64,7 @@ export const GROUP_ACTIONS: Readonly<
 > = {
   CREATE: ["CREATE"],
   UPDATE: ["UPDATE", "START"],
-  APPROVAL: ["SUBMIT", "SEND", "APPROVE", "POST"],
+  APPROVAL: ["SUBMIT", "SEND", "APPROVE", "POST", "CLOSE_PERIOD"],
   REVERSAL: ["RETURN", "REJECT", "CANCEL", "CLOSE", "DELETE_DRAFT", "DELETE"],
   SIGN_IN: ["SIGN_IN"],
 };
@@ -71,6 +73,7 @@ export const GROUP_ACTIONS: Readonly<
 export const APPROVAL_TILE_ACTIONS: readonly ActivityAction[] = [
   "APPROVE",
   "POST",
+  "CLOSE_PERIOD",
 ];
 
 /** D18 tile "Sửa, xóa, trả lại". */
@@ -108,6 +111,9 @@ export const DOCUMENT_TYPES = [
   "COMPENSATION_NOTE",
   "SITE_TRANSFER",
   "BUY_BACK",
+  "BILLING_PERIOD",
+  "BILLING_ADJUSTMENT",
+  "RENTAL_HOLIDAY",
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
@@ -135,6 +141,9 @@ export const DOCUMENT_TYPE_LABELS: Readonly<Record<DocumentType, string>> = {
   COMPENSATION_NOTE: "Phiếu đền bù",
   SITE_TRANSFER: "Phiếu chuyển công trình",
   BUY_BACK: "Phiếu mua lại",
+  BILLING_PERIOD: "Kỳ tiền thuê",
+  BILLING_ADJUSTMENT: "Điều chỉnh tiền thuê",
+  RENTAL_HOLIDAY: "Ngày nghỉ",
 };
 
 /** The label of an action on a document: submitting an order places it. */

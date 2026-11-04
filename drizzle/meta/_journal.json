@@ -127,6 +127,13 @@
       "when": 1793727727710,
       "tag": "0017_site_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793804756724,
+      "tag": "0018_rental_billing",
+      "breakpoints": true
     }
   ]
 }
