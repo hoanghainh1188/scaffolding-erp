@@ -19,6 +19,21 @@ const RECEIVING_ORDER = `PO-${new Date().getFullYear()}-006`;
 const SAMPLE_REPAIR = `PSC-${new Date().getFullYear()}-022`;
 /** The D13 sample session (stocktake design D16): the first KK of a year. */
 const SAMPLE_STOCKTAKE = `KK-${new Date().getFullYear()}-001`;
+/**
+ * Masked dates and clocks still set their widths: "04/11" and "05/11"
+ * differ by a fraction of a pixel, which moves the mask edge and the text
+ * after it. Zero their digits so the layout is the same every day.
+ */
+async function zeroMaskedDigits(page: Page): Promise<void> {
+  await page.locator("[data-mask], [data-clock]").evaluateAll((nodes) =>
+    nodes.forEach((node) => {
+      const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+      for (let text = walker.nextNode(); text; text = walker.nextNode())
+        text.textContent = (text.textContent ?? "").replace(/\d/g, "0");
+    }),
+  );
+}
+
 const PAGES = [
   { path: "/dashboard", name: "dashboard", ready: DESKTOP_READY },
   { path: "/m", name: "mobile-home", ready: MOBILE_READY },
@@ -147,20 +162,7 @@ test.describe("visual baselines @visual", () => {
             .filter({ hasText: "XUONG-01" })
             .evaluateAll((rows) => rows.forEach((row) => row.remove()));
         }
-        // Masked dates and clocks still set their column widths: "29/10"
-        // and "30/10" differ by a fraction of a pixel, which shifts the
-        // text after them. Zero their digits so the layout is the same
-        // every day.
-        await page.locator("[data-mask], [data-clock]").evaluateAll((nodes) =>
-          nodes.forEach((node) => {
-            const walker = document.createTreeWalker(
-              node,
-              NodeFilter.SHOW_TEXT,
-            );
-            for (let text = walker.nextNode(); text; text = walker.nextNode())
-              text.textContent = (text.textContent ?? "").replace(/\d/g, "0");
-          }),
-        );
+        await zeroMaskedDigits(page);
         await page.evaluate(() => document.fonts.ready);
         await expect(page).toHaveScreenshot(`${name}-${width}.png`, {
           fullPage: true,
@@ -323,6 +325,7 @@ test.describe("site operation baselines @visual", () => {
 
   async function shoot(page: Page, name: string, ready: string) {
     await waitForHydration(page, ready);
+    await zeroMaskedDigits(page);
     await page.addStyleTag({
       content: "nextjs-portal { display: none !important; }",
     });
