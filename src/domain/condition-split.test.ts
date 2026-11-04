@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { computeConditionSplit } from "./condition-split";
+import {
+  computeConditionSplit,
+  drawNewFirst,
+  SITE_DRAW_MESSAGE,
+} from "./condition-split";
 import { quantityFromNumber } from "./quantity";
 
 const pcs = (value: number) => quantityFromNumber(value, "PIECE");
@@ -47,6 +51,35 @@ describe("computeConditionSplit", () => {
   it("requires every part in the total's unit", () => {
     expect(() => computeConditionSplit(pcs(100), [pcs(99), kg(1)])).toThrow(
       "Không tính được hai số lượng khác đơn vị",
+    );
+  });
+});
+
+describe("drawNewFirst", () => {
+  it("takes Mới first, then Tốt", () => {
+    expect(drawNewFirst(50_000, { NEW: 20_000, GOOD: 100_000 })).toEqual({
+      taken: { NEW: 20_000, GOOD: 30_000 },
+      left: { NEW: 0, GOOD: 70_000 },
+    });
+  });
+
+  it("takes nothing for 0", () => {
+    expect(drawNewFirst(0, { NEW: 20_000, GOOD: 100_000 }).taken).toEqual({
+      NEW: 0,
+      GOOD: 0,
+    });
+  });
+
+  it("stays in Mới when there is enough", () => {
+    expect(drawNewFirst(5_000, { NEW: 20_000, GOOD: 0 }).taken).toEqual({
+      NEW: 5_000,
+      GOOD: 0,
+    });
+  });
+
+  it("refuses more than the site has", () => {
+    expect(() => drawNewFirst(130_000, { NEW: 20_000, GOOD: 100_000 })).toThrow(
+      SITE_DRAW_MESSAGE,
     );
   });
 });

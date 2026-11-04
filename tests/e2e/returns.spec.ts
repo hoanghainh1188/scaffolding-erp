@@ -26,26 +26,34 @@ async function contractId(page: Page): Promise<string> {
   return row.id;
 }
 
-/** Đã trả, Mất, Đang ở công trình of the item on D6, as numbers. */
+/**
+ * Đã trả, Mất, Đang ở công trình of the item on D6, as numbers. Read by
+ * column name: site-operations adds "Chuyển đến / đi", "Mua lại" when used.
+ */
 async function d6Numbers(page: Page, id: string) {
   await page.goto(`/sales/contracts/${id}/deliveries`);
   await waitForHydration(page, DESKTOP_READY);
-  const row = page
+  const table = page
     .getByRole("region", { name: "Hàng đang ở công trình" })
-    .getByRole("row")
-    .filter({ hasText: ITEM })
     .filter({ visible: true });
-  const cell = async (index: number) =>
+  const headers = (await table.getByRole("columnheader").allTextContents()).map(
+    (text) => text.trim(),
+  );
+  const row = table.getByRole("row").filter({ hasText: ITEM });
+  // Cells skip the row header ("Hàng"), the first column header.
+  const cell = async (name: string) =>
     Number(
-      ((await row.getByRole("cell").nth(index).textContent()) ?? "0").replace(
-        /[^\d]/g,
-        "",
-      ),
+      (
+        (await row
+          .getByRole("cell")
+          .nth(headers.indexOf(name) - 1)
+          .textContent()) ?? "0"
+      ).replace(/[^\d]/g, ""),
     );
   return {
-    returned: await cell(1),
-    lost: await cell(2),
-    onSite: await cell(3),
+    returned: await cell("Đã trả"),
+    lost: await cell("Mất"),
+    onSite: await cell("Đang ở công trình"),
   };
 }
 

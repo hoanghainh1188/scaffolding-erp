@@ -102,6 +102,21 @@ export function deliverySender(fetcher: typeof fetch = fetch): Sender {
   };
 }
 
+/**
+ * M9 "Xác nhận đã chuyển tới …" (site-operations design D1): the draft id
+ * goes as the client draft id, so a resend answers with the posted transfer.
+ */
+export function transferSender(fetcher: typeof fetch = fetch): Sender {
+  return (record) => {
+    const payload = record.payload as { body?: object } | null;
+    return postJson(
+      fetcher,
+      `/api/m/site-transfers/${encodeURIComponent(record.documentRef)}/post`,
+      { ...payload?.body, clientDraftId: record.draftId },
+    );
+  };
+}
+
 /** A photo kept in a return draft until the note is posted (design D13). */
 export interface DraftPhoto {
   clientPhotoId: string;
@@ -256,15 +271,18 @@ export function draftSender(
   const receipt = receiptSender(fetcher);
   const stocktake = stocktakeSender(fetcher);
   const delivery = deliverySender(fetcher);
+  const transfer = transferSender(fetcher);
   const returned = store ? returnSender(store, fetcher) : null;
   return (record) =>
     record.kind === "STOCKTAKE"
       ? stocktake(record)
       : record.kind === "DELIVERY"
         ? delivery(record)
-        : record.kind === "RETURN" && returned
-          ? returned(record)
-          : receipt(record);
+        : record.kind === "TRANSFER"
+          ? transfer(record)
+          : record.kind === "RETURN" && returned
+            ? returned(record)
+            : receipt(record);
 }
 
 /** Drafts this tab is sending now. */

@@ -1,7 +1,7 @@
 // Reading and locking delivery notes (deliveries design D3, D9, D10): the
 // note row FOR UPDATE, its lines and picks, the terms of the contract as
 // pure-rule input, and the three quantity maps of "còn phải giao".
-import { and, asc, eq, gt, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, lt, ne, or, sql } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
 import {
@@ -14,7 +14,9 @@ import {
   item,
   kit,
   kitComponent,
+  buyBackNote,
   returnNote,
+  siteTransfer,
 } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import type { Condition } from "@/domain/condition";
@@ -319,6 +321,9 @@ const add = (map: Map<string, number>, key: string, milli: number) =>
 
 /** Ledger document type of return notes (returns-and-compensation). */
 export const RETURN_DOCUMENT_TYPE = "RETURN_NOTE";
+/** Ledger document types of site-operations (design D2, D5). */
+export const SITE_TRANSFER_DOCUMENT_TYPE = "SITE_TRANSFER";
+export const BUY_BACK_DOCUMENT_TYPE = "BUY_BACK";
 
 export interface SiteMovement {
   itemId: string;
@@ -330,8 +335,11 @@ export interface SiteMovement {
 /**
  * Ledger lines at the contract's site, summed by item, condition and
  * movement: those of its delivery notes and of its return notes (design D8
- * of returns-and-compensation). Other contracts at the same site are not
- * counted.
+ * of returns-and-compensation), of its site transfers and approved buy-backs
+ * (site-operations design D8). Other contracts at the same site are not
+ * counted. A transfer line belongs to a contract by its sign, not by its
+ * place: out to the source, in to the target, so two contracts at one site
+ * stay apart.
  */
 export async function siteMovements(
   tx: Reader,
@@ -348,7 +356,7 @@ export async function siteMovements(
     inventoryLedger.condition,
     inventoryLedger.movement,
   ] as const;
-  const [delivered, returned] = await Promise.all([
+  const [delivered, returned, transferred, bought] = await Promise.all([
     tx
       .select(columns)
       .from(inventoryLedger)
@@ -375,8 +383,43 @@ export async function siteMovements(
       )
       .where(eq(returnNote.contractId, contractId))
       .groupBy(...groups),
+    tx
+      .select(columns)
+      .from(inventoryLedger)
+      .innerJoin(
+        siteTransfer,
+        and(
+          eq(siteTransfer.id, inventoryLedger.documentId),
+          eq(inventoryLedger.documentType, SITE_TRANSFER_DOCUMENT_TYPE),
+        ),
+      )
+      .where(
+        or(
+          and(
+            eq(siteTransfer.fromContractId, contractId),
+            lt(inventoryLedger.quantity, "0"),
+          ),
+          and(
+            eq(siteTransfer.toContractId, contractId),
+            gt(inventoryLedger.quantity, "0"),
+          ),
+        ),
+      )
+      .groupBy(...groups),
+    tx
+      .select(columns)
+      .from(inventoryLedger)
+      .innerJoin(
+        buyBackNote,
+        and(
+          eq(buyBackNote.id, inventoryLedger.documentId),
+          eq(inventoryLedger.documentType, BUY_BACK_DOCUMENT_TYPE),
+        ),
+      )
+      .where(eq(buyBackNote.contractId, contractId))
+      .groupBy(...groups),
   ]);
-  return [...delivered, ...returned].map((row) => ({
+  return [...delivered, ...returned, ...transferred, ...bought].map((row) => ({
     itemId: row.itemId,
     condition: row.condition as Condition,
     movement: row.movement,

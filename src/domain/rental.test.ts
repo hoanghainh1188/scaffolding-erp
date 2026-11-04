@@ -4,6 +4,7 @@ import type { BusinessDate } from "./business-date";
 import {
   chargeableDays,
   DEFAULT_MIN_RENTAL_DAYS,
+  dailyChange,
   dailyTotal,
   expectedValue,
   monthDisplay,
@@ -153,5 +154,45 @@ describe("month shown (giá ngày × số ngày của tháng)", () => {
 
   it("keeps the minimum in one place", () => {
     expect(DEFAULT_MIN_RENTAL_DAYS).toBe(45);
+  });
+});
+
+describe("dailyChange", () => {
+  const K = 1000;
+  it("drops by what a transfer takes away", () => {
+    expect(
+      dailyChange(
+        [],
+        [
+          { dailyPrice: 1_200, quantityMilli: 50 * K },
+          { dailyPrice: 300, quantityMilli: 40 * K },
+        ],
+      ),
+    ).toBe(-72_000);
+  });
+
+  it("drops by what a buy-back takes away", () => {
+    expect(
+      dailyChange(
+        [],
+        [
+          { dailyPrice: 100, quantityMilli: 20 * K },
+          { dailyPrice: 20, quantityMilli: 50 * K },
+        ],
+      ),
+    ).toBe(-3_000);
+  });
+
+  it("nets an exchange", () => {
+    expect(
+      dailyChange(
+        [{ dailyPrice: 280, quantityMilli: 100 * K }],
+        [{ dailyPrice: 300, quantityMilli: 100 * K }],
+      ),
+    ).toBe(-2_000);
+  });
+
+  it("is 0 for nothing", () => {
+    expect(dailyChange([], [{ dailyPrice: 300, quantityMilli: 0 }])).toBe(0);
   });
 });

@@ -6,6 +6,7 @@ import { DraftBanner } from "@/components/drafts/draft-banner";
 import { ArrivalList } from "@/components/receiving/arrival-list";
 import { ReturnHome } from "@/components/returns/return-home";
 import { MobilePage } from "@/components/shell/mobile/mobile-page";
+import { TransferHome } from "@/components/site-operations/transfer-home";
 import { StocktakeHome } from "@/components/stocktake/stocktake-home";
 import { getDatabase } from "@/db/client";
 import {
@@ -18,6 +19,10 @@ import { requireUser } from "@/lib/auth/guard";
 import { mobileTasks, type MobileTask } from "@/lib/deliveries/queries";
 import { arrivals, type Arrivals } from "@/lib/receiving/queries";
 import { returnsByDay, type ReturnListRow } from "@/lib/returns/queries";
+import {
+  listTransfers,
+  type TransferListRow,
+} from "@/lib/site-transfers/queries";
 import { openStocktakes, type OpenStocktake } from "@/lib/stocktakes/queries";
 
 export const metadata: Metadata = { title: "Việc hôm nay" };
@@ -48,6 +53,9 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const shipping: MobileTask[] | null = can(user.role, "deliveries.pick")
     ? await mobileTasks(getDatabase(), today)
     : null;
+  const moving: TransferListRow[] | null = can(user.role, "deliveries.pick")
+    ? await listTransfers(getDatabase(), { statuses: ["SENT"] })
+    : null;
   // Returns are not planned work: shown, never counted in N (spec).
   const returned: ReturnListRow[] | null = can(user.role, "returns.receive")
     ? ((await returnsByDay(getDatabase(), { only: today })).days[0]?.notes ??
@@ -58,7 +66,8 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const due =
     (work?.dueToday ?? 0) +
     (counts?.filter((session) => session.status === "COUNTING").length ?? 0) +
-    (shipping?.length ?? 0);
+    (shipping?.length ?? 0) +
+    (moving?.length ?? 0);
   const day = weekday.format(now);
   return (
     <MobilePage title="Việc hôm nay">
@@ -84,6 +93,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       {shipping && (
         <DeliveryHome tasks={shipping} today={today} userId={user.id} />
       )}
+      {moving && <TransferHome transfers={moving} />}
       {returned && <ReturnHome notes={returned} />}
       {counts && <StocktakeHome sessions={counts} userId={user.id} />}
     </MobilePage>

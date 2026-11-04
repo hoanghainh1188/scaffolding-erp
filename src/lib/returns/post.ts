@@ -63,6 +63,7 @@ import {
   RETURN_DOCUMENT_TYPE,
   type ItemFacts,
 } from "@/lib/deliveries/records";
+import { finishExchange, lockJoinableExchange } from "@/lib/exchanges/records";
 import { nextDocumentCode } from "@/lib/inventory/counter";
 import { postMovements } from "@/lib/inventory/post";
 import { currentScrapPrice } from "@/lib/receiving/scrap-price";
@@ -93,6 +94,8 @@ export interface PostReturnBody {
   lines?: ReturnLineBody[];
   /** Photos sent before with the same draft id, in their order. */
   photoIds?: string[];
+  /** The waiting exchange this note brings back (site-operations D6). */
+  exchangeId?: string | null;
 }
 
 export interface PostedReturn {
@@ -348,6 +351,9 @@ async function postInTransaction(
   if (locked.type !== "RENTAL" || locked.status !== "ACTIVE") {
     throw new DomainValueError(RETURN_MESSAGES.notRental);
   }
+  const exchange = body.exchangeId
+    ? await lockJoinableExchange(tx, body.exchangeId, locked.id)
+    : null;
   const places = await placesOf(tx, locked.siteId, body.yardLocationId);
   const vehiclePlate = optionalText(
     body.vehiclePlate,
@@ -432,6 +438,7 @@ async function postInTransaction(
       lostQuantity: db3(line.counts.lostMilli),
     })),
   );
+  if (exchange) await finishExchange(tx, exchange.id, noteId, now);
   for (const [position, id] of photoIds.entries()) {
     await tx
       .update(returnPhoto)

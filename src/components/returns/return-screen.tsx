@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { amountText } from "@/components/deliveries/format";
 import { Stepper } from "@/components/domain/stepper";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatQuantityForInput, toQuantity } from "@/domain/quantity";
@@ -44,6 +45,13 @@ export const RETURN_SCREEN_MESSAGES = {
   signedOut: "Phiên đăng nhập hết hạn. Đăng nhập lại để gửi phiếu.",
 } as const;
 
+export interface ReturnExchange {
+  id: string;
+  deliveryCode: string;
+  /** "100 CHEO1,7". */
+  expectedText: string;
+}
+
 export interface ReturnScreenProps {
   userId: string;
   contractId: string;
@@ -52,6 +60,8 @@ export interface ReturnScreenProps {
   customerName: string;
   yards: { id: string; code: string; name: string }[];
   items: ReturnItem[];
+  /** Waiting exchanges of the contract (site-operations D6), no price. */
+  exchanges?: ReturnExchange[];
   /** Kept from the note just saved for another contract of the same truck. */
   plate?: string;
 }
@@ -107,6 +117,8 @@ export function ReturnScreen(props: ReturnScreenProps) {
       lines: {},
       photos: [],
       savedOnDeviceAt: null,
+      // The oldest waiting exchange is ticked: the truck usually brings it.
+      exchangeId: props.exchanges?.[0]?.id ?? null,
     }),
     progressOf: (payload) => progressText(props.items, payload),
   });
@@ -294,6 +306,34 @@ export function ReturnScreen(props: ReturnScreenProps) {
           />
         </div>
       </section>
+
+      {props.exchanges && props.exchanges.length > 0 ? (
+        <section className="flex flex-col gap-2 rounded-lg border-2 border-highlight bg-card p-4">
+          {props.exchanges.map((exchange) => (
+            <p key={exchange.id} className="text-label">
+              Đổi hàng {exchange.deliveryCode}: dự kiến nhận{" "}
+              {exchange.expectedText}
+            </p>
+          ))}
+          <span className="flex items-center gap-2">
+            <Checkbox
+              id="is-exchange"
+              checked={Boolean(payload.exchangeId)}
+              disabled={locked}
+              onCheckedChange={(checked) =>
+                draft.update({
+                  ...payload,
+                  exchangeId:
+                    checked === true
+                      ? (props.exchanges?.[0]?.id ?? null)
+                      : null,
+                })
+              }
+            />
+            <Label htmlFor="is-exchange">Phiếu này là hàng đổi</Label>
+          </span>
+        </section>
+      ) : null}
 
       {(queued || message || rejected) && (
         <p

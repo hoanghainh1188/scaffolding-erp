@@ -18,6 +18,7 @@ export const ACTIVITY_ACTIONS = [
   "SIGN_IN",
   "START",
   "REJECT",
+  "SEND",
 ] as const;
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
@@ -35,6 +36,7 @@ export const ACTION_LABELS: Readonly<Record<ActivityAction, string>> = {
   SIGN_IN: "Đăng nhập",
   START: "Bắt đầu nhặt",
   REJECT: "Từ chối",
+  SEND: "Gửi điện thoại",
 };
 
 export const ACTION_GROUPS = [
@@ -60,7 +62,7 @@ export const GROUP_ACTIONS: Readonly<
 > = {
   CREATE: ["CREATE"],
   UPDATE: ["UPDATE", "START"],
-  APPROVAL: ["SUBMIT", "APPROVE", "POST"],
+  APPROVAL: ["SUBMIT", "SEND", "APPROVE", "POST"],
   REVERSAL: ["RETURN", "REJECT", "CANCEL", "CLOSE", "DELETE_DRAFT", "DELETE"],
   SIGN_IN: ["SIGN_IN"],
 };
@@ -104,6 +106,8 @@ export const DOCUMENT_TYPES = [
   "DELIVERY_NOTE",
   "RETURN_NOTE",
   "COMPENSATION_NOTE",
+  "SITE_TRANSFER",
+  "BUY_BACK",
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
@@ -129,6 +133,8 @@ export const DOCUMENT_TYPE_LABELS: Readonly<Record<DocumentType, string>> = {
   DELIVERY_NOTE: "Phiếu xuất",
   RETURN_NOTE: "Phiếu thu hồi",
   COMPENSATION_NOTE: "Phiếu đền bù",
+  SITE_TRANSFER: "Phiếu chuyển công trình",
+  BUY_BACK: "Phiếu mua lại",
 };
 
 /** The label of an action on a document: submitting an order places it. */

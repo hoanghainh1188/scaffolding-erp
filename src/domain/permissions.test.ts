@@ -46,6 +46,7 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "deliveries.pick": ["DIRECTOR", "WAREHOUSE"],
   "returns.receive": ["DIRECTOR", "WAREHOUSE"],
   "compensations.approve": ["DIRECTOR"],
+  "buybacks.approve": ["DIRECTOR"],
 };
 
 const PAIRS = (Object.keys(PERMISSIONS) as Permission[]).flatMap((permission) =>
@@ -146,6 +147,9 @@ describe("canContract", () => {
       "WAREHOUSE",
     ]);
     expect(ROLES.filter((role) => can(role, "compensations.approve"))).toEqual([
+      "DIRECTOR",
+    ]);
+    expect(ROLES.filter((role) => can(role, "buybacks.approve"))).toEqual([
       "DIRECTOR",
     ]);
   });

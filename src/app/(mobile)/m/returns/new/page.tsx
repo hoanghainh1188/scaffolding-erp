@@ -4,6 +4,7 @@ import { connection } from "next/server";
 
 import { ReturnPicker } from "@/components/returns/return-picker";
 import { ReturnScreen } from "@/components/returns/return-screen";
+import { formatQuantity, toQuantity } from "@/domain/quantity";
 import { MobilePage } from "@/components/shell/mobile/mobile-page";
 import { getDatabase } from "@/db/client";
 import { requirePermission } from "@/lib/auth/guard";
@@ -48,6 +49,16 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         siteName={contract.siteName}
         customerName={contract.customerName}
         yards={contract.yards}
+        exchanges={contract.exchanges.map((row) => ({
+          id: row.id,
+          deliveryCode: row.deliveryCode,
+          expectedText: row.expected
+            .map(
+              (line) =>
+                `${formatQuantity(toQuantity(line.milli, line.unit))} ${line.code}`,
+            )
+            .join(", "),
+        }))}
         items={contract.items.map((row) => ({
           itemId: row.itemId,
           code: row.code,

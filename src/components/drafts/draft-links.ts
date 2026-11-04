@@ -7,6 +7,9 @@ export function draftHref(
   if (record.kind === "DELIVERY") {
     return `/m/deliveries/${encodeURIComponent(record.documentRef)}`;
   }
+  if (record.kind === "TRANSFER") {
+    return `/m/site-transfers/${encodeURIComponent(record.documentRef)}`;
+  }
   if (record.kind === "RETURN") {
     return `/m/returns/new?contract=${encodeURIComponent(record.documentRef)}`;
   }

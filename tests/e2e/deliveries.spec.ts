@@ -31,18 +31,24 @@ async function d6Numbers(page: Page, id: string) {
   await waitForHydration(page, DESKTOP_READY);
   const number = (text: string | null) =>
     Number((text ?? "0").replace(/[^\d]/g, ""));
-  const site = page
+  const table = page
     .getByRole("region", { name: "Hàng đang ở công trình" })
-    .getByRole("row")
-    .filter({ hasText: ITEM })
     .filter({ visible: true });
+  // By column name: site-operations adds columns when they are used.
+  const onSiteColumn =
+    (await table.getByRole("columnheader").allTextContents())
+      .map((text) => text.trim())
+      .indexOf("Đang ở công trình") - 1;
+  const site = table.getByRole("row").filter({ hasText: ITEM });
   const left = page
     .getByRole("region", { name: "Còn phải giao" })
     .getByRole("row")
     .filter({ hasText: ITEM })
     .filter({ visible: true });
   return {
-    onSite: number(await site.getByRole("cell").nth(3).textContent()),
+    onSite: number(
+      await site.getByRole("cell").nth(onSiteColumn).textContent(),
+    ),
     remaining: number(await left.getByRole("cell").nth(2).textContent()),
   };
 }

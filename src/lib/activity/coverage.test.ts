@@ -42,6 +42,20 @@ export const NOT_LOGGED: Readonly<Record<string, string>> = {
   "returns/queries.ts#returnContracts": "reads the M4 contract list",
   "returns/queries.ts#returnContract": "reads one M4 contract",
   "returns/queries.ts#returnDetail": "reads a return note",
+  "contracts/records.ts#lockContractsInOrder":
+    "row locks of two contracts; the transfer command logs",
+  "site-transfers/records.ts#lockTransfer":
+    "row lock shared by the transfer commands; the command logs",
+  "site-transfers/service.ts#lockPair":
+    "row locks and reads before a transfer command; the command logs",
+  "site-transfers/service.ts#lockTransferWithPair":
+    "row locks before a transfer command; the command logs",
+  "exchanges/records.ts#lockExchangeOfDelivery":
+    "row lock of an exchange; the delivery command logs",
+  "exchanges/records.ts#cancelExchangeOfDelivery":
+    "part of cancelling the batch; changeDeliveryStatus logs",
+  "exchanges/records.ts#lockJoinableExchange":
+    "row lock inside postReturn; the return posting logs",
 };
 
 interface Found {

@@ -7,6 +7,7 @@ export const DRAFT_KINDS = [
   "STOCKTAKE",
   "DELIVERY",
   "RETURN",
+  "TRANSFER",
 ] as const;
 export type DraftKind = (typeof DRAFT_KINDS)[number];
 

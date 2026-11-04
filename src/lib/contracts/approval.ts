@@ -28,7 +28,7 @@ import {
   type Tx,
 } from "./common";
 import { readContent } from "./content";
-import { hasDeliveries, openDeliveries } from "./deliveries";
+import { hasDeliveries, openDeliveries, openTransfersInto } from "./deliveries";
 import { overdueDebt } from "./overdue";
 import {
   lockContract,
@@ -241,6 +241,12 @@ export function cancelContract(
       const [openNote] = await openDeliveries(tx, locked.id);
       if (openNote !== undefined) {
         throw new DomainValueError(CONTRACT_MESSAGES.openDeliveries(openNote));
+      }
+      const [openTransfer] = await openTransfersInto(tx, locked.id);
+      if (openTransfer !== undefined) {
+        throw new DomainValueError(
+          CONTRACT_MESSAGES.openTransfers(openTransfer),
+        );
       }
       const text = requiredReason(reason, CONTRACT_MESSAGES.cancelReason);
       const now = new Date();
