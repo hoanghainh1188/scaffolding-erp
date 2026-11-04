@@ -2,7 +2,7 @@ import { inflateRawSync } from "node:zlib";
 
 import { describe, expect, it } from "vitest";
 
-import { buildXlsx, columnName } from "./xlsx";
+import { buildXlsx, buildXlsxBook, columnName, excelSerial } from "./xlsx";
 
 /** Reads a ZIP back through its central directory. */
 function unzip(bytes: Uint8Array): Map<string, string> {
@@ -129,5 +129,50 @@ describe("columnName", () => {
     [27, "AB"],
   ])("%i → %s", (index, name) => {
     expect(columnName(index)).toBe(name);
+  });
+});
+
+describe("numbers, dates and several sheets (rental-billing design D9)", () => {
+  it("writes numbers and dates as values with their formats", () => {
+    const files = unzip(
+      buildXlsx({
+        sheetName: "Tổng hợp",
+        columns: [
+          { header: "Phải thu", width: 14 },
+          { header: "Hạn trả", width: 12 },
+        ],
+        rows: [[7_283_304, { date: "2027-03-30" }]],
+      }),
+    );
+    const sheet = files.get("xl/worksheets/sheet1.xml") ?? "";
+    expect(sheet).toContain('<c r="A2" s="3"><v>7283304</v></c>');
+    expect(sheet).toContain(
+      `<c r="B2" s="4"><v>${excelSerial("2027-03-30")}</v></c>`,
+    );
+    expect(files.get("xl/styles.xml")).toContain('formatCode="dd/mm/yyyy"');
+  });
+
+  it("counts Excel days from 30/12/1899", () => {
+    expect(excelSerial("1900-01-01")).toBe(2);
+    expect(excelSerial("2027-03-30")).toBe(46476);
+  });
+
+  it("builds one workbook with every sheet in order", () => {
+    const sheet = (name: string) => ({
+      sheetName: name,
+      columns: [{ header: "A", width: 5 }],
+      rows: [["x"]],
+    });
+    const files = unzip(
+      buildXlsxBook([sheet("Tổng hợp"), sheet("Chi tiết"), sheet("Cước")]),
+    );
+    expect(files.get("xl/workbook.xml")).toContain(
+      '<sheet name="Tổng hợp" sheetId="1" r:id="rId1"/><sheet name="Chi tiết" sheetId="2" r:id="rId2"/><sheet name="Cước" sheetId="3" r:id="rId3"/>',
+    );
+    expect(files.has("xl/worksheets/sheet3.xml")).toBe(true);
+    expect(files.get("[Content_Types].xml")).toContain(
+      "/xl/worksheets/sheet3.xml",
+    );
+    expect(files.get("xl/_rels/workbook.xml.rels")).toContain('Id="rId4"');
   });
 });

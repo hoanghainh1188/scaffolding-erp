@@ -30,9 +30,9 @@
 
 ## 5. API và Excel
 
-- [ ] 5.1 Route `GET /api/billing/periods/[month]`, `GET …/contracts/[id]`, `POST …/contracts/[id]/close` bọc `withAuth`; Kinh doanh kiểm `canContract(user, "RENTAL", "view")`; kiểm `month` dạng `YYYY-MM`. Test route: Kế toán 200; Kinh doanh xem 200, chốt 403; Kinh doanh "Chỉ bán" 403 kèm thông báo; Thủ kho 403; `route-guards.test.ts` xanh.
-- [ ] 5.2 Route dòng điều chỉnh và ngày nghỉ (`/api/billing/adjustments`, `/api/holidays`) với kiểm đầu vào bằng schema. Test route: quyền (Kế toán không sửa ngày nghỉ, Kinh doanh không ghi điều chỉnh), 409, 422 kèm thông báo.
-- [ ] 5.3 `src/lib/billing/export.ts` + `GET /api/billing/periods/[month]/export`: ba sheet theo design D9, tiền là số, ngày là ngày Excel (mở rộng `buildXlsx` nếu cần, có test), Kinh doanh chỉ hợp đồng được xem. Integration test: tên file `tien-thue-2027-02.xlsx`, sheet "Tổng hợp" đúng số dòng và phải thu, sheet "Chi tiết" đúng thứ tự design D8; xuất không ghi nhật ký.
+- [x] 5.1 Route `GET /api/billing/periods/[month]`, `GET …/contracts/[id]`, `POST …/contracts/[id]/close` bọc `withAuth`; Kinh doanh kiểm `canContract(user, "RENTAL", "view")`; kiểm `month` dạng `YYYY-MM`. Test route: Kế toán 200; Kinh doanh xem 200, chốt 403; Kinh doanh "Chỉ bán" 403 kèm thông báo; Thủ kho 403; `route-guards.test.ts` xanh.
+- [x] 5.2 Route dòng điều chỉnh và ngày nghỉ (`/api/billing/adjustments`, `/api/holidays`) với kiểm đầu vào bằng schema. Test route: quyền (Kế toán không sửa ngày nghỉ, Kinh doanh không ghi điều chỉnh), 409, 422 kèm thông báo.
+- [x] 5.3 `src/lib/billing/export.ts` + `GET /api/billing/periods/[month]/export`: ba sheet theo design D9, tiền là số, ngày là ngày Excel (mở rộng `buildXlsx` nếu cần, có test), Kinh doanh chỉ hợp đồng được xem. Integration test: tên file `tien-thue-2027-02.xlsx`, sheet "Tổng hợp" đúng số dòng và phải thu, sheet "Chi tiết" đúng thứ tự design D8; xuất không ghi nhật ký.
 
 ## 6. Giao diện
 

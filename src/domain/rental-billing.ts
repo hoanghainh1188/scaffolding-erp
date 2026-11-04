@@ -541,3 +541,18 @@ export function buildStatement(input: StatementInput): Statement {
 /** A period has something to bill (closing and the D7 list need it). */
 export const hasContent = (statement: Statement): boolean =>
   statement.lines.length > 0 || statement.freight.length > 0;
+
+/** "Loại dòng" of D7 and the Excel sheet (design D8, D9). */
+export function lineLabel(line: StatementLine): string {
+  if (line.kind === "ADJUSTMENT") return "Điều chỉnh";
+  if (line.kind === "MINIMUM") return "Bù tối thiểu";
+  if (line.out?.kind === "LOSS") return "Mất";
+  if (line.out?.kind === "BUY_BACK") return "Mua lại";
+  if (line.out?.kind === "TRANSFER") return "Chuyển đi";
+  if (line.priceChanged) return "Đổi giá";
+  return "Thuê";
+}
+
+/** "8 %" for a VAT rate in hundredths of a percent. */
+export const vatText = (basisPoints: number): string =>
+  `${(basisPoints / 100).toLocaleString("vi-VN")} %`;
