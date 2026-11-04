@@ -107,7 +107,7 @@ Giá ngày của mỗi ngày SHALL là giá của mã trên bản hợp đồng 
 - **THEN** dòng 01/12 – 14/12 có 14 ngày, 10.080.000 ₫ **AND** dòng 15/12 – 31/12 có 17 ngày, 14.280.000 ₫
 
 ### Requirement: Thuê tối thiểu theo từng lượng hàng
-Mỗi phần lượng hàng khi rời hợp đồng (trả về bãi, mất, mua lại, chuyển sang hợp đồng của nhà thầu khác) SHALL được tính ít nhất số ngày thuê tối thiểu của bản hợp đồng tại ngày trả (mặc định 45 ngày). Tổng ngày tính của phần đó qua mọi kỳ (đã trừ ngày nghỉ) nhỏ hơn tối thiểu thì kỳ có ngày trả SHALL có **dòng bù** = số lượng × (tối thiểu − tổng ngày tính) × giá ngày tại ngày trả. Hàng còn ở công trình và phần đủ đúng tối thiểu SHALL không có dòng bù.
+Mỗi phần lượng hàng khi rời hợp đồng bằng trả về bãi (cả Tốt, Chờ sửa, Phế liệu), mua lại hoặc chuyển sang hợp đồng của nhà thầu khác SHALL được tính ít nhất số ngày thuê tối thiểu của bản hợp đồng tại ngày trả (mặc định 45 ngày). Tổng ngày tính của phần đó qua mọi kỳ (đã trừ ngày nghỉ) nhỏ hơn tối thiểu thì kỳ có ngày trả SHALL có **dòng bù** = số lượng × (tối thiểu − tổng ngày tính) × giá ngày tại ngày trả. Hàng còn ở công trình và phần đủ đúng tối thiểu SHALL không có dòng bù.
 
 #### Scenario: Trả sau 20 ngày, bù 25 ngày
 - **WHEN** 100 `H1,7` giá 1.200 ₫/ngày giao 05/11/2026, trả 25/11/2026, không có ngày nghỉ
@@ -125,6 +125,10 @@ Mỗi phần lượng hàng khi rời hợp đồng (trả về bãi, mất, mua
 - **WHEN** Tết 05/02 – 13/02/2027 và 100 `H1,7` giá 1.400 ₫/ngày giao 01/02/2027, trả 20/02/2027
 - **THEN** dòng 02/02 – 20/02 có 19 ngày lịch, −9, 10 ngày tính, 1.400.000 ₫ **AND** dòng bù 35 ngày, 4.900.000 ₫
 
+#### Scenario: Hàng trả về Phế liệu vẫn bù
+- **WHEN** 10 `H1,7` giá 1.200 ₫/ngày giao 05/11/2026, trả về bãi ngày 25/11/2026 với tình trạng Phế liệu, không có ngày nghỉ
+- **THEN** dòng 20 ngày, 240.000 ₫ **AND** dòng bù 25 ngày, 300.000 ₫
+
 #### Scenario: Hàng mua lại trước 45 ngày
 - **WHEN** 50 `MAM1,6` giá 900 ₫/ngày giao 01/11/2026, phiếu mua lại duyệt 21/11/2026
 - **THEN** kỳ 11/2026 có dòng 20 ngày, 900.000 ₫ **AND** dòng bù 25 ngày, 1.125.000 ₫
@@ -136,6 +140,18 @@ Mỗi phần lượng hàng khi rời hợp đồng (trả về bãi, mất, mua
 #### Scenario: Hợp đồng đặt tối thiểu 30 ngày
 - **WHEN** bản hợp đồng tại ngày trả ghi thuê tối thiểu 30 ngày và 100 `H1,7` giá 1.200 ₫/ngày trả sau 20 ngày tính
 - **THEN** dòng bù 10 ngày, 1.200.000 ₫
+
+### Requirement: Hàng mất và hàng trả cùng ngày không bù
+Hàng **mất** SHALL không có dòng bù tối thiểu: thôi tính thuê từ ngày lập phiếu thu hồi, chỉ tính đền bù (0.2 #21, #76). Phần trả cùng ngày giao gốc (0 ngày thuê) SHALL được miễn tối thiểu (0.2 #76).
+
+#### Scenario: Hàng mất không bù tối thiểu
+- **WHEN** 2 `KU0,5` giá 400 ₫/ngày giao 01/02/2027, ghi mất ở phiếu thu hồi ngày 20/02/2027, không có ngày nghỉ
+- **THEN** kỳ 02/2027 có dòng "Mất" 02/02 – 20/02, 19 ngày, 15.200 ₫ **AND** không có dòng bù
+
+
+#### Scenario: Giao và trả cùng ngày miễn tối thiểu
+- **WHEN** 50 `CHEO1,2` giao ngày 10/11/2026 (`PX-2026-020`) bị xuất nhầm và thu hồi ngay ngày 10/11/2026
+- **THEN** bảng kê không có dòng thuê và không có dòng bù cho 50 cái đó
 
 ### Requirement: Dòng bù tối thiểu trên bảng kê
 Dòng bù SHALL nằm ngay dưới dòng thuê cuối của phần lượng hàng đó, ghi "Tối thiểu N ngày" và "Bù đủ N ngày: lượng này mới thuê M ngày". Dòng bù SHALL không có Từ, Đến, Ngày lịch, Trừ nghỉ; chỉ có số lượng, ngày tính, giá ngày, thành tiền.
@@ -160,7 +176,7 @@ Hàng chuyển công trình SHALL thôi tính ở hợp đồng đi từ hết n
 - **THEN** A và B đều không có dòng bù
 
 ### Requirement: Dòng điều chỉnh kỳ trước
-Kế toán hoặc Giám đốc SHALL ghi được dòng điều chỉnh cho một hợp đồng thuê vào một kỳ chưa chốt, kèm: kỳ được điều chỉnh (đã chốt, trước kỳ ghi), số tiền khác 0 (âm được), lý do bắt buộc. Dòng điều chỉnh SHALL sửa, xóa được khi kỳ ghi chưa chốt (gửi kèm `updatedAt`, lệch thì 409), và bị khóa khi kỳ ghi đã chốt. Dòng điều chỉnh SHALL không cần Giám đốc duyệt và SHALL không sửa kỳ cũ. Bảng kê SHALL hiện dòng điều chỉnh ở cuối, với lý do, người lập và ngày lập.
+Kế toán hoặc Giám đốc SHALL ghi được dòng điều chỉnh cho một hợp đồng thuê vào một kỳ chưa chốt, kèm: kỳ được điều chỉnh (đã chốt, trước kỳ ghi), số tiền khác 0 (âm được), lý do bắt buộc. Dòng điều chỉnh SHALL sửa, xóa được khi kỳ ghi chưa chốt (gửi kèm `updatedAt`, lệch thì 409), và bị khóa khi kỳ ghi đã chốt. Dòng điều chỉnh SHALL không cần Giám đốc duyệt và SHALL không sửa kỳ cũ (0.2 #80). Bảng kê SHALL hiện dòng điều chỉnh ở cuối, với lý do, người lập và ngày lập.
 
 #### Scenario: Ghi thiếu của kỳ trước
 - **WHEN** kỳ 01/2027 đã chốt và `thuha` ghi vào kỳ 02/2027 dòng điều chỉnh 93.000 ₫ cho kỳ 01/2027, lý do "Kỳ 01 thiếu 10 CHEO1,7 × 31 ngày (giao 31/12 chưa ghi)"
@@ -168,7 +184,7 @@ Kế toán hoặc Giám đốc SHALL ghi được dòng điều chỉnh cho mộ
 
 #### Scenario: Điều chỉnh giảm
 - **WHEN** `thuha` ghi dòng điều chỉnh −50.000 ₫ cho kỳ 01/2027 vào kỳ 02/2027, lý do "Kỳ 01 tính thừa 1 ngày nghỉ"
-- **THEN** "Điều chỉnh kỳ trước" của kỳ 02/2027 giảm 50.000 ₫
+- **THEN** "Điều chỉnh kỳ trước" của kỳ 02/2027 giảm 50.000 ₫ **AND** dòng nhật ký Tạo của khoản đó gắn cờ "Có xác nhận bất thường"
 
 #### Scenario: Thiếu lý do
 - **WHEN** `thuha` lưu dòng điều chỉnh 93.000 ₫ để trống lý do

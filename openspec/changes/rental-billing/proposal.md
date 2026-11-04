@@ -10,8 +10,8 @@ Hàng thuê đã ra công trình, về bãi, chuyển công trình, mất và đ
   - **Cài đặt → Ngày nghỉ không tính thuê** (chưa có bản vẽ, làm theo mẫu trang Giá sắt vụn).
   - Mẫu in **bảng kê tiền thuê** và file **Excel** của kỳ.
   - Sửa **D5** (liên kết "Tiền thuê theo kỳ"), **D5b** (ngày cuối kỳ đã chốt thật).
-- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #4, #16, #18, #21, #22, #33, #39, #45, #51, #55, #61, #62, #63, #66, #70, #71, #73, #74.
-- Các điểm cần chốt của issue có phương án trong `design.md` (D1–D7). Câu hỏi để anh chốt nằm trong mô tả PR.
+- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #4, #16, #18, #21, #22, #33, #39, #45, #51, #55, #61, #62, #63, #66, #70, #71, #73, #74 và #75–#80 (chốt trong PR này).
+- Các điểm cần chốt của issue có phương án trong `design.md` (D1–D9). Anh đã chốt khi review PR #140 (04/11/2026), ghi ở 0.2 **#75–#80** trong PR này.
 
 ## What Changes
 
@@ -23,11 +23,12 @@ Hàng thuê đã ra công trình, về bãi, chuyển công trình, mất và đ
 - **Luật ngày (0.2 #4):** trong kỳ, Từ = max(đầu kỳ, **hôm sau** ngày giao), Đến = min(cuối kỳ, **ngày trả**, gồm). Giao và trả cùng ngày không tính trùng: ngày đó thuộc bên trả.
 - **Ngày nghỉ chung (0.2 #73):** bảng mới, Giám đốc sửa ở Cài đặt. Ngày nghỉ nằm trong [Từ, Đến] bị trừ khỏi số ngày tính của mọi hợp đồng thuê. Bảng kê hiện cột "Trừ nghỉ".
 - **Đổi giá giữa kỳ (0.2 #16):** giá ngày đọc qua `contractTermsAt`. Phụ lục có ngày hiệu lực trong kỳ thì **tách dòng tại ngày hiệu lực**.
-- **Tối thiểu 45 ngày theo từng lượng hàng (0.2 #39, #74):** lượng nào trả (mất, mua lại, chuyển sang nhà thầu khác) mà tổng số ngày tính chưa đủ tối thiểu thì có **dòng bù** ở kỳ có ngày trả. Số ngày tối thiểu lấy từ bản hợp đồng tại ngày trả, mặc định `DEFAULT_MIN_RENTAL_DAYS`.
+- **Tối thiểu 45 ngày theo từng lượng hàng (0.2 #39, #74):** lượng nào trả về bãi, mua lại hoặc chuyển sang nhà thầu khác mà tổng số ngày tính (đã trừ nghỉ, 0.2 #75) chưa đủ tối thiểu thì có **dòng bù** ở kỳ có ngày trả. Số ngày tối thiểu lấy từ bản hợp đồng tại ngày trả, mặc định `DEFAULT_MIN_RENTAL_DAYS`.
+  - **Hàng mất không bù** (0.2 #21, #76); hàng **giao và trả cùng ngày** miễn tối thiểu (0.2 #76).
 - **Chuyển công trình (0.2 #70):** cùng nhà thầu thì hợp đồng đi **không bù**; lượng hàng sang hợp đồng nhận **giữ ngày giao gốc** để tính tối thiểu tiếp. Khác nhà thầu thì hợp đồng đi bù như trả, hợp đồng nhận tính như giao mới.
 - **Cước vận chuyển trong kỳ** đọc qua `src/lib/deliveries/amounts.ts` (phiếu xuất ghi sổ trong kỳ, công ty gọi xe).
 - **VAT** theo cờ và thuế suất của bản hợp đồng; áp lên tiền thuê, điều chỉnh và cước (design D5).
-- **Dòng điều chỉnh kỳ trước (0.2 #22):** Kế toán ghi sai sót của kỳ đã chốt thành một dòng tiền (dương hoặc âm) kèm lý do ở một kỳ chưa chốt; không sửa kỳ cũ.
+- **Dòng điều chỉnh kỳ trước (0.2 #22, #80):** Kế toán ghi sai sót của kỳ đã chốt thành một dòng tiền (dương hoặc âm) kèm lý do ở một kỳ chưa chốt; không sửa kỳ cũ, không cần duyệt; khoản âm gắn cờ "Có xác nhận bất thường" trên nhật ký.
 - **Chốt kỳ** (Kế toán, Giám đốc): chỉ chốt khi kỳ đã hết và các kỳ trước của hợp đồng đã chốt. Một transaction lưu:
   - kỳ đã chốt + **các dòng bảng kê chụp lại** + cước + VAT;
   - số phải thu tách loại: tiền thuê, điều chỉnh, cước, VAT, tổng;

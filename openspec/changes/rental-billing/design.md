@@ -31,7 +31,7 @@
 - **Lượng hàng** = các dòng "giao" của cùng (chứng từ + mã), gộp mọi tình trạng (Mới, Tốt cùng giá, 0.2 #4b). Có `startDate` (ngày giao) và `originDate` (ngày giao gốc để tính tối thiểu, D3).
 - **Rút khi trả: FIFO** theo (ngày giao, mã chứng từ, `ledgerId`). Các sự kiện xử lý theo (`businessDate`, `ledgerId`). Kết quả là danh sách **phần lượng hàng** `{ itemId, milli, startDate, originDate, endDate | null, endKind, inDoc, outDoc, minimumApplies }`.
   - `endKind`: `RETURN` (`RETURN_OUT`), `LOSS` (`LOSS_OUT`), `BUY_BACK` (`SALE_OUT`), `TRANSFER` (`TRANSFER_OUT`).
-  - Cân nhắc **LIFO** (rút lượng mới nhất): bất lợi cho khách vì lượng mới dễ chưa đủ 45 ngày, sinh dòng bù; khó giải thích. Cân nhắc **theo tỷ lệ**: ra số lẻ, không khớp cách kế toán đếm. Chọn FIFO: giống cách kế toán trừ trong Excel (trả thì trừ đợt cũ trước), có lợi cho khách, xác định duy nhất. Câu hỏi Q3 trong PR.
+  - Cân nhắc **LIFO** (rút lượng mới nhất): bất lợi cho khách vì lượng mới dễ chưa đủ 45 ngày, sinh dòng bù; khó giải thích. Cân nhắc **theo tỷ lệ**: ra số lẻ, không khớp cách kế toán đếm. Chọn FIFO: giống cách kế toán trừ trong Excel (trả thì trừ đợt cũ trước), có lợi cho khách, xác định duy nhất. Đã chốt 0.2 #77.
 - **Phân đoạn trong kỳ** (hàm thuần `src/domain/rental-billing.ts`): với kỳ [đầu, cuối], phần lượng hàng cho Từ = max(đầu, start + 1), Đến = min(cuối, end ?? cuối, hôm nay nếu kỳ đang chạy). Từ > Đến thì bỏ. Rồi **tách tại ngày hiệu lực** của mỗi bản hợp đồng đã duyệt nằm trong (Từ, Đến] (0.2 #16). Mỗi đoạn: ngày lịch, trừ nghỉ (D2), ngày tính, giá ngày của bản tại ngày Từ của đoạn, `rentAmount`.
 - **Cùng ngày giao và trả** tự đúng nhờ quy ước "Từ = hôm sau ngày giao": ngày D chỉ thuộc bên trả.
 - Tất cả là hàm thuần có test (bảng ca ở tasks 2.x); phần đọc DB chỉ dựng đầu vào.
@@ -40,10 +40,14 @@
 
 **Đề xuất:**
 
+Đã chốt khi review PR #140: 0.2 #75 (ngày nghỉ và tối thiểu), #76 (hàng mất, giao trả cùng ngày).
+
 - **Ngày nghỉ không tính vào tối thiểu.** Tối thiểu so với **tổng ngày tính** (đã trừ nghỉ) của phần lượng hàng qua mọi kỳ: bù = tối thiểu − Σ ngày tính, nếu dương.
   - Lý do: 0.2 #4 nói "trả sớm vẫn tính đủ 45 ngày", tức khách trả ít nhất 45 ngày tiền. Nếu ngày nghỉ được đếm vào 45 thì khách thuê 01/02 – 20/02/2027 (có Tết) chỉ trả 10 + 26 = 36 ngày, nhỏ hơn tối thiểu.
-  - Phương án khác: đếm theo **ngày lịch** (ngày trả − ngày giao, gồm cả ngày nghỉ), bù = 45 − ngày lịch. Có lợi cho khách thuê ngắn qua Tết; nhưng "tối thiểu" mất nghĩa "ít nhất 45 ngày tiền". Câu hỏi Q1 trong PR.
-- **Dòng bù ghi ở kỳ có ngày trả** (hoặc mất, mua lại, chuyển khác nhà thầu), vì chỉ lúc đó mới biết lượng hàng thuê bao lâu. Hàng còn ở công trình không bù, kể cả ở kỳ đang chạy.
+  - Phương án khác: đếm theo **ngày lịch** (ngày trả − ngày giao, gồm cả ngày nghỉ), bù = 45 − ngày lịch. Có lợi cho khách thuê ngắn qua Tết; nhưng "tối thiểu" mất nghĩa "ít nhất 45 ngày tiền". Anh chọn phương án đề xuất (0.2 #75).
+- **Dòng bù ghi ở kỳ có ngày trả** (trả về bãi, mua lại, chuyển khác nhà thầu), vì chỉ lúc đó mới biết lượng hàng thuê bao lâu. Hàng còn ở công trình không bù, kể cả ở kỳ đang chạy.
+- **Hàng mất không bù** (0.2 #21, #76): mất thì thôi tính thuê, chỉ tính đền bù; bù tối thiểu là tiền thuê cho ngày sau ngày mất nên trái #21. Hàng trả về Chờ sửa, Phế liệu vẫn là hàng trả về: vẫn bù. Phần có `endKind = LOSS` đặt `minimumApplies = false`.
+- **Giao và trả cùng ngày miễn tối thiểu** (0.2 #76): phần có ngày trả = `originDate` (0 ngày, VD xuất nhầm mã) đặt `minimumApplies = false`. Công ty không mất ngày cho thuê nào; bắt khách trả 45 ngày cho lần giao nhầm sẽ gây tranh cãi.
 - **Dòng bù không trừ ngày nghỉ**: số ngày bù là ngày "ảo" sau ngày trả, không có Từ / Đến. Giá = giá ngày của bản tại **ngày trả**; tối thiểu = `min_rental_days` của bản tại ngày trả, trống thì `DEFAULT_MIN_RENTAL_DAYS`.
 - Σ ngày tính tính lại từ `originDate` tới ngày trả (cùng hàm ngày nghỉ), không cộng số đã lưu ở kỳ đã chốt. Khớp nhau vì: sổ kho của kỳ đã hết không đổi; phụ lục không hiệu lực trong kỳ đã chốt; **ngày nghỉ trong kỳ đã chốt bị khóa** (spec `rental-holidays`). Đổi ngày nghỉ không ảnh hưởng tối thiểu vì tối thiểu chỉ dùng số ngày, không dùng giá.
 - **Bảng ngày nghỉ** `rental_holiday`: khoảng ngày gồm hai đầu, không chồng nhau (`EXCLUDE USING gist (daterange(start_date, end_date, '[]') WITH &&)`, không cần `btree_gist`), tối đa 31 ngày một dòng để bắt gõ nhầm năm. Hàm thuần `holidayDaysIn(from, to, holidays)` đếm ngày trong giao.
@@ -65,14 +69,15 @@
   - `receivables` cần số cố định và hạn trả để ghi thanh toán, không phải tính lại cả lịch sử mỗi lần mở sổ công nợ;
   - tính lại vẫn hữu ích để **đối chiếu** (Open Questions: lệnh `billing:check`).
 - **Số tiền tách loại** để `receivables` tách công nợ (roadmap dòng 14): `rent_amount` (gồm dòng bù), `adjustment_amount`, `freight_amount`, `vat_amount`, `total_amount`; check `total = rent + adjustment + freight + vat`.
-- **Hạn trả** `due_date` = `period_end` + `payment_terms_days` của bản tại cuối kỳ (0.2 #18: "ngày chốt kỳ" = ngày cuối tháng theo `billing_cycle = MONTH_END`, đúng số D7: 28/02 + 30 = 30/03/2027). Phương án "ngày bấm chốt + số ngày" làm hạn trả phụ thuộc lúc kế toán bấm (chốt muộn thì khách được nợ lâu hơn), không chọn. Câu hỏi Q4.
+- **Hạn trả** `due_date` = `period_end` + `payment_terms_days` của bản tại cuối kỳ (0.2 #18: "ngày chốt kỳ" = ngày cuối tháng theo `billing_cycle = MONTH_END`, đúng số D7: 28/02 + 30 = 30/03/2027). Phương án "ngày bấm chốt + số ngày" làm hạn trả phụ thuộc lúc kế toán bấm (chốt muộn thì khách được nợ lâu hơn), không chọn. Đã chốt 0.2 #78.
 - **Khóa**: ba bảng vào `APPEND_ONLY_TABLES` (role app chỉ `SELECT, INSERT`) **và** trigger `billing_period_frozen` chặn `UPDATE/DELETE`; dòng con chỉ chèn khi `parent.created_xact = pg_current_xact_id()` (cùng cách `return_note`, `drizzle/0016_returns.sql`). Không có "mở lại kỳ".
 - **Thông tin công ty** trên bản in đọc `company_profile` hiện tại như mọi phiếu in khác; không chụp lại (đổi tên công ty là việc hiếm, và in phiếu xuất cũ cũng theo cách này).
 
 ### D5. Dòng điều chỉnh (điểm cần chốt 3)
 
 - **Ai tạo:** Kế toán, Giám đốc (`billing.manage`). Kinh doanh không.
-- **Không cần Giám đốc duyệt.** Lý do: chốt kỳ đã là bước kiểm; dòng điều chỉnh luôn hiện riêng trên D7 / bản in kèm lý do, người lập; nhật ký ghi lại (D18). Thêm bước duyệt làm chậm chốt kỳ mỗi tháng. Câu hỏi Q5 (nếu anh muốn Giám đốc duyệt khoản giảm).
+- **Không cần Giám đốc duyệt** (0.2 #80). Lý do: chốt kỳ đã là bước kiểm; dòng điều chỉnh luôn hiện riêng trên D7 / bản in kèm lý do, người lập; nhật ký ghi lại (D18). Thêm bước duyệt làm chậm chốt kỳ mỗi tháng.
+- **Khoản âm gắn cờ "Có xác nhận bất thường"** trên dòng nhật ký Tạo / Sửa (số tiền mới < 0), để Giám đốc thấy ở ô "Cần xem kỹ" của D18 mà không chặn kế toán.
 - **Âm được** (tính thừa thì trả lại khách), khác 0, tiền nguyên ₫, giới hạn |số tiền| ≤ 10 tỷ ₫ để bắt gõ nhầm.
 - **Gắn vào kỳ nào:** một kỳ **chưa chốt** của cùng hợp đồng, **sau** kỳ được điều chỉnh; kỳ được điều chỉnh phải **đã chốt** (chưa chốt thì sửa nguồn rồi tính lại, không cần điều chỉnh). Mặc định D7 gợi ý kỳ đang xem. Hợp đồng đã trả hết hàng vẫn ghi được vào tháng sau: tháng đó có dòng điều chỉnh nên vào danh sách kỳ.
 - Bảng `billing_adjustment`: `contract_id`, `month`, `ref_month`, `amount`, `reason`, `closed_period_id` (null tới khi kỳ ghi được chốt), `created_by`, `updated_by`, `created_at`, `updated_at`. Sửa / xóa khi `closed_period_id` null (`updatedAt` → 409). Trigger: chặn `INSERT` khi (hợp đồng, `month`) đã có `billing_period`; chặn `UPDATE/DELETE` khi `closed_period_id` đã có; chỉ cho đặt `closed_period_id` trong transaction tạo kỳ đó.
@@ -149,15 +154,20 @@
 ### D13. Nhật ký
 
 - Chốt kỳ: `CLOSE_PERIOD`, `document_type = BILLING_PERIOD`, mã hiện "102026/ANPHAT-MINHPHAT · 02/2027", tóm tắt "kỳ 02/2027 · 8 dòng · phải thu 7.283.304 ₫".
-- Dòng điều chỉnh: `CREATE`, `UPDATE` (`diffFields`), `DELETE`, `document_type = BILLING_ADJUSTMENT`.
+- Dòng điều chỉnh: `CREATE`, `UPDATE` (`diffFields`), `DELETE`, `document_type = BILLING_ADJUSTMENT`; số tiền âm (tạo hoặc sửa thành âm) gắn cờ "Có xác nhận bất thường" (0.2 #80).
 - Ngày nghỉ: `CREATE`, `UPDATE`, `DELETE`, `document_type = RENTAL_HOLIDAY`.
 - `src/lib/activity/coverage.test.ts` bắt hàm ghi quên `logActivity`.
 
 ### D14. Seed dev và E2E
 
 - Seed: ngày nghỉ 2027 (Tết Dương lịch 01/01, Tết Nguyên đán 05/02 – 13/02, Giỗ Tổ 16/04, 30/04 – 01/05, 02/09). Không seed kỳ đã chốt hay dòng điều chỉnh (cần kỳ cũ đã hết). D7 dùng hợp đồng mẫu An Phú – Block B ở kỳ đang chạy (tạm tính).
-- Ảnh mốc D7 phải ổn định qua ngày chạy (kỳ đang chạy phụ thuộc hôm nay): E2E chọn kỳ đã hết cố định trên hợp đồng E2E, hoặc che số phụ thuộc ngày như D8 (#136). Chọn khi apply, ghi vào `CLAUDE.md`.
-- E2E: Kế toán mở D7 kỳ đang chạy (nút chốt tắt kèm lý do), Giám đốc thêm / sửa / xóa ngày nghỉ năm xa (VD 2099, không chạm kỳ nào), Kinh doanh xem không có nút chốt, Xuất Excel. **Chốt kỳ không chạy trong E2E** trên DB dev: kỳ phải đã hết và kỳ đã chốt không xóa được, mỗi lần chạy sẽ để lại kỳ khóa. Chốt, khóa, 409, dòng điều chỉnh kiểm bằng integration test (DB test dọn bằng owner).
+- **Ảnh mốc D7 chỉ chụp phần không phụ thuộc ngày** (chốt khi review PR #140). Chứng từ seed và E2E mang ngày chạy (không ghi lùi được), kỳ đang chạy dừng ở "hôm nay", nên số ngày và tiền đổi theo ngày và theo giờ CI chạy (đúng kiểu lỗi D8, #136). Luật:
+  - ảnh mốc `@visual` của D7, bảng kê in và trang ngày nghỉ chụp đầu trang, băng ngày nghỉ, danh sách hợp đồng, khung bảng và nhãn cột;
+  - các ô phụ thuộc ngày gắn `data-mask` và bị che khi chụp: kỳ đang chọn, "Tạm tính đến …", Từ, Đến, Ngày lịch, Trừ nghỉ, Ngày tính, Thành tiền, Cộng tiền thuê, cước, khối Phải thu, hạn trả, phải thu trên danh sách hợp đồng;
+  - ngày nghỉ trong ảnh mốc là dòng cố định năm 2099 do global setup tạo (không phụ thuộc năm chạy);
+  - con số (VD 7.283.304 ₫ của D7) kiểm bằng unit / integration test (tasks 2.6, 3.2), không bằng ảnh mốc.
+  - Luật này chép vào `CLAUDE.md` (mục lưu ý E2E) ở task 7.3 của apply, vì `CLAUDE.md` mô tả code đang có; PR propose chỉ sửa `openspec/changes/` và `docs/`.
+- E2E: Kế toán mở D7 kỳ đang chạy (nút chốt tắt kèm lý do), Giám đốc thêm / sửa / xóa ngày nghỉ năm xa (2098, không chạm kỳ nào; 2099 dành cho dòng cố định của ảnh mốc), Kinh doanh xem không có nút chốt, Xuất Excel. **Chốt kỳ không chạy trong E2E** trên DB dev: kỳ phải đã hết và kỳ đã chốt không xóa được, mỗi lần chạy sẽ để lại kỳ khóa. Chốt, khóa, 409, dòng điều chỉnh kiểm bằng integration test (DB test dọn bằng owner).
 
 ## Risks / Trade-offs
 
@@ -176,5 +186,5 @@
 
 ## Open Questions
 
-- Lệnh `npm run billing:check` đối chiếu kỳ đã chốt với tính lại từ sổ (như `inventory:check`): hữu ích để phát hiện sai sót, không đổi spec; làm khi `receivables` cần hoặc khi anh muốn.
+- Lệnh `npm run billing:check` đối chiếu kỳ đã chốt với tính lại từ sổ (như `inventory:check`): không đổi spec của change này; **làm cùng `receivables`** vì công nợ đọc số đã chụp (ghi ở Workflow follow-up của `tasks.md`).
 - Chốt nhiều hợp đồng một lần ("Chốt tất cả hợp đồng đã kiểm"): thêm sau nếu kế toán thấy mất thời gian.

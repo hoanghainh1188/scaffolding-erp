@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Thao tác tính tiền thuê và ngày nghỉ được ghi
-Mỗi lệnh chốt kỳ tiền thuê (Chốt kỳ), tạo / sửa / xóa dòng điều chỉnh, tạo / sửa / xóa ngày nghỉ SHALL ghi đúng một dòng nhật ký trong cùng transaction. Tính, xem, in, xuất Excel SHALL không ghi nhật ký. Lệnh bị từ chối SHALL không ghi. Tóm tắt Chốt kỳ SHALL ghi kỳ, số dòng và phải thu; tóm tắt dòng điều chỉnh SHALL ghi kỳ được điều chỉnh, số tiền và lý do.
+Mỗi lệnh chốt kỳ tiền thuê (Chốt kỳ), tạo / sửa / xóa dòng điều chỉnh, tạo / sửa / xóa ngày nghỉ SHALL ghi đúng một dòng nhật ký trong cùng transaction. Tính, xem, in, xuất Excel SHALL không ghi nhật ký. Lệnh bị từ chối SHALL không ghi. Tóm tắt Chốt kỳ SHALL ghi kỳ, số dòng và phải thu; tóm tắt dòng điều chỉnh SHALL ghi kỳ được điều chỉnh, số tiền và lý do. Tạo hoặc sửa dòng điều chỉnh có số tiền âm SHALL gắn cờ "Có xác nhận bất thường" (0.2 #80).
 
 #### Scenario: Chốt kỳ ghi một dòng
 - **WHEN** `thuha` chốt kỳ 02/2027 của `102026/ANPHAT-MINHPHAT` có 8 dòng bảng kê, phải thu 7.283.304 ₫
@@ -10,6 +10,10 @@ Mỗi lệnh chốt kỳ tiền thuê (Chốt kỳ), tạo / sửa / xóa dòng 
 #### Scenario: Ghi dòng điều chỉnh
 - **WHEN** `thuha` ghi dòng điều chỉnh 93.000 ₫ cho kỳ 01/2027 vào kỳ 02/2027
 - **THEN** có đúng một dòng Tạo với tóm tắt "Điều chỉnh kỳ 01/2027 · 93.000 ₫ · Kỳ 01 thiếu 10 CHEO1,7 × 31 ngày (giao 31/12 chưa ghi)"
+
+#### Scenario: Khoản điều chỉnh âm gắn cờ
+- **WHEN** `thuha` ghi dòng điều chỉnh −50.000 ₫ cho kỳ 01/2027 vào kỳ 02/2027
+- **THEN** dòng nhật ký Tạo gắn cờ "Có xác nhận bất thường" **AND** Giám đốc thấy dòng đó khi lọc "Cần xem kỹ" trên D18
 
 #### Scenario: Sửa ngày nghỉ
 - **WHEN** Giám đốc sửa "Tết Nguyên đán" từ 05/02 – 13/02/2027 thành 06/02 – 14/02/2027
