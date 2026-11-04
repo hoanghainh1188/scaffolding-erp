@@ -20,6 +20,7 @@ import {
   location,
   purchaseOrder,
   purchaseOrderLine,
+  rentalHoliday,
   repairOrder,
   session,
   site,
@@ -58,6 +59,7 @@ import { seedPurchasing } from "@/lib/purchasing/sample";
 import { seedReceiving } from "@/lib/receiving/sample";
 import { currentScrapPrice, setScrapPrice } from "@/lib/receiving/scrap-price";
 import { seedRepairs } from "@/lib/repairs/sample";
+import { createHoliday } from "@/lib/holidays/service";
 import { seedStocktakes } from "@/lib/stocktakes/sample";
 import { cancelStocktake } from "@/lib/stocktakes/sessions";
 import { E2E_ACCOUNTS, E2E_TEMP_PREFIX } from "@/lib/users/e2e-accounts";
@@ -699,6 +701,38 @@ async function ensureSiteOperationStock(
   if (!posted.ok) throw new Error(`E2E site stock: ${posted.error}`);
 }
 
+/** billing.spec.ts adds, edits and deletes holidays of this year only. */
+export const E2E_HOLIDAY_YEAR = 2098;
+/** The fixed holiday of the D7 and settings baselines (design D14). */
+export const E2E_SAMPLE_HOLIDAY = {
+  name: "Tết mẫu E2E",
+  startDate: "2099-02-05",
+  endDate: "2099-02-13",
+};
+
+/**
+ * Removes holidays a failed billing.spec.ts run left in 2098, and keeps the
+ * 2099 sample of the baselines. Far years never touch a closed period.
+ */
+async function ensureHolidays(db: Database, actor: ActivityActor) {
+  await db
+    .delete(rentalHoliday)
+    .where(
+      and(
+        sql`${rentalHoliday.startDate} >= ${`${E2E_HOLIDAY_YEAR}-01-01`}`,
+        sql`${rentalHoliday.startDate} <= ${`${E2E_HOLIDAY_YEAR}-12-31`}`,
+      ),
+    );
+  const [sample] = await db
+    .select({ id: rentalHoliday.id })
+    .from(rentalHoliday)
+    .where(eq(rentalHoliday.name, E2E_SAMPLE_HOLIDAY.name));
+  if (!sample) {
+    const saved = await createHoliday(db, actor, E2E_SAMPLE_HOLIDAY);
+    if (!saved.ok) throw new Error(saved.error);
+  }
+}
+
 export default async function globalSetup(): Promise<void> {
   const env = getEnv();
   if (!env.E2E_PASSWORD) {
@@ -729,6 +763,8 @@ export default async function globalSetup(): Promise<void> {
     if (director) {
       await seedCatalog(handle.db, director);
       await ensureStockItems(handle.db, director);
+      // Holidays of billing.spec.ts and the D7 baselines (rental-billing 7.2).
+      await ensureHolidays(handle.db, director);
       // D10 / D11 sample stock (design D11), on an empty ledger only.
       await seedInventory(handle.db, director);
       // D2 / D3b sample orders (purchase-orders design D13), once.

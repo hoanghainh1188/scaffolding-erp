@@ -9,6 +9,7 @@ import { seedContracts } from "@/lib/contracts/sample";
 import { seedDeliveries } from "@/lib/deliveries/sample";
 import { getEnv } from "@/lib/env";
 import { seedCatalog } from "@/lib/catalog/seed";
+import { seedHolidays } from "@/lib/holidays/sample";
 import { seedValueAdjustments } from "@/lib/inventory/revaluation-sample";
 import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
@@ -99,6 +100,9 @@ async function main(): Promise<number> {
     process.stdout.write(
       `Chuyển công trình, mua lại, đổi hàng mẫu: thêm ${siteOperations} chứng từ.\n`,
     );
+    // Holidays of 2027 like drawing D7 (rental-billing 7.1).
+    const holidays = director ? await seedHolidays(handle.db, director) : 0;
+    process.stdout.write(`Ngày nghỉ không tính thuê: thêm ${holidays} dòng.\n`);
     // Sample activity log like drawing D18 (activity-log design D13).
     const activity =
       director && accountant && sales && warehouse

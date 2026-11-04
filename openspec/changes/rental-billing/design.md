@@ -161,13 +161,13 @@
 ### D14. Seed dev và E2E
 
 - Seed: ngày nghỉ 2027 (Tết Dương lịch 01/01, Tết Nguyên đán 05/02 – 13/02, Giỗ Tổ 16/04, 30/04 – 01/05, 02/09). Không seed kỳ đã chốt hay dòng điều chỉnh (cần kỳ cũ đã hết). D7 dùng hợp đồng mẫu An Phú – Block B ở kỳ đang chạy (tạm tính).
-- **Ảnh mốc D7 chỉ chụp phần không phụ thuộc ngày** (chốt khi review PR #140). Chứng từ seed và E2E mang ngày chạy (không ghi lùi được), kỳ đang chạy dừng ở "hôm nay", nên số ngày và tiền đổi theo ngày và theo giờ CI chạy (đúng kiểu lỗi D8, #136). Luật:
-  - ảnh mốc `@visual` của D7, bảng kê in và trang ngày nghỉ chụp đầu trang, băng ngày nghỉ, danh sách hợp đồng, khung bảng và nhãn cột;
-  - các ô phụ thuộc ngày gắn `data-mask` và bị che khi chụp: kỳ đang chọn, "Tạm tính đến …", Từ, Đến, Ngày lịch, Trừ nghỉ, Ngày tính, Thành tiền, Cộng tiền thuê, cước, khối Phải thu, hạn trả, phải thu trên danh sách hợp đồng;
-  - ngày nghỉ trong ảnh mốc là dòng cố định năm 2099 do global setup tạo (không phụ thuộc năm chạy);
-  - con số (VD 7.283.304 ₫ của D7) kiểm bằng unit / integration test (tasks 2.6, 3.2), không bằng ảnh mốc.
-  - Luật này chép vào `CLAUDE.md` (mục lưu ý E2E) ở task 7.3 của apply, vì `CLAUDE.md` mô tả code đang có; PR propose chỉ sửa `openspec/changes/` và `docs/`.
-- E2E: Kế toán mở D7 kỳ đang chạy (nút chốt tắt kèm lý do), Giám đốc thêm / sửa / xóa ngày nghỉ năm xa (2098, không chạm kỳ nào; 2099 dành cho dòng cố định của ảnh mốc), Kinh doanh xem không có nút chốt, Xuất Excel. **Chốt kỳ không chạy trong E2E** trên DB dev: kỳ phải đã hết và kỳ đã chốt không xóa được, mỗi lần chạy sẽ để lại kỳ khóa. Chốt, khóa, 409, dòng điều chỉnh kiểm bằng integration test (DB test dọn bằng owner).
+- **Ảnh mốc D7 chỉ chụp phần không phụ thuộc ngày** (chốt khi review PR #140). Chứng từ seed và E2E mang ngày chạy (không ghi lùi được), kỳ đang chạy dừng ở "hôm nay", và hợp đồng E2E thêm dòng sau mỗi lần chạy, nên bảng kê đổi theo ngày, theo giờ CI chạy và theo số lần chạy (đúng kiểu lỗi D8, #136). Luật:
+  - ảnh mốc `@visual` của D7 chụp **kỳ 02/2099**: đầu trang, băng ngày nghỉ (dòng cố định "Tết mẫu E2E" 05/02 – 13/02/2099 do global setup tạo), danh sách hợp đồng trống; ảnh mốc trang ngày nghỉ chụp **năm 2099**;
+  - các ô phụ thuộc ngày trên D7 vẫn gắn `data-mask` (kỳ, "Tạm tính đến …", Từ, Đến, số ngày, thành tiền, phải thu, hạn trả) để ảnh nào chụp tới cũng bị che;
+  - bảng kê và con số (VD 7.283.304 ₫ của D7) kiểm bằng unit, component, integration test (tasks 2.6, 3.2, 6.3), không bằng ảnh mốc;
+  - E2E thêm / sửa / xóa ngày nghỉ năm 2098 (global setup dọn năm đó trước mỗi lần chạy).
+  - Luật này chép vào `CLAUDE.md` (mục lưu ý E2E) ở task 7.3.
+- E2E: Kế toán mở D7 kỳ đang chạy (nút chốt tắt kèm lý do), Giám đốc thêm / sửa / xóa ngày nghỉ năm 2098, Kinh doanh mở từ D5 và không có nút chốt, Xuất Excel. **Chốt kỳ không chạy trong E2E** trên DB dev: kỳ phải đã hết và kỳ đã chốt không xóa được, mỗi lần chạy sẽ để lại kỳ khóa. Chốt, khóa, 409, dòng điều chỉnh kiểm bằng integration test (DB test dọn bằng owner).
 
 ## Risks / Trade-offs
 
