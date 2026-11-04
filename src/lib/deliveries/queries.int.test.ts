@@ -276,7 +276,10 @@ describe("amounts for receivables", () => {
     ]);
     expect(await deliveredAmounts(ctx.db, deal.id)).toEqual([
       {
+        id: note.id,
         code: note.code,
+        batchNo: expect.any(Number),
+        vehiclePlate: expect.anything(),
         businessDate: "2026-11-03",
         freight: 1_800_000,
         saleLines: [{ itemCode: "GG-K17", amount: 17_507_000 }],

@@ -15,7 +15,10 @@ import { itemFacts, readNoteContent } from "./records";
 type Reader = Pick<Database, "select">;
 
 export interface DeliveredAmounts {
+  id: string;
   code: string;
+  batchNo: number;
+  vehiclePlate: string | null;
   businessDate: BusinessDate;
   /** One-way freight when the company called the truck. */
   freight: Money | null;
@@ -33,6 +36,8 @@ export async function deliveredAmounts(
     .select({
       id: deliveryNote.id,
       code: deliveryNote.code,
+      batchNo: deliveryNote.batchNo,
+      vehiclePlate: deliveryNote.vehiclePlate,
       businessDate: deliveryNote.businessDate,
       companyTruck: deliveryNote.companyTruck,
       freightAmount: deliveryNote.freightAmount,
@@ -73,7 +78,10 @@ export async function deliveredAmounts(
         return { itemCode: info?.code ?? "", amount: toMoney(amount) };
       });
     result.push({
+      id: note.id,
       code: note.code,
+      batchNo: note.batchNo,
+      vehiclePlate: note.vehiclePlate,
       businessDate: (note.businessDate ?? "") as BusinessDate,
       freight:
         note.companyTruck && note.freightAmount !== null
