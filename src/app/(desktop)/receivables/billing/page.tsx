@@ -227,14 +227,20 @@ export default async function Page({
           </section>
 
           {view.pending.length > 0 ? (
-            <p role="note" className="rounded-md bg-muted p-3 text-sm">
-              Còn{" "}
-              {view.pending
-                .map((entry) => `${entry.code} ${entry.label}`)
-                .join(", ")}
-              : khi ghi sổ, hàng tính vào kỳ của ngày đó. Nháp còn trên điện
-              thoại cũng vậy.
-            </p>
+            <ul
+              role="note"
+              className="flex flex-col gap-1 rounded-md bg-muted p-3 text-sm"
+            >
+              {view.pending.map((entry) => (
+                <li key={entry.code}>
+                  Còn {entry.code} {entry.label}: {entry.when}, hàng tính vào kỳ
+                  của ngày đó.
+                </li>
+              ))}
+              <li>
+                Nháp còn trên điện thoại cũng tính vào kỳ của ngày gửi được.
+              </li>
+            </ul>
           ) : null}
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">

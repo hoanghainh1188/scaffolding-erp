@@ -7,8 +7,9 @@ import type { BusinessDate } from "@/domain/business-date";
 import { createBuyBack } from "@/lib/buy-backs/service";
 import { siteLedgerLines } from "@/lib/deliveries/site-ledger";
 import { createTestContext } from "@/test/auth";
-import { approvedKgSale } from "@/test/deliveries";
-import { returnOf, type Counts } from "@/test/returns";
+import { d5Rental } from "@/test/contracts";
+import { approvedContract, approvedKgSale } from "@/test/deliveries";
+import { deliverMore, returnOf, type Counts } from "@/test/returns";
 import {
   movedNow,
   setupSiteFixture,
@@ -67,6 +68,26 @@ describe("siteLedgerLines", () => {
     );
     expect(lines[0]?.documentCode).toMatch(/^PX-2026-/);
     expect(await siteLedgerLines(ctx.db, fx.to.id)).toEqual([]);
+  });
+
+  it("keeps two contracts of one site apart", async () => {
+    const second = await approvedContract(ctx, fx, {
+      ...d5Rental(fx),
+      siteId: fx.site("Chung cư An Phú – Block B"),
+    });
+    await deliverMore(ctx, fx, second.id, [["GG-K17", "GOOD", 40]]);
+    const own = await siteLedgerLines(ctx.db, second.id);
+    expect(own.map((line) => [line.movement, line.milli / 1000])).toEqual([
+      ["DELIVERY_IN", 40],
+    ]);
+    const first = await november(fx.from.id);
+    expect(
+      first.lines.find((line) => line.itemCode === "GG-K17")?.quantityMilli,
+    ).toBe(120_000);
+    const other = await november(second.id);
+    expect(
+      other.lines.map((line) => [line.itemCode, line.quantityMilli / 1000]),
+    ).toEqual([["GG-K17", 40]]);
   });
 });
 

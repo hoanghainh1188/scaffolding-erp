@@ -82,6 +82,8 @@ export interface PeriodList {
 export interface PendingDocument {
   code: string;
   label: string;
+  /** "khi xe rời bãi": the event that will date it. */
+  when: string;
 }
 
 export interface ContractStatementView {
@@ -227,14 +229,17 @@ async function pendingDocuments(
     ...notes.map((row) => ({
       code: row.code,
       label: DELIVERY_STATUS_LABELS[row.status as DeliveryStatus],
+      when: "khi xe rời bãi",
     })),
     ...transfers.map((row) => ({
       code: row.code,
       label: TRANSFER_STATUS_LABELS[row.status as TransferStatus],
+      when: "khi xác nhận chuyển",
     })),
     ...buyBacks.map((row) => ({
       code: row.code,
       label: BUY_BACK_STATUS_LABELS[row.status as BuyBackStatus],
+      when: "khi Giám đốc duyệt",
     })),
   ].sort((a, b) => a.code.localeCompare(b.code));
 }
