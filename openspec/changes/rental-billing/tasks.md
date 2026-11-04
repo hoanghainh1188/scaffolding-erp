@@ -36,11 +36,11 @@
 
 ## 6. Giao diện
 
-- [ ] 6.1 Cài đặt: thẻ "Ngày nghỉ không tính thuê" và trang `/settings/holidays` (danh sách theo năm, thêm / sửa / xóa có hỏi lại, `DateInput`, dòng trong kỳ đã chốt hiện khóa). Component test: lọc năm, hỏi lại khi xóa, hiện lỗi chồng ngày.
-- [ ] 6.2 D7 `/receivables/billing`: chọn tháng, Xuất Excel, băng ngày nghỉ (liên kết sửa chỉ Giám đốc), danh sách hợp đồng của kỳ với đếm đã chốt; thẻ "Tính tiền thuê" trên `/receivables`. Theo `docs/design/screens/D7-RentalBilling.dc.html`, đổi hex sang token. Component test: đếm "1/4 đã chốt", liên kết sửa ngày nghỉ ẩn với Kế toán.
-- [ ] 6.3 D7 phần hợp đồng: bảng chi tiết nhóm theo mã rồi ngày giao, dòng phụ chứng từ và nhãn (Đổi giá, Mất, Mua lại, Chuyển đi, Tối thiểu N ngày), dòng điều chỉnh (thêm / sửa / xóa cho `billing.manage`), cước, khối Phải thu với VAT theo thuế suất, hạn trả, chứng từ chưa xong, "Tạm tính đến …", nút chốt (tắt kèm lý do, hỏi lại với số phải thu, xử lý 409). Component test: số D7 bản vẽ hiện đúng `7.283.304 ₫`; nút chốt tắt ở kỳ đang chạy; Kinh doanh không thấy nút chốt.
-- [ ] 6.4 Bảng kê in `/receivables/billing/[month]/[contractId]/print` theo design D9 (thông tin công ty từ `company_profile`, dấu "TẠM TÍNH – CHƯA CHỐT" khi chưa chốt). Component test: đọc thông tin công ty, có dấu tạm tính.
-- [ ] 6.5 D5 hợp đồng thuê: liên kết "Tiền thuê theo kỳ" tới D7 của hợp đồng (ẩn với người không có `billing.view`). Kiểm: test D5 hiện có xanh, ảnh mốc D5 chỉ đổi thêm liên kết.
+- [x] 6.1 Cài đặt: thẻ "Ngày nghỉ không tính thuê" và trang `/settings/holidays` (danh sách theo năm, thêm / sửa / xóa có hỏi lại, `DateInput`, dòng trong kỳ đã chốt hiện khóa). Component test: lọc năm, hỏi lại khi xóa, hiện lỗi chồng ngày.
+- [x] 6.2 D7 `/receivables/billing`: chọn tháng, Xuất Excel, băng ngày nghỉ (liên kết sửa chỉ Giám đốc), danh sách hợp đồng của kỳ với đếm đã chốt; thẻ "Tính tiền thuê" trên `/receivables`. Theo `docs/design/screens/D7-RentalBilling.dc.html`, đổi hex sang token. Component test: đếm "1/4 đã chốt", liên kết sửa ngày nghỉ ẩn với Kế toán.
+- [x] 6.3 D7 phần hợp đồng: bảng chi tiết nhóm theo mã rồi ngày giao, dòng phụ chứng từ và nhãn (Đổi giá, Mất, Mua lại, Chuyển đi, Tối thiểu N ngày), dòng điều chỉnh (thêm / sửa / xóa cho `billing.manage`), cước, khối Phải thu với VAT theo thuế suất, hạn trả, chứng từ chưa xong, "Tạm tính đến …", nút chốt (tắt kèm lý do, hỏi lại với số phải thu, xử lý 409). Component test: số D7 bản vẽ hiện đúng `7.283.304 ₫`; nút chốt tắt ở kỳ đang chạy; Kinh doanh không thấy nút chốt.
+- [x] 6.4 Bảng kê in `/receivables/billing/[month]/[contractId]/print` theo design D9 (thông tin công ty từ `company_profile`, dấu "TẠM TÍNH – CHƯA CHỐT" khi chưa chốt). Component test: đọc thông tin công ty, có dấu tạm tính.
+- [x] 6.5 D5 hợp đồng thuê: liên kết "Tiền thuê theo kỳ" tới D7 của hợp đồng (ẩn với người không có `billing.view`). Kiểm: test D5 hiện có xanh, ảnh mốc D5 chỉ đổi thêm liên kết.
 
 ## 7. Seed, E2E, tài liệu
 

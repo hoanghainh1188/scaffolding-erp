@@ -29,6 +29,7 @@ import {
   basisPointsOf,
   hasContent,
   periodOf,
+  termsOn,
   vatGroups,
   type Statement,
   type StatementLine,
@@ -91,6 +92,10 @@ export interface ContractStatementView {
   /** Why the period cannot be closed now; null when it can. */
   closeBlock: string | null;
   pending: PendingDocument[];
+  /** Closed months of the contract, newest first ("2027-01"). */
+  closedMonths: string[];
+  /** Contract terms in force at the end of the period, for the header. */
+  vatBasisPoints: number | null;
 }
 
 const headColumns = {
@@ -398,6 +403,17 @@ export async function contractStatement(
   return statementView(db, head, source, month, today, holidays, pending);
 }
 
+function extras(source: BillingSource, month: string) {
+  const end = periodOf(month).to;
+  return {
+    closedMonths: [...source.closed.keys()].sort().reverse(),
+    vatBasisPoints:
+      source.terms.length > 0
+        ? termsOn(source.terms, end).vatBasisPoints
+        : null,
+  };
+}
+
 async function statementView(
   db: Reader,
   head: ContractHead,
@@ -417,6 +433,7 @@ async function statementView(
       closed: stored.closed,
       closeBlock: whyNotClosable(source, stored.statement, today, holidays),
       pending: [],
+      ...extras(source, month),
     };
   }
   if (source.terms.length === 0) return null;
@@ -428,5 +445,6 @@ async function statementView(
     closed: null,
     closeBlock: whyNotClosable(source, statement, today, holidays),
     pending,
+    ...extras(source, month),
   };
 }
