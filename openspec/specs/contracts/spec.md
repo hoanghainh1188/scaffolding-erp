@@ -132,7 +132,7 @@ Mỗi dòng hợp đồng bán SHALL có tình trạng (Mới, Tốt hoặc Ph�
 - **THEN** hệ thống từ chối với "Mã ONG-49 chưa có trọng lượng chuẩn nên chưa bán theo kg được." và không lưu
 
 ### Requirement: Cách tính tiền thuê theo hợp đồng
-Tiền thuê của một lượng hàng SHALL = giá ngày × số ngày × số lượng. Số ngày = ngày trả − ngày xuất (không tính ngày xuất, tính ngày trả) và SHALL không nhỏ hơn số ngày thuê tối thiểu của hợp đồng. Số ngày thuê tối thiểu mặc định 45, đặt ở một chỗ duy nhất. Hàng chưa trả tính tới ngày đang tính. Giá tháng SHALL chỉ để hiện: giá ngày × số ngày của tháng; không quy giá tháng ra giá ngày.
+Tiền thuê của một lượng hàng SHALL = giá ngày × số ngày tính × số lượng. Số ngày = ngày trả − ngày xuất (không tính ngày xuất, tính ngày trả), trừ ngày nghỉ chung (`rental-holidays`). Số ngày tính của từng lượng hàng SHALL không nhỏ hơn số ngày thuê tối thiểu của hợp đồng (mặc định 45, đặt một chỗ; ngoại lệ theo `rental-billing`). Hàng chưa trả tính tới ngày đang tính. Giá tháng SHALL chỉ để hiện, không quy ra giá ngày. Ví dụ dưới đây khi không có ngày nghỉ, trừ khi có ghi.
 
 #### Scenario: Thuê quá 45 ngày
 - **WHEN** 600 `H1,7` giá 1.200 ₫/ngày xuất 01/11/2026, trả 21/03/2027
@@ -149,6 +149,14 @@ Tiền thuê của một lượng hàng SHALL = giá ngày × số ngày × số
 #### Scenario: Trả một phần giữa chừng
 - **WHEN** 600 `H1,7` giá 1.200 ₫/ngày xuất 01/11/2026; 200 cái trả 20/01/2027, 400 cái trả 21/03/2027
 - **THEN** tiền thuê là 200 × 80 × 1.200 + 400 × 140 × 1.200 = 19.200.000 + 67.200.000 = 86.400.000 ₫
+
+#### Scenario: Tối thiểu theo từng lượng hàng
+- **WHEN** 100 `H1,7` giá 1.200 ₫/ngày xuất 01/11/2026 và 100 `H1,7` xuất 01/12/2026; ngày 21/12/2026 trả 100 cái
+- **THEN** 100 cái trả là lượng xuất 01/11/2026 (50 ngày, không bù) **AND** lượng xuất 01/12/2026 vẫn đang thuê, chưa có bù
+
+#### Scenario: Trừ ngày nghỉ
+- **WHEN** bảng ngày nghỉ có Tết 05/02 – 13/02/2027 và 100 `H1,7` giá 1.200 ₫/ngày xuất 01/01/2027, trả 31/03/2027
+- **THEN** số ngày là 89 − 9 = 80 và tiền thuê là 9.600.000 ₫
 
 #### Scenario: Số lượng 0
 - **WHEN** tính tiền thuê cho 0 cái `H1,7`
