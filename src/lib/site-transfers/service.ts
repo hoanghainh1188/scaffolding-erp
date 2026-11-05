@@ -425,6 +425,14 @@ interface Shown {
   note: string | null;
 }
 
+/**
+ * The receiving side as the log shows it. The contract code is part of it:
+ * two rentals can share one site, and moving a draft between them is a
+ * change.
+ */
+const placeText = (place: { code: string; siteName: string }) =>
+  `${place.siteName} · ${place.code}`;
+
 const SHOWN_FIELDS: readonly FieldSpec<Shown>[] = [
   { field: "toContractId", label: "Công trình nhận", value: (row) => row.to },
   { field: "lines", label: "Hàng", value: (row) => row.goods },
@@ -473,7 +481,7 @@ export function updateSiteTransfer(
       const changes = diffFields(
         SHOWN_FIELDS,
         {
-          to: oldTo?.siteName ?? "",
+          to: oldTo ? placeText(oldTo) : "",
           goods: amountsText(
             namedLines(
               before.map((line) => ({
@@ -487,7 +495,7 @@ export function updateSiteTransfer(
           note: row.note,
         },
         {
-          to: pair.to.siteName,
+          to: placeText(pair.to),
           goods: amountsText(namedLines(checked.lines, parsed.facts)),
           plate: parsed.vehiclePlate,
           note: parsed.note,
