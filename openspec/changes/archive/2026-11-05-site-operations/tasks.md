@@ -84,12 +84,12 @@ Quyết định đã chốt khi vẽ (PR #137, 0.2 #66–#68): chuyển công tr
 
 - [x] 7.1 `npm run db:seed:dev` thêm hợp đồng nhận Dương Nội (Đã duyệt, cùng Minh Phát), một `CCT` Chờ xác nhận như M9, một `MLA` Chờ duyệt như D6c, một đổi hàng Chờ thu hồi như D6d; `CLAUDE.md` bảng lệnh ghi thêm. Kiểm: chạy seed hai lần không lỗi, không trùng.
 - [x] 7.2 E2E `e2e/site-operations.spec.ts` (dùng hợp đồng thuê E2E của `deliveries.spec.ts` và một hợp đồng thuê E2E thứ hai do global setup tạo một lần, ghi `E2E-KHO-01/02`, kiểm theo chênh lệch): chuyển công trình văn phòng xác nhận và qua M9 (D6 hai hợp đồng đổi đúng); Kinh doanh lập mua lại, Giám đốc duyệt (đang ở công trình giảm); đổi hàng: lập, M5 xuất, M4 nối. Global setup hủy phiếu chuyển Nháp / Chờ xác nhận và từ chối phiếu mua lại Chờ duyệt do `e2e.*` lập lần trước. Kiểm: `npm run test:e2e` xanh.
-- [ ] 7.3 Ảnh mốc `@visual` cho D6b, D6c, D6d, M9 và D6 có cột chuyển (dữ liệu seed, ngày cố định). Kiểm: gắn nhãn `update-snapshots` vào PR, CI chạy lại xanh.
+- [x] 7.3 Ảnh mốc `@visual` cho D6b, D6c, D6d, M9 và D6 có cột chuyển (dữ liệu seed, ngày cố định). Kiểm: gắn nhãn `update-snapshots` vào PR, CI chạy lại xanh. (Ảnh mốc ở `tests/e2e/__screenshots__/visual.spec.ts/`, CI của PR #138 xanh.)
 
 ## 8. Kiểm tra toàn bộ
 
-- [ ] 8.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate site-operations --strict` đều xanh; coverage `src/domain`, `src/lib` ≥ 80 %; `npm run inventory:check` 0 lệch trên DB dev sau seed.
-- [ ] 8.2 Kiểm tra tay (issue #132 bước 9): chuyển 50 khung từ An Phú sang Dương Nội (D6 cả hai hợp đồng đổi đúng, giá BQ không đổi); khách mua lại 20 ty ren (thôi tính thuê từ ngày duyệt, tiền bán đúng); đổi 100 chéo dài lấy chéo ngắn (hai phiếu trỏ tới nhau). Chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33.
+- [x] 8.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate site-operations --strict` đều xanh; coverage `src/domain`, `src/lib` ≥ 80 %; `npm run inventory:check` 0 lệch trên DB dev sau seed. (Coverage sau PR #142: `src/lib` 80,0 %, `src/domain` 93,5 %; lint, typecheck, test, E2E xanh trên CI.)
+- [ ] 8.2 **Làm sau, theo dõi ở #33** (mục 14). Kiểm tra tay (issue #132 bước 9): chuyển 50 khung từ An Phú sang Dương Nội (D6 cả hai hợp đồng đổi đúng, giá BQ không đổi); khách mua lại 20 ty ren (thôi tính thuê từ ngày duyệt, tiền bán đúng); đổi 100 chéo dài lấy chéo ngắn (hai phiếu trỏ tới nhau). Chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33.
 
 ## Workflow follow-up
 

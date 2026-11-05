@@ -17,7 +17,7 @@ Trang `/m/history` SHALL hiện mục "Chưa gửi · lưu trên máy này" ở 
 - **THEN** M7 có nút "Gửi lại" để gửi ngay
 
 ### Requirement: Phiếu đã ghi sổ theo ngày
-Dưới mục nháp, M7 SHALL hiện phiếu đã ghi sổ của mọi người theo quyền: phiếu nhập (`receiving.manage`), phiếu xuất (`deliveries.pick`), phiếu thu hồi (`returns.receive`), nhóm theo ngày nghiệp vụ mới nhất trước ("Hôm nay, 26/10", "Hôm qua, 25/10"). Mỗi dòng có số phiếu, nhà cung cấp hoặc công trình, số lượng, giờ ghi sổ, không có giá. Ban đầu SHALL hiện 2 ngày; "Xem các ngày trước" tải thêm 7 ngày. Bấm phiếu SHALL mở phiếu chỉ xem.
+Dưới mục nháp, M7 SHALL hiện phiếu đã ghi sổ của mọi người theo quyền: phiếu nhập (`receiving.manage`), phiếu xuất và phiếu chuyển công trình (`deliveries.pick`), phiếu thu hồi (`returns.receive`), nhóm theo ngày nghiệp vụ mới nhất trước ("Hôm nay, 26/10", "Hôm qua, 25/10"). Mỗi dòng có số phiếu, nhà cung cấp hoặc công trình, số lượng, giờ ghi sổ, không có giá. Ban đầu SHALL hiện 2 ngày; "Xem các ngày trước" tải thêm 7 ngày. Bấm phiếu SHALL mở phiếu chỉ xem.
 
 #### Scenario: Phiếu hôm nay
 - **WHEN** `PN-2026-091` (Thép Phúc Lâm, hàng mới, 2 mã) ghi sổ lúc 07:20 ngày 26/10/2026
@@ -39,8 +39,12 @@ Dưới mục nháp, M7 SHALL hiện phiếu đã ghi sổ của mọi người 
 - **WHEN** `PTH-2026-071` của An Phú – Block B trả 100 cái, mất 2 cái lúc 09:40 ngày 05/11/2026
 - **THEN** mục "Hôm nay, 05/11" có dòng "Thu hồi PTH-2026-071", "An Phú – Block B · trả 100 cái, mất 2 cái", "09:40" **AND** bấm vào mở `/m/returns/PTH-2026-071` chỉ xem, có ảnh, không có giá
 
+#### Scenario: Phiếu chuyển công trình hôm nay
+- **WHEN** `CCT-2026-004` chuyển 86 cái từ An Phú – Block B sang Trường THCS Dương Nội lúc 16:05 ngày 05/11/2026
+- **THEN** mục "Hôm nay, 05/11" có dòng "Chuyển CCT-2026-004", "An Phú – Block B → Trường THCS Dương Nội · 86 cái", "16:05" **AND** bấm vào mở `/m/site-transfers/CCT-2026-004` chỉ xem, không có giá
+
 ### Requirement: Lọc theo loại phiếu
-M7 SHALL có bộ lọc loại phiếu "Tất cả", "Nhập", "Xuất", "Thu hồi". Loại đang chọn SHALL lưu trên URL.
+M7 SHALL có bộ lọc loại phiếu "Tất cả", "Nhập", "Xuất", "Thu hồi", "Chuyển". Loại đang chọn SHALL lưu trên URL.
 
 #### Scenario: Lọc Nhập
 - **WHEN** Thủ kho chọn "Nhập"
@@ -54,6 +58,10 @@ M7 SHALL có bộ lọc loại phiếu "Tất cả", "Nhập", "Xuất", "Thu h�
 - **WHEN** Thủ kho chọn "Thu hồi"
 - **THEN** URL có `?type=return` **AND** danh sách chỉ có nháp thu hồi và phiếu thu hồi
 
+#### Scenario: Lọc Chuyển
+- **WHEN** Thủ kho chọn "Chuyển"
+- **THEN** URL có `?type=transfer` **AND** danh sách chỉ có nháp xác nhận chuyển và phiếu chuyển công trình
+
 #### Scenario: Vai trò không nhận hàng
 - **WHEN** `thuha` (Kế toán) mở `/m/history` trên máy không có nháp
-- **THEN** M7 hiện "Chưa có phiếu nào. Phiếu bạn làm sẽ hiện ở đây." và không gọi danh sách phiếu nhập, phiếu xuất hay phiếu thu hồi
+- **THEN** M7 hiện "Chưa có phiếu nào. Phiếu bạn làm sẽ hiện ở đây." và không gọi danh sách phiếu nhập, phiếu xuất, phiếu thu hồi hay phiếu chuyển
