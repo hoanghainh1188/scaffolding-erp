@@ -141,3 +141,10 @@ D6c SHALL mở từ D6 (nút "Khách mua lại") và hiện nguồn (nhà thầu
 #### Scenario: Khối khi duyệt
 - **WHEN** mở `MLA-2026-003` mua 20 `TR16` (100 ₫/ngày) và 50 `BCH` (20 ₫/ngày)
 - **THEN** khối "Khi duyệt" hiện "Sổ kho: ra 20 TR16, 50 BCH ở công trình" và "Tiền thuê 1 ngày ở An Phú giảm 3.000 ₫"
+
+### Requirement: Duyệt phiếu mua lại trừ tiền trả trước
+Khi Giám đốc duyệt phiếu mua lại, nếu nhà thầu có tiền trả trước, hệ thống SHALL trong cùng transaction duyệt trừ tiền trả trước vào các khoản còn nợ của nhà thầu theo luật "Tiền trả trước tự trừ khoản phát sinh sau" (spec `customer-receipts`). Tiền bán và hạn trả lưu trên phiếu SHALL không đổi. Phiếu mua lại SHALL không cộng VAT (0.2 #84).
+
+#### Scenario: Duyệt khi có trả trước
+- **WHEN** Minh Phát có tiền trả trước 2.000.000 ₫, không nợ khoản nào, và `minhanh` duyệt `MLA-2026-003` tiền bán 6.000.000 ₫ ngày 03/11/2026
+- **THEN** khoản `MLA-2026-003` đã trừ 2.000.000 ₫, còn 4.000.000 ₫, hạn 18/11/2026 **AND** tiền trả trước 0 ₫

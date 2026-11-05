@@ -58,7 +58,7 @@
   - `docs/ui.md` mục 3.4 ghi trạng thái **duyệt bản vẽ** (D7 của `rental-billing` cũng vẫn "Đã duyệt"), nên không đổi.
 - [x] 8.4 Chạy `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate receivables --strict`, tất cả xanh; coverage `src/domain`, `src/lib` ≥ 80 %; gắn nhãn `update-snapshots` vào PR apply.
   - Kết quả 05/11/2026: lint, typecheck, build xanh; Vitest 3.338/3.338 xanh, coverage `src/domain` 93 % nhánh, `src/lib` 95,7 % (`src/lib/receivables` 81 %); `openspec validate --strict` xanh; E2E 110 qua, 1 hỏng ở `auth.spec.ts` ("locking an account…") vì DB dev tích nhiều tài khoản tạm `e2etmp*` đã khóa nên tài khoản mới không hiện trong danh sách — không do change này. Nhãn `update-snapshots` gắn khi đẩy PR.
-- [ ] 8.5 Kiểm tra tay (ghi bước và số vào issue #33 nếu chưa làm trước archive): nhập lại công nợ một nhà thầu thật từ Excel của kế toán (khoản, phiếu thu, cọc) và so số còn nợ, quá hạn; mở file Excel bằng Excel / LibreOffice; D14, D14b trên Edge 1366px so với bản vẽ; đo thời gian mở D14 với dữ liệu demo.
+- [ ] 8.5 **Làm sau, theo dõi ở #33** (mục 15). Kiểm tra tay (ghi bước và số vào issue #33 nếu chưa làm trước archive): nhập lại công nợ một nhà thầu thật từ Excel của kế toán (khoản, phiếu thu, cọc) và so số còn nợ, quá hạn; mở file Excel bằng Excel / LibreOffice; D14, D14b trên Edge 1366px so với bản vẽ; đo thời gian mở D14 với dữ liệu demo.
 
 ## Workflow follow-up
 

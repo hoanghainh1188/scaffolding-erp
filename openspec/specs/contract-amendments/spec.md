@@ -63,7 +63,7 @@ Phụ lục SHALL đổi được: số lượng và giá dòng hàng, thêm mã
 - **THEN** hệ thống từ chối với "Phụ lục chưa có thay đổi nào." và phụ lục vẫn Nháp
 
 ### Requirement: Ngày hiệu lực của phụ lục
-Ngày hiệu lực SHALL không trước ngày bắt đầu hợp đồng, không trước ngày hiệu lực của phụ lục đã duyệt gần nhất, và SHALL sau ngày cuối của kỳ tính tiền thuê đã chốt gần nhất. Hệ thống SHALL kiểm lúc lưu, lúc gửi duyệt và lúc duyệt. D5b SHALL hiện ngày cuối kỳ đã chốt gần nhất.
+Ngày hiệu lực SHALL không trước ngày bắt đầu hợp đồng, không trước ngày hiệu lực của phụ lục đã duyệt gần nhất, SHALL sau ngày cuối của kỳ tính tiền thuê đã chốt gần nhất, và với hợp đồng bán SHALL sau ngày giao của phiếu xuất bán đã ghi sổ gần nhất (để VAT và hạn trả của hàng đã giao không đổi, spec `receivables`). Hệ thống SHALL kiểm lúc lưu, lúc gửi duyệt và lúc duyệt. D5b SHALL hiện ngày cuối kỳ đã chốt gần nhất.
 
 #### Scenario: Ngày hiệu lực trong kỳ đã chốt
 - **WHEN** kỳ 01–30/11/2026 của hợp đồng đã chốt và `quocbao` đặt ngày hiệu lực 30/11/2026
@@ -84,6 +84,14 @@ Ngày hiệu lực SHALL không trước ngày bắt đầu hợp đồng, khôn
 #### Scenario: Trước ngày bắt đầu hợp đồng
 - **WHEN** hợp đồng bắt đầu 01/11/2026 và ngày hiệu lực là 25/10/2026
 - **THEN** hệ thống từ chối với "Ngày hiệu lực không được trước ngày bắt đầu hợp đồng (01/11/2026)." và không lưu
+
+#### Scenario: Hợp đồng bán, hiệu lực không sau ngày giao gần nhất
+- **WHEN** hợp đồng bán có `PX-2026-041` ghi sổ ngày 02/10/2026 và `quocbao` đặt ngày hiệu lực phụ lục 02/10/2026
+- **THEN** hệ thống từ chối với "Ngày hiệu lực phải sau ngày giao hàng gần nhất (02/10/2026). Hàng đã giao giữ VAT và hạn trả cũ." và không lưu
+
+#### Scenario: Hợp đồng bán, hiệu lực sau ngày giao
+- **WHEN** phiếu xuất bán gần nhất ghi sổ 02/10/2026 và ngày hiệu lực là 03/10/2026
+- **THEN** phụ lục được lưu
 
 ### Requirement: Duyệt lại phụ lục
 Phụ lục SHALL đi Nháp → Chờ duyệt → Đã duyệt; Giám đốc trả lại về Nháp kèm lý do; Nháp hoặc Chờ duyệt hủy được. Chỉ Giám đốc SHALL duyệt và trả lại. Phụ lục chỉ có hiệu lực sau khi duyệt; phụ lục chưa duyệt SHALL không ảnh hưởng giá đang áp dụng. Phụ lục đã duyệt SHALL không sửa, không hủy được. Duyệt phụ lục khi nhà thầu nợ quá hạn theo cùng luật lý do như hợp đồng.

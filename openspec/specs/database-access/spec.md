@@ -18,7 +18,7 @@ Mỗi cơ sở dữ liệu của hệ thống SHALL có hai role: role owner (ch
 - **THEN** không bảng nào có chủ là `erp_app`
 
 ### Requirement: Quyền tối thiểu trên bảng
-Role app SHALL có `SELECT`, `INSERT` trên mọi bảng trong schema `public` và `USAGE` trên mọi sequence ở đó. Role app SHALL có `UPDATE`, `DELETE` trên mọi bảng trừ bảng chỉ ghi thêm: `inventory_ledger`, `activity_log`, `scrap_price`, `billing_period`, `billing_period_line`, `billing_period_freight`. Role app SHALL không có `TRUNCATE`, `REFERENCES`, `TRIGGER`, không có `CREATE` trên schema nào, không có quyền gì trên schema `drizzle`.
+Role app SHALL có `SELECT`, `INSERT` trên mọi bảng của schema `public`, `USAGE` trên mọi sequence ở đó, và `UPDATE`, `DELETE` trên mọi bảng trừ bảng chỉ ghi thêm: `inventory_ledger`, `activity_log`, `scrap_price`, `billing_period`, `billing_period_line`, `billing_period_freight`, `receipt`, `receipt_allocation`, `receipt_cancellation`, `contract_settlement`. Role app SHALL không có `TRUNCATE`, `REFERENCES`, `TRIGGER`, `CREATE` trên schema nào, và không có quyền gì trên schema `drizzle`.
 
 #### Scenario: Ghi thêm dòng sổ kho được
 - **WHEN** role app ghi phiếu nhập 120 cây `GG-K17` tình trạng Tốt vào `BAI-01`
@@ -47,6 +47,10 @@ Role app SHALL có `SELECT`, `INSERT` trên mọi bảng trong schema `public` v
 #### Scenario: Sửa kỳ tiền thuê đã chốt bị từ chối
 - **WHEN** role app chạy `UPDATE billing_period SET total_amount = 0` hoặc `DELETE FROM billing_period_line`
 - **THEN** cả hai lệnh bị từ chối với mã `42501`; kỳ đã chốt giữ nguyên số
+
+#### Scenario: Sửa phiếu thu bị từ chối
+- **WHEN** role app chạy `UPDATE receipt SET amount = 0` hoặc `DELETE FROM receipt_allocation`
+- **THEN** cả hai lệnh bị từ chối với mã `42501`; phiếu thu và phân bổ giữ nguyên
 
 ### Requirement: Role app không đổi được cấu trúc và trigger
 Role app SHALL không chạy được lệnh DDL trên bảng có sẵn hay tạo đối tượng mới: `ALTER TABLE` (kể cả `DISABLE TRIGGER`), `DROP TABLE`, `CREATE TABLE`, `CREATE FUNCTION`, và không đổi được `session_replication_role`.
