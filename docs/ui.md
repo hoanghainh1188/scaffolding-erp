@@ -120,7 +120,8 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 #### Tài chính & Công nợ
 
 - **D14. Công nợ**:
-    - **[MVP] Phải thu:** sổ chi tiết theo nhà thầu (tiền thuê + bán + vận chuyển + đền bù), ghi nhận thanh toán, cảnh báo quá hạn, xuất Excel.
+    - **[MVP] Phải thu:** theo nhà thầu, tách loại (thuê & cước, bán, đền bù, mua lại, VAT); các khoản nợ với hạn và tình hình; ghi phiếu thu (tự trừ khoản đến hạn sớm nhất trước, trả dư giữ làm tiền trả trước); nộp cọc tiền; hủy phiếu thu có lý do; cọc và bảo lãnh (nhắc bảo lãnh sắp hết hạn); cảnh báo quá hạn; xuất Excel.
+    - **D14b. Thanh lý hợp đồng [MVP]:** kiểm điều kiện, cấn trừ cọc vào nợ của hợp đồng, hoàn cọc thừa (0.2 #81).
     - **[Bản 2] Phải trả:** theo NCC, cá nhân thanh lý phế liệu, đơn vị thuê xe ngoài.
 
 #### Báo cáo
@@ -157,7 +158,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 | Giai đoạn | Desktop | Mobile |
 |---|---|---|
-| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D5a, D5b, D6, D6b, D6c, D6d, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D16, D17, D18 | M1, M2, M3, M4, M5, M6a, M6, M7, M9 |
+| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D5a, D5b, D6, D6b, D6c, D6d, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D14b, D16, D17, D18 | M1, M2, M3, M4, M5, M6a, M6, M7, M9 |
 | **Bản 2** | D1 (đầy đủ), D12 (đầy đủ), D14 (phải trả), D15 | M8 |
 
 ### 3.4. Thiết kế đã vẽ (Claude Design)
@@ -197,7 +198,8 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | M9 Xác nhận chuyển công trình | `M9-SiteTransfer.dc.html` | `site-operations` | Chờ duyệt |
 | D12 Sửa chữa đơn giản | `D12-Repair.dc.html` | `simple-repair` | Đã duyệt |
 | D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Đã duyệt |
-| D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt |
+| D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt (vẽ lại 05/11/2026) |
+| D14b Thanh lý hợp đồng | `D14b-ContractClose.dc.html` | `receivables` | Đã duyệt |
 | D13 Kết quả kiểm kê | `D13-Stocktake.dc.html` | `stocktake` | Đã duyệt |
 | M6a Bắt đầu kiểm kê | `M6a-StocktakeStart.dc.html` | `stocktake` | Đã duyệt |
 | M6 Đếm hàng | `M6-Stocktake.dc.html` | `stocktake` | Đã duyệt |
