@@ -317,3 +317,98 @@ describe("rejecting", () => {
     ).toEqual(["CREATE", "REJECT"]);
   });
 });
+
+describe("buy-back checks", () => {
+  const create = (patch: Partial<BuyBackBody>) =>
+    createBuyBack(
+      ctx.db,
+      fx.sales,
+      { ...body({ "GG-CH": 1 }), ...patch },
+      {
+        now: SITE_NOW,
+      },
+    );
+
+  it("is opened from a running rental only", async () => {
+    expect(await create({ contractId: "not-an-id" })).toMatchObject({
+      ok: false,
+      status: 422,
+      field: "contractId",
+      error: "Bạn mở phiếu mua lại từ hợp đồng thuê.",
+    });
+    expect(await create({ contractId: fx.to.id })).toMatchObject({
+      ok: false,
+      error: "Chỉ mua lại hàng đang thuê của hợp đồng thuê đang thực hiện.",
+    });
+  });
+
+  it("names the line with an unknown item, a bad count or a bad price", async () => {
+    expect(
+      await create({ lines: [{ itemId: "x", quantity: "1" }] }),
+    ).toMatchObject({ ok: false, field: "lines.0.itemId" });
+    expect(
+      await create({
+        lines: [{ itemId: fx.item("GG-CH"), quantity: "abc" }],
+      }),
+    ).toMatchObject({ ok: false, field: "lines.0.quantity" });
+    for (const unitPrice of [-1, 1.5]) {
+      expect(
+        await create({
+          lines: [{ itemId: fx.item("GG-CH"), quantity: "1", unitPrice }],
+        }),
+      ).toMatchObject({
+        ok: false,
+        field: "lines.0.unitPrice",
+        error: "Đơn giá mua lại phải là số tiền không âm.",
+      });
+    }
+  });
+
+  it("answers 404 for a note that does not exist", async () => {
+    for (const ref of [
+      "00000000-0000-4000-8000-000000000000",
+      "MLA-2026-999",
+    ]) {
+      expect(
+        await approveBuyBack(ctx.db, fx.director, ref, {}, { now: LATER }),
+      ).toMatchObject({ ok: false, status: 404 });
+    }
+  });
+
+  it("writes nothing when an edit changes nothing", async () => {
+    const note = await made({ "GG-CH": 20 });
+    const same = await updateBuyBack(
+      ctx.db,
+      fx.sales,
+      note.id,
+      { ...body({ "GG-CH": 20 }), updatedAt: note.updatedAt },
+      { now: LATER },
+    );
+    expect(same).toMatchObject({ ok: true, data: { id: note.id } });
+    expect(
+      (await activityRows(ctx.db, note.code)).map((row) => row.action),
+    ).toEqual(["CREATE"]);
+  });
+
+  it("approves by code with a reason, 409 on a stale stamp", async () => {
+    const note = await made({ "GG-CH": 20 });
+    expect(
+      await approveBuyBack(
+        ctx.db,
+        fx.director,
+        note.id,
+        { updatedAt: "2020-01-01T00:00:00.000Z" },
+        { now: LATER },
+      ),
+    ).toMatchObject({ ok: false, status: 409 });
+    expect(
+      await approveBuyBack(
+        ctx.db,
+        fx.director,
+        note.code,
+        { updatedAt: note.updatedAt, reason: "Khách trả ngay" },
+        { now: LATER },
+      ),
+    ).toMatchObject({ ok: true, data: { status: "APPROVED" } });
+  });
+});

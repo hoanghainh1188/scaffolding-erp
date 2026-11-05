@@ -4,10 +4,13 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { activityRows } from "@/test/activity";
 import { createTestContext } from "@/test/auth";
 import { closeMonth } from "@/test/billing";
+import { approvedKgSale } from "@/test/deliveries";
 import { setupSiteFixture, type SiteFixture } from "@/test/site-operations";
 
 import {
+  ADJUSTMENT_MAX,
   ADJUSTMENT_MESSAGES,
+  ADJUSTMENT_REASON_MAX,
   createAdjustment,
   deleteAdjustment,
   updateAdjustment,
@@ -194,5 +197,104 @@ describe("updateAdjustment and deleteAdjustment", () => {
     expect(
       (await activityRows(ctx.db)).slice(before).map((row) => row.action),
     ).toEqual(["DELETE"]);
+  });
+});
+
+describe("adjustment checks", () => {
+  const invalid = (field: string, error: string) => ({
+    ok: false,
+    status: 422,
+    field,
+    error,
+  });
+
+  it("refuses a month that is not a month", async () => {
+    const result = await createAdjustment(
+      ctx.db,
+      fx.accountant,
+      body({ month: "2026-13" }),
+    );
+    expect(result).toMatchObject({ ok: false, status: 422, field: "month" });
+  });
+
+  it("needs the corrected month before the month of the line", async () => {
+    expect(
+      await createAdjustment(
+        ctx.db,
+        fx.accountant,
+        body({ refMonth: "2026-12" }),
+      ),
+    ).toEqual(invalid("refMonth", ADJUSTMENT_MESSAGES.refNotBefore));
+  });
+
+  it("refuses amounts that are not whole đồng or too big", async () => {
+    expect(
+      await createAdjustment(ctx.db, fx.accountant, body({ amount: 1.5 })),
+    ).toEqual(invalid("amount", ADJUSTMENT_MESSAGES.zero));
+    expect(
+      await createAdjustment(
+        ctx.db,
+        fx.accountant,
+        body({ amount: -(ADJUSTMENT_MAX + 1) }),
+      ),
+    ).toEqual(invalid("amount", ADJUSTMENT_MESSAGES.tooBig));
+  });
+
+  it("refuses a reason over the limit", async () => {
+    expect(
+      await createAdjustment(
+        ctx.db,
+        fx.accountant,
+        body({ reason: "x".repeat(ADJUSTMENT_REASON_MAX + 1) }),
+      ),
+    ).toEqual(invalid("reason", ADJUSTMENT_MESSAGES.reasonTooLong));
+  });
+
+  it("is for rentals only", async () => {
+    const sale = await approvedKgSale(ctx, fx);
+    expect(
+      await createAdjustment(
+        ctx.db,
+        fx.accountant,
+        body({ contractId: sale.id }),
+      ),
+    ).toEqual({ ok: false, status: 409, error: ADJUSTMENT_MESSAGES.notRental });
+  });
+
+  it("answers 404 for a line that does not exist", async () => {
+    const missing = "00000000-0000-4000-8000-000000000000";
+    for (const id of [missing, "not-an-id"]) {
+      expect(
+        await updateAdjustment(ctx.db, fx.accountant, id, { amount: 1 }),
+      ).toMatchObject({ ok: false, status: 404 });
+      expect(
+        await deleteAdjustment(ctx.db, fx.accountant, id, {}),
+      ).toMatchObject({ ok: false, status: 404 });
+    }
+  });
+
+  it("writes nothing when an edit changes nothing", async () => {
+    await closedNovember();
+    const saved = await createAdjustment(ctx.db, fx.accountant, body());
+    if (!saved.ok) throw new Error(saved.error);
+    const before = (await activityRows(ctx.db)).length;
+    const same = await updateAdjustment(ctx.db, fx.accountant, saved.data.id, {
+      updatedAt: saved.data.updatedAt,
+    });
+    expect(same).toEqual({ ok: true, data: saved.data });
+    expect((await activityRows(ctx.db)).length).toBe(before);
+  });
+
+  it("is refused to sales on edit and delete", async () => {
+    await closedNovember();
+    const saved = await createAdjustment(ctx.db, fx.accountant, body());
+    if (!saved.ok) throw new Error(saved.error);
+    const stamp = { updatedAt: saved.data.updatedAt };
+    expect(
+      await updateAdjustment(ctx.db, fx.sales, saved.data.id, stamp),
+    ).toMatchObject({ ok: false, status: 403 });
+    expect(
+      await deleteAdjustment(ctx.db, fx.sales, saved.data.id, stamp),
+    ).toMatchObject({ ok: false, status: 403 });
   });
 });
