@@ -83,8 +83,8 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 - **D1. Dashboard** **[MVP: bản rút gọn]**:
     - Tiêu đề trang là **câu chào** theo người dùng và số việc chờ, VD: "Chào Minh Anh, hôm nay có 4 việc chờ bạn duyệt" (đã chốt 26/10/2026). Mục menu vẫn tên "Tổng quan".
-    - MVP: Danh sách việc chờ duyệt, Tồn kho theo tình trạng, Công nợ quá hạn.
-    - Bản 2: thêm biểu đồ doanh thu/lợi nhuận.
+    - MVP: công nợ quá hạn (khối màu chính), doanh số theo tháng / ngày (0.2 #90), hàng ở ngoài (cái, tấn) theo khu vực, công trình rủi ro (0.2 #92), tra nhanh một công trình, việc chờ duyệt, tồn kho theo tình trạng, top 5 nhà thầu (0.2 #93). Khối có tiền chỉ Giám đốc, Kế toán thấy (0.2 #91).
+    - Bản 2: thêm lợi nhuận, bảng xếp hạng đầy đủ (D15).
 
 #### Mua hàng & Nhập hàng
 
@@ -169,7 +169,7 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 
 | Màn | Artboard | Dùng cho change | Trạng thái |
 |---|---|---|---|
-| D1 Tổng quan | `Main.dc.html` | `dashboard-basic` | Đã chốt phong cách |
+| D1 Tổng quan | `Main.dc.html` | `dashboard-basic` | Đã duyệt (vẽ lại 06/11/2026) |
 | D3 Tạo đơn thu mua | `D3-PurchaseOrder.dc.html` | `purchase-orders` | Đã chốt phong cách |
 | M4 Nhập thu hồi | `M4-ReturnNote.dc.html` | `returns-and-compensation` | Đã chốt phong cách |
 | Đăng nhập | `Login.dc.html` | `auth-and-roles` | Đã duyệt |
