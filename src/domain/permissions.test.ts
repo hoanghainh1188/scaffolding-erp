@@ -50,6 +50,8 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "billing.view": ["DIRECTOR", "ACCOUNTANT", "SALES"],
   "billing.manage": ["DIRECTOR", "ACCOUNTANT"],
   "holidays.manage": ["DIRECTOR"],
+  "receipts.manage": ["DIRECTOR", "ACCOUNTANT"],
+  "contracts.close": ["DIRECTOR", "ACCOUNTANT"],
 };
 
 const PAIRS = (Object.keys(PERMISSIONS) as Permission[]).flatMap((permission) =>

@@ -59,6 +59,7 @@ import {
 } from "@/lib/deliveries/records";
 import { nextDocumentCode } from "@/lib/inventory/counter";
 import { postMovements } from "@/lib/inventory/post";
+import { prepaymentSuffix, settleCredits } from "@/lib/receivables/credits";
 import { contractPlace } from "@/lib/site-transfers/records";
 
 export interface BuyBackBody {
@@ -458,7 +459,7 @@ export function approveBuyBack(
       const { lines, facts } = await storedLines(tx, note.id);
       const onSite = await onSiteByItemCondition(tx, locked.id);
       assertBuyBackLines(locked.code, lines, onSite, true);
-      const overdue = await overdueDebt(tx, locked.customerId);
+      const overdue = await overdueDebt(tx, locked.customerId, today);
       const reason = (body.reason ?? "").trim() || null;
       if (overdue.amount > 0 && reason === null) {
         throw new DomainValueError(
@@ -504,6 +505,8 @@ export function approveBuyBack(
         })
         .where(eq(buyBackNote.id, note.id))
         .returning();
+      // receivables design D3: the prepayment settles the new debt at once.
+      const taken = await settleCredits(tx, locked.customerId, actor, today);
       await logActivity(
         tx,
         actor,
@@ -514,7 +517,7 @@ export function approveBuyBack(
             id: note.id,
             code: note.code,
           },
-          summary: buyBackSummary(named(lines, facts), total),
+          summary: `${buyBackSummary(named(lines, facts), total)}${prepaymentSuffix(taken)}`,
           anomaly: overdue.amount > 0,
         },
         { now },

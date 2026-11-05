@@ -19,6 +19,7 @@ import {
   TermsSummary,
 } from "@/components/contracts/contract-view";
 import { CompensationStatusBadge } from "@/components/compensations/compensation-badge";
+import { DepositReceived } from "@/components/receivables/deposit-received";
 import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
 import {
@@ -30,6 +31,7 @@ import { formatMoney, toMoney } from "@/domain/money";
 import { can as canRole } from "@/domain/permissions";
 import { requirePermission } from "@/lib/auth/guard";
 import { contractCompensations } from "@/lib/compensations/queries";
+import { contractMoneyStatus } from "@/lib/receivables/queries";
 import { getContractDetail } from "@/lib/contracts/queries";
 
 export const metadata: Metadata = { title: "Hợp đồng" };
@@ -57,6 +59,7 @@ export default async function Page({
     notFound();
   }
   const { head, shown, checks, revisions, can, openAmendment } = found.data;
+  const depositStatus = await contractMoneyStatus(getDatabase(), head.id);
   const compensations =
     head.type === "RENTAL"
       ? await contractCompensations(getDatabase(), head.id)
@@ -222,6 +225,18 @@ export default async function Page({
               Tiền cọc
             </h2>
             <DepositList view={shown} />
+            <DepositReceived
+              status={depositStatus}
+              agreed={shown.deposits
+                .filter((entry) => entry.kind === "CASH")
+                .reduce((sum, entry) => sum + entry.amount, 0)}
+              settleHref={
+                head.status === "ACTIVE" &&
+                canRole(user.role, "contracts.close")
+                  ? `/receivables/contracts/${head.id}/close`
+                  : null
+              }
+            />
           </section>
 
           <section

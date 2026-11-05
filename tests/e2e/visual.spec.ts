@@ -418,3 +418,30 @@ test.describe("billing baselines @visual", () => {
     }
   }
 });
+
+// receivables design D10: the customers and debts change on every run, so
+// D14 is shot with a search that matches nobody (tiles masked) and D14b is
+// not shot; amounts are tested by unit, component and integration tests.
+test.describe("receivables baselines @visual", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "sets its own viewport");
+  });
+
+  for (const width of WIDTHS) {
+    test(`d14-receivables at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/receivables?filter=all&q=khong-ai-ca-e2e");
+      await waitForHydration(page, DESKTOP_READY);
+      await page.addStyleTag({
+        content: "nextjs-portal { display: none !important; }",
+      });
+      await page.evaluate(() => document.fonts.ready);
+      await expect(page).toHaveScreenshot(`d14-receivables-${width}.png`, {
+        fullPage: true,
+        mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
+        animations: "disabled",
+        caret: "hide",
+      });
+    });
+  }
+});

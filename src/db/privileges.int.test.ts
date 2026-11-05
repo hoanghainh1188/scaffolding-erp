@@ -38,7 +38,11 @@ const UPDATE_COLUMN: Readonly<
   billing_period: "closed_at",
   billing_period_freight: "amount",
   billing_period_line: "amount",
+  contract_settlement: "refund_amount",
   inventory_ledger: "created_at",
+  receipt: "amount",
+  receipt_allocation: "amount",
+  receipt_cancellation: "reason",
   scrap_price: "created_at",
 };
 

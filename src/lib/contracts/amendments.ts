@@ -40,6 +40,8 @@ import {
 } from "@/lib/catalog/common";
 import { logActivity } from "@/lib/activity/log";
 
+import { lastDeliveryDate } from "@/lib/receivables/debts";
+
 import { lastClosedPeriodEnd } from "./billing-lock";
 import {
   assertApprover,
@@ -117,6 +119,8 @@ async function limitsOf(
     contractStart: original?.startDate ?? "",
     lastApprovedEffective: approved.at(-1) ?? null,
     lastClosedEnd: await lastClosedPeriodEnd(tx, locked.id),
+    lastSaleDelivery:
+      locked.type === "SALE" ? await lastDeliveryDate(tx, locked.id) : null,
   };
 }
 
@@ -145,6 +149,9 @@ function defaultEffective(
     limits.lastApprovedEffective ?? "",
     limits.lastClosedEnd
       ? addDays(limits.lastClosedEnd as BusinessDate, 1)
+      : "",
+    limits.lastSaleDelivery
+      ? addDays(limits.lastSaleDelivery as BusinessDate, 1)
       : "",
   ];
   return candidates.sort().at(-1) ?? today;

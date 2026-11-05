@@ -80,7 +80,7 @@ Hợp đồng Thanh lý SHALL không: lập phiếu xuất, phiếu thu hồi, p
 
 #### Scenario: Lập phụ lục sau thanh lý
 - **WHEN** `quocbao` lập phụ lục cho hợp đồng đã thanh lý
-- **THEN** hệ thống từ chối với "Hợp đồng đã thanh lý nên không lập phụ lục được."
+- **THEN** hệ thống từ chối với "Hợp đồng đã thanh lý nên không lưu phụ lục được."
 
 #### Scenario: Trả nợ còn lại sau thanh lý
 - **WHEN** hợp đồng đã thanh lý còn `ĐB-2026-014` 2.150.000 ₫ và Minh Phát trả 2.150.000 ₫

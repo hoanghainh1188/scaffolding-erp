@@ -10,7 +10,11 @@ export const APPEND_ONLY_TABLES = [
   "billing_period",
   "billing_period_freight",
   "billing_period_line",
+  "contract_settlement",
   "inventory_ledger",
+  "receipt",
+  "receipt_allocation",
+  "receipt_cancellation",
   "scrap_price",
 ] as const;
 

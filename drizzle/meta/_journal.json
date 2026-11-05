@@ -134,6 +134,13 @@
       "when": 1793804756724,
       "tag": "0018_rental_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793888653502,
+      "tag": "0019_receivables",
+      "breakpoints": true
     }
   ]
 }

@@ -85,6 +85,11 @@ export const PERMISSIONS = {
   "billing.view": OFFICE,
   "billing.manage": ["DIRECTOR", "ACCOUNTANT"],
   "holidays.manage": ["DIRECTOR"],
+  // receivables design D6 (0.2 #85, #86): only the accountant and the
+  // director see receivables (receivables.view above), write and cancel
+  // receipts, and settle a contract, without a separate approval.
+  "receipts.manage": ["DIRECTOR", "ACCOUNTANT"],
+  "contracts.close": ["DIRECTOR", "ACCOUNTANT"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;

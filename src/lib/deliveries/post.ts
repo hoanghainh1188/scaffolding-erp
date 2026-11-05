@@ -51,6 +51,7 @@ import {
   type Tx,
 } from "@/lib/contracts/common";
 import { lockContract } from "@/lib/contracts/records";
+import { prepaymentSuffix, settleCredits } from "@/lib/receivables/credits";
 import { contractTermsAt } from "@/lib/contracts/terms";
 import { postMovements } from "@/lib/inventory/post";
 
@@ -468,6 +469,11 @@ async function postInTransaction(
       .set({ status: next, updatedAt: now })
       .where(eq(contract.id, locked.id));
   }
+  // receivables design D3: a sale is a debt; the prepayment settles it now.
+  const taken =
+    locked.type === "SALE"
+      ? await settleCredits(tx, locked.customerId, actor, today)
+      : null;
   await logActivity(
     tx,
     actor,
@@ -486,7 +492,7 @@ async function postInTransaction(
         }),
         over,
         contractStarted,
-      }),
+      }).concat(taken === null ? "" : prepaymentSuffix(taken)),
       anomaly: over.length > 0,
     },
     { now },
