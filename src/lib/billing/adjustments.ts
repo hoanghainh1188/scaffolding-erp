@@ -41,6 +41,8 @@ export const ADJUSTMENT_MESSAGES = {
     `Kỳ ${formatMonth(month)} đã chốt nên dòng điều chỉnh này không sửa được.`,
   stale: "Dòng điều chỉnh vừa được người khác sửa. Bạn tải lại để xem số mới.",
   notRental: "Chỉ hợp đồng thuê mới có dòng điều chỉnh tiền thuê.",
+  settled:
+    "Hợp đồng đã thanh lý nên không ghi điều chỉnh được. Sai sót sau thanh lý ghi bằng phiếu thu hoặc trao đổi với khách.",
 } as const;
 
 export interface AdjustmentBody {
@@ -169,6 +171,10 @@ async function lockRental(tx: Tx, contractId: string) {
   const locked = await lockContract(tx, contractId);
   if (locked.type !== "RENTAL") {
     throw new ServiceFailure(conflict(ADJUSTMENT_MESSAGES.notRental));
+  }
+  // receivables design D4: a settled contract takes no more adjustments.
+  if (locked.status === "CLOSED") {
+    throw new ServiceFailure(conflict(ADJUSTMENT_MESSAGES.settled));
   }
   return locked;
 }

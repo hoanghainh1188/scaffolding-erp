@@ -57,6 +57,7 @@ import {
   type Tx,
 } from "@/lib/contracts/common";
 import { overdueDebt } from "@/lib/contracts/overdue";
+import { prepaymentSuffix, settleCredits } from "@/lib/receivables/credits";
 import { isUuid, milliOf } from "@/lib/deliveries/records";
 
 import { COMPENSATION_DOCUMENT_TYPE } from "./create";
@@ -384,10 +385,8 @@ export function approveCompensation(
       const note = await opened(tx, id, body.updatedAt, "APPROVE");
       const saved = await saveEdits(tx, note, body, now);
       assertPriced(priced(saved.lines));
-      const overdue = await overdueDebt(
-        tx,
-        await customerOf(tx, note.contractId),
-      );
+      const customerId = await customerOf(tx, note.contractId);
+      const overdue = await overdueDebt(tx, customerId, toBusinessDate(now));
       const reason = reasonOrNull(body.approvalReason);
       if (overdue.amount > 0 && reason === null) {
         throw new DomainValueError(
@@ -414,6 +413,8 @@ export function approveCompensation(
           updatedAt: now,
         })
         .where(eq(compensationNote.id, note.id));
+      // receivables design D3: the prepayment settles the new debt at once.
+      const taken = await settleCredits(tx, customerId, actor, approvedDate);
       await logActivity(
         tx,
         actor,
@@ -424,7 +425,7 @@ export function approveCompensation(
             id: note.id,
             code: note.code,
           },
-          summary: approvedSummary(due, saved.discount, saved.reason, reason),
+          summary: `${approvedSummary(due, saved.discount, saved.reason, reason)}${prepaymentSuffix(taken)}`,
           anomaly: saved.discount > 0 || overdue.amount > 0,
         },
         { now },

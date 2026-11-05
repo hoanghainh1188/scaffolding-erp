@@ -34,6 +34,7 @@ import {
 } from "@/lib/catalog/common";
 import { ContractFieldError, forbidden, run } from "@/lib/contracts/common";
 import { lockContract } from "@/lib/contracts/records";
+import { prepaymentSuffix, settleCredits } from "@/lib/receivables/credits";
 import { db3 } from "@/lib/deliveries/records";
 import { readHolidays } from "@/lib/holidays/queries";
 import { HOLIDAY_LOCK } from "@/lib/holidays/service";
@@ -220,6 +221,8 @@ export function closeBillingPeriod(
         statement,
         now,
       );
+      // receivables design D3: the prepayment settles the new debt at once.
+      const taken = await settleCredits(tx, locked.customerId, actor, today);
       await logActivity(
         tx,
         actor,
@@ -230,7 +233,7 @@ export function closeBillingPeriod(
             id,
             code: `${locked.code} · ${formatMonth(period.month)}`,
           },
-          summary: `${locked.code} · kỳ ${formatMonth(period.month)} · ${statement.lines.length} dòng · phải thu ${formatMoney(statement.totalAmount)}`,
+          summary: `${locked.code} · kỳ ${formatMonth(period.month)} · ${statement.lines.length} dòng · phải thu ${formatMoney(statement.totalAmount)}${prepaymentSuffix(taken)}`,
         },
         { now },
       );

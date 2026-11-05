@@ -103,6 +103,19 @@ describe("assertEffectiveDate", () => {
     expect(() => assertEffectiveDate("2026-12-14", after)).toThrow();
     expect(() => assertEffectiveDate("2026-12-15", after)).not.toThrow();
   });
+
+  it("refuses a sale amendment not after the latest delivery (0.2 #89)", () => {
+    const sale = {
+      contractStart: "2026-10-01",
+      lastApprovedEffective: null,
+      lastClosedEnd: null,
+      lastSaleDelivery: "2026-10-02",
+    };
+    expect(() => assertEffectiveDate("2026-10-02", sale)).toThrow(
+      "Ngày hiệu lực phải sau ngày giao hàng gần nhất (02/10/2026). Hàng đã giao giữ VAT và hạn trả cũ.",
+    );
+    expect(() => assertEffectiveDate("2026-10-03", sale)).not.toThrow();
+  });
 });
 
 const line = (

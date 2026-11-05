@@ -28,6 +28,8 @@ export const REVISION_MESSAGES = {
     `Ngày hiệu lực không được trước ngày hiệu lực của phụ lục đã duyệt gần nhất (${formatBusinessDate(date)}).`,
   closedPeriod: (end: string) =>
     `Ngày hiệu lực phải sau ngày chốt kỳ gần nhất (${formatBusinessDate(end)}). Kỳ đã chốt không tính lại.`,
+  saleDelivered: (day: string) =>
+    `Ngày hiệu lực phải sau ngày giao hàng gần nhất (${formatBusinessDate(day)}). Hàng đã giao giữ VAT và hạn trả cũ.`,
 } as const;
 
 const fail = (message: string): never => {
@@ -72,6 +74,11 @@ export interface EffectiveDateLimits {
   lastApprovedEffective: string | null;
   /** Last day of the latest closed billing period, if any (0.2 #22). */
   lastClosedEnd: string | null;
+  /**
+   * Sale contracts: the latest posted delivery day (0.2 #89). Goods already
+   * delivered keep the VAT and the due date of their delivery day.
+   */
+  lastSaleDelivery?: string | null;
 }
 
 /** Where an amendment may take effect (contract-amendments spec). */
@@ -90,6 +97,10 @@ export function assertEffectiveDate(
   }
   if (limits.lastClosedEnd !== null && effectiveFrom <= limits.lastClosedEnd) {
     fail(REVISION_MESSAGES.closedPeriod(limits.lastClosedEnd));
+  }
+  const delivered = limits.lastSaleDelivery ?? null;
+  if (delivered !== null && effectiveFrom <= delivered) {
+    fail(REVISION_MESSAGES.saleDelivered(delivered));
   }
 }
 

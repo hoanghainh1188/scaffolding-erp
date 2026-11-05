@@ -211,11 +211,24 @@ test.describe("D17 and temporary passwords", () => {
     const row = page.getByRole("row", { name: new RegExp(username) });
     await row.getByRole("button", { name: /Thao tác/ }).click();
     await page.getByRole("menuitem", { name: "Khóa tài khoản" }).click();
+    // The list pages 20 rows and puts locked accounts last; earlier runs keep
+    // locked e2etmp* accounts (global setup), so once locked the row may sit
+    // on another page. The answer of the lock command is what proves it.
+    const locked = page.waitForResponse(
+      (response) =>
+        /\/api\/users\/[^/]+\/lock$/.test(response.url()) &&
+        response.request().method() === "POST",
+    );
     await page
       .getByRole("alertdialog")
       .getByRole("button", { name: "Khóa" })
       .click();
-    await expect(row).toContainText("Đã khóa");
+    const answer = await locked;
+    expect(answer.ok()).toBe(true);
+    expect(
+      ((await answer.json()) as { data: { user: { status: string } } }).data
+        .user.status,
+    ).toBe("LOCKED");
 
     await phone
       .getByRole("navigation", { name: "Điều hướng chính" })

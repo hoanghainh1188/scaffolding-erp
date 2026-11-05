@@ -29,6 +29,7 @@ describe("actions and groups (design D3)", () => {
       "APPROVE",
       "POST",
       "CLOSE_PERIOD",
+      "SETTLE",
     ]);
     expect(GROUP_ACTIONS.REVERSAL).toEqual([
       "RETURN",
@@ -40,8 +41,13 @@ describe("actions and groups (design D3)", () => {
     ]);
   });
 
-  it("counts approve, post and closing a period, not submit, on the 'Duyệt, ghi sổ' tile", () => {
-    expect(APPROVAL_TILE_ACTIONS).toEqual(["APPROVE", "POST", "CLOSE_PERIOD"]);
+  it("counts approve, post, closing a period and settling, not submit, on the 'Duyệt, ghi sổ' tile", () => {
+    expect(APPROVAL_TILE_ACTIONS).toEqual([
+      "APPROVE",
+      "POST",
+      "CLOSE_PERIOD",
+      "SETTLE",
+    ]);
     expect(APPROVAL_TILE_ACTIONS).not.toContain("SUBMIT");
     expect(APPROVAL_TILE_ACTIONS).not.toContain("SEND");
   });

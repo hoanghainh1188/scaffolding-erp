@@ -56,6 +56,8 @@ export const NOT_LOGGED: Readonly<Record<string, string>> = {
     "part of cancelling the batch; changeDeliveryStatus logs",
   "exchanges/records.ts#lockJoinableExchange":
     "row lock inside postReturn; the return posting logs",
+  "receivables/common.ts#lockCustomer":
+    "row lock shared by the receivable commands; the command logs",
 };
 
 interface Found {
