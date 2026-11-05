@@ -307,7 +307,7 @@ Khi tạo hợp đồng, hệ thống SHALL chép nhân viên phụ trách của
 - **THEN** hợp đồng cũ vẫn ghi `quocbao`
 
 ### Requirement: Trạng thái hợp đồng
-Hợp đồng SHALL có một trong các trạng thái: Nháp, Chờ duyệt, Đã duyệt, Đang thực hiện, Thanh lý, Đã hủy. Chuyển trạng thái SHALL theo bảng: Nháp → Chờ duyệt (gửi duyệt); Chờ duyệt → Đã duyệt (duyệt) hoặc → Nháp (trả lại, kèm lý do); Nháp → Đã hủy; Đã duyệt → Đã hủy khi chưa có phiếu xuất đã xuất và không còn phiếu xuất chưa xong; Đã duyệt → Đang thực hiện tự động khi phiếu xuất đầu tiên ghi sổ; → Thanh lý do change sau. Chuyển khác SHALL bị từ chối.
+Hợp đồng SHALL có một trong các trạng thái: Nháp, Chờ duyệt, Đã duyệt, Đang thực hiện, Thanh lý, Đã hủy. Chuyển trạng thái SHALL theo bảng: Nháp → Chờ duyệt (gửi duyệt); Chờ duyệt → Đã duyệt (duyệt) hoặc → Nháp (trả lại, kèm lý do); Nháp → Đã hủy; Đã duyệt → Đã hủy khi chưa có hàng tới công trình và không còn phiếu xuất hay phiếu chuyển tới chưa xong; Đã duyệt → Đang thực hiện khi phiếu xuất hoặc phiếu chuyển tới đầu tiên ghi sổ; → Thanh lý do change sau. Chuyển khác SHALL bị từ chối.
 
 #### Scenario: Gửi duyệt
 - **WHEN** `quocbao` bấm "Gửi Giám đốc duyệt" trên hợp đồng Nháp đủ dữ liệu
@@ -332,6 +332,10 @@ Hợp đồng SHALL có một trong các trạng thái: Nháp, Chờ duyệt, Đ
 #### Scenario: Phiếu xuất đầu tiên
 - **WHEN** hợp đồng `112026/ANPHAT-MINHPHAT` Đã duyệt và thủ kho xác nhận phiếu xuất đầu tiên `PX-2026-001`
 - **THEN** hợp đồng sang Đang thực hiện trong cùng lần ghi sổ **AND** D5 hiện trạng thái "Đang thực hiện"
+
+#### Scenario: Phiếu chuyển công trình đầu tiên
+- **WHEN** hợp đồng `112026/ANPHAT-MINHPHAT` Đã duyệt, chưa xuất lần nào, và `CCT-2026-004` chuyển hàng tới nó được ghi sổ
+- **THEN** hợp đồng sang Đang thực hiện trong cùng lần ghi sổ
 
 #### Scenario: Hủy hợp đồng còn phiếu xuất chưa xong
 - **WHEN** hợp đồng Đã duyệt có `PX-2026-141` Chờ nhặt và Giám đốc hủy hợp đồng
