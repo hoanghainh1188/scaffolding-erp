@@ -35,6 +35,7 @@ import {
 
 import {
   createAndPostSiteTransfer,
+  POST_TRANSFER_MESSAGES,
   postSiteTransfer,
   postSiteTransferFromPhone,
 } from "./post";
@@ -420,6 +421,114 @@ describe("the phone", () => {
     );
     expect(result).toMatchObject({ ok: false, status: 403 });
     expect(await ledgerOf(transfer.code)).toEqual([]);
+  });
+
+  it("checks the phone's body before posting anything", async () => {
+    const transfer = await sent();
+    const post = (body: Record<string, unknown>) =>
+      postSiteTransferFromPhone(ctx.db, fx.warehouse, transfer.code, body, {
+        now: SITE_NOW,
+      });
+    expect(
+      await post({ ...phoneBody({ "GG-K17": 50 }), clientDraftId: "x" }),
+    ).toMatchObject({
+      ok: false,
+      field: "clientDraftId",
+      error: POST_TRANSFER_MESSAGES.draftId,
+    });
+    expect(
+      await post({
+        ...phoneBody({ "GG-K17": 50 }),
+        vehiclePlate: "X".repeat(21),
+      }),
+    ).toMatchObject({ ok: false, field: "vehiclePlate" });
+    expect(await post(phoneBody({ "GG-M16": 1 }))).toMatchObject({
+      ok: false,
+      field: "lines.0.itemId",
+      error: POST_TRANSFER_MESSAGES.line,
+    });
+    expect(
+      await post({
+        clientDraftId: randomUUID(),
+        lines: [{ itemId: fx.item("GG-K17"), moved: "abc" }],
+      }),
+    ).toMatchObject({ ok: false, field: "lines.0.moved" });
+    expect(await ledgerOf(transfer.code)).toEqual([]);
+  });
+
+  it("refuses a draft id another person already used", async () => {
+    const transfer = await sent();
+    const body = phoneBody({ "GG-K17": 50, "GG-CH": 40 });
+    expect(
+      (
+        await postSiteTransferFromPhone(
+          ctx.db,
+          fx.warehouse,
+          transfer.code,
+          body,
+          { now: SITE_NOW },
+        )
+      ).ok,
+    ).toBe(true);
+    expect(
+      await postSiteTransferFromPhone(
+        ctx.db,
+        fx.director,
+        transfer.code,
+        body,
+        { now: SITE_NOW },
+      ),
+    ).toMatchObject({
+      ok: false,
+      status: 409,
+      error: POST_TRANSFER_MESSAGES.draftOfOther,
+    });
+  });
+
+  it("takes a blank count as nothing carried and ignores a bad device time", async () => {
+    const transfer = await sent();
+    const result = await postSiteTransferFromPhone(
+      ctx.db,
+      fx.warehouse,
+      transfer.code,
+      {
+        clientDraftId: randomUUID(),
+        confirmedOnDeviceAt: "not a time",
+        lines: [
+          { itemId: fx.item("GG-K17"), moved: "50" },
+          { itemId: fx.item("GG-CH"), moved: " " },
+        ],
+      },
+      { now: SITE_NOW },
+    );
+    expect(result.ok).toBe(true);
+    expect(await onSite(fx.to.id, "GG-K17")).toBe(50);
+    expect(await onSite(fx.to.id, "GG-CH")).toBe(0);
+    const [row] = await ctx.db
+      .select({ at: siteTransfer.confirmedOnDeviceAt })
+      .from(siteTransfer)
+      .where(eq(siteTransfer.id, transfer.id));
+    expect(row?.at).toBeNull();
+  });
+});
+
+describe("posting at once from the office", () => {
+  it("needs both contracts", async () => {
+    const post = (patch: Record<string, string>) =>
+      createAndPostSiteTransfer(
+        ctx.db,
+        fx.sales,
+        { ...transferBody(fx, { "GG-CH": 1 }), ...patch },
+        { now: SITE_NOW },
+      );
+    expect(await post({ fromContractId: "x" })).toMatchObject({
+      ok: false,
+      field: "fromContractId",
+    });
+    expect(await post({ toContractId: "x" })).toMatchObject({
+      ok: false,
+      field: "toContractId",
+    });
   });
 });
 

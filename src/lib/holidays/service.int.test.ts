@@ -3,6 +3,7 @@
 // period are frozen, a stale edit answers 409, every write logs one row.
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import { HOLIDAY_MESSAGES, HOLIDAY_NAME_MAX } from "@/domain/rental-holiday";
 import { activityRows } from "@/test/activity";
 import { createTestContext } from "@/test/auth";
 import { closeMonth } from "@/test/billing";
@@ -209,5 +210,76 @@ describe("updateHoliday and deleteHoliday", () => {
     const rows = (await activityRows(ctx.db)).slice(before);
     expect(rows.map((row) => row.action)).toEqual(["DELETE"]);
     expect(await holidaysOfYear(ctx.db, 2027)).toEqual([]);
+  });
+});
+
+describe("holiday checks", () => {
+  const UNKNOWN = "00000000-0000-4000-8000-000000000000";
+
+  it("puts a missing or long name on the name field, dates on endDate", async () => {
+    expect(await createHoliday(ctx.db, fx.director, {})).toEqual({
+      ok: false,
+      status: 422,
+      field: "name",
+      error: HOLIDAY_MESSAGES.nameRequired,
+    });
+    expect(
+      await createHoliday(ctx.db, fx.director, {
+        ...tet,
+        name: "x".repeat(HOLIDAY_NAME_MAX + 1),
+      }),
+    ).toEqual({
+      ok: false,
+      status: 422,
+      field: "name",
+      error: HOLIDAY_MESSAGES.nameTooLong,
+    });
+    expect(await createHoliday(ctx.db, fx.director, { name: "Tết" })).toEqual({
+      ok: false,
+      status: 422,
+      field: "endDate",
+      error: HOLIDAY_MESSAGES.dateRequired,
+    });
+  });
+
+  it("answers 404 for a holiday that does not exist", async () => {
+    for (const id of ["x", UNKNOWN]) {
+      expect(await updateHoliday(ctx.db, fx.director, id, tet)).toMatchObject({
+        ok: false,
+        status: 404,
+      });
+      expect(await deleteHoliday(ctx.db, fx.director, id, {})).toMatchObject({
+        ok: false,
+        status: 404,
+      });
+    }
+  });
+
+  it("writes nothing when an edit changes nothing", async () => {
+    const saved = await created();
+    const before = (await activityRows(ctx.db)).length;
+    expect(
+      await updateHoliday(ctx.db, fx.director, saved.id, {
+        ...tet,
+        updatedAt: saved.updatedAt,
+      }),
+    ).toEqual({ ok: true, data: saved });
+    expect((await activityRows(ctx.db)).length).toBe(before);
+  });
+
+  it("refuses a day before the latest closed period, naming that period", async () => {
+    expect((await closeMonth(ctx, fx, "2026-11")).ok).toBe(true);
+    // October has no closed period, but it is before November's end.
+    expect(
+      await createHoliday(ctx.db, fx.director, {
+        name: "Nghỉ tháng 10",
+        startDate: "2026-10-20",
+        endDate: "2026-10-20",
+      }),
+    ).toEqual({
+      ok: false,
+      status: 409,
+      error: HOLIDAY_SERVICE_MESSAGES.closed("2026-11", fx.from.code),
+    });
   });
 });

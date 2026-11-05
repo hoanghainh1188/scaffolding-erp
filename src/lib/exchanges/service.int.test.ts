@@ -286,3 +286,61 @@ describe("joining a return note", () => {
 async function confirmAll(contractId: string) {
   await movedNow(ctx, fx, { "GG-CH": 5 }, { toContractId: contractId });
 }
+
+describe("exchange checks", () => {
+  const UNKNOWN = "00000000-0000-4000-8000-000000000000";
+  const attempt = (overrides: Partial<ExchangeBody>) =>
+    createExchange(ctx.db, fx.sales, body(overrides), { now: SITE_NOW });
+
+  it("is opened from a running rental only", async () => {
+    expect(await attempt({ contractId: "x" })).toMatchObject({
+      ok: false,
+      status: 422,
+      field: "contractId",
+      error: "Bạn mở đổi hàng từ hợp đồng thuê.",
+    });
+    expect(await attempt({ contractId: fx.to.id })).toMatchObject({
+      ok: false,
+      error: "Chỉ đổi hàng cho hợp đồng thuê đang thực hiện.",
+    });
+  });
+
+  it("names the expected line with an unknown item or a bad count", async () => {
+    expect(
+      await attempt({ expected: [{ itemId: UNKNOWN, quantity: "1" }] }),
+    ).toMatchObject({
+      ok: false,
+      field: "expected.0.itemId",
+      error: "Bạn chọn mã hàng.",
+    });
+    expect(
+      await attempt({
+        expected: [{ itemId: fx.item("GG-CH"), quantity: "abc" }],
+      }),
+    ).toMatchObject({ ok: false, field: "expected.0.quantity" });
+  });
+
+  it("answers 404 when cancelling an exchange that does not exist", async () => {
+    for (const id of ["x", UNKNOWN]) {
+      expect(
+        await cancelExchange(ctx.db, fx.sales, id, "Khách đổi ý"),
+      ).toMatchObject({ ok: false, status: 404 });
+    }
+  });
+});
+
+describe("joining a return to an exchange", () => {
+  it("refuses an exchange id that is not one, writing no return", async () => {
+    for (const id of ["x", "00000000-0000-4000-8000-000000000000"]) {
+      expect(await returnWith(id, 10)).toMatchObject({
+        ok: false,
+        error: "Lần đổi hàng không thuộc hợp đồng này.",
+      });
+    }
+    const contract = await returnContract(ctx.db, fx.from.id);
+    expect(
+      contract.ok &&
+        contract.data.items.find((row) => row.code === "GG-CH")?.onSiteMilli,
+    ).toBe(260_000);
+  });
+});
