@@ -9,8 +9,8 @@ Kỳ tiền thuê đã chốt, hàng bán đã giao, phiếu đền bù và phi�
   - **D14** Công nợ phải thu, bản vẽ `docs/design/screens/D14-Receivables.dc.html` (vẽ lại 05/11/2026).
   - **D14b** Thanh lý hợp đồng, bản vẽ `docs/design/screens/D14b-ContractClose.dc.html`.
   - Sửa **D5** (nút "Thanh lý hợp đồng" khi đủ quyền), thanh duyệt hợp đồng / phụ lục, **D8**, **D6c** (số nợ quá hạn thật).
-- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #8, #15, #18, #19, #22, #39, #40, #48, #50, #71, #78, #79, #80, #81, #82, #83, #84.
-- Các điểm cần chốt của issue có phương án trong `design.md`: điểm 1 → D2, điểm 2 → D3, điểm 3 → D5, điểm 4 → D4, điểm 5 → D6, điểm 6 → D7. Câu hỏi còn mở cho anh nằm trong mô tả PR; anh trả lời thì ghi vào 0.2 trong chính PR này.
+- Quyết định đã chốt dùng: `docs/requirements.md` 0.2 #8, #15, #18, #19, #22, #39, #40, #48, #50, #71, #78, #79, #80, #81, #82, #83, #84, và #85–#89 (chốt khi review PR #145).
+- Các điểm cần chốt của issue có phương án trong `design.md`: điểm 1 → D2, điểm 2 → D3, điểm 3 → D5, điểm 4 → D4, điểm 5 → D6, điểm 6 → D7. Câu hỏi Q1–Q5 của PR anh chốt theo đề xuất (05/11/2026), ghi ở 0.2 #85–#89.
 
 ## What Changes
 
@@ -32,9 +32,9 @@ Kỳ tiền thuê đã chốt, hàng bán đã giao, phiếu đền bù và phi�
 - **D14** theo nhà thầu: 4 ô tổng (tổng phải thu, quá hạn, đến hạn trong 7 ngày, trả trước), lọc (Đang nợ, Quá hạn, Có trả trước, Tất cả) + tìm tên, phân trang 50 nhà thầu; các khoản nợ, ghi phiếu thu, cọc và bảo lãnh, danh sách phiếu thu của nhà thầu đang chọn. Trạng thái lọc nằm trên URL.
 - **Xuất Excel** theo bộ lọc bằng `buildXlsx` (không thêm thư viện): sheet theo nhà thầu, sheet các khoản (cột tách thuê, cước, bán, đền bù, mua lại, VAT, phát sinh, đã thu, còn nợ, hạn, quá hạn), sheet phiếu thu. Tiền là số nguyên.
 - **Quyền** (bảng `src/domain/permissions.ts`, kiểm ở server):
-  - `receivables.view` (đã có): Giám đốc, Kế toán. Kinh doanh không xem D14 (câu hỏi Q2).
+  - `receivables.view` (đã có): Giám đốc, Kế toán. Kinh doanh không xem D14 (0.2 #86).
   - `receipts.manage` (mới): ghi và hủy phiếu thu, Kế toán và Giám đốc.
-  - `contracts.close` (mới): thanh lý, Kế toán và Giám đốc, không cần duyệt (câu hỏi Q1).
+  - `contracts.close` (mới): thanh lý, Kế toán và Giám đốc, không cần duyệt (0.2 #85).
 - **`npm run billing:check`**: đối chiếu kỳ tiền thuê đã chốt với tính lại từ sổ kho (follow-up của `rental-billing`, vì công nợ đọc số đã chụp).
 - **Nhật ký**: Tạo phiếu thu, Hủy phiếu thu, Thanh lý hợp đồng, mỗi lệnh một dòng; loại chứng từ mới "Phiếu thu".
 - **Bảng mới chỉ ghi thêm** (`APPEND_ONLY_TABLES`): `receipt`, `receipt_allocation`, `receipt_cancellation`, `contract_settlement`.
