@@ -87,6 +87,8 @@ Trên GitHub repository, vào **Settings → Environments**, tạo environment t
 | `DEMO_URL` | Đường dẫn ứng dụng demo (ví dụ: `https://scaffolding-erp-demo.vercel.app`) |
 | `VERCEL_DEPLOY_HOOK` | Deploy Hook URL tạo từ Vercel (Project Settings → Git → Deploy Hooks) |
 
+Không cần `BETTER_AUTH_SECRET` trên GitHub: bước nạp dữ liệu mẫu chỉ băm mật khẩu, không ký phiên, nên workflow tự sinh một chuỗi dùng một lần. Secret thật chỉ đặt trên Vercel.
+
 ### Bước 4: Chuyển demo đang chạy sang role app (change `db-least-privilege`, làm một lần)
 
 Demo dựng trước 01/11/2026 chạy bằng `neondb_owner`. Làm đúng thứ tự, demo không bị ngắt cho tới bước 5:
@@ -126,7 +128,9 @@ Khi người thử nhập dữ liệu sai lệch lớn, hoặc cần trả dữ 
 
 ## 4. Quy trình Cập nhật & Deploy (`deploy-demo.yml`)
 
-Khi có thay đổi mã nguồn hoặc migration mới trên nhánh `main`:
+**Tự chạy khi có migration mới:** Vercel tự deploy mỗi lần merge vào `main`. Vì vậy, khi merge có đổi `drizzle/**`, workflow **Deploy Demo** tự chạy: migrate nhánh `seed`, migrate nhánh `demo`, rồi kiểm `/api/health`. Lần tự chạy này không nạp lại dữ liệu mẫu, không reset `demo` và không gọi Deploy Hook, vì Vercel đã tự deploy. Trong khoảng một đến hai phút giữa lúc Vercel deploy xong và lúc migrate xong, demo có thể lỗi.
+
+**Chạy tay:** dùng khi cần nạp thêm dữ liệu mẫu mới (change có thêm `sample.ts`) hoặc làm mới nhánh `demo`:
 1. Vào tab **Actions** trên GitHub.
 2. Chọn workflow **Deploy Demo**.
 3. Chọn các tùy chọn:
@@ -156,6 +160,10 @@ Khi có thay đổi mã nguồn hoặc migration mới trên nhánh `main`:
   - `DB_CONNECT_TIMEOUT_SECONDS=10` trong biến môi trường đã được tăng để không bị fail kết nối.
   - Cài đặt giám sát định kỳ (UptimeRobot / Better Stack) gọi `/api/health` 15 phút/lần để giữ database sẵn sàng.
 
-### 3. Người dùng vô tình thay đổi mật khẩu
+### 3. Không đăng nhập được, log Vercel báo `column ... does not exist` hoặc `relation ... does not exist`
+- **Nguyên nhân**: code trên Vercel mới hơn schema của DB demo (migration chưa chạy trên Neon). Đã gặp ngày 06/11/2026: thiếu `user.contract_scope`, `return_photo`.
+- **Khắc phục**: Actions → **Deploy Demo**, bật `reset_demo_branch` (và `reseed` nếu muốn có dữ liệu mẫu của change mới). Từ 06/11/2026 workflow tự chạy khi merge có đổi `drizzle/**`; nếu vẫn gặp, xem run Deploy Demo gần nhất có đỏ không.
+
+### 4. Người dùng vô tình thay đổi mật khẩu
 - Khi `DEMO_MODE=true`, ứng dụng chặn hoàn toàn thao tác đổi mật khẩu trên giao diện (`/change-password` và API `/api/me/password`).
 - Nếu vô tình bị đổi bằng cách khác, chỉ cần kích hoạt workflow **Demo Reset** để đưa mật khẩu 5 vai trò về mặc định.
