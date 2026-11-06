@@ -10,7 +10,8 @@
   - Hàng ở công trình: `siteMovements` / `onSiteByItem` (`src/lib/deliveries/records.ts`), cột "Tại công trình" của D10 (`getStockOverview`).
   - Khu vực: `regionOf(site.province)` (`src/domain/province.ts`), `UNKNOWN_REGION_LABEL` khi công trình chưa có tỉnh.
   - Chứng từ chờ duyệt: `contract_revision.status = 'PENDING'`, `compensation_note.status = 'PENDING'`, `buy_back_note.status = 'PENDING'`, `stocktake.status = 'SUBMITTED'`, `stock_adjustment.status = 'PENDING_APPROVAL'`.
-- Quyết định nghiệp vụ: 0.2 #90 (doanh số theo phát sinh), #91 (ai thấy tiền), #92 (công trình rủi ro), #93 (top 5).
+- Quyết định nghiệp vụ: 0.2 #90 (doanh số theo phát sinh), #91 (ai thấy tiền), #92 (công trình rủi ro), #93 (top 5), và #94–#97 (chốt khi review PR #148: chờ duyệt theo vai trò, "theo kg", cước thuê vào cột Thuê, hàng ở ngoài cho Kinh doanh).
+- Đơn vị (`src/domain/quantity.ts`): `PIECE` (cái), `BAR` (cây), `BUNDLE` (bó), `BASKET` (sọt), mét, `KG`... Mã không theo kg có `standard_weight_kg` (ràng buộc DB).
 - Bản vẽ: `docs/design/screens/Main.dc.html` (1366px). Hex trong bản vẽ đổi sang token.
 
 ## Goals / Non-Goals
@@ -44,14 +45,15 @@
 | Chờ duyệt (danh sách) | ✔ cả 5 loại | ✔ HĐ/phụ lục, đền bù, mua lại, kiểm kê, điều chỉnh kho | ✔ HĐ/phụ lục trong `canContract`, đền bù, mua lại (khi xem được HĐ thuê) |
 | Công nợ quá hạn | ✔ | ✔ | ✘ |
 | Doanh số tháng / ngày, đền bù + mua lại | ✔ | ✔ | ✘ |
-| Hàng ở ngoài (cái, tấn, khu vực) | ✔ | ✔ | ✔ (toàn công ty, không có tiền) |
+| Hàng ở ngoài (cái, tấn, khu vực) | ✔ | ✔ | ✔ toàn công ty, chỉ số lượng và tấn (0.2 #97) |
 | Công trình rủi ro | ✔ | ✔ | ✔ chỉ hợp đồng trong `canContract`, dấu hiệu nợ chỉ hiện số ngày, không số tiền |
 | Tra nhanh công trình | ✔ đủ | ✔ đủ | ✔ không có dòng tiền; chỉ hợp đồng trong `canContract` |
 | Tồn kho theo tình trạng | ✔ | ✔ | ✔ (chỉ số lượng, như D10 không có giá trị) |
 | Top 5 nhà thầu | ✔ | ✔ | ✘ (cả hai cách xếp; theo kg cũng lộ quy mô từng khách ngoài phạm vi) |
 | Thủ kho, Xưởng | chuyển `/m` như hiện nay (spec `app-shell`), không đổi |
 
-- **Chờ duyệt.** Mọi loại chờ duyệt hiện nay chỉ Giám đốc duyệt (`contracts.approve`, `compensations.approve`, `buybacks.approve`, `inventory.approve`). Nếu chỉ hiện "việc bạn duyệt được" thì Kế toán, Kinh doanh luôn thấy 0, khối vô ích. Đề xuất: Giám đốc thấy "chờ bạn duyệt"; vai trò khác thấy **"đang chờ Giám đốc duyệt"** trong phạm vi xem được (Kế toán theo dõi điều chỉnh kho, kiểm kê vì có `inventory.adjust`; Kinh doanh theo dõi hợp đồng mình làm). Câu chào đổi theo: "Chào Thu Hà, có 3 việc đang chờ Giám đốc duyệt". Số trên câu chào = số dòng của khối (cùng một hàm đếm). **Hỏi anh trong PR (Q1).**
+- **Chờ duyệt.** Mọi loại chờ duyệt hiện nay chỉ Giám đốc duyệt (`contracts.approve`, `compensations.approve`, `buybacks.approve`, `inventory.approve`). Nếu chỉ hiện "việc bạn duyệt được" thì Kế toán, Kinh doanh luôn thấy 0, khối vô ích. Đề xuất: Giám đốc thấy "chờ bạn duyệt"; vai trò khác thấy **"đang chờ Giám đốc duyệt"** trong phạm vi xem được (Kế toán theo dõi điều chỉnh kho, kiểm kê vì có `inventory.adjust`; Kinh doanh theo dõi hợp đồng mình làm). Câu chào đổi theo: "Chào Thu Hà, có 3 việc đang chờ Giám đốc duyệt". Số trên câu chào = số dòng của khối (cùng một hàm đếm). **Đã chốt 0.2 #94.**
+- Kinh doanh thấy dấu hiệu "Nợ quá hạn N ngày" ở khối rủi ro (chỉ số ngày, không số tiền); phù hợp #91, ghi trong spec để test và ảnh mốc khớp.
 - Số tiền trên dòng chờ duyệt là số đã hiện ở màn gốc mà người xem vốn xem được: hợp đồng = **giá trị dự kiến** (spec `contracts`), phụ lục = giá trị dự kiến của phụ lục, đền bù = số phải trả sau giảm trừ, mua lại = tổng tiền, kiểm kê / điều chỉnh = chênh lệch giá trị. Kinh doanh không có `inventory.*` nên không thấy hai loại cuối.
 - **Kiểm ở server**: hàm đọc `dashboardFor(viewer, today)` nhận người xem và **không gọi** hàm tính tiền khi thiếu quyền; kiểu trả về để trường tiền là `undefined`. Route tra nhanh lọc ở server. Test integration kiểm payload của Kinh doanh không có trường tiền.
 
@@ -60,20 +62,29 @@ Phương án đã cân nhắc: (a) quyền mới `dashboard.money` — trùng ng
 ### D2. Doanh số thuê theo ngày: tính lại mỗi lần, không cache (điểm cần chốt 2)
 
 **Cách tính** (spec `sales-revenue`):
-- Mỗi (hợp đồng thuê, tháng): kỳ **đã chốt** → đọc bảng chụp (`billing_period_line`, `billing_period_freight`); kỳ **mở** → `statementOf(source, month, today, holidays)` như D7.
-- Chia một bảng kê thành từng ngày bằng hàm thuần `dailyRevenue(statement)` (`src/domain/dashboard.ts`):
+- Mỗi (hợp đồng thuê, tháng):
+  - kỳ **đã chốt** → đọc bảng chụp (`billing_period_line`, `billing_period_freight`);
+  - kỳ **mở của tháng đang chạy** → `statementOf(source, month, today, holidays)` như D7, tính **đến hôm nay**;
+  - kỳ **mở của tháng đã qua** (chưa chốt, có thể đã nhiều tháng) → `statementOf` với `today` ≥ cuối tháng, tức tính **đến hết tháng**, như D7 hiện kỳ đó; đánh dấu tạm tính.
+- Chia một bảng kê thành từng ngày bằng hàm thuần `dailyRevenue(statement, adjustmentDays)` (`src/domain/dashboard.ts`):
   - dòng `RENT`: tiền dòng chia đều cho các **ngày tính** (từ Từ đến Đến, bỏ ngày nghỉ), phần lẻ theo phần dư lớn nhất để tổng khớp từng đồng;
   - dòng `MINIMUM` (bù tối thiểu): cả dòng vào **ngày trả** (Đến);
-  - dòng `ADJUSTMENT`: vào **ngày cuối kỳ** (kỳ đang chạy: ngày `asOf`), như 0.2 #79;
-  - cước của hợp đồng thuê: vào **ngày giao**, cộng vào cột Thuê (cước nằm trong bảng kê kỳ; để tổng tháng khớp "tổng chưa VAT của kỳ").
+  - dòng `ADJUSTMENT` (0.2 #80): vào **ngày lập dòng** = `billing_adjustment.created_at` theo giờ Việt Nam, kẹp vào trong kỳ (lập trước đầu kỳ → ngày đầu kỳ; lập sau cuối kỳ, khi kỳ đã qua chưa chốt → ngày cuối kỳ). Ngày này **cố định**: trước và sau khi chốt ra cùng một ngày (bảng chụp nối lại bằng `adjustment_id`), không nhảy theo "hôm nay";
+  - dòng điều chỉnh âm làm doanh số một ngày có thể **âm**; hàm giữ số âm, biểu đồ vẽ cột dưới trục 0 (design D7), không cắt về 0;
+  - cước của hợp đồng thuê: vào **ngày giao**, cộng vào cột Thuê (0.2 #96).
 - Tổng các ngày của một (hợp đồng, tháng) = `beforeVat` của bảng kê (= `rent + adjustment + freight` của kỳ đã chốt). Test kiểm đẳng thức này.
+- **Chia bảng chụp**: với mỗi dòng `RENT` đã chụp, số ngày đếm lại (Từ → Đến, bỏ ngày trong `rental_holiday`) phải bằng `charged_days` đã chụp. Ngày nghỉ chạm kỳ đã chốt không sửa được (spec `rental-holidays`) nên bình thường luôn khớp. Nếu lệch: chia tiền dòng đều cho **`charged_days` ngày lịch đầu tiên** của khoảng Từ → Đến (không xét ngày nghỉ), tổng vẫn đúng tiền đã chụp, và ghi cảnh báo `console.warn` kèm kỳ, hợp đồng, số dòng, số ngày đếm lại và `charged_days`; không lặng lẽ tính ra tổng khác.
 - Bán: `saleTotal + freight` của phiếu xuất bán đã ghi sổ, vào ngày giao.
 
 **Không cache.** Trang `await connection()`, tính mỗi lần mở.
 - Lý do: số đổi theo mọi chứng từ (phiếu xuất, thu hồi, chuyển, mua lại, chốt kỳ, ngày nghỉ); gắn `revalidateTag` vào hàng chục đường ghi dễ sót, số sai còn tệ hơn số chậm. Khóa `"use cache"` sau này phải gồm công ty (0.2 #33): khi có SaaS thêm cache thì làm một lần, khóa `[companyId, "dashboard", today]`.
 - **Khối lượng**: vài trăm hợp đồng thuê, một năm sổ kho (~vài chục nghìn dòng). Đọc **theo lô**, không theo từng hợp đồng: thêm `loadBillingSources(db, contractIds)` gom mỗi nguồn (sổ kho công trình, giá, cước, điều chỉnh, kỳ đã chốt) một truy vấn cho cả lô rồi dựng `BillingSource` như cũ; tính thuần trong bộ nhớ. Chỉ nạp hợp đồng thuê có dòng sổ / cước trước cuối khoảng xem và chưa thanh lý trước đầu khoảng.
 - Khoảng xem: 6 tháng (tháng này + 5 tháng trước) cho biểu đồ tháng, tháng này cho theo ngày. Tháng đã chốt hết thì không nạp sổ kho của tháng đó (đọc bảng chụp).
-- **Mục tiêu**: phần đầu trang (câu chào, chờ duyệt) hiện < 1 s; khối doanh số < 2,5 s với 300 hợp đồng, 12 tháng. Mỗi khối trong `<Suspense>` riêng nên khối chậm không chặn khối nhanh. Đo bằng script `scripts/bench-dashboard.mts` trên DB dev có dữ liệu sinh (không chạy trên CI).
+- **Mục tiêu**: phần đầu trang (câu chào, chờ duyệt) hiện < 1 s; khối doanh số < 2,5 s với 300 hợp đồng, 12 tháng. Mỗi khối trong `<Suspense>` riêng nên khối chậm không chặn khối nhanh.
+- **Đo** bằng script `scripts/bench-dashboard.mts` (không chạy trên CI) trên **DB đo riêng**, không bao giờ trên DB dev: sổ kho chỉ ghi thêm, sinh 300 hợp đồng vào DB dev là bẩn vĩnh viễn.
+  - Script chỉ đọc biến riêng `BENCH_DATABASE_URL` (owner, để migrate) và `BENCH_APP_DATABASE_URL` (`erp_app`), **không** đọc `DATABASE_URL`.
+  - Từ chối chạy (thoát mã 1, ghi lý do) khi thiếu biến, hoặc tên DB trong URL **không kết thúc bằng `_bench`**, hoặc tên DB trùng tên DB của `DATABASE_URL` / `TEST_DATABASE_URL`.
+  - Tạo DB đo: `docker compose exec db createdb -U <owner> scaffolding_erp_bench`, đặt hai biến trỏ tới DB đó, chạy migrate + `db:roles` trên DB đó (script làm), rồi sinh dữ liệu và đo. Xóa: `dropdb scaffolding_erp_bench`.
 - **Chỉ mục mới** (một migration, chỉ thêm chỉ mục):
   - `billing_period_month_idx (month)`: đọc kỳ đã chốt của mọi hợp đồng theo tháng.
   - `delivery_note_posted_date_idx (business_date) WHERE status = 'POSTED'`: doanh số bán theo ngày, top theo kg.
@@ -84,14 +95,14 @@ Phương án đã cân nhắc: (a) bảng tổng hợp doanh số theo ngày ghi
 
 ### D3. "Theo kg" của top 5 (điểm cần chốt 3)
 
-Đề xuất: **kg hàng đã giao trong năm** = Σ trên phiếu xuất đã ghi sổ (thuê và bán) có ngày giao từ 01/01 đến hôm nay: số lượng × trọng lượng chuẩn; dòng có kg cân (`weighed_kg`) hoặc mã tính theo kg thì dùng kg đó. Hàng thu hồi không trừ. Hiện tấn (1 chữ số lẻ).
+**Đã chốt 0.2 #95: kg hàng đã giao trong năm** = Σ trên phiếu xuất đã ghi sổ (thuê và bán) có ngày giao từ 01/01 đến hôm nay: số lượng × trọng lượng chuẩn; dòng có kg cân (`weighed_kg`) hoặc mã tính theo kg thì dùng kg đó. Hàng thu hồi không trừ. Hiện tấn (1 chữ số lẻ).
 - Lý do: đo **khối lượng làm ăn** trong năm, cùng gốc "theo phát sinh" với doanh thu; dễ đối chiếu với phiếu xuất; không phụ thuộc giá.
 
 Phương án đã cân nhắc:
 - **kg đang giữ hôm nay**: ảnh chụp tức thời, không phải "năm nay", khách vừa trả hết rơi khỏi bảng.
 - **kg-ngày thuê** (tấn × ngày): sát tiền thuê nhất nhưng đơn vị khó đọc, gần như trùng thứ tự với doanh thu thuê.
 
-**Hỏi anh trong PR (Q2).** Khi anh chốt, ghi 0.2 #94 trong PR này.
+Anh chốt theo đề xuất khi review PR #148.
 
 ### D4. "Số liệu lúc HH:MM" và làm mới (điểm cần chốt 4)
 
@@ -116,18 +127,28 @@ Phương án đã cân nhắc: gom tiền theo công trình (cộng nợ nhiều
 - Số trên D1 đổi theo ngày chạy và theo dữ liệu E2E. Mỗi khối có **chiều cao cố định** (danh sách cuộn bên trong, tối đa: chờ duyệt 5 dòng, rủi ro 5, tồn kho 6 mã, top 5) để số dòng thay đổi không xô bố cục.
 - Gắn `data-mask`: mọi ô số (tiền, cái, tấn, số việc, số công trình, ngày, "lúc HH:MM"), thân danh sách chờ duyệt, rủi ro, top 5, bảng tồn kho, khu vực, vùng cột biểu đồ, tên người trong câu chào.
 - Chụp được (không mask): khung, tiêu đề khối, nhãn, chú thích, nút "Theo tháng / Theo ngày", "Doanh thu / Theo kg", ô tra nhanh ở trạng thái trống.
-- Hai ảnh mốc: **Giám đốc** (đủ khối) và **Kinh doanh** (không có khối tiền), để bắt lỗi lộ khối theo vai trò.
+- Hai ảnh mốc: **Giám đốc** (đủ khối) và **Kinh doanh** phạm vi **"Cả hai"** (tài khoản E2E vai trò Kinh doanh, thấy đủ khối không tiền), để bắt lỗi lộ khối theo vai trò.
 - Số tiền, số lượng kiểm bằng integration test và E2E theo chênh lệch, không bằng ảnh.
 
 ### D7. Bố cục và component
 
 - Theo bản vẽ: hàng 4 ô số (Công nợ quá hạn là ô màu chính, Doanh số tháng, Hàng ở ngoài, Công trình rủi ro) → Tra nhanh → Doanh số (biểu đồ cột chồng Thuê / Bán, chuyển tháng / ngày) + Tồn kho → Top 5 + Chờ duyệt → Công trình rủi ro + Hàng ở ngoài theo khu vực.
 - Vai trò thiếu khối: lưới tự dồn, không để ô trống.
-- Biểu đồ: cột chồng vẽ bằng SVG trong component (không thêm thư viện, spec "Không tự thêm thư viện UI").
+- Biểu đồ: cột chồng vẽ bằng SVG trong component (không thêm thư viện, spec "Không tự thêm thư viện UI"). Trục 0 đặt theo giá trị nhỏ nhất: ngày / tháng có doanh số âm (dòng điều chỉnh âm, 0.2 #80) vẽ cột **dưới trục 0**, nhãn ghi số âm, không cắt về 0.
 - Ô tra nhanh: gõ ≥ 2 ký tự, debounce 250 ms, gọi `GET /api/dashboard/site-lookup?q=`, tối đa 8 kết quả, chọn bằng bàn phím.
 - Tiền viết `1.250.000 ₫`; biểu đồ tháng viết gọn "278,4 tr"; tấn 1 chữ số lẻ (spec `domain-values`).
 
-### D8. API
+### D8. Đơn vị: "cái" và "tấn"
+
+- Danh mục có nhiều đơn vị (cái, cây, bó, sọt, mét, kg...). Cộng số lượng khác đơn vị thành "cái" là sai.
+- **Số cái** (Hàng ở ngoài, tra nhanh, ô đầu trang) chỉ cộng mã có đơn vị **`PIECE`**.
+- **Tấn** cộng **mọi mã**: mã `KG` lấy số lượng (kg) trực tiếp; mã khác lấy số lượng × `standard_weight_kg`.
+- **Số công trình** đếm công trình có hàng của bất kỳ mã nào (kể cả mã không phải cái).
+- Đối chiếu D10: tổng cái so với cột "Tại công trình" của D10 **chỉ trên các mã đơn vị cái**.
+- Tồn kho theo tình trạng: mỗi dòng ghi theo đơn vị của mã (như D10), không cộng chéo mã.
+- Hàm thuần `onSiteTotals(lines)` (`src/domain/dashboard.ts`) trả `{ pieces, kg }`; mọi khối và API tra nhanh dùng chung hàm này.
+
+### D9. API
 
 `GET /api/dashboard/site-lookup?q=<text>` (`withAuth`, quyền `dashboard.view` + `canContract(RENTAL, view)`):
 
@@ -166,8 +187,4 @@ Các khối khác đọc trong Server Component, không có API riêng.
 
 ## Open Questions
 
-Hỏi anh trong mô tả PR; trả lời xong ghi `docs/requirements.md` 0.2 (#94 trở đi) ngay trong PR này:
-- **Q1** Kế toán, Kinh doanh thấy "đang chờ Giám đốc duyệt" (đề xuất) hay ẩn khối chờ duyệt?
-- **Q2** "Theo kg" của top 5 = kg hàng đã giao trong năm (đề xuất), kg đang giữ, hay tấn-ngày?
-- **Q3** Cước của hợp đồng thuê cộng vào cột **Thuê** (đề xuất, để tháng khớp tổng chưa VAT của kỳ) hay cột **Bán** (theo câu chữ "bán = hàng bán + cước" của 0.2 #90)?
-- **Q4** Kinh doanh thấy khối Hàng ở ngoài cho **toàn công ty** (đề xuất, không có tiền) hay chỉ hợp đồng trong phạm vi?
+Không còn. Q1–Q4 của PR #148 anh chốt theo đề xuất (06/11/2026), ghi ở `docs/requirements.md` 0.2 #94–#97.

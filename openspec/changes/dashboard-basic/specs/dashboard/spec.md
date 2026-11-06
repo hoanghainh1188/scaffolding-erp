@@ -28,7 +28,7 @@ Tiêu đề trang SHALL là câu chào theo tên người dùng kèm số việc
 - **THEN** tiêu đề là "Chào Minh Anh, hôm nay không có việc nào chờ bạn duyệt"
 
 ### Requirement: Khối chờ duyệt theo vai trò
-Khối Chờ duyệt SHALL liệt kê chứng từ đang Chờ duyệt: hợp đồng và phụ lục, phiếu đền bù, phiếu mua lại, phiên kiểm kê đã gửi, phiếu điều chỉnh kho (số lượng, đầu kỳ, giá trị). Mỗi dòng có loại, số chứng từ, nhà thầu hoặc vị trí, tóm tắt, số tiền, và mở đúng màn duyệt. Giám đốc thấy cả 5 loại; Kế toán thấy cả 5 loại; Kinh doanh chỉ thấy hợp đồng / phụ lục trong `canContract` và đền bù, mua lại khi xem được hợp đồng thuê.
+Khối Chờ duyệt SHALL liệt kê chứng từ đang Chờ duyệt: hợp đồng và phụ lục, phiếu đền bù, phiếu mua lại, phiên kiểm kê đã gửi, phiếu điều chỉnh kho (số lượng, đầu kỳ, giá trị). Mỗi dòng có loại, số, nhà thầu hoặc vị trí, tóm tắt, số tiền, và mở đúng màn duyệt. Giám đốc: tiêu đề "Chờ bạn duyệt", cả 5 loại. Kế toán, Kinh doanh: "Đang chờ Giám đốc duyệt" (0.2 #94); Kế toán cả 5 loại, Kinh doanh chỉ hợp đồng / phụ lục trong `canContract`, đền bù và mua lại khi xem được hợp đồng thuê.
 
 #### Scenario: Thứ tự và nội dung dòng
 - **WHEN** hợp đồng thuê `112026/ANPHAT-MINHPHAT` (giá trị dự kiến 186.200.000 ₫) gửi duyệt 05/11/2026 và phiếu đền bù `ĐB-2026-017` 4.600.000 ₫ gửi duyệt 04/11/2026
@@ -76,8 +76,19 @@ Khối Doanh số SHALL có hai chế độ: **Theo tháng** (6 tháng gần nh�
 - **WHEN** người dùng bấm "Theo ngày"
 - **THEN** khối hiện một cột mỗi ngày từ 01/11/2026 đến 06/11/2026; tổng các cột bằng 71.300.000 ₫
 
+### Requirement: Cách cộng cái và tấn
+Mọi chỗ trên D1 ghi "cái" (Hàng ở ngoài, ô đầu trang, tra nhanh) SHALL chỉ cộng số lượng của mã có đơn vị **cái**; không cộng mã đơn vị khác (cây, bó, sọt, mét, kg...). "Tấn" SHALL cộng **mọi mã**: mã đơn vị kg lấy kg trực tiếp, mã khác lấy số lượng × trọng lượng chuẩn; hiện 1 chữ số lẻ.
+
+#### Scenario: Một công trình có mã cái, mã mét, mã kg
+- **WHEN** công trình `CT-0007` giữ 100 cái `PK-KU` (trọng lượng chuẩn 5 kg/cái), 50 mét `ONG-TH` (3 kg/mét) và 210 kg `PL-SAT`
+- **THEN** công trình hiện 100 cái và 0,9 tấn (500 + 150 + 210 = 860 kg)
+
+#### Scenario: Công trình chỉ có mã không phải cái
+- **WHEN** công trình `CT-0040` chỉ giữ 30 cây `ONG-6M` (25,2 kg/cây)
+- **THEN** công trình được đếm vào số công trình, hiện 0 cái và 0,8 tấn
+
 ### Requirement: Hàng ở ngoài theo khu vực
-Khối Hàng ở ngoài SHALL hiện tổng số cái, tấn (số cái × trọng lượng chuẩn; mã tính theo kg cộng kg) và số công trình đang có hàng, và bảng theo khu vực (Miền Bắc, Miền Trung, Miền Nam, "Chưa rõ" khi công trình chưa có tỉnh) với dòng Cộng. Số cái SHALL bằng tổng cột "Tại công trình" của D10 và bằng tổng số đang ở công trình của các hợp đồng (D6).
+Khối Hàng ở ngoài SHALL hiện tổng số cái, tấn và số công trình đang có hàng (của bất kỳ mã nào), và bảng theo khu vực (Miền Bắc, Miền Trung, Miền Nam, "Chưa rõ" khi công trình chưa có tỉnh) với dòng Cộng, theo cách cộng cái và tấn ở trên. Số cái SHALL bằng tổng cột "Tại công trình" của D10 trên các mã đơn vị cái và bằng tổng số đang ở công trình của các hợp đồng (D6) trên các mã đó. Kinh doanh thấy khối này cho toàn công ty, không có tiền (0.2 #97).
 
 #### Scenario: Gom theo khu vực
 - **WHEN** 12 công trình Miền Bắc giữ 15.940 cái (231,2 tấn), 2 công trình Miền Trung 1.880 cái (27,6 tấn), 3 công trình Miền Nam 4.040 cái (59,6 tấn)
@@ -88,8 +99,12 @@ Khối Hàng ở ngoài SHALL hiện tổng số cái, tấn (số cái × trọ
 - **THEN** bảng có dòng "Chưa rõ" 1 công trình, 100 cái
 
 #### Scenario: Khớp D10
-- **WHEN** D10 cột "Tại công trình" cộng mọi mã là 21.860
-- **THEN** khối hiện 21.860 cái
+- **WHEN** D10 cột "Tại công trình" cộng các mã đơn vị cái là 21.860, và có thêm 120 mét `ONG-TH` ở công trình
+- **THEN** khối hiện 21.860 cái (không cộng 120 mét)
+
+#### Scenario: Kinh doanh thấy toàn công ty
+- **WHEN** tài khoản Kinh doanh phạm vi "Chỉ bán" mở trang
+- **THEN** khối Hàng ở ngoài hiện cùng số cái, tấn, số công trình như Giám đốc thấy
 
 ### Requirement: Công trình rủi ro
 Một hợp đồng thuê SHALL là rủi ro khi có ít nhất một dấu hiệu: (1) nhà thầu còn nợ quá hạn từ khoản của chính hợp đồng đó; (2) có hàng mất ghi trên phiếu thu hồi của hợp đồng với số ngày từ ngày mất đến hôm nay ≤ 30; (3) ngày kết thúc của bản hợp đồng đang áp dụng trước hôm nay mà hợp đồng còn hàng ở công trình. Ngày tính theo giờ Việt Nam; ngưỡng 30 ngày đặt một chỗ. Khối SHALL gom theo công trình; số công trình rủi ro SHALL bằng số công trình có ít nhất một hợp đồng rủi ro.
@@ -120,11 +135,15 @@ Một hợp đồng thuê SHALL là rủi ro khi có ít nhất một dấu hi�
 - **THEN** khối có một dòng An Phú – Block B với hai dòng con theo từng hợp đồng, và số công trình rủi ro tính 1
 
 #### Scenario: Kinh doanh thấy dấu hiệu không có tiền
-- **WHEN** Kinh doanh xem khối, hợp đồng trong phạm vi có nợ quá hạn 36 ngày
-- **THEN** dòng ghi "Nợ quá hạn 36 ngày", không có số tiền
+- **WHEN** Kinh doanh phạm vi "Cả hai" xem khối, hợp đồng trong phạm vi có nợ quá hạn 36 ngày, 12.400.000 ₫
+- **THEN** dòng ghi "Nợ quá hạn 36 ngày"; trang và dữ liệu gửi về không có 12.400.000 ₫
+
+#### Scenario: Kinh doanh ngoài phạm vi không thấy công trình rủi ro
+- **WHEN** Kinh doanh phạm vi "Chỉ bán" xem khối, có 3 công trình rủi ro
+- **THEN** khối không có dòng nào
 
 ### Requirement: Tra nhanh một công trình
-Ô tra nhanh SHALL tìm công trình theo mã, tên công trình hoặc tên nhà thầu (không phân biệt dấu, từ 2 ký tự). Kết quả là công trình: mã, tên, tỉnh (khu vực), tổng hàng đang giữ (cái, tấn) và từng hợp đồng thuê ở đó: nhà thầu, số hợp đồng, ngày ký, trạng thái, hàng đang giữ; với người có `receivables.view` thêm tiền thuê tháng này tạm tính (bằng D7), đang nợ (quá hạn hay chưa), cọc tiền thỏa thuận và đã nhận.
+Ô tra nhanh SHALL tìm công trình theo mã, tên công trình hoặc tên nhà thầu (không phân biệt dấu, từ 2 ký tự). Kết quả là công trình: mã, tên, tỉnh (khu vực), tổng hàng đang giữ (cái, tấn theo cách cộng cái và tấn) và từng hợp đồng thuê ở đó: nhà thầu, số hợp đồng, ngày ký, trạng thái, hàng đang giữ; với người có `receivables.view` thêm tiền thuê tháng này tạm tính (bằng D7), đang nợ (quá hạn hay chưa), cọc tiền thỏa thuận và đã nhận.
 
 #### Scenario: Tra theo mã
 - **WHEN** Giám đốc gõ "CT-0007" ngày 06/11/2026
@@ -147,18 +166,22 @@ Một hợp đồng thuê SHALL là rủi ro khi có ít nhất một dấu hi�
 - **THEN** hệ thống không tìm và không hiện kết quả
 
 ### Requirement: Tồn kho theo tình trạng
-Khối Tồn kho SHALL hiện theo mã hàng: Mới, Tốt, Chờ sửa, Phế liệu (cộng mọi bãi và xưởng) và "Ở công trình", các mã có tồn khác 0 sắp theo tổng giảm dần, tối đa 6 mã, liên kết "Xem tồn kho" tới `/inventory`. Đơn vị cái, mã tính theo kg ghi kg. Với mỗi mã, tổng 4 cột tình trạng SHALL bằng "Tại bãi" + "Tại xưởng" của D10 và "Ở công trình" bằng "Tại công trình" của D10.
+Khối Tồn kho SHALL hiện theo mã hàng: Mới, Tốt, Chờ sửa, Phế liệu (cộng mọi bãi và xưởng) và "Ở công trình", các mã có tồn khác 0 sắp theo tổng kg quy đổi giảm dần, tối đa 6 mã, liên kết "Xem tồn kho" tới `/inventory`. Mỗi dòng ghi theo đơn vị của mã như D10, không cộng chéo mã. Với mỗi mã, tổng 4 cột tình trạng SHALL bằng "Tại bãi" + "Tại xưởng" của D10 và "Ở công trình" bằng "Tại công trình" của D10.
 
 #### Scenario: Khớp D10
 - **WHEN** D10 dòng `KG-1,7` ghi tại bãi Tốt 1.200, Chờ sửa 150, Phế liệu 42, tại xưởng 76 (40 Tốt, 36 Chờ sửa), tại công trình 3.860
 - **THEN** khối dòng `KG-1,7` hiện Mới 0, Tốt 1.240, Chờ sửa 186, Phế liệu 42, Ở công trình 3.860
 
 ### Requirement: Top 5 nhà thầu năm nay
-Khối Top 5 SHALL xếp nhà thầu theo doanh thu từ 01/01 năm nay đến hôm nay (thuê + bán, chưa VAT, cùng cách tính doanh số) hoặc theo khối lượng, đổi bằng hai nút "Doanh thu" / "Theo kg". Bằng nhau thì xếp theo tên. Nhà thầu doanh thu 0 ₫ không vào bảng.
+Khối Top 5 SHALL xếp nhà thầu theo doanh thu từ 01/01 năm nay đến hôm nay (thuê + bán, chưa VAT, cùng cách tính doanh số) hoặc theo kg hàng đã giao trong năm (0.2 #95: phiếu xuất thuê và bán đã ghi sổ, không trừ hàng trả, hiện tấn), đổi bằng hai nút "Doanh thu" / "Theo kg". Bằng nhau thì xếp theo tên. Nhà thầu có số 0 không vào bảng.
 
 #### Scenario: Xếp theo doanh thu
 - **WHEN** năm 2026 Sông Hồng 1.284.500.000 ₫, Minh Phát 962.300.000 ₫, Thành Công 744.000.000 ₫, Đông Á 512.800.000 ₫, Trần Văn Hùng 186.400.000 ₫, Hòa Bình 90.000.000 ₫
 - **THEN** bảng có 5 dòng từ Sông Hồng đến Trần Văn Hùng, không có Hòa Bình
+
+#### Scenario: Theo kg không trừ hàng trả
+- **WHEN** năm 2026 Minh Phát được giao 400 `PK-KU` (5 kg/cái) và trả về 300 cái, Đông Á được giao 300 cái và chưa trả
+- **THEN** theo kg Minh Phát 2,0 tấn, xếp trên Đông Á 1,5 tấn
 
 #### Scenario: Doanh thu năm khớp tổng các tháng
 - **WHEN** cộng doanh số tháng 01 … 11/2026 của Minh Phát
