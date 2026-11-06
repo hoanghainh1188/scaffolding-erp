@@ -116,6 +116,10 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 95 | Top 5 "theo kg" | = **kg hàng đã giao trong năm**: thuê + bán, theo phiếu xuất đã ghi sổ có ngày giao từ 01/01 đến hôm nay (số lượng × trọng lượng chuẩn; mã theo kg hoặc dòng có kg cân lấy kg). **Không trừ hàng trả** (chốt 06/11/2026 khi review PR #148, change `dashboard-basic`) |
 | 96 | Cước của hợp đồng thuê trong doanh số | Cước vận chuyển trên bảng kê kỳ tiền thuê cộng vào cột **Thuê**, theo ngày giao. "Bán = hàng bán + cước" ở #90 chỉ nói cước của phiếu xuất bán (chốt 06/11/2026 khi review PR #148, change `dashboard-basic`) |
 | 97 | Hàng ở ngoài cho Kinh doanh | Kinh doanh thấy khối Hàng ở ngoài cho **toàn công ty**: chỉ số lượng và tấn, không có tiền (chốt 06/11/2026 khi review PR #148, change `dashboard-basic`) |
+| 98 | Công nợ phải trả: trả cho ai | Chỉ theo dõi tiền phải trả **người bán hàng** (nhà cung cấp, cá nhân, cai thầu bán hàng cũ / phế liệu). Cước xe, bốc xếp của chuyến (chi phí mua hàng, #26) trả ngay, **không** thành khoản phải trả (chốt 06/11/2026, change `payables`, thiết kế D14c) |
+| 99 | Khoản phải trả phát sinh và hạn trả | **Mỗi phiếu nhập đã ghi sổ** là một khoản phải trả: số thực nhận × đơn giá dòng đơn (kg theo cân thực tế, #13). **Hạn = ngày nhập + số ngày được nợ** của người bán; thêm trường số ngày được nợ vào danh mục người bán (D16), **mặc định 0 = trả ngay khi nhập**. Quá hạn tính theo ngày Việt Nam (chốt 06/11/2026, change `payables`) |
+| 100 | Ứng trước cho người bán | Cho phép **ứng tiền trước** khi nhận hàng (phiếu chi loại Ứng trước). Tiền ứng và phần chi dư giữ làm **tiền ứng trước** của người bán, **tự trừ vào phiếu nhập sau** theo khoản đến hạn sớm nhất trước, giống tiền trả trước phải thu (#82). Phiếu chi không sửa; ghi sai thì Kế toán hủy, bắt buộc lý do (như #83) (chốt 06/11/2026, change `payables`) |
+| 101 | VAT hàng mua | **Chưa tính VAT đầu vào**: giá trên đơn là số phải trả người bán (chốt 06/11/2026, change `payables`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 
