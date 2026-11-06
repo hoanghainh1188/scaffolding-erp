@@ -10,7 +10,6 @@ import {
   monthTotals,
   type DayRevenue,
   type MonthRevenue,
-  type RankedCustomer,
   type RiskSite,
 } from "@/domain/dashboard";
 import { datesBetween } from "@/domain/daily-revenue";
@@ -33,7 +32,7 @@ import {
   type ConditionRow,
   type OnSiteSummary,
 } from "./stock";
-import { topByKg, topByRevenue } from "./top";
+import { topRows, type TopRow } from "./top";
 
 /** The months one book covers: the chart's six and January of this year. */
 export function bookMonths(today: BusinessDate): string[] {
@@ -117,8 +116,8 @@ export function revenueSummary(
 
 export interface TopCustomers {
   year: string;
-  revenue: RankedCustomer[];
-  kg: RankedCustomer[];
+  byRevenue: TopRow[];
+  byKg: TopRow[];
 }
 
 export async function topOfYear(
@@ -127,11 +126,10 @@ export async function topOfYear(
   today: BusinessDate,
 ): Promise<TopCustomers> {
   const january = `${today.slice(0, 4)}-01-01` as BusinessDate;
-  const [revenue, kg] = await Promise.all([
-    topByRevenue(db, book, january),
-    topByKg(db, january, today),
-  ]);
-  return { year: today.slice(0, 4), revenue, kg };
+  return {
+    year: today.slice(0, 4),
+    ...(await topRows(db, book, january, today)),
+  };
 }
 
 export interface DashboardData {

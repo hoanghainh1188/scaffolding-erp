@@ -37,16 +37,16 @@
 
 ## 4. API
 
-- [ ] 4.1 `GET /api/dashboard/site-lookup?q=` bọc `withAuth` (`dashboard.view` + `canContract(RENTAL, view)`), `q` < 2 ký tự trả rỗng, > 100 ký tự trả 400; test route: 401 chưa đăng nhập, 403 Thủ kho, Kinh doanh không có `money`; `route-guards.test.ts` xanh
+- [x] 4.1 `GET /api/dashboard/site-lookup?q=` bọc `withAuth` (`dashboard.view` + `canContract(RENTAL, view)`), `q` < 2 ký tự trả rỗng, > 100 ký tự trả 400; test route: 401 chưa đăng nhập, 403 Thủ kho, Kinh doanh không có `money`; `route-guards.test.ts` xanh
 
 ## 5. Giao diện D1
 
-- [ ] 5.1 Trang `src/app/(desktop)/dashboard/page.tsx`: `requirePermission("dashboard.view")`, `await connection()`, câu chào + "số liệu lúc HH:MM" + nút "Làm mới"; mỗi khối trong `<Suspense>` riêng; lưới dồn khi thiếu khối
-- [ ] 5.2 Hàng 4 ô số (Công nợ quá hạn màu chính, Doanh số tháng, Hàng ở ngoài, Công trình rủi ro) theo bản vẽ, token Bright Blue Base
-- [ ] 5.3 Khối Doanh số: biểu đồ cột chồng SVG Thuê / Bán, chuyển Theo tháng / Theo ngày, dấu * tạm tính, hôm nay thuê / bán, Đền bù + mua lại riêng, chú thích chưa VAT; giá trị âm vẽ dưới trục 0; component test (gồm một ngày âm)
-- [ ] 5.4 Khối Tra nhanh: ô tìm debounce 250 ms, danh sách chọn bằng bàn phím, thẻ công trình + dòng từng hợp đồng, không hiện dòng tiền khi không có `money`; component test
-- [ ] 5.5 Khối Chờ duyệt, Công trình rủi ro (gom theo công trình), Hàng ở ngoài theo khu vực, Tồn kho theo tình trạng, Top 5 (Doanh thu / Theo kg); chiều cao cố định, cuộn trong khối; component test
-- [ ] 5.6 Gắn `data-mask` theo design D6
+- [x] 5.1 Trang `src/app/(desktop)/dashboard/page.tsx`: `requirePermission("dashboard.view")`, `await connection()`, câu chào + "số liệu lúc HH:MM" + nút "Làm mới"; mỗi khối trong `<Suspense>` riêng; lưới dồn khi thiếu khối
+- [x] 5.2 Hàng 4 ô số (Công nợ quá hạn màu chính, Doanh số tháng, Hàng ở ngoài, Công trình rủi ro) theo bản vẽ, token Bright Blue Base
+- [x] 5.3 Khối Doanh số: biểu đồ cột chồng SVG Thuê / Bán, chuyển Theo tháng / Theo ngày, dấu * tạm tính, hôm nay thuê / bán, Đền bù + mua lại riêng, chú thích chưa VAT; giá trị âm vẽ dưới trục 0; component test (gồm một ngày âm)
+- [x] 5.4 Khối Tra nhanh: ô tìm debounce 250 ms, danh sách chọn bằng bàn phím, thẻ công trình + dòng từng hợp đồng, không hiện dòng tiền khi không có `money`; component test
+- [x] 5.5 Khối Chờ duyệt, Công trình rủi ro (gom theo công trình), Hàng ở ngoài theo khu vực, Tồn kho theo tình trạng, Top 5 (Doanh thu / Theo kg); chiều cao cố định, cuộn trong khối; component test
+- [x] 5.6 Gắn `data-mask` theo design D6
 
 ## 6. E2E và ảnh mốc
 

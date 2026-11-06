@@ -77,10 +77,7 @@ async function termsOf(
       paymentTermsDays: revision.paymentTermsDays,
       vatBasisPoints: basisPointsOf(revision.vatRate, revision.vatEnabled),
       prices: new Map(
-        (pricesBy.get(revision.id) ?? []).map((row) => [
-          row.itemId,
-          row.price,
-        ]),
+        (pricesBy.get(revision.id) ?? []).map((row) => [row.itemId, row.price]),
       ),
     } satisfies BillingTerms,
   }));
@@ -244,9 +241,7 @@ export async function loadBillingSources(
           contractId: id,
           pieces: ownPieces,
           terms: terms.get(id) ?? [],
-          items: new Map(
-            [...items].filter(([itemId]) => ownItems.has(itemId)),
-          ),
+          items: new Map([...items].filter(([itemId]) => ownItems.has(itemId))),
           freight: own.freight,
           adjustments: own.adjustments,
           closed: closed.get(id) ?? new Map(),

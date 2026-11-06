@@ -17,7 +17,7 @@ import {
 import { returnOf } from "@/test/returns";
 
 import { monthsBetween, revenueBook } from "./revenue";
-import { topByKg, topByRevenue } from "./top";
+import { topByKg, topByRevenue, topRows } from "./top";
 
 const ctx = createTestContext();
 afterAll(ctx.close);
@@ -96,8 +96,31 @@ describe("topByKg", () => {
   });
 
   it("leaves out deliveries of another year", async () => {
-    expect(await topByKg(ctx.db, d("2027-01-01"), d("2027-12-31"))).toEqual(
-      [],
+    expect(await topByKg(ctx.db, d("2027-01-01"), d("2027-12-31"))).toEqual([]);
+  });
+});
+
+describe("topRows", () => {
+  it("carries both numbers on every row of both rankings", async () => {
+    await deliveredSale(ctx, fx, {}, new Date("2026-11-05T03:00:00Z"));
+    const book = await revenueBook(
+      ctx.db,
+      monthsBetween("2026-01", "2026-11"),
+      TODAY,
     );
+    const { byRevenue, byKg } = await topRows(ctx.db, book, JAN_1, TODAY);
+    const revenue = await topByRevenue(ctx.db, book, JAN_1);
+    const kg = await topByKg(ctx.db, JAN_1, TODAY);
+    expect(byRevenue.map((row) => [row.customerId, row.revenue])).toEqual(
+      revenue.map((row) => [row.customerId, row.value]),
+    );
+    expect(byKg.map((row) => [row.customerId, row.kgMilli])).toEqual(
+      kg.map((row) => [row.customerId, row.value]),
+    );
+    for (const row of byRevenue) {
+      expect(byKg.find((other) => other.customerId === row.customerId)).toEqual(
+        row,
+      );
+    }
   });
 });
