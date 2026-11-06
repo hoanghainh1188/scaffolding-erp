@@ -46,8 +46,8 @@ Sidebar SHALL chỉ hiện các mục mà vai trò của người dùng hiện t
 
 #### Scenario: Kế toán thấy Công nợ nhưng không thấy Cài đặt
 - **WHEN** người dùng có vai trò `ACCOUNTANT` mở layout Desktop
-- **THEN** sidebar hiện mục Công nợ
-- **AND** không hiện mục Báo cáo và Cài đặt
+- **THEN** sidebar hiện mục Công nợ và Báo cáo
+- **AND** không hiện mục Cài đặt
 
 #### Scenario: Giám đốc thấy tất cả
 - **WHEN** người dùng có vai trò `DIRECTOR` mở layout Desktop
@@ -205,8 +205,12 @@ Hệ thống SHALL cung cấp web app manifest để cài khu Mobile lên màn h
 Mỗi mục menu Desktop và mỗi tab Mobile chưa có chức năng SHALL mở được một trang có tiêu đề đúng tên mục và dòng chữ "Đang xây dựng", thay vì lỗi 404. Các tab Việc hôm nay (`/m`), Quét mã (`/m/scan`), Lịch sử (`/m/history`) và Cá nhân (`/m/profile`) không còn là trang giữ chỗ. Tiêu đề trang SHALL dùng họ chữ `display` của Bright Blue Base.
 
 #### Scenario: Mở mục chưa làm
+- **WHEN** một change sau thêm mục menu Desktop mới nhưng chưa làm trang chức năng, rồi Giám đốc bấm mục đó
+- **THEN** trang hiện tiêu đề đúng tên mục và chữ "Đang xây dựng"
+
+#### Scenario: Mục Báo cáo có nội dung thật
 - **WHEN** Giám đốc bấm mục "Báo cáo" trên sidebar
-- **THEN** trang hiện tiêu đề "Báo cáo" và chữ "Đang xây dựng"
+- **THEN** trang hiện "Báo cáo quản trị" (D15), không hiện chữ "Đang xây dựng"
 
 #### Scenario: Tab Cá nhân có nội dung thật
 - **WHEN** thủ kho mở tab "Cá nhân"
