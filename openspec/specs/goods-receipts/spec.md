@@ -125,7 +125,7 @@ Giá trị ghi sổ của mỗi dòng SHALL là tiền hàng thực nhận cộn
 - **THEN** hệ thống từ chối với "Tiền hàng bằng 0 nên không chia chi phí theo giá trị được, chọn chia theo trọng lượng"
 
 ### Requirement: Xác nhận nhập kho ghi sổ kho trong một transaction
-Xác nhận nhập kho SHALL trong cùng một transaction: lưu phiếu, ghi một dòng `PURCHASE_IN` vào bãi nhập cho mỗi (mã + tình trạng) có số > 0 với ngày nghiệp vụ hôm nay, cập nhật giá vốn bình quân, đổi trạng thái đơn và ghi lịch sử đơn. Lỗi ở bất kỳ bước nào SHALL làm không ghi gì.
+Xác nhận nhập kho SHALL trong cùng một transaction: lưu phiếu kèm **hạn trả người bán** (ngày nhập + số ngày được nợ của nhà cung cấp lúc đó, spec `payables`), ghi một dòng `PURCHASE_IN` vào bãi nhập cho mỗi (mã + tình trạng) có số > 0 với ngày nghiệp vụ hôm nay, cập nhật giá vốn bình quân, đổi trạng thái đơn, ghi lịch sử đơn, rồi **trừ tiền ứng trước** của nhà cung cấp vào các khoản còn phải trả (spec `supplier-payments`). Lỗi ở bất kỳ bước nào SHALL làm không ghi gì.
 
 #### Scenario: Dòng sổ của chuyến 1
 - **WHEN** chuyến 1 của `PO-2026-052` được xác nhận vào `BAI-01`
@@ -137,11 +137,19 @@ Xác nhận nhập kho SHALL trong cùng một transaction: lưu phiếu, ghi m�
 
 #### Scenario: Lỗi sổ kho làm hỏng cả phiếu
 - **WHEN** `GG-CH` vừa bị ngừng dùng trước khi phiếu được ghi
-- **THEN** hệ thống từ chối với "Vật tư GG-CH đã ngừng dùng" **AND** không có phiếu, dòng sổ hay đổi trạng thái đơn nào
+- **THEN** hệ thống từ chối với "Vật tư GG-CH đã ngừng dùng" **AND** không có phiếu, dòng sổ, đổi trạng thái đơn hay dòng trừ ứng trước nào
 
 #### Scenario: Dòng chuyến này không có không ghi sổ
 - **WHEN** Mâm là "Chuyến này không có"
 - **THEN** sổ kho không có dòng nào của `GG-M16` cho phiếu đó
+
+#### Scenario: Lưu hạn trả theo người bán
+- **WHEN** nhà cung cấp của `PO-2026-052` được nợ 15 ngày và chuyến 1 được xác nhận ngày 27/10/2026
+- **THEN** `PN-2026-094` lưu hạn trả 11/11/2026
+
+#### Scenario: Ghi sổ trừ tiền ứng trước
+- **WHEN** nhà cung cấp có tiền ứng trước 10.000.000 ₫ và chuyến được xác nhận với tiền hàng 6.400.000 ₫
+- **THEN** cùng transaction có dòng trừ 6.400.000 ₫ từ phiếu chi ứng trước vào phiếu nhập mới **AND** M3 không hiện số tiền nào
 
 ### Requirement: Chờ giao bù theo từng dòng
 Mỗi dòng còn thiếu sau chuyến SHALL có ô "Chờ giao bù phần thiếu". Dòng đếm thiếu SHALL mặc định không tích (dòng chốt theo số đã nhận); dòng "Chuyến này không có" SHALL mặc định tích "Chờ chuyến sau". Dòng đã chốt SHALL không hiện ở chuyến sau; dòng còn chờ SHALL hiện với số còn lại theo đơn.
@@ -302,3 +310,14 @@ Trang `/m/receipts/<mã phiếu>` SHALL hiện phiếu đã ghi sổ: mã, đơn
 #### Scenario: Mã phiếu không có
 - **WHEN** mở `/m/receipts/PN-2026-999`
 - **THEN** trang 404 "Không tìm thấy phiếu nhập"
+
+### Requirement: Phiếu nhập đã ghi sổ không sửa được
+Phiếu nhập, dòng phiếu nhập và chi phí chuyến đã ghi SHALL không sửa, không xóa được, kể cả khi role app ghi thẳng vào cơ sở dữ liệu (chỉ ghi thêm), vì sổ kho và khoản phải trả người bán tính từ chúng. Sai sót số tiền sửa bằng phiếu điều chỉnh giá trị (giá vốn) hoặc phiếu chi (phải trả), không sửa phiếu.
+
+#### Scenario: Sửa số thực nhận bị chặn
+- **WHEN** role app chạy `UPDATE goods_receipt_line SET quantity = 1` cho một dòng của `PN-2026-090`
+- **THEN** PostgreSQL từ chối với mã `42501` **AND** khoản `PN-2026-090` vẫn phát sinh 26.500.000 ₫
+
+#### Scenario: Xóa phiếu nhập bị chặn
+- **WHEN** role app chạy `DELETE FROM goods_receipt WHERE code = 'PN-2026-090'`
+- **THEN** PostgreSQL từ chối với mã `42501`

@@ -18,7 +18,7 @@ Mỗi cơ sở dữ liệu của hệ thống SHALL có hai role: role owner (ch
 - **THEN** không bảng nào có chủ là `erp_app`
 
 ### Requirement: Quyền tối thiểu trên bảng
-Role app SHALL có `SELECT`, `INSERT` trên mọi bảng của schema `public`, `USAGE` trên mọi sequence ở đó, và `UPDATE`, `DELETE` trên mọi bảng trừ bảng chỉ ghi thêm: `inventory_ledger`, `activity_log`, `scrap_price`, `billing_period`, `billing_period_line`, `billing_period_freight`, `receipt`, `receipt_allocation`, `receipt_cancellation`, `contract_settlement`. Role app SHALL không có `TRUNCATE`, `REFERENCES`, `TRIGGER`, `CREATE` trên schema nào, và không có quyền gì trên schema `drizzle`.
+Role app SHALL có `SELECT`, `INSERT` trên mọi bảng schema `public`, `USAGE` trên sequence ở đó, và `UPDATE`, `DELETE` trên mọi bảng trừ bảng chỉ ghi thêm: `inventory_ledger`, `activity_log`, `scrap_price`, `billing_period`, `billing_period_line`, `billing_period_freight`, `receipt`, `receipt_allocation`, `receipt_cancellation`, `contract_settlement`, `goods_receipt`, `goods_receipt_line`, `goods_receipt_cost`, `supplier_payment`, `supplier_payment_allocation`, `supplier_payment_cancellation`.
 
 #### Scenario: Ghi thêm dòng sổ kho được
 - **WHEN** role app ghi phiếu nhập 120 cây `GG-K17` tình trạng Tốt vào `BAI-01`
@@ -31,10 +31,6 @@ Role app SHALL có `SELECT`, `INSERT` trên mọi bảng của schema `public`, 
 #### Scenario: Xóa nhật ký bị từ chối
 - **WHEN** role app chạy `DELETE FROM activity_log`
 - **THEN** PostgreSQL từ chối với lỗi thiếu quyền (mã `42501`), số dòng nhật ký không đổi
-
-#### Scenario: TRUNCATE bị từ chối
-- **WHEN** role app chạy `TRUNCATE inventory_ledger`, `TRUNCATE activity_log` hoặc `TRUNCATE purchase_order`
-- **THEN** cả ba lệnh bị từ chối với mã `42501`
 
 #### Scenario: Sửa giá sắt vụn đã ghi bị từ chối
 - **WHEN** role app chạy `UPDATE scrap_price SET price_per_kg = 8000`
@@ -51,6 +47,21 @@ Role app SHALL có `SELECT`, `INSERT` trên mọi bảng của schema `public`, 
 #### Scenario: Sửa phiếu thu bị từ chối
 - **WHEN** role app chạy `UPDATE receipt SET amount = 0` hoặc `DELETE FROM receipt_allocation`
 - **THEN** cả hai lệnh bị từ chối với mã `42501`; phiếu thu và phân bổ giữ nguyên
+
+#### Scenario: Sửa phiếu chi và phiếu nhập bị từ chối
+- **WHEN** role app chạy `UPDATE supplier_payment SET amount = 0`, `DELETE FROM supplier_payment_allocation` hoặc `UPDATE goods_receipt SET due_date = '2026-12-31'`
+- **THEN** cả ba lệnh bị từ chối với mã `42501`; phiếu chi, phân bổ và hạn trả giữ nguyên
+
+#### Scenario: Owner vẫn bị trigger chặn
+- **WHEN** role owner chạy `UPDATE supplier_payment_allocation SET amount = 1`
+- **THEN** trigger `supplier_payment_allocation_append_only` từ chối và dòng giữ nguyên
+
+### Requirement: Role app không có quyền quản trị bảng
+Role app SHALL không có `TRUNCATE`, `REFERENCES`, `TRIGGER`, `CREATE` trên schema nào, và không có quyền gì trên schema `drizzle`.
+
+#### Scenario: TRUNCATE bị từ chối
+- **WHEN** role app chạy `TRUNCATE inventory_ledger`, `TRUNCATE activity_log` hoặc `TRUNCATE purchase_order`
+- **THEN** cả ba lệnh bị từ chối với mã `42501`
 
 ### Requirement: Role app không đổi được cấu trúc và trigger
 Role app SHALL không chạy được lệnh DDL trên bảng có sẵn hay tạo đối tượng mới: `ALTER TABLE` (kể cả `DISABLE TRIGGER`), `DROP TABLE`, `CREATE TABLE`, `CREATE FUNCTION`, và không đổi được `session_replication_role`.
