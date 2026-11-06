@@ -27,7 +27,12 @@ export function StockTable({ rows }: { rows: readonly ConditionRow[] }) {
       }
       note={`Mỗi mã theo đơn vị của mã. Bãi và xưởng gộp; "Ở công trình" là hàng đang cho thuê.`}
     >
-      <div className="h-80 overflow-auto rounded-md border">
+      <div
+        role="region"
+        aria-label="Bảng tồn kho theo tình trạng"
+        tabIndex={0}
+        className="h-80 overflow-auto rounded-md border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
         <table className="w-full text-label font-normal tabular-nums">
           <thead className="sticky top-0 bg-background">
             <tr className="border-b">

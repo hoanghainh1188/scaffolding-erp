@@ -45,9 +45,16 @@ export function TopCustomers({
       }
     >
       {rows.length === 0 ? (
-        <p className="text-body text-muted-foreground">Chưa có số năm nay.</p>
+        <p className="h-72 text-body text-muted-foreground">
+          Chưa có số năm nay.
+        </p>
       ) : (
-        <ol className="h-72 overflow-y-auto" data-mask>
+        <ol
+          aria-label="Xếp hạng nhà thầu"
+          tabIndex={0}
+          className="h-72 overflow-y-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          data-mask
+        >
           {rows.map((row, index) => (
             <li
               key={row.customerId}

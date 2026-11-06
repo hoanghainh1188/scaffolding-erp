@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { statePath } from "./auth-helpers";
 import {
   DESKTOP_READY,
   MOBILE_READY,
@@ -34,7 +35,16 @@ async function zeroMaskedDigits(page: Page): Promise<void> {
   );
 }
 
+/** D1 has streamed every block (no skeleton left). */
+async function dashboardLoaded(page: Page): Promise<void> {
+  await expect(page.locator("[data-slot=skeleton]")).toHaveCount(0, {
+    timeout: 30_000,
+  });
+}
+
 const PAGES = [
+  // D1 as the director (dashboard-basic design D6): every number, list body
+  // and the chart are masked; blocks have a fixed height.
   { path: "/dashboard", name: "dashboard", ready: DESKTOP_READY },
   { path: "/m", name: "mobile-home", ready: MOBILE_READY },
   { path: "/dev/components", name: "components", ready: "main" },
@@ -144,6 +154,8 @@ test.describe("visual baselines @visual", () => {
         await page.setViewportSize({ width, height: 900 });
         await page.goto(path);
         if (ready !== "main") await waitForHydration(page, ready);
+        // D1 streams its blocks: shoot once every block is in.
+        if (name === "dashboard") await dashboardLoaded(page);
         // Next's dev issue badge comes and goes with unrelated dev warnings.
         await page.addStyleTag({
           content: "nextjs-portal { display: none !important; }",
@@ -437,6 +449,35 @@ test.describe("receivables baselines @visual", () => {
       });
       await page.evaluate(() => document.fonts.ready);
       await expect(page).toHaveScreenshot(`d14-receivables-${width}.png`, {
+        fullPage: true,
+        mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
+        animations: "disabled",
+        caret: "hide",
+      });
+    });
+  }
+});
+
+// dashboard-basic design D6: D1 as sales (scope "Cả hai"), so a money block
+// showing up for a role without receivables.view changes the image.
+test.describe("dashboard baselines @visual", () => {
+  test.use({ storageState: statePath("SALES") });
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "sets its own viewport");
+  });
+
+  for (const width of WIDTHS) {
+    test(`dashboard-sales at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/dashboard");
+      await waitForHydration(page, DESKTOP_READY);
+      await dashboardLoaded(page);
+      await page.addStyleTag({
+        content: "nextjs-portal { display: none !important; }",
+      });
+      await zeroMaskedDigits(page);
+      await page.evaluate(() => document.fonts.ready);
+      await expect(page).toHaveScreenshot(`dashboard-sales-${width}.png`, {
         fullPage: true,
         mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
         animations: "disabled",

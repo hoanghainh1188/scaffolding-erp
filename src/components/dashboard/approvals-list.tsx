@@ -27,9 +27,16 @@ export function ApprovalsList({
       }
     >
       {rows.length === 0 ? (
-        <p className="text-body text-muted-foreground">Không có việc nào.</p>
+        <p className="h-80 text-body text-muted-foreground">
+          Không có việc nào.
+        </p>
       ) : (
-        <ul className="h-80 overflow-y-auto" data-mask>
+        <ul
+          aria-label="Danh sách việc chờ duyệt"
+          tabIndex={0}
+          className="h-80 overflow-y-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          data-mask
+        >
           {rows.map((row) => (
             <li
               key={`${row.kind}-${row.code}`}

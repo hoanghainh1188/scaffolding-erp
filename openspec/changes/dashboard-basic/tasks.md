@@ -50,10 +50,10 @@
 
 ## 6. E2E và ảnh mốc
 
-- [ ] 6.1 `e2e/dashboard.spec.ts`: Giám đốc thấy đủ khối, câu chào đếm khớp số dòng Chờ duyệt; Kế toán thấy khối tiền; Kinh doanh không thấy khối tiền và HTML không có số tiền của các khối đó; Thủ kho bị chuyển `/m`
-- [ ] 6.2 E2E tra nhanh: gõ mã công trình của hợp đồng E2E (`E2EXUAT`), thấy hợp đồng và số đang giữ; Kinh doanh không thấy tiền
-- [ ] 6.3 E2E khớp màn gốc trong cùng lần chạy: ô Quá hạn D1 = ô Quá hạn D14; số cái Hàng ở ngoài = tổng cột "Tại công trình" D10; bấm "Làm mới" thì giờ "số liệu lúc" đổi (không ghi gì vào DB dev)
-- [ ] 6.4 Ảnh mốc `@visual` D1 cho Giám đốc và Kinh doanh phạm vi "Cả hai" (tài khoản E2E vai trò Kinh doanh; mask theo design D6); gắn nhãn `update-snapshots` vào PR
+- [x] 6.1 `e2e/dashboard.spec.ts`: Giám đốc thấy đủ khối, câu chào đếm khớp số dòng Chờ duyệt; Kế toán thấy khối tiền; Kinh doanh không thấy khối tiền và HTML không có số tiền của các khối đó; Thủ kho bị chuyển `/m`
+- [x] 6.2 E2E tra nhanh: gõ mã công trình của hợp đồng E2E (`E2EXUAT`), thấy hợp đồng và số đang giữ; Kinh doanh không thấy tiền
+- [x] 6.3 E2E khớp màn gốc trong cùng lần chạy: ô Quá hạn D1 = ô Quá hạn D14; số cái Hàng ở ngoài = tổng cột "Tại công trình" D10; bấm "Làm mới" thì giờ "số liệu lúc" đổi (không ghi gì vào DB dev)
+- [x] 6.4 Ảnh mốc `@visual` D1 cho Giám đốc và Kinh doanh phạm vi "Cả hai" (tài khoản E2E vai trò Kinh doanh; mask theo design D6); gắn nhãn `update-snapshots` vào PR
 
 ## 7. Đo và kiểm tra
 

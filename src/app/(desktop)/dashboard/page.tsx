@@ -117,7 +117,7 @@ export default async function Page() {
 
   return (
     <div className="flex w-full max-w-[1280px] flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <h1 className="font-display text-h1" data-mask>
             {greeting(user.name, user.role, approvals.length)}
@@ -127,7 +127,7 @@ export default async function Page() {
           </p>
         </div>
         <RefreshButton />
-      </header>
+      </div>
 
       <div
         className={

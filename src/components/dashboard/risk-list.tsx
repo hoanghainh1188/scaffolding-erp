@@ -19,11 +19,16 @@ export function RiskList({ sites }: { sites: readonly RiskSite[] }) {
       note="Có nợ quá hạn, có hàng mất trong 30 ngày, hoặc quá ngày kết thúc hợp đồng mà còn hàng."
     >
       {sites.length === 0 ? (
-        <p className="text-body text-muted-foreground">
+        <p className="h-80 text-body text-muted-foreground">
           Không có công trình nào rủi ro.
         </p>
       ) : (
-        <ul className="h-80 overflow-y-auto" data-mask>
+        <ul
+          aria-label="Danh sách công trình rủi ro"
+          tabIndex={0}
+          className="h-80 overflow-y-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          data-mask
+        >
           {sites.map((site) => (
             <li
               key={site.siteId}
