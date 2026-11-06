@@ -35,10 +35,11 @@ describe("navigation", () => {
     ]);
   });
 
-  it("shows receivables but not reports or settings to the accountant", () => {
+  it("shows receivables and reports but not settings to the accountant", () => {
     const items = labels("ACCOUNTANT");
     expect(items).toContain("Công nợ");
-    expect(items).not.toContain("Báo cáo");
+    // management-reports (0.2 #110).
+    expect(items).toContain("Báo cáo");
     expect(items).not.toContain("Cài đặt");
   });
 

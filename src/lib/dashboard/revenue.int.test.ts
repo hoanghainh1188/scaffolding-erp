@@ -184,7 +184,12 @@ describe("sale and the separate amounts", () => {
     const total = (book: RevenueBook) =>
       book.entries.reduce((sum, entry) => sum + entry.rent + entry.sale, 0);
     expect(after.separate).toEqual([
-      { date: "2026-11-05", customerId: fx.customerId, amount: note.amountDue },
+      {
+        date: "2026-11-05",
+        customerId: fx.customerId,
+        kind: "COMPENSATION",
+        amount: note.amountDue,
+      },
     ]);
     expect(before.separate).toEqual([]);
     // The return of the lost goods changes rent, never by the compensation.

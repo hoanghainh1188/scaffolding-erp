@@ -53,6 +53,8 @@ export interface RevenueEntry {
 export interface SeparateEntry {
   date: BusinessDate;
   customerId: string;
+  /** D1 adds both; D15 shows them apart (management-reports design D7). */
+  kind: "COMPENSATION" | "BUY_BACK";
   amount: number;
 }
 
@@ -363,11 +365,20 @@ async function separateEntries(
         ),
       ),
   ]);
-  return [...compensations, ...buyBacks].map((row) => ({
-    date: row.date as BusinessDate,
-    customerId: row.customerId,
-    amount: row.amount ?? 0,
-  }));
+  const entries = (
+    rows: typeof compensations,
+    kind: SeparateEntry["kind"],
+  ): SeparateEntry[] =>
+    rows.map((row) => ({
+      date: row.date as BusinessDate,
+      customerId: row.customerId,
+      kind,
+      amount: row.amount ?? 0,
+    }));
+  return [
+    ...entries(compensations, "COMPENSATION"),
+    ...entries(buyBacks, "BUY_BACK"),
+  ];
 }
 
 /** The revenue book of `months` (oldest first, ending with today's month). */

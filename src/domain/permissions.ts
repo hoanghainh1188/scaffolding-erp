@@ -22,7 +22,7 @@ export const PERMISSIONS = {
   "repairs.view": OFFICE,
   "sales.view": OFFICE,
   "receivables.view": ["DIRECTOR", "ACCOUNTANT"],
-  "reports.view": ["DIRECTOR"],
+  "reports.view": ["DIRECTOR", "ACCOUNTANT"],
   "catalog.view": OFFICE,
   "settings.view": ["DIRECTOR"],
   "users.manage": ["DIRECTOR"],

@@ -116,6 +116,8 @@ export const inventoryLedger = pgTable(
       table.movement,
       table.businessDate,
     ),
+    // management-reports design D4: ledger lines of one period (D15).
+    index("inventory_ledger_business_date_idx").on(table.businessDate),
   ],
 );
 

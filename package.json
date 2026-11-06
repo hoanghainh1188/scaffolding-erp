@@ -28,6 +28,7 @@
     "auth:unlock": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/unlock-user.mts",
     "inventory:check": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/inventory-check.mts",
     "bench:dashboard": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/bench-dashboard.mts",
+    "bench:reports": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/bench-reports.mts",
     "billing:check": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/billing-check.mts",
     "tokens": "node scripts/build-tokens.mts",
     "postinstall": "node scripts/copy-zxing-wasm.mts"

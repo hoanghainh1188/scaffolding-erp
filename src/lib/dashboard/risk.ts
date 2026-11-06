@@ -4,7 +4,7 @@
 // when the end date of the revision in force has passed with goods still on
 // site. Signs are computed per contract and grouped by site. Overdue shows
 // days only, never an amount, so sales may see it (0.2 #91).
-import { and, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, eq, gte, inArray } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
 import {
@@ -73,7 +73,10 @@ export async function runningRentals(
         eq(contract.type, "RENTAL"),
         inArray(contract.status, ["APPROVED", "ACTIVE"]),
       ),
-    );
+    )
+    // Contracts of one site in a fixed order (oldest first), never the
+    // order the database happens to return.
+    .orderBy(asc(contract.createdAt), asc(contract.id));
   return rows;
 }
 

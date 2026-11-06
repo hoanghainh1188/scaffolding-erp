@@ -53,16 +53,18 @@ test.describe("desktop shell", () => {
     await expect(page.locator("header")).toContainText("Giám đốc");
   });
 
-  test("opens the Báo cáo placeholder from the menu", async ({ page }) => {
+  test("opens D15 from the Báo cáo menu (management-reports)", async ({
+    page,
+  }) => {
     await page.goto("/dashboard");
     await page.getByRole("link", { name: "Báo cáo", exact: true }).click();
     await expect(page).toHaveURL(/\/reports$/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Báo cáo" }),
+      page.getByRole("heading", { level: 1, name: "Báo cáo quản trị" }),
     ).toBeVisible();
     await expect(
       page.getByText("Đang xây dựng").filter({ visible: true }),
-    ).toHaveCount(1);
+    ).toHaveCount(0);
   });
 });
 
