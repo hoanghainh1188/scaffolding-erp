@@ -19,6 +19,7 @@ import {
 import {
   formatByUnit,
   formatQuantity,
+  isPieceUnit,
   toQuantity,
   type QuantityUnit,
   type UnitAmount,
@@ -99,7 +100,7 @@ export interface OnSiteTotals {
 export function onSiteTotals(lines: readonly OnSiteLine[]): OnSiteTotals {
   return lines.reduce<OnSiteTotals>(
     (sum, line) => ({
-      piecesMilli: sum.piecesMilli + (line.unit === "PIECE" ? line.milli : 0),
+      piecesMilli: sum.piecesMilli + (isPieceUnit(line.unit) ? line.milli : 0),
       kgMilli:
         sum.kgMilli +
         lineWeightKgMilli(line.unit, line.milli, line.standardWeightKg),
