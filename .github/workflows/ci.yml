@@ -91,7 +91,7 @@ jobs:
   # Integration files run one at a time against one database, so split them
   # across jobs that each have their own database.
   integration:
-    name: Integration tests (${{ matrix.shard }}/2)
+    name: Integration tests (${{ matrix.shard }}/3)
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
@@ -99,7 +99,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3]
     services:
       postgres:
         image: postgres:17-alpine
@@ -122,7 +122,7 @@ jobs:
         env:
           DATABASE_URL_MIGRATE: ${{ env.TEST_DATABASE_URL_MIGRATE }}
         run: npm run db:roles && npm run db:migrate
-      - run: npx vitest run --project integration --shard=${{ matrix.shard }}/2
+      - run: npx vitest run --project integration --shard=${{ matrix.shard }}/3
 
   gate-checks:
     name: Lint, types, tests, build
