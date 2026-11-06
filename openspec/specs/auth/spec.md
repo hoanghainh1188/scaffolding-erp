@@ -204,7 +204,7 @@ Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền t
 
 #### Scenario: Quyền xem mục menu theo vai trò
 - **WHEN** đọc bảng quyền cho các mục menu
-- **THEN** Tổng quan, Thu mua, Kho, Sửa chữa, Bán & Thuê, Danh mục cho `DIRECTOR`, `ACCOUNTANT`, `SALES`; Công nợ cho `DIRECTOR`, `ACCOUNTANT`; Báo cáo, Cài đặt, quản lý người dùng chỉ cho `DIRECTOR`
+- **THEN** Tổng quan, Thu mua, Kho, Sửa chữa, Bán & Thuê, Danh mục cho `DIRECTOR`, `ACCOUNTANT`, `SALES`; Công nợ, Báo cáo (`reports.view`) cho `DIRECTOR`, `ACCOUNTANT`; Cài đặt, quản lý người dùng chỉ cho `DIRECTOR`
 
 #### Scenario: Quyền danh mục theo vai trò
 - **WHEN** đọc bảng quyền cho các quyền danh mục
@@ -269,6 +269,10 @@ Hệ thống SHALL có một bảng quyền duy nhất ánh xạ mỗi quyền t
 #### Scenario: Thủ kho gọi API hợp đồng
 - **WHEN** `vantung` (Thủ kho) gửi `GET /api/contracts`
 - **THEN** API trả 403 với "Bạn không có quyền thực hiện thao tác này"
+
+#### Scenario: Kinh doanh không xem Báo cáo
+- **WHEN** `quocbao` (Kinh doanh) mở `/reports`
+- **THEN** trang trả 403 **AND** sidebar của `quocbao` không có mục Báo cáo
 
 ### Requirement: Từ chối thao tác sai vai trò ở server
 Mỗi API và trang có giới hạn vai trò SHALL kiểm tra quyền ở server theo bảng quyền, độc lập với việc ẩn nút trên giao diện. API sai vai trò SHALL trả 403 với "Bạn không có quyền thực hiện thao tác này" và không thay đổi dữ liệu. Trang sai vai trò SHALL hiện trang 403 "Bạn không có quyền xem trang này" kèm nút về trang mặc định.
