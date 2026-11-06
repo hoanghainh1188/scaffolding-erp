@@ -59,7 +59,10 @@ function basisOf(line: AllocationLine, basis: AllocationBasis): bigint {
  * exact share, and the units left go one by one to the largest remainders
  * (the earlier one first on a tie). The parts always add up to `parts`.
  */
-function largestRemainder(parts: bigint, weights: readonly bigint[]): bigint[] {
+export function largestRemainder(
+  parts: bigint,
+  weights: readonly bigint[],
+): bigint[] {
   const sum = weights.reduce((a, b) => a + b, 0n);
   const shares = weights.map((weight) => (parts * weight) / sum);
   const remainders = weights.map((weight, index) => ({

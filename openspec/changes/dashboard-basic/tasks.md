@@ -1,19 +1,19 @@
 ## 1. Chỉ mục DB
 
-- [ ] 1.1 Migration chỉ thêm chỉ mục (design D2): `billing_period_month_idx (month)`, `delivery_note_posted_date_idx (business_date) WHERE status = 'POSTED'`, `inventory_ledger_movement_date_idx (movement, business_date)`; khai báo trong `src/db/schema/*.ts`, sinh bằng `npm run db:generate`, chạy `npm run db:migrate`
-- [ ] 1.2 Integration test: ba chỉ mục tồn tại (`pg_indexes`), migration không đổi số dòng của bảng nào
+- [x] 1.1 Migration chỉ thêm chỉ mục (design D2): `billing_period_month_idx (month)`, `delivery_note_posted_date_idx (business_date) WHERE status = 'POSTED'`, `inventory_ledger_movement_date_idx (movement, business_date)`; khai báo trong `src/db/schema/*.ts`, sinh bằng `npm run db:generate`, chạy `npm run db:migrate`
+- [x] 1.2 Integration test: ba chỉ mục tồn tại (`pg_indexes`), migration không đổi số dòng của bảng nào
 
 ## 2. Hàm thuần `src/domain/dashboard.ts` + unit test (trước giao diện)
 
-- [ ] 2.1 Hằng số `RISK_LOSS_DAYS = 30` và các nhãn dấu hiệu ở một chỗ; `isRecentLoss(lossDate, today)` (≤ 30 ngày), `isPastEnd(endDate, today, onSitePieces)`; test ranh giới 30 / 31 ngày, đúng ngày kết thúc, không có ngày kết thúc, còn 0 cái
-- [ ] 2.2 `dailyRevenue(statement, adjustmentDays)`: chia dòng `RENT` theo ngày tính (bỏ ngày nghỉ, phần dư lớn nhất), `MINIMUM` vào ngày trả, `ADJUSTMENT` vào **ngày lập dòng** (giờ VN, kẹp vào trong kỳ, design D2), cước vào ngày giao; test: chia đều, ngày nghỉ, phần lẻ 100.000 ₫ / 3 ngày, đổi giá giữa tháng, trả giữa tháng, số lượng 0, **tổng các ngày = `beforeVat`** (kiểm trên nhiều bảng kê dựng tay)
-- [ ] 2.2a Test dòng điều chỉnh: kỳ mở (xem ở hai ngày khác nhau) và kỳ đã chốt ra **cùng một ngày**; lập trước đầu kỳ / sau cuối kỳ thì kẹp; dòng âm làm ngày đó **âm** (không cắt về 0) và tổng tháng vẫn = `beforeVat`
-- [ ] 2.3 `dailyRevenueOfClosed(lines, freight, holidays, adjustmentDays)` cho bảng chụp `billing_period_line` / `billing_period_freight` (dòng điều chỉnh nối `adjustment_id` → ngày lập); test tổng = `rent + adjustment + freight` của kỳ; test **số ngày đếm lại (Từ → Đến, bỏ ngày nghỉ) = `charged_days`** đã chụp; test lệch (ngày nghỉ hiện tại khác lúc chụp): chia theo `charged_days` ngày lịch đầu tiên, tổng đúng tiền đã chụp, có cảnh báo
-- [ ] 2.4 `monthTotals(days)` gom Thuê / Bán theo tháng (giữ số âm), cờ tạm tính; `topCustomers(rows, by, 5)` (bằng nhau xếp theo tên, bỏ 0); test
-- [ ] 2.5 `onSiteTotals(lines)` (design D8): cái chỉ cộng mã `PIECE`, kg cộng mọi mã (`KG` trực tiếp, mã khác × trọng lượng chuẩn); test một công trình có mã cái, mã mét, mã kg (100 cái, 860 kg) và công trình chỉ có mã cây (0 cái, vẫn đếm công trình)
-- [ ] 2.5a `regionTotals(sites)`: gom cái, kg theo khu vực từ `regionOf`, dòng "Chưa rõ", dòng Cộng; `tonsText(kg)` 1 chữ số lẻ; test
-- [ ] 2.6 `riskBySite(contracts)`: gom hợp đồng rủi ro theo công trình, số công trình; test hai hợp đồng một công trình
-- [ ] 2.7 `greeting(name, role, count)`: ba dạng câu (Giám đốc, vai trò khác, 0 việc); test
+- [x] 2.1 Hằng số `RISK_LOSS_DAYS = 30` và các nhãn dấu hiệu ở một chỗ; `isRecentLoss(lossDate, today)` (≤ 30 ngày), `isPastEnd(endDate, today, onSitePieces)`; test ranh giới 30 / 31 ngày, đúng ngày kết thúc, không có ngày kết thúc, còn 0 cái
+- [x] 2.2 `dailyRevenue(statement, adjustmentDays)`: chia dòng `RENT` theo ngày tính (bỏ ngày nghỉ, phần dư lớn nhất), `MINIMUM` vào ngày trả, `ADJUSTMENT` vào **ngày lập dòng** (giờ VN, kẹp vào trong kỳ, design D2), cước vào ngày giao; test: chia đều, ngày nghỉ, phần lẻ 100.000 ₫ / 3 ngày, đổi giá giữa tháng, trả giữa tháng, số lượng 0, **tổng các ngày = `beforeVat`** (kiểm trên nhiều bảng kê dựng tay)
+- [x] 2.2a Test dòng điều chỉnh: kỳ mở (xem ở hai ngày khác nhau) và kỳ đã chốt ra **cùng một ngày**; lập trước đầu kỳ / sau cuối kỳ thì kẹp; dòng âm làm ngày đó **âm** (không cắt về 0) và tổng tháng vẫn = `beforeVat`
+- [x] 2.3 `dailyRevenueOfClosed(lines, freight, holidays, adjustmentDays)` cho bảng chụp `billing_period_line` / `billing_period_freight` (dòng điều chỉnh nối `adjustment_id` → ngày lập); test tổng = `rent + adjustment + freight` của kỳ; test **số ngày đếm lại (Từ → Đến, bỏ ngày nghỉ) = `charged_days`** đã chụp; test lệch (ngày nghỉ hiện tại khác lúc chụp): chia theo `charged_days` ngày lịch đầu tiên, tổng đúng tiền đã chụp, có cảnh báo
+- [x] 2.4 `monthTotals(days)` gom Thuê / Bán theo tháng (giữ số âm), cờ tạm tính; `topCustomers(rows, by, 5)` (bằng nhau xếp theo tên, bỏ 0); test
+- [x] 2.5 `onSiteTotals(lines)` (design D8): cái chỉ cộng mã `PIECE`, kg cộng mọi mã (`KG` trực tiếp, mã khác × trọng lượng chuẩn); test một công trình có mã cái, mã mét, mã kg (100 cái, 860 kg) và công trình chỉ có mã cây (0 cái, vẫn đếm công trình)
+- [x] 2.5a `regionTotals(sites)`: gom cái, kg theo khu vực từ `regionOf`, dòng "Chưa rõ", dòng Cộng; `tonsText(kg)` 1 chữ số lẻ; test
+- [x] 2.6 `riskBySite(contracts)`: gom hợp đồng rủi ro theo công trình, số công trình; test hai hợp đồng một công trình
+- [x] 2.7 `greeting(name, role, count)`: ba dạng câu (Giám đốc, vai trò khác, 0 việc); test
 
 ## 3. Đọc dữ liệu `src/lib/dashboard/` + integration test
 

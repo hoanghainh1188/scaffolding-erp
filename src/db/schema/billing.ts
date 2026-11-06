@@ -120,6 +120,8 @@ export const billingPeriod = pgTable(
       sql`${table.holidayDays} >= 0 and ${table.lineCount} >= 0`,
     ),
     index("billing_period_end_idx").on(table.contractId, table.periodEnd),
+    // dashboard-basic design D2: closed periods of every contract by month.
+    index("billing_period_month_idx").on(table.month),
   ],
 );
 

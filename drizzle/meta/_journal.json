@@ -141,6 +141,13 @@
       "when": 1793888653502,
       "tag": "0019_receivables",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793924370131,
+      "tag": "0020_dashboard_basic",
+      "breakpoints": true
     }
   ]
 }
