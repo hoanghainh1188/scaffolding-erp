@@ -2,18 +2,18 @@
 
 ## 1. Chỉ mục, quyền
 
-- [ ] 1.1 Migration `drizzle/0022_management_reports.sql` + schema `src/db/schema/inventory.ts`: chỉ mục `inventory_ledger_business_date_idx` trên `(business_date)` (design D4). Không đổi dữ liệu, không `GRANT`. Kiểm:
+- [x] 1.1 Migration `drizzle/0022_management_reports.sql` + schema `src/db/schema/inventory.ts`: chỉ mục `inventory_ledger_business_date_idx` trên `(business_date)` (design D4). Không đổi dữ liệu, không `GRANT`. Kiểm:
   - `npm run db:migrate` sạch trên DB trống và DB dev;
   - `src/db/schema/dashboard-indexes.int.test.ts` thêm chỉ mục mới;
   - `EXPLAIN` truy vấn giá vốn của một tháng dùng chỉ mục này.
-- [ ] 1.2 `src/domain/permissions.ts`: `reports.view` cho `DIRECTOR`, `ACCOUNTANT` (design D5). Kiểm:
+- [x] 1.2 `src/domain/permissions.ts`: `reports.view` cho `DIRECTOR`, `ACCOUNTANT` (design D5). Kiểm:
   - `permissions.test.ts`: Kinh doanh, Thủ kho, Xưởng không có `reports.view`;
   - `navigation.test.ts`: Kế toán thấy menu Báo cáo, Kinh doanh không thấy;
   - test app-shell hiện có xanh.
 
 ## 2. Hàm thuần (test trước)
 
-- [ ] 2.1 `src/domain/report-period.ts` (design D9): `parsePeriod`, `periodRange`, `previousPeriod`, `yearToDate`, `comparableRange`, `periodLabel`, `REPORT_FIRST_YEAR`. Test theo kịch bản spec "Kỳ báo cáo" và "So với kỳ trước ở ô Doanh thu":
+- [x] 2.1 `src/domain/report-period.ts` (design D9): `parsePeriod`, `periodRange`, `previousPeriod`, `yearToDate`, `comparableRange`, `periodLabel`, `REPORT_FIRST_YEAR`. Test theo kịch bản spec "Kỳ báo cáo" và "So với kỳ trước ở ô Doanh thu":
   - tháng đang chạy 06/11/2026;
   - quý 3/2026, kỳ trước là quý 2;
   - năm 2026, kỳ trước là 2025;
@@ -22,27 +22,27 @@
   - `2026-13`, `2019-12`, `week` thì trả tháng này;
   - nhãn "Tháng 10/2026", "Quý 3/2026", "Năm 2026";
   - `comparableRange`: kỳ đã hết thì cả kỳ trước ("so với tháng 9"); tháng 11/2026 ngày 06/11 thì 01/10 – 06/10; năm 2026 ngày 06/11 thì 01/01 – 06/11/2025; tháng 03/2027 ngày 31/03 thì 01/02 – 28/02; quý 4/2026 ngày 06/11 (37 ngày) thì 01/07 – 06/08/2026.
-- [ ] 2.2 `src/domain/gross-profit.ts`: `classifyLedger(documentType, movement)` theo design D1, D2. Test từng cặp:
+- [x] 2.2 `src/domain/gross-profit.ts`: `classifyLedger(documentType, movement)` theo design D1, D2. Test từng cặp:
   - `DELIVERY`/`SALE_OUT` thì giá vốn bán;
   - `BUY_BACK`/`SALE_OUT` thì mua lại;
   - `RETURN`/`LOSS_OUT` thì mất;
   - `RETURN`/`RETURN_OUT`, `RETURN_IN` thì giảm giá trị;
   - `STOCKTAKE`, `ADJUSTMENT` thì kiểm kê và điều chỉnh;
   - `OPENING`, `PURCHASE_IN`, `REVALUE`, `DELIVERY_OUT/IN`, `TRANSFER_*`, `REPAIR_*` thì không vào khoản riêng (sửa chữa đọc từ phiếu sửa).
-- [ ] 2.3 `monthlyProfit`, `sumMonths`, `marginText`. Test:
+- [x] 2.3 `monthlyProfit`, `sumMonths`, `marginText`. Test:
   - **ví dụ tính tay** của spec: doanh thu 535.550.000 ₫; 6 khoản 102.200.000 / 7.900.000 / 9.860.000 / 6.240.000 / 600.000 / 1.140.000 ₫; ra giá vốn và hao hụt 127.940.000 ₫, lợi nhuận 407.610.000 ₫, tỷ suất "76,1 %";
   - **kỳ này, kỳ trước, lũy kế khớp tổng các tháng**: quý 3 = 341.000.000 + 393.000.000 + 358.180.000 = 1.092.180.000 ₫; lũy kế = Σ tháng 1 tới tháng kỳ;
   - tỷ suất làm tròn nửa lên: 0,05 thì lên; ví dụ 79,55 % thành "79,6 %";
   - doanh thu 0 hoặc âm thì "—";
   - lợi nhuận âm giữ dấu;
   - giảm giá trị âm (giá nhập cao hơn) giữ dấu.
-- [ ] 2.4 Không tính hai lần (design D1), test hàm thuần trên dòng sổ dựng tay:
+- [x] 2.4 Không tính hai lần (design D1), test hàm thuần trên dòng sổ dựng tay:
   - **trả về Chờ sửa → sửa → vào Tốt → mất**: 1.500.000 / 0 (chi phí đã chi 500.000) / 3.000.000, tổng 4.500.000 ₫;
   - **trả về Phế liệu → bán phế liệu**: giảm giá trị 1.360.000 ₫, giá vốn bán 240.000 ₫, tổng 1.600.000 ₫;
   - phiếu sửa hỏng hết `GG-M16` thì sửa chữa 600.000 ₫;
   - phiếu sửa có phần hỏng nhưng còn hàng sửa xong thì sửa chữa 0 ₫;
   - **đẳng thức** "giá vốn và hao hụt = −Σ amount (trừ OPENING, PURCHASE_IN, REVALUE) + Σ chi phí sửa" đúng trên cả hai chuỗi.
-- [ ] 2.5 `src/domain/fleet-metrics.ts`: `dailyFleet(opening, deltas, from, to)` trả tổng theo tháng và theo mã, `lossPer100Tons`, `utilization`, `groupOthers(rows, limit)`. Test:
+- [x] 2.5 `src/domain/fleet-metrics.ts`: `dailyFleet(opening, deltas, from, to)` trả tổng theo tháng và theo mã, `lossPer100Tons`, `utilization`, `groupOthers(rows, limit)`. Test:
   - **hàng ra vào giữa kỳ**: `PK-KU` 8.000 → 12.000 từ 16/09 thì bình quân 10.000 cái = 50,0 tấn; ở công trình 6.000 → 8.000 từ 11/09 thì 73,3 %;
   - tổng theo tấn gộp `PK-KU` và `ONG-TH` (mét) ra 70,8 %, bảng theo mã không có `ONG-TH`;
   - hao hụt `PK-KU` mất 10, phế 4, phải sửa 16 thì 0,30 tấn trên 100 tấn;
@@ -53,17 +53,17 @@
   - kỳ đang chạy chỉ đếm đến hôm nay;
   - gộp 16 mã thành 10 dòng + "6 mã khác";
   - làm tròn cái 7.333,3 thành 7.333.
-- [ ] 2.6 Coverage `src/domain` ≥ 80 %.
+- [x] 2.6 Coverage `src/domain` ≥ 80 %.
 
 ## 3. Đọc dữ liệu (`src/lib/reports/`)
 
-- [ ] 3.1 `revenueBook`: thêm `kind` (`COMPENSATION` / `BUY_BACK`) vào `SeparateEntry` (design D7). Kiểm: test D1 hiện có (`revenue.int.test.ts`, `summary.int.test.ts`, `top.int.test.ts`) không sửa và xanh.
-- [ ] 3.2 `revenue.ts`: doanh thu theo tháng từ `revenueBook` (một lần gọi cho `[S, E]`, bỏ khoản sau `E`), tách thuê, bán, đền bù, mua lại, đánh dấu tạm tính. Integration test:
+- [x] 3.1 `revenueBook`: thêm `kind` (`COMPENSATION` / `BUY_BACK`) vào `SeparateEntry` (design D7). Kiểm: test D1 hiện có (`revenue.int.test.ts`, `summary.int.test.ts`, `top.int.test.ts`) xanh; chỉ một assert so nguyên object trong `revenue.int.test.ts` thêm trường `kind`, số không đổi.
+- [x] 3.2 `revenue.ts`: doanh thu theo tháng từ `revenueBook` (một lần gọi cho `[S, E]`, bỏ khoản sau `E`), tách thuê, bán, đền bù, mua lại, đánh dấu tạm tính. Integration test:
   - **tháng nào cũng khớp D1**: so với `monthTotals` của D1 trên cùng dữ liệu, có kỳ đã chốt và kỳ mở;
   - **đền bù, mua lại đúng tháng duyệt**: hàng mất 31/10, đền bù duyệt 03/11 thì vào tháng 11;
   - phiếu Chờ duyệt, Từ chối không tính;
   - xem năm 2025 khi hôm nay là 2026 thì không lẫn khoản 2026.
-- [ ] 3.3 `costs.ts`: một truy vấn gom `sum(amount)` theo `(tháng, document_type, movement)` trong `[S, E]`, một truy vấn gom `repair_cost`, `loss_amount` của phiếu sửa theo tháng của dòng sổ (nối `posting_id`). Integration test trên DB test, ghi qua đúng service của app:
+- [x] 3.3 `costs.ts`: một truy vấn gom `sum(amount)` theo `(tháng, document_type, movement)` trong `[S, E]`, một truy vấn gom `repair_cost`, `loss_amount` của phiếu sửa theo tháng của dòng sổ (nối `posting_id`). Integration test trên DB test, ghi qua đúng service của app:
   - `PTH-2026-071` cho giảm giá trị 6.870.000 ₫, mất 800.000 ₫;
   - mua lại `SALE_OUT` 7.900.000 ₫;
   - bán theo kg 6.500.000 ₫;
@@ -73,17 +73,18 @@
   - phiếu nhập, tồn đầu kỳ, xuất thuê, chuyển công trình không vào;
   - **đẳng thức khớp sổ kho** của spec (sổ trừ tồn đầu, nhập, `ĐCG` + chi phí sửa) trên toàn bộ dữ liệu test;
   - **chuỗi trả về Chờ sửa → sửa → mất** và **trả về Phế liệu → bán** cho đúng tổng như 2.4.
-- [ ] 3.4 `fleet.ts`: truy vấn số dư đầu và biến động theo ngày (`inner join location`, chỉ Mới, Tốt), truy vấn hao hụt của phiếu thu hồi. Integration test:
+  - Kết quả: `src/lib/reports/costs.int.test.ts` so từng khoản với **số của chính chứng từ** ("Giá trị giảm do đổi tình trạng", "Giá trị hàng mất" của D8, giá trị sổ của phiếu xuất bán, `MLA`, `ĐC`, phiếu sửa); số tính tay của spec và hai chuỗi đầy đủ kiểm ở `gross-profit.test.ts`; đẳng thức khớp sổ kho kiểm trên dữ liệu thật. Kiểm kê và `ĐCG` ghi bằng `postMovements` đúng loại chứng từ.
+- [x] 3.4 `fleet.ts`: truy vấn số dư đầu và biến động theo ngày (`inner join location`, chỉ Mới, Tốt), truy vấn hao hụt của phiếu thu hồi. Integration test:
   - **ranh giới ngày Việt Nam**: thu hồi ghi sổ 23:30 ngày 30/09 giờ Việt Nam thì vào tháng 9; xuất 00:30 ngày 01/10 thì không đổi tháng 9;
   - **dòng `REVALUE` (`location_id` trống) không đổi bình quân, hao hụt, khai thác** so với khi không có;
   - phế liệu từ phiếu sửa không vào hao hụt;
   - số dư đầu đúng khi kỳ bắt đầu giữa năm.
-- [ ] 3.5 `ranking.ts`: xếp hạng đầy đủ bằng `revenueByCustomer`, `kgByCustomer`, `topCustomers(rows, Infinity)`, thêm thuê, bán, số hợp đồng. Integration test:
+- [x] 3.5 `ranking.ts`: xếp hạng đầy đủ bằng `revenueByCustomer`, `kgByCustomer`, `topCustomers(rows, Infinity)`, thêm thuê, bán, số hợp đồng. Integration test:
   - **5 dòng đầu giống `topRows` của D1** cùng năm, cả hai chế độ;
   - đủ mọi nhà thầu có số khác 0;
   - theo kg không trừ hàng trả (2,0 tấn);
   - bằng nhau xếp theo tên.
-- [ ] 3.6 `report.ts` `buildReport(db, period, today)`: gọi song song 3.2–3.5, ra một object cho trang và Excel. Integration test:
+- [x] 3.6 `report.ts` `buildReport(db, period, today)`: gọi song song 3.2–3.5, ra một object cho trang và Excel. Integration test:
   - **chỉ đọc**: số dòng `inventory_ledger`, `activity_log` và các bảng chứng từ không đổi sau khi gọi;
   - kỳ tháng 01/2020 ra toàn 0 và "—".
 

@@ -1,4 +1,5 @@
-// Read-only indexes of the dashboard (dashboard-basic tasks 1.2, design D2):
+// Read-only indexes of the dashboard (dashboard-basic tasks 1.2, design D2)
+// and of the reports (management-reports tasks 1.1):
 // the three indexes exist, and the migration adds indexes only, so it
 // cannot change a row of any table.
 import { readFileSync } from "node:fs";
@@ -17,6 +18,8 @@ const INDEXES = [
   ["inventory_ledger", "inventory_ledger_movement_date_idx"],
   ["delivery_note", "delivery_note_posted_date_idx"],
   ["billing_period", "billing_period_month_idx"],
+  // management-reports tasks 1.1, design D4.
+  ["inventory_ledger", "inventory_ledger_business_date_idx"],
 ] as const;
 
 describe("dashboard indexes", () => {
@@ -34,18 +37,31 @@ describe("dashboard indexes", () => {
     expect(rows[0]?.indexdef).toContain("WHERE (status = 'POSTED'::text)");
   });
 
-  it("the migration only creates indexes", () => {
-    const file = readFileSync(
-      path.join(process.cwd(), "drizzle", "0020_dashboard_basic.sql"),
-      "utf8",
-    );
+  it.each([
+    ["0020_dashboard_basic.sql", 3],
+    ["0022_management_reports.sql", 1],
+  ])("migration %s only creates indexes", (name, count) => {
+    const file = readFileSync(path.join(process.cwd(), "drizzle", name), "utf8");
     const statements = file
       .split("--> statement-breakpoint")
       .map((part) => part.trim())
       .filter(Boolean);
-    expect(statements).toHaveLength(3);
+    expect(statements).toHaveLength(count);
     for (const statement of statements) {
       expect(statement).toMatch(/^CREATE INDEX "[a-z_]+" ON "[a-z_]+"/);
     }
+  });
+
+  it("a month of the ledger can be read through the business date index", async () => {
+    const db = getAdminDatabase();
+    const rows = await db.transaction(async (tx) => {
+      await tx.execute(sql`set local enable_seqscan = off`);
+      return tx.execute<{ "QUERY PLAN": string }>(
+        sql`explain select movement, sum(amount) from inventory_ledger where business_date between '2026-10-01' and '2026-10-31' group by movement`,
+      );
+    });
+    expect(rows.map((row) => row["QUERY PLAN"]).join("\n")).toContain(
+      "inventory_ledger_business_date_idx",
+    );
   });
 });

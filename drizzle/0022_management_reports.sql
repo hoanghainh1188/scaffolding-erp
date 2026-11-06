@@ -1,0 +1,1 @@
+CREATE INDEX "inventory_ledger_business_date_idx" ON "inventory_ledger" USING btree ("business_date");

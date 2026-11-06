@@ -19,7 +19,7 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "repairs.view": ["DIRECTOR", "ACCOUNTANT", "SALES"],
   "sales.view": ["DIRECTOR", "ACCOUNTANT", "SALES"],
   "receivables.view": ["DIRECTOR", "ACCOUNTANT"],
-  "reports.view": ["DIRECTOR"],
+  "reports.view": ["DIRECTOR", "ACCOUNTANT"],
   "catalog.view": ["DIRECTOR", "ACCOUNTANT", "SALES"],
   "settings.view": ["DIRECTOR"],
   "users.manage": ["DIRECTOR"],
