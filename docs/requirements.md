@@ -125,6 +125,10 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 104 | Tình hình người bán trên D14c | Theo **đúng luật D14**: khoản hạn sớm nhất còn ≤ 7 ngày thì hiện "Hạn dd/mm", xa hơn hiện "Chưa đến hạn". Bản vẽ D14c ghi "Hạn 20/11" là vẽ sai, đã sửa (chốt 06/11/2026 khi review PR #152, change `payables`) |
 | 105 | Phiếu nhập trước khi dùng phải trả | Phiếu nhập đã ghi sổ trước khi deploy **thành khoản còn nợ, hạn = ngày nhập**; Kế toán ghi phiếu chi bù cho khoản đã trả. Nợ đầu kỳ người bán (từ Excel) nhập ở change `data-migration` (#48) (chốt 06/11/2026 khi review PR #152, change `payables`) |
 | 106 | Khóa phiếu nhập ở DB | Phiếu nhập đã ghi sổ (phiếu, dòng, chi phí chuyến) **chỉ ghi thêm ở DB**; trigger khóa đơn giá / đơn vị / mã của dòng đơn đã có phiếu nhập (chốt 06/11/2026 khi review PR #152, change `payables`) |
+| 107 | Lợi nhuận gộp (Q12) | Lợi nhuận gộp = **doanh thu chưa VAT** (thuê gồm cước thuê, bán gồm cước bán, đền bù đã duyệt, mua lại đã duyệt) − **giá vốn và hao hụt thực tế**: giá vốn hàng bán, giá vốn hàng khách mua lại, hàng mất ở công trình, giảm giá trị khi hàng trả về Chờ sửa / Phế liệu, chi phí sửa chữa, chênh lệch kiểm kê. Hàng cho thuê **không trừ khấu hao**; mọi số lấy từ sổ kho và chứng từ (chốt 06/11/2026, change `management-reports`, thiết kế D15) |
+| 108 | Chỉ số hao hụt (Q12) | Hao hụt = **tấn hàng mất, thành phế, phải sửa** (khi thu hồi) **trên mỗi 100 tấn hàng cho thuê bình quân** trong kỳ (Mới, Tốt ở bãi và công trình). Theo tháng / quý / năm và theo mã hàng (chốt 06/11/2026, change `management-reports`) |
+| 109 | Tỷ lệ khai thác | Tỷ lệ khai thác = hàng **ở công trình ÷ tổng hàng Mới, Tốt**, **bình quân theo ngày** trong kỳ. Tổng cả kho tính **theo tấn**; bảng chi tiết **theo từng mã, tính theo cái** (chốt 06/11/2026, change `management-reports`) |
+| 110 | Ai xem Báo cáo quản trị | D15 cho **Giám đốc, Kế toán**. Có thêm bảng xếp hạng nhà thầu đầy đủ của năm (theo doanh thu / theo kg, như #93, #95) (chốt 06/11/2026, change `management-reports`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 

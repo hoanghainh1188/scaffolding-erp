@@ -126,9 +126,13 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 #### Báo cáo
 
-- **D15. Báo cáo Quản trị** **[Bản 2]**:
-    - Lợi nhuận gộp: Doanh thu − Giá vốn − Chi phí sửa chữa.
-    - Tỷ lệ khai thác (Utilization): % ở công trình vs % nằm ở bãi.
+- **D15. Báo cáo Quản trị** **[Bản 2]** (Giám đốc, Kế toán; 0.2 #107–#110):
+    - Chọn kỳ tháng / quý / năm; 4 ô: doanh thu, lợi nhuận gộp, hao hụt, tỷ lệ khai thác; xuất Excel.
+    - Bảng lợi nhuận gộp: kỳ này, kỳ trước, lũy kế năm; doanh thu (thuê, bán, đền bù, mua lại) − giá vốn và hao hụt thực tế (không khấu hao).
+    - Biểu đồ doanh thu và lợi nhuận gộp theo tháng.
+    - Hao hụt: tấn mất / phế / phải sửa trên 100 tấn hàng cho thuê bình quân, theo mã.
+    - Tỷ lệ khai thác: bình quân theo ngày, tổng theo tấn, chi tiết theo mã (cái).
+    - Xếp hạng nhà thầu đầy đủ của năm (doanh thu / kg).
 
 #### Danh mục & Cài đặt
 
@@ -201,6 +205,7 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt (vẽ lại 05/11/2026) |
 | D14b Thanh lý hợp đồng | `D14b-ContractClose.dc.html` | `receivables` | Đã duyệt |
 | D14c Công nợ phải trả | `D14c-Payables.dc.html` | `payables` | Đã duyệt |
+| D15 Báo cáo quản trị | `D15-Reports.dc.html` | `management-reports` | Đã duyệt |
 | D13 Kết quả kiểm kê | `D13-Stocktake.dc.html` | `stocktake` | Đã duyệt |
 | M6a Bắt đầu kiểm kê | `M6a-StocktakeStart.dc.html` | `stocktake` | Đã duyệt |
 | M6 Đếm hàng | `M6-Stocktake.dc.html` | `stocktake` | Đã duyệt |

@@ -36,7 +36,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 |---|---|---|---|
 | 19 | `repair-work-orders` | #16 | Lệnh sửa chữa đầy đủ: vật tư phụ, công thợ, nghiệm thu; xưởng dùng mobile |
 | 20 | `payables` | #18 | Công nợ phải trả người bán: khoản theo phiếu nhập, hạn theo số ngày được nợ, phiếu chi, ứng trước (0.2 #98–#101) ✅ |
-| 21 | `management-reports` | #19 | Lợi nhuận gộp, tỷ lệ khai thác, **khấu hao / hao hụt hàng cho thuê** (Q12), biểu đồ |
+| 21 | `management-reports` | #19 | Lợi nhuận gộp (hao hụt thực tế, không khấu hao), hao hụt trên 100 tấn, tỷ lệ khai thác, xếp hạng nhà thầu, biểu đồ (0.2 #107–#110) |
 | 22 | `truck-management` | #49 | Quản lý 3 xe tải (Q14) |
 
 ## Change kỹ thuật và nhỏ (làm trước khi lên production)
