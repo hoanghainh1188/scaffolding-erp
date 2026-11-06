@@ -137,7 +137,7 @@
   - lưu ý E2E (ảnh mốc kỳ 01/2020, không kiểm số tiền trên DB dev).
 - [x] 6.4 Chạy `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate management-reports --strict`, tất cả xanh. Coverage `src/domain`, `src/lib` ≥ 80 %. Gắn nhãn `update-snapshots` vào PR apply.
   - Kết quả 06/11/2026: lint, typecheck, format xanh; Vitest 3.698/3.698 xanh, coverage `src/domain` 97,9 %, `src/lib` 97,5 %; `openspec validate --strict` xanh; `bench:reports` kỳ năm 0,21–0,26 s, kỳ tháng 0,2 s (`docs/ops/reports-bench.md`). E2E: 123 qua, 1 hỏng ở `inventory.spec.ts` tồn đầu kỳ vì DB dev đã có dòng xuất `E2E-KHO-01` Mới của các lần chạy trước (không do change này, như lần apply `payables`; CI chạy trên DB mới); `reports.spec.ts` và `desktop-shell.spec.ts` xanh.
-- [ ] 6.5 Kiểm tra tay, làm trên demo với `giamdoc` và `ketoan`, Edge 1366px:
+- [ ] 6.5 **Làm sau, theo dõi ở #33** (mục 17). Kiểm tra tay, làm trên demo với `giamdoc` và `ketoan`, Edge 1366px:
   - chọn một tháng đã chốt hết kỳ, so doanh thu với D1 và bảng kê D7;
   - so giá vốn hàng bán, hàng mất với thẻ kho D11 của 2–3 mã;
   - so một tháng với sổ tay hoặc Excel của kế toán (nếu có);
