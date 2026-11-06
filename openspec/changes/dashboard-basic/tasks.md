@@ -57,7 +57,7 @@
 
 ## 7. Đo và kiểm tra
 
-- [ ] 7.1 `scripts/bench-dashboard.mts` (design D2): chỉ đọc `BENCH_DATABASE_URL` / `BENCH_APP_DATABASE_URL`; **từ chối chạy** (thoát mã 1) khi thiếu biến, tên DB không kết thúc bằng `_bench`, hoặc trùng DB của `DATABASE_URL` / `TEST_DATABASE_URL`; unit test phần kiểm tên DB
-- [ ] 7.1a Tạo DB đo: `docker compose exec db createdb -U <owner> scaffolding_erp_bench`, đặt hai biến trỏ tới DB đó; script tự migrate + tạo role, sinh 300 hợp đồng thuê và 12 tháng sổ kho, đo thời gian từng khối; ghi kết quả vào PR; xóa bằng `dropdb scaffolding_erp_bench`. Ghi các bước vào `docs/ops/` (mục đo Tổng quan)
+- [x] 7.1 `scripts/bench-dashboard.mts` (design D2): chỉ đọc `BENCH_DATABASE_URL` / `BENCH_APP_DATABASE_URL`; **từ chối chạy** (thoát mã 1) khi thiếu biến, tên DB không kết thúc bằng `_bench`, hoặc trùng DB của `DATABASE_URL` / `TEST_DATABASE_URL`; unit test phần kiểm tên DB
+- [x] 7.1a Tạo DB đo: `docker compose exec db createdb -U <owner> scaffolding_erp_bench`, đặt hai biến trỏ tới DB đó; script tự migrate + tạo role, sinh 300 hợp đồng thuê và 12 tháng sổ kho, đo thời gian từng khối; ghi kết quả vào PR; xóa bằng `dropdb scaffolding_erp_bench`. Ghi các bước vào `docs/ops/` (mục đo Tổng quan)
 - [ ] 7.2 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate dashboard-basic --strict` xanh; coverage `src/domain`, `src/lib` ≥ 80 %
 - [ ] 7.3 Kiểm tay trên DB dev: so D1 với D7 (một hợp đồng, tháng này), D14 (ô Quá hạn), D10 (cột Tại công trình), D6 (một hợp đồng); nếu chưa làm khi archive thì ghi vào #33
