@@ -59,6 +59,31 @@ export function receiptGoodsAmount(
   return lineAmount(receivedInLineUnit(open, line), unitPrice);
 }
 
+/** A posted or posting receipt line with the price of its order line. */
+export interface PayableLine {
+  readonly open: Pick<ReceivingLine, "itemUnit" | "lineUnit">;
+  readonly line: Pick<
+    ReceiptLineInput,
+    "status" | "quantityMilli" | "weighedKgMilli"
+  >;
+  readonly unitPrice: Money;
+}
+
+/**
+ * What the seller is owed for one receipt (payables design D2, 0.2 #13,
+ * #26, #99): Σ goods value of its lines, each rounded on its own. The same
+ * sum as costTrip's goods and as the receipt's share of D3b's payable.
+ */
+export function receiptPayable(lines: readonly PayableLine[]): Money {
+  return toMoney(
+    lines.reduce(
+      (sum, { open, line, unitPrice }) =>
+        sum + receiptGoodsAmount(open, line, unitPrice),
+      0,
+    ),
+  );
+}
+
 /**
  * Weight basis (design D3): quantity × standard weight for a line in the
  * item unit (cái, bó, m...), or the kg weighed for a kg line.
@@ -131,8 +156,5 @@ export function costTrip(input: TripCostInput): TripCost {
       byCondition: splitLine(input, tripLine, toMoney(lineGoods + share)),
     };
   });
-  return {
-    lines,
-    goods: toMoney(goods.reduce((sum, value) => sum + value, 0)),
-  };
+  return { lines, goods: receiptPayable(counted) };
 }

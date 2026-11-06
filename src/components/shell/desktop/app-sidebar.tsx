@@ -29,7 +29,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import type { NavIcon, NavItem } from "@/lib/navigation";
+import { isNavActive, type NavIcon, type NavItem } from "@/lib/navigation";
 import { dict } from "@/locales";
 
 const ICONS: Readonly<Record<NavIcon, LucideIcon>> = {
@@ -43,10 +43,6 @@ const ICONS: Readonly<Record<NavIcon, LucideIcon>> = {
   list: List,
   settings: Settings,
 };
-
-function isActive(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 interface AppSidebarProps {
   /** Already filtered for the current role (navItemsForRole). */
@@ -83,7 +79,7 @@ export function AppSidebar({ items }: AppSidebarProps) {
             <SidebarMenu className="gap-1">
               {items.map((item) => {
                 const Icon = ICONS[item.icon];
-                const active = isActive(pathname, item.href);
+                const active = isNavActive(pathname, item);
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton

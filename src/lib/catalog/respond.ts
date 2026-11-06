@@ -105,6 +105,7 @@ export const supplierBody = z.object({
   idNumber: nullableText.optional(),
   bankAccount: nullableText.optional(),
   bankName: nullableText.optional(),
+  paymentTermsDays: z.number().optional(),
   note: nullableText.optional(),
   status: statusField.optional(),
 });

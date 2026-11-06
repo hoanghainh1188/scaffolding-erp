@@ -22,6 +22,7 @@ import { seedHolidays } from "@/lib/holidays/sample";
 import { seedValueAdjustments } from "@/lib/inventory/revaluation-sample";
 import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
+import { seedPayables } from "@/lib/payables/sample";
 import { seedReceivables } from "@/lib/receivables/sample";
 import { SAMPLE_RECEIVING_AT, seedReceiving } from "@/lib/receiving/sample";
 import { seedRepairs } from "@/lib/repairs/sample";
@@ -167,6 +168,9 @@ export async function runDemoSeed(now: Date = new Date()): Promise<number> {
       ? await seedReceivables(handle.db, accountant)
       : 0;
     process.stdout.write(`Phiếu thu mẫu: thêm ${moneyIn} phiếu.\n`);
+    // Sample supplier terms and payment (payables 8.1).
+    const moneyOut = accountant ? await seedPayables(handle.db, accountant) : 0;
+    process.stdout.write(`Phải trả mẫu: thêm ${moneyOut} dòng.\n`);
 
     const activity =
       director && accountant && sales && warehouse

@@ -90,6 +90,12 @@ export const PERMISSIONS = {
   // receipts, and settle a contract, without a separate approval.
   "receipts.manage": ["DIRECTOR", "ACCOUNTANT"],
   "contracts.close": ["DIRECTOR", "ACCOUNTANT"],
+  // payables design D6 (0.2 số 103): only the accountant and the director see
+  // what is owed to sellers and record or cancel supplier payments. The
+  // warehouse never writes a payment; cash paid at the gate is told to the
+  // accountant, who records it with the real date.
+  "payables.view": ["DIRECTOR", "ACCOUNTANT"],
+  "payments.manage": ["DIRECTOR", "ACCOUNTANT"],
 } as const satisfies Readonly<Record<string, readonly Role[]>>;
 
 export type Permission = keyof typeof PERMISSIONS;

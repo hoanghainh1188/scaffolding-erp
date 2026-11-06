@@ -120,6 +120,11 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 99 | Khoản phải trả phát sinh và hạn trả | **Mỗi phiếu nhập đã ghi sổ** là một khoản phải trả: số thực nhận × đơn giá dòng đơn (kg theo cân thực tế, #13). **Hạn = ngày nhập + số ngày được nợ** của người bán; thêm trường số ngày được nợ vào danh mục người bán (D16), **mặc định 0 = trả ngay khi nhập**. Quá hạn tính theo ngày Việt Nam (chốt 06/11/2026, change `payables`) |
 | 100 | Ứng trước cho người bán | Cho phép **ứng tiền trước** khi nhận hàng (phiếu chi loại Ứng trước). Tiền ứng và phần chi dư giữ làm **tiền ứng trước** của người bán, **tự trừ vào phiếu nhập sau** theo khoản đến hạn sớm nhất trước, giống tiền trả trước phải thu (#82). Phiếu chi không sửa; ghi sai thì Kế toán hủy, bắt buộc lý do (như #83) (chốt 06/11/2026, change `payables`) |
 | 101 | VAT hàng mua | **Chưa tính VAT đầu vào**: giá trên đơn là số phải trả người bán (chốt 06/11/2026, change `payables`) |
+| 102 | Phiếu ứng trước | Phiếu chi loại **Ứng trước chỉ ghi được khi người bán hết nợ**. Còn nợ thì ghi Trả tiền hàng; phần dư tự thành tiền ứng trước (chốt 06/11/2026 khi review PR #152, change `payables`) |
+| 103 | Ai ghi phiếu chi | **Giám đốc, Kế toán** ghi và hủy phiếu chi. Thủ kho trả tiền mặt lúc nhận hàng thì báo Kế toán ghi, **ngày chi = ngày trả thật**. M3 không có ô tiền (chốt 06/11/2026 khi review PR #152, change `payables`) |
+| 104 | Tình hình người bán trên D14c | Theo **đúng luật D14**: khoản hạn sớm nhất còn ≤ 7 ngày thì hiện "Hạn dd/mm", xa hơn hiện "Chưa đến hạn". Bản vẽ D14c ghi "Hạn 20/11" là vẽ sai, đã sửa (chốt 06/11/2026 khi review PR #152, change `payables`) |
+| 105 | Phiếu nhập trước khi dùng phải trả | Phiếu nhập đã ghi sổ trước khi deploy **thành khoản còn nợ, hạn = ngày nhập**; Kế toán ghi phiếu chi bù cho khoản đã trả. Nợ đầu kỳ người bán (từ Excel) nhập ở change `data-migration` (#48) (chốt 06/11/2026 khi review PR #152, change `payables`) |
+| 106 | Khóa phiếu nhập ở DB | Phiếu nhập đã ghi sổ (phiếu, dòng, chi phí chuyến) **chỉ ghi thêm ở DB**; trigger khóa đơn giá / đơn vị / mã của dòng đơn đã có phiếu nhập (chốt 06/11/2026 khi review PR #152, change `payables`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ToneBadge } from "@/components/domain/tone-badge";
 import { Button } from "@/components/ui/button";
 import { formatPhone } from "@/domain/partner-fields";
+import { termsHeading } from "@/domain/payables";
 import { REGION_LABELS, UNKNOWN_REGION_LABEL } from "@/domain/province";
 import type {
   CustomerRow,
@@ -239,6 +240,7 @@ export function SupplierDetail({
                   .join(" · ")
               : null,
           ],
+          ["Số ngày được nợ", termsHeading(supplier.paymentTermsDays)],
           ["Ghi chú", supplier.note],
         ]}
       />

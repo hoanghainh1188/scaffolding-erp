@@ -8,6 +8,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 
+import { LedgerTabs } from "@/components/finance/ledger-tabs";
 import {
   CustomerTable,
   listHref,
@@ -90,6 +91,7 @@ export default async function Page({
 
   return (
     <div className="flex w-full max-w-[1280px] flex-col gap-6">
+      <LedgerTabs role={user.role} active="receivables" />
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-2xl flex-col gap-1">
           <h1 className="text-h1">Công nợ phải thu</h1>

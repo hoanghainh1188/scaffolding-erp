@@ -7,6 +7,7 @@ import {
   createTestUser,
   resetAuthTables,
 } from "@/test/auth";
+import { lastActivity } from "@/test/activity";
 import { resetCatalogTables } from "@/test/catalog";
 
 import type { Actor } from "./common";
@@ -255,6 +256,45 @@ describe("suppliers", () => {
     expect(await deleteSupplier(ctx.db, actor, id)).toEqual({
       ok: true,
       data: null,
+    });
+  });
+});
+
+describe("supplier payment terms (payables, 0.2 #99)", () => {
+  it("is 0 days when not given and logs a change", async () => {
+    const created = await createSupplier(ctx.db, actor, {
+      kind: "COMPANY",
+      name: "Cty TNHH Vật tư Hưng Thịnh",
+    });
+    expect(created).toMatchObject({ ok: true, data: { paymentTermsDays: 0 } });
+    const id = created.ok ? created.data.id : "";
+    const updated = await updateSupplier(ctx.db, actor, id, {
+      paymentTermsDays: 30,
+    });
+    expect(updated).toMatchObject({ ok: true, data: { paymentTermsDays: 30 } });
+    const log = await lastActivity(ctx.db);
+    expect(log?.changes).toContainEqual(
+      expect.objectContaining({
+        field: "paymentTermsDays",
+        before: "0 ngày",
+        after: "30 ngày",
+      }),
+    );
+    // An edit that leaves it out keeps it.
+    await updateSupplier(ctx.db, actor, id, { phone: "0987654321" });
+    expect((await getSupplierForEdit(ctx.db, id))?.paymentTermsDays).toBe(30);
+  });
+
+  it.each([400, -1, 1.5])("refuses %s days", async (days) => {
+    expect(
+      await createSupplier(ctx.db, actor, {
+        kind: "PERSON",
+        name: "Chú Ba",
+        paymentTermsDays: days,
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: "Số ngày được nợ từ 0 đến 365 ngày",
     });
   });
 });

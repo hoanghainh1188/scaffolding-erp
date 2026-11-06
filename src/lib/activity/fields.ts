@@ -199,6 +199,7 @@ export interface SupplierView {
   idNumber: string | null;
   bankAccount: string | null;
   bankName: string | null;
+  paymentTermsDays: number;
   note: string | null;
   status: string;
 }
@@ -226,6 +227,11 @@ export const SUPPLIER_FIELDS: readonly FieldSpec<SupplierView>[] = [
     sensitive: "BANK_ACCOUNT",
   },
   { field: "bankName", label: "Ngân hàng", value: (r) => text(r.bankName) },
+  {
+    field: "paymentTermsDays",
+    label: "Số ngày được nợ",
+    value: (r) => `${r.paymentTermsDays} ngày`,
+  },
   { field: "note", label: "Ghi chú", value: (r) => text(r.note) },
   status<SupplierView>(),
 ];

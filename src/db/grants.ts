@@ -11,11 +11,17 @@ export const APPEND_ONLY_TABLES = [
   "billing_period_freight",
   "billing_period_line",
   "contract_settlement",
+  "goods_receipt",
+  "goods_receipt_cost",
+  "goods_receipt_line",
   "inventory_ledger",
   "receipt",
   "receipt_allocation",
   "receipt_cancellation",
   "scrap_price",
+  "supplier_payment",
+  "supplier_payment_allocation",
+  "supplier_payment_cancellation",
 ] as const;
 
 export const DEFAULT_APP_ROLE = "erp_app";

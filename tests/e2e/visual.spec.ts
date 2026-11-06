@@ -458,6 +458,32 @@ test.describe("receivables baselines @visual", () => {
   }
 });
 
+// payables design D10: like D14, sellers and receipts change on every run,
+// so D14c is shot with a search that matches nobody (tiles masked).
+test.describe("payables baselines @visual", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "sets its own viewport");
+  });
+
+  for (const width of WIDTHS) {
+    test(`d14c-payables at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/payables?filter=all&q=khong-ai-ca-e2e");
+      await waitForHydration(page, DESKTOP_READY);
+      await page.addStyleTag({
+        content: "nextjs-portal { display: none !important; }",
+      });
+      await page.evaluate(() => document.fonts.ready);
+      await expect(page).toHaveScreenshot(`d14c-payables-${width}.png`, {
+        fullPage: true,
+        mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
+        animations: "disabled",
+        caret: "hide",
+      });
+    });
+  }
+});
+
 // dashboard-basic design D6: D1 as sales (scope "Cả hai"), so a money block
 // showing up for a role without receivables.view changes the image.
 test.describe("dashboard baselines @visual", () => {

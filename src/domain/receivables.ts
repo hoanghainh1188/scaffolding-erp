@@ -3,8 +3,23 @@
 // periods settle later debts (0.2 #82), overdue status by Vietnamese day,
 // VAT of a sale delivery (0.2 #84) and how a deposit is set off when a
 // contract is settled (0.2 #40, #81). Pure functions: the database layer
-// reads the inputs and stores the allocations they return.
-import { addDays, daysBetween, type BusinessDate } from "./business-date";
+// reads the inputs and stores the allocations they return. The generic core
+// (split, credits, status) lives in ./allocation, shared with payables
+// (payables design D1); this module keeps its names and messages.
+import {
+  allocateOrdered,
+  applyCreditsOrdered,
+  dueStatus,
+  holderStatus,
+  type CreditAllocation,
+  type CreditSource,
+  type DueStatus,
+  type DueStatusKind,
+  type HolderStatus,
+  type HolderStatusKind,
+  type ManualPart,
+} from "./allocation";
+import { type BusinessDate } from "./business-date";
 import { roundHalfUp } from "./average-cost";
 import { formatMoney, toMoney, type Money } from "./money";
 
@@ -23,8 +38,16 @@ export const DEBT_KIND_LABELS: Readonly<Record<DebtKind, string>> = {
   BUY_BACK: "Mua lại",
 };
 
-/** Days ahead counted by "Đến hạn trong 7 ngày" (spec receivables). */
-export const DUE_SOON_DAYS = 7;
+export {
+  DUE_SOON_DAYS,
+  dueSoonOf,
+  orderSources,
+  overdueOf,
+  type CreditAllocation,
+  type CreditSource,
+  type ManualPart,
+  type Overdue,
+} from "./allocation";
 
 /** A receipt or settlement refund: how the money moved. */
 export const PAYMENT_METHODS = ["CASH", "TRANSFER"] as const;
@@ -107,11 +130,6 @@ export interface Allocation {
   mode: AllocationMode;
 }
 
-export interface ManualPart {
-  debtKey: string;
-  amount: Money;
-}
-
 export interface AllocationResult {
   allocations: Allocation[];
   /** Left over after every open debt: the prepayment (0.2 #82). */
@@ -145,83 +163,14 @@ export function allocate(input: {
   /** What the form showed as remaining, to tell a race from a mistake. */
   seen?: ReadonlyMap<string, Money>;
 }): AllocationResult {
-  if (input.amount <= 0)
-    throw new ReceivableRuleError(RECEIVABLE_MESSAGES.amount);
-  const left = new Map(input.openDebts.map((debt) => [debt.key, debt]));
-  const remaining = new Map(
-    input.openDebts.map((debt) => [debt.key, debt.remaining as number]),
-  );
-  const allocations: Allocation[] = [];
-  let money: number = input.amount;
-  const manual = input.manual ?? [];
-  const manualTotal = manual.reduce((sum, part) => sum + part.amount, 0);
-  if (manualTotal > input.amount) {
-    throw new ReceivableRuleError(
-      RECEIVABLE_MESSAGES.manualTooMuch(input.amount),
-    );
-  }
-  for (const part of manual) {
-    if (part.amount <= 0)
-      throw new ReceivableRuleError(RECEIVABLE_MESSAGES.amount);
-    const debt = left.get(part.debtKey);
-    const owed = remaining.get(part.debtKey);
-    if (!debt || owed === undefined) {
-      throw new ReceivableRuleError(RECEIVABLE_MESSAGES.unknownDebt);
-    }
-    if (part.amount > owed) {
-      const seen = input.seen?.get(part.debtKey);
-      const raced = seen !== undefined && seen >= part.amount;
-      throw new ReceivableRuleError(
-        RECEIVABLE_MESSAGES.overDebt(debt.label, toMoney(raced ? 0 : owed)),
-        raced ? 409 : 422,
-      );
-    }
-    remaining.set(part.debtKey, owed - part.amount);
-    money -= part.amount;
-    allocations.push({
-      debtKey: part.debtKey,
-      amount: part.amount,
-      mode: "MANUAL",
-    });
-  }
-  for (const debt of orderDebts(input.openDebts)) {
-    if (money <= 0) break;
-    const owed = remaining.get(debt.key) ?? 0;
-    if (owed <= 0) continue;
-    const take = Math.min(owed, money);
-    remaining.set(debt.key, owed - take);
-    money -= take;
-    allocations.push({
-      debtKey: debt.key,
-      amount: toMoney(take),
-      mode: "AUTO",
-    });
-  }
-  return { allocations, unapplied: toMoney(money) };
-}
-
-/** Money that can still settle debts: a receipt's surplus or a credit. */
-export interface CreditSource {
-  key: string;
-  /** Received date of the receipt, or the period end of a credit. */
-  date: BusinessDate;
-  code: string;
-  available: Money;
-}
-
-export interface CreditAllocation {
-  sourceKey: string;
-  debtKey: string;
-  amount: Money;
-}
-
-/** Older sources first: date, then code. */
-export function orderSources<T extends Pick<CreditSource, "date" | "code">>(
-  sources: readonly T[],
-): T[] {
-  return [...sources].sort(
-    (a, b) => a.date.localeCompare(b.date) || a.code.localeCompare(b.code),
-  );
+  return allocateOrdered({
+    amount: input.amount,
+    debts: orderDebts(input.openDebts),
+    manual: input.manual,
+    seen: input.seen,
+    messages: RECEIVABLE_MESSAGES,
+    fail: (message, status) => new ReceivableRuleError(message, status),
+  });
 }
 
 /** Settles open debts in the fixed order from older sources first (0.2 #82). */
@@ -229,44 +178,14 @@ export function applyCredits(input: {
   credits: readonly CreditSource[];
   openDebts: readonly OpenDebt[];
 }): CreditAllocation[] {
-  const debts = orderDebts(input.openDebts).map((debt) => ({
-    key: debt.key,
-    owed: debt.remaining as number,
-  }));
-  const result: CreditAllocation[] = [];
-  let index = 0;
-  for (const source of orderSources(input.credits)) {
-    let available: number = source.available;
-    while (available > 0 && index < debts.length) {
-      const debt = debts[index];
-      if (!debt) break;
-      if (debt.owed <= 0) {
-        index += 1;
-        continue;
-      }
-      const take = Math.min(debt.owed, available);
-      debt.owed -= take;
-      available -= take;
-      result.push({
-        sourceKey: source.key,
-        debtKey: debt.key,
-        amount: toMoney(take),
-      });
-      if (debt.owed <= 0) index += 1;
-    }
-  }
-  return result;
+  return applyCreditsOrdered({
+    credits: input.credits,
+    debts: orderDebts(input.openDebts),
+  });
 }
 
-export type DebtStatusKind =
-  "PAID" | "OVERDUE" | "DUE_TODAY" | "DUE_TOMORROW" | "NOT_DUE";
-
-export interface DebtStatus {
-  kind: DebtStatusKind;
-  /** Days overdue; 0 unless OVERDUE. */
-  days: number;
-  label: string;
-}
+export type DebtStatusKind = DueStatusKind;
+export type DebtStatus = DueStatus;
 
 /** Status of one debt on `today` (Vietnamese day, spec receivables). */
 export function debtStatus(
@@ -274,54 +193,7 @@ export function debtStatus(
   dueDate: BusinessDate,
   today: BusinessDate,
 ): DebtStatus {
-  if (remaining <= 0) return { kind: "PAID", days: 0, label: "Đã thu đủ" };
-  const days = daysBetween(dueDate, today);
-  if (days > 0) {
-    return { kind: "OVERDUE", days, label: `Quá hạn ${days} ngày` };
-  }
-  if (days === 0) return { kind: "DUE_TODAY", days: 0, label: "Hạn hôm nay" };
-  if (days === -1) return { kind: "DUE_TOMORROW", days: 0, label: "Hạn mai" };
-  return { kind: "NOT_DUE", days: 0, label: "Chưa đến hạn" };
-}
-
-export interface Overdue {
-  amount: Money;
-  /** Days of the overdue debt with the earliest due date. */
-  days: number;
-}
-
-/** Overdue debt of a customer: what is left past its due date. */
-export function overdueOf(
-  debts: readonly Pick<OpenDebt, "remaining" | "dueDate">[],
-  today: BusinessDate,
-): Overdue {
-  let amount = 0;
-  let earliest: BusinessDate | null = null;
-  for (const debt of debts) {
-    if (debt.remaining <= 0 || debt.dueDate >= today) continue;
-    amount += debt.remaining;
-    if (earliest === null || debt.dueDate < earliest) earliest = debt.dueDate;
-  }
-  return {
-    amount: toMoney(amount),
-    days: earliest === null ? 0 : daysBetween(earliest, today),
-  };
-}
-
-/** Debts due from today to today + 7 (the D14 tile). */
-export function dueSoonOf(
-  debts: readonly Pick<OpenDebt, "remaining" | "dueDate">[],
-  today: BusinessDate,
-): Money {
-  const last = addDays(today, DUE_SOON_DAYS);
-  return toMoney(
-    debts
-      .filter(
-        (debt) =>
-          debt.remaining > 0 && debt.dueDate >= today && debt.dueDate <= last,
-      )
-      .reduce((sum, debt) => sum + debt.remaining, 0),
-  );
+  return dueStatus(remaining, dueDate, today, "Đã thu đủ");
 }
 
 /** VAT of a sale delivery (0.2 #84): on goods + freight, rounded half up. */
@@ -338,13 +210,8 @@ export function saleVat(
   );
 }
 
-export type CustomerStatusKind =
-  "OVERDUE" | "DUE_SOON" | "NOT_DUE" | "PREPAID" | "CLEAR";
-
-export interface CustomerStatus {
-  kind: CustomerStatusKind;
-  label: string;
-}
+export type CustomerStatusKind = HolderStatusKind;
+export type CustomerStatus = HolderStatus;
 
 /** The "Tình hình" of a customer row on D14. */
 export function customerStatus(input: {
@@ -352,23 +219,12 @@ export function customerStatus(input: {
   prepaid: Money;
   today: BusinessDate;
 }): CustomerStatus {
-  const overdue = overdueOf(input.debts, input.today);
-  if (overdue.amount > 0) {
-    return { kind: "OVERDUE", label: `Quá hạn ${overdue.days} ngày` };
-  }
-  const open = input.debts.filter((debt) => debt.remaining > 0);
-  const last = addDays(input.today, DUE_SOON_DAYS);
-  const soon = open
-    .map((debt) => debt.dueDate)
-    .filter((due) => due <= last)
-    .sort()[0];
-  if (soon) {
-    const [, month, day] = soon.split("-");
-    return { kind: "DUE_SOON", label: `Hạn ${day}/${month}` };
-  }
-  if (open.length > 0) return { kind: "NOT_DUE", label: "Chưa đến hạn" };
-  if (input.prepaid > 0) return { kind: "PREPAID", label: "Trả trước" };
-  return { kind: "CLEAR", label: "Hết nợ" };
+  return holderStatus({
+    debts: input.debts,
+    credit: input.prepaid,
+    today: input.today,
+    creditLabel: "Trả trước",
+  });
 }
 
 export interface SettlementPlan {

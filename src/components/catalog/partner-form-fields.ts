@@ -80,6 +80,12 @@ export const SUPPLIER_FIELDS: FormField[] = [
     hint: "Ngoài form này chỉ hiện 4 số cuối.",
   },
   { name: "bankName", label: "Ngân hàng" },
+  {
+    name: "paymentTermsDays",
+    label: "Số ngày được nợ",
+    kind: "number",
+    hint: "0 = trả ngay khi nhập. Chỉ áp cho phiếu nhập sau. Từ 0 đến 365.",
+  },
   { name: "note", label: "Ghi chú", kind: "textarea" },
 ];
 

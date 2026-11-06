@@ -67,14 +67,17 @@ const asLines = (lines: readonly ValueLine[]): AdjustmentLineInput[] =>
     valueDelta: line.valueDelta,
   }));
 
-/** Locks the receipt FOR SHARE (a referenced row); its code. */
+/**
+ * The receipt's code, or 404. No row lock: a posted receipt never changes
+ * or goes away (append-only, payables design D5), and the app role may not
+ * lock an append-only row.
+ */
 async function lockReceipt(tx: Tx, receiptId: string): Promise<string> {
   if (!UUID.test(receiptId)) throw new ServiceFailure(notFound());
   const [receipt] = await tx
     .select({ code: goodsReceipt.code })
     .from(goodsReceipt)
-    .where(eq(goodsReceipt.id, receiptId))
-    .for("share");
+    .where(eq(goodsReceipt.id, receiptId));
   if (!receipt) throw new ServiceFailure(notFound());
   return receipt.code;
 }

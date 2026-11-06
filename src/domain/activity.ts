@@ -118,6 +118,7 @@ export const DOCUMENT_TYPES = [
   "BILLING_ADJUSTMENT",
   "RENTAL_HOLIDAY",
   "RECEIPT",
+  "SUPPLIER_PAYMENT",
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
@@ -149,6 +150,7 @@ export const DOCUMENT_TYPE_LABELS: Readonly<Record<DocumentType, string>> = {
   BILLING_ADJUSTMENT: "Điều chỉnh tiền thuê",
   RENTAL_HOLIDAY: "Ngày nghỉ",
   RECEIPT: "Phiếu thu",
+  SUPPLIER_PAYMENT: "Phiếu chi",
 };
 
 /** The label of an action on a document: submitting an order places it. */

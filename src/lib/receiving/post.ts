@@ -59,6 +59,7 @@ import {
   unconfirmedAnomalies,
   type Anomaly,
 } from "@/domain/receipt-anomalies";
+import { payableDueDate } from "@/domain/payables";
 import { costTrip, needsScrapPrice } from "@/domain/receipt-cost";
 import {
   conflict,
@@ -71,6 +72,7 @@ import {
 } from "@/lib/catalog/common";
 import { logActivity } from "@/lib/activity/log";
 import { nextDocumentCode } from "@/lib/inventory/counter";
+import { advanceSuffix, settleAdvances } from "@/lib/payables/advances";
 import { postMovements, type Tx } from "@/lib/inventory/post";
 import { receiptSummary } from "@/lib/purchasing/receipts";
 
@@ -132,6 +134,10 @@ async function lockOrder(tx: Tx, code: string) {
       allocationMethod: purchaseOrder.allocationMethod,
       expectedDate: purchaseOrder.expectedDate,
       supplierName: supplier.name,
+      supplierId: supplier.id,
+      // Read without a lock: the supplier row is locked last, by
+      // settleAdvances (payables design D4).
+      paymentTermsDays: supplier.paymentTermsDays,
     })
     .from(purchaseOrder)
     .innerJoin(supplier, eq(supplier.id, purchaseOrder.supplierId))
@@ -384,6 +390,7 @@ async function postInTransaction(
     locationId,
     clientDraftId: draftId,
     businessDate,
+    dueDate: payableDueDate(businessDate, order.paymentTermsDays),
     arrivedAt: readArrivedAt(body, now),
     vehicle: readVehicle(body),
     scrapPriceId: price?.id ?? null,
@@ -476,13 +483,24 @@ async function postInTransaction(
     });
   }
   await tx.insert(purchaseOrderEvent).values(events);
+  // The seller's advance pays this receipt at once (0.2 số 100); the supplier
+  // is the last lock (payables design D4).
+  const advance = await settleAdvances(
+    tx,
+    order.supplierId,
+    actor,
+    businessDate,
+    now,
+  );
   await logActivity(
     tx,
     actor,
     {
       action: "POST",
       document: { type: "GOODS_RECEIPT", id: receiptId, code },
-      summary: receiptActivitySummary(order.code, paired, confirmed),
+      summary:
+        receiptActivitySummary(order.code, paired, confirmed) +
+        advanceSuffix(advance),
       anomaly: confirmed.length > 0,
     },
     { now },

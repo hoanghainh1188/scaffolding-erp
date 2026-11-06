@@ -148,6 +148,13 @@
       "when": 1793924370131,
       "tag": "0020_dashboard_basic",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793955800654,
+      "tag": "0021_payables",
+      "breakpoints": true
     }
   ]
 }

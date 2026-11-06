@@ -120,6 +120,7 @@ async function insertReceipt(values: ReceiptValues = {}) {
       locationId: yardId,
       clientDraftId: crypto.randomUUID(),
       businessDate: "2026-10-26",
+      dueDate: "2026-10-26",
       postingId: crypto.randomUUID(),
       createdBy: userId,
       ...values,
