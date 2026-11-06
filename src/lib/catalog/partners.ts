@@ -37,6 +37,7 @@ import {
 } from "@/domain/partner-fields";
 import { diffFields, touchesSensitive } from "@/domain/activity-changes";
 import { changeSummary, joinParts } from "@/domain/activity-summary";
+import { PAYABLE_MESSAGES, PAYMENT_TERMS_MAX_DAYS } from "@/domain/payables";
 import { toSearchText } from "@/domain/search-text";
 import { CUSTOMER_FIELDS, SUPPLIER_FIELDS } from "@/lib/activity/fields";
 import { logActivity } from "@/lib/activity/log";
@@ -121,6 +122,15 @@ function paymentTerms(value: number | undefined): number {
   const days = value ?? 30;
   if (!Number.isInteger(days) || days < 0 || days > 365) {
     throw new DomainValueError(PARTNER_MESSAGES.paymentTerms);
+  }
+  return days;
+}
+
+/** Days a seller lets us owe (payables, 0.2 #99): 0 by default. */
+function supplierTerms(value: number | undefined): number {
+  const days = value ?? 0;
+  if (!Number.isInteger(days) || days < 0 || days > PAYMENT_TERMS_MAX_DAYS) {
+    throw new DomainValueError(PAYABLE_MESSAGES.termsRange);
   }
   return days;
 }
@@ -526,6 +536,8 @@ export interface SupplierRow {
   /** "•••• 5678", or null when there is none. */
   bankAccountMasked: string | null;
   bankName: string | null;
+  /** Days the seller lets us owe; 0 = pay on receipt (0.2 #99). */
+  paymentTermsDays: number;
   note: string | null;
   status: CatalogStatus;
 }
@@ -545,6 +557,7 @@ export interface SupplierInput {
   idNumber?: string | null;
   bankAccount?: string | null;
   bankName?: string | null;
+  paymentTermsDays?: number;
   note?: string | null;
   status?: CatalogStatus;
 }
@@ -565,6 +578,7 @@ function toSupplierRow(row: SupplierRecord): SupplierRow {
       ? maskBankAccount(row.bankAccount)
       : null,
     bankName: row.bankName,
+    paymentTermsDays: row.paymentTermsDays,
     note: row.note,
     status: row.status as CatalogStatus,
   };
@@ -624,6 +638,10 @@ function supplierValues(input: SupplierInput, current?: SupplierEditRow) {
       keep("bankName") && current
         ? current.bankName
         : optionalText(input.bankName),
+    paymentTermsDays:
+      keep("paymentTermsDays") && current
+        ? current.paymentTermsDays
+        : supplierTerms(input.paymentTermsDays),
     note: keep("note") && current ? current.note : optionalText(input.note),
   };
 }

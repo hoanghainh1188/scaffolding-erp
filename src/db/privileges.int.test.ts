@@ -39,11 +39,17 @@ const UPDATE_COLUMN: Readonly<
   billing_period_freight: "amount",
   billing_period_line: "amount",
   contract_settlement: "refund_amount",
+  goods_receipt: "due_date",
+  goods_receipt_cost: "amount",
+  goods_receipt_line: "quantity",
   inventory_ledger: "created_at",
   receipt: "amount",
   receipt_allocation: "amount",
   receipt_cancellation: "reason",
   scrap_price: "created_at",
+  supplier_payment: "amount",
+  supplier_payment_allocation: "amount",
+  supplier_payment_cancellation: "reason",
 };
 
 describe("app role", () => {

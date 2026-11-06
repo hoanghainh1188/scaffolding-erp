@@ -19,6 +19,8 @@ export interface NavItem {
   label: string;
   icon: NavIcon;
   permission: Permission;
+  /** Other paths that belong to this item (marked active there too). */
+  also?: readonly string[];
 }
 
 /**
@@ -61,6 +63,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: dict.navigation.desktop.receivables,
     icon: "wallet",
     permission: "receivables.view",
+    // D14c Phải trả is the second tab of Công nợ (payables design D8).
+    also: ["/payables"],
   },
   {
     href: "/reports",
@@ -81,6 +85,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permission: "settings.view",
   },
 ];
+
+/** The item is marked on its own path and on the paths it lists in `also`. */
+export function isNavActive(pathname: string, item: NavItem): boolean {
+  return [item.href, ...(item.also ?? [])].some(
+    (href) => pathname === href || pathname.startsWith(`${href}/`),
+  );
+}
 
 export function navItemsForRole(role: Role): readonly NavItem[] {
   return NAV_ITEMS.filter((item) => can(role, item.permission));

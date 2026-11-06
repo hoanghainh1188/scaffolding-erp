@@ -1,7 +1,8 @@
 // Goods receipts (goods-receipt, design D8): one row per posted truck trip.
 // A receipt exists only once it is posted; drafts live on the phone (D1).
 // Money is not stored here: goods value comes from the order line price and
-// the allocated costs come back from the inventory ledger (D8).
+// the allocated costs come back from the inventory ledger (D8). Posted
+// receipts never change: the three tables are append-only (payables D5).
 import { sql } from "drizzle-orm";
 import {
   bigint,
@@ -58,6 +59,8 @@ export const goodsReceipt = pgTable(
       .references(() => location.id, { onDelete: "restrict" }),
     clientDraftId: uuid("client_draft_id").notNull().unique(),
     businessDate: date("business_date").notNull(),
+    /** Due date of what the seller is owed (payables design D2, 0.2 #99). */
+    dueDate: date("due_date").notNull(),
     arrivedAt: timestamp("arrived_at", { withTimezone: true }),
     vehicle: text("vehicle"),
     scrapPriceId: bigint("scrap_price_id", { mode: "number" }).references(

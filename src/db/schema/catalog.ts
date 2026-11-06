@@ -245,12 +245,19 @@ export const supplier = pgTable(
     idNumber: text("id_number"),
     bankAccount: text("bank_account"),
     bankName: text("bank_name"),
+    // Days the seller lets us owe (payables design D2, 0.2 #99); 0 = pay on
+    // receipt. Copied onto each goods receipt as its due date when posted.
+    paymentTermsDays: integer("payment_terms_days").notNull().default(0),
     note: text("note"),
     searchText: text("search_text").notNull(),
     ...audit(),
   },
   (table) => [
     partnerKindCheck("supplier_kind_check", table.kind),
+    check(
+      "supplier_payment_terms_check",
+      sql`${table.paymentTermsDays} between 0 and 365`,
+    ),
     check(
       "supplier_id_number_check",
       sql`${table.idNumber} is null or ${table.idNumber} ~ '^[0-9]{12}$'`,

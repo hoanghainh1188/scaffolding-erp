@@ -58,6 +58,8 @@ export const NOT_LOGGED: Readonly<Record<string, string>> = {
     "row lock inside postReturn; the return posting logs",
   "receivables/common.ts#lockCustomer":
     "row lock shared by the receivable commands; the command logs",
+  "payables/common.ts#lockSupplier":
+    "row lock shared by the payable commands; the command logs",
 };
 
 interface Found {

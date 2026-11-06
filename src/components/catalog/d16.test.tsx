@@ -58,6 +58,7 @@ const SELLER: SupplierRow = {
   taxCode: null,
   idNumberMasked: "•••• •••• 2345",
   bankAccountMasked: "•••• 5678",
+  paymentTermsDays: 0,
   bankName: null,
   note: null,
   status: "ACTIVE",
@@ -107,6 +108,20 @@ describe("D16 supplier detail", () => {
     expect(screen.getByText("•••• •••• 2345")).toBeInTheDocument();
     expect(screen.getByText("•••• 5678 · Vietcombank")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/\d{12}/);
+  });
+
+  it("shows the payment terms of the seller (payables, 0.2 #99)", () => {
+    const { rerender } = render(
+      <SupplierDetail supplier={SELLER} canEdit={false} />,
+    );
+    expect(screen.getByText("Trả ngay khi nhập")).toBeInTheDocument();
+    rerender(
+      <SupplierDetail
+        supplier={{ ...SELLER, paymentTermsDays: 30 }}
+        canEdit={false}
+      />,
+    );
+    expect(screen.getByText("Nợ 30 ngày")).toBeInTheDocument();
   });
 
   it("leaves out the CCCD line when there is none", () => {

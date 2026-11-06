@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { NAV_ITEMS, navItemsForRole } from "./navigation";
+import { isNavActive, NAV_ITEMS, navItemsForRole } from "./navigation";
 
 const labels = (role: Parameters<typeof navItemsForRole>[0]) =>
   navItemsForRole(role).map((item) => item.label);
@@ -45,5 +45,18 @@ describe("navigation", () => {
   it("has no desktop menu for mobile roles", () => {
     expect(navItemsForRole("WAREHOUSE")).toEqual([]);
     expect(navItemsForRole("WORKSHOP")).toEqual([]);
+  });
+});
+
+describe("isNavActive", () => {
+  const debts = NAV_ITEMS.find((item) => item.href === "/receivables");
+
+  it("marks Công nợ on Phải thu and Phải trả (payables design D8)", () => {
+    if (!debts) throw new Error("no Công nợ item");
+    expect(isNavActive("/receivables", debts)).toBe(true);
+    expect(isNavActive("/payables", debts)).toBe(true);
+    expect(isNavActive("/receivables/billing", debts)).toBe(true);
+    expect(isNavActive("/purchasing", debts)).toBe(false);
+    expect(isNavActive("/payablesx", debts)).toBe(false);
   });
 });
