@@ -9,6 +9,7 @@ import {
 } from "./business-date";
 import { lineWeightKgMilli } from "./landed-cost";
 import { toMoney, type Money } from "./money";
+import { can, canContract, type ContractUser } from "./permissions";
 import {
   REGION_LABELS,
   REGIONS,
@@ -314,4 +315,23 @@ export function millionsText(amount: number): string {
   const sign = tenths < 0 ? "-" : "";
   const abs = Math.abs(tenths);
   return `${sign}${Math.floor(abs / 10).toLocaleString("vi-VN")},${abs % 10} tr`;
+}
+
+// ── Blocks by role (design D1) ──────────────────────────────────────────
+
+export interface DashboardBlocks {
+  /** Money blocks: overdue, revenue, top 5, money of the lookup (0.2 #91). */
+  money: boolean;
+  /** Risky sites and the site lookup: rental contracts the viewer reads. */
+  rentals: boolean;
+  stock: boolean;
+}
+
+/** Which blocks a viewer gets; the server reads nothing else (design D1). */
+export function blocksFor(viewer: ContractUser): DashboardBlocks {
+  return {
+    money: can(viewer.role, "receivables.view"),
+    rentals: canContract(viewer, "RENTAL", "view"),
+    stock: can(viewer.role, "inventory.view"),
+  };
 }

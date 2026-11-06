@@ -5,6 +5,7 @@ import type { BusinessDate } from "./business-date";
 import {
   RISK_LOSS_DAYS,
   approvalsTitle,
+  blocksFor,
   dayText,
   greeting,
   isPastEnd,
@@ -261,5 +262,40 @@ describe("monthTotals and topCustomers", () => {
     expect(millionsText(71_300_000)).toBe("71,3 tr");
     expect(millionsText(-200_000)).toBe("-0,2 tr");
     expect(millionsText(1_284_500_000)).toBe("1.284,5 tr");
+  });
+});
+
+describe("blocksFor (design D1)", () => {
+  it("gives money to the director and the accountant only", () => {
+    expect(blocksFor({ role: "DIRECTOR", contractScope: "ALL" })).toEqual({
+      money: true,
+      rentals: true,
+      stock: true,
+    });
+    expect(blocksFor({ role: "ACCOUNTANT", contractScope: "ALL" }).money).toBe(
+      true,
+    );
+    expect(blocksFor({ role: "SALES", contractScope: "ALL" })).toEqual({
+      money: false,
+      rentals: true,
+      stock: true,
+    });
+  });
+
+  it("hides rentals from sales working on sales only", () => {
+    expect(blocksFor({ role: "SALES", contractScope: "SALE" }).rentals).toBe(
+      false,
+    );
+    expect(blocksFor({ role: "SALES", contractScope: "RENTAL" }).rentals).toBe(
+      true,
+    );
+  });
+
+  it("gives the phone roles nothing", () => {
+    expect(blocksFor({ role: "WAREHOUSE", contractScope: "ALL" })).toEqual({
+      money: false,
+      rentals: false,
+      stock: false,
+    });
   });
 });
