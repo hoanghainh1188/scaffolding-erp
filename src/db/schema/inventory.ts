@@ -111,6 +111,11 @@ export const inventoryLedger = pgTable(
       table.documentType,
       table.documentId,
     ),
+    // dashboard-basic design D2: recent LOSS_OUT lines (risky sites).
+    index("inventory_ledger_movement_date_idx").on(
+      table.movement,
+      table.businessDate,
+    ),
   ],
 );
 

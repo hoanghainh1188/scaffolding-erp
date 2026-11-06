@@ -29,6 +29,14 @@ import {
 
 type Reader = Pick<Database, "select">;
 
+/** Where the ledger lines of a contract come from: one query or a batch. */
+type LinesOf = (contractId: string) => Promise<SiteLedgerLine[]>;
+
+const readLines =
+  (tx: Reader): LinesOf =>
+  (contractId) =>
+    siteLedgerLines(tx, contractId);
+
 const IN_MOVEMENTS = new Set(["DELIVERY_IN", "TRANSFER_IN"]);
 const OUT_KINDS: Readonly<Record<string, EndKind>> = {
   RETURN_OUT: "RETURN",
@@ -69,7 +77,7 @@ function groupLines(lines: readonly SiteLedgerLine[]): GroupedLine[] {
  * step reads an earlier cutoff.
  */
 async function piecesUpTo(
-  tx: Reader,
+  linesOf: LinesOf,
   contractId: string,
   cutoff: number,
   memo: Map<string, Promise<Piece[]>>,
@@ -78,17 +86,17 @@ async function piecesUpTo(
   const known = memo.get(key);
   if (known) return known;
   const work = (async () => {
-    const lines = (await siteLedgerLines(tx, contractId)).filter(
+    const lines = (await linesOf(contractId)).filter(
       (line) => line.ledgerId <= cutoff,
     );
-    return buildPieces(await eventsOf(tx, lines, memo));
+    return buildPieces(await eventsOf(linesOf, lines, memo));
   })();
   memo.set(key, work);
   return work;
 }
 
 async function eventsOf(
-  tx: Reader,
+  linesOf: LinesOf,
   lines: readonly SiteLedgerLine[],
   memo: Map<string, Promise<Piece[]>>,
 ): Promise<RentalEvent[]> {
@@ -115,7 +123,7 @@ async function eventsOf(
         sameCustomer && line.fromContractId
           ? transferOrigins(
               await piecesUpTo(
-                tx,
+                linesOf,
                 line.fromContractId,
                 sourceCutoff(line),
                 memo,
@@ -153,8 +161,28 @@ export async function contractPieces(
 ): Promise<{ pieces: Piece[]; lines: SiteLedgerLine[] }> {
   const lines = await siteLedgerLines(tx, contractId);
   const memo = new Map<string, Promise<Piece[]>>();
-  const pieces = buildPieces(await eventsOf(tx, lines, memo));
+  const pieces = buildPieces(await eventsOf(readLines(tx), lines, memo));
   return { pieces, lines };
+}
+
+/**
+ * Pieces of many contracts from lines read in one batch (dashboard-basic
+ * design D2). A same-customer transfer from a contract outside the batch
+ * reads that contract on its own, as contractPieces does.
+ */
+export async function piecesOfBatch(
+  tx: Reader,
+  batch: ReadonlyMap<string, SiteLedgerLine[]>,
+): Promise<Map<string, Piece[]>> {
+  const fallback = readLines(tx);
+  const linesOf: LinesOf = async (contractId) =>
+    batch.get(contractId) ?? fallback(contractId);
+  const memo = new Map<string, Promise<Piece[]>>();
+  const result = new Map<string, Piece[]>();
+  for (const [contractId, lines] of batch) {
+    result.set(contractId, buildPieces(await eventsOf(linesOf, lines, memo)));
+  }
+  return result;
 }
 
 /** Approved revisions as billing terms, with daily prices by item. */

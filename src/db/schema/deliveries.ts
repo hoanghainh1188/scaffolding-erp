@@ -106,6 +106,10 @@ export const deliveryNote = pgTable(
     ),
     index("delivery_note_contract_idx").on(table.contractId),
     index("delivery_note_status_idx").on(table.status, table.plannedDate),
+    // dashboard-basic design D2: sale revenue by day, top 5 by kg.
+    index("delivery_note_posted_date_idx")
+      .on(table.businessDate)
+      .where(sql`${table.status} = 'POSTED'`),
   ],
 );
 

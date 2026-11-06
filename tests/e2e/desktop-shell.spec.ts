@@ -19,7 +19,7 @@ test.describe("desktop shell", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Tổng quan" }),
+      page.getByRole("heading", { level: 1, name: /^Chào / }),
     ).toBeVisible();
   });
 
@@ -116,12 +116,16 @@ test.describe("desktop shell at other widths", () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto("/dashboard");
     await waitForHydration(page, DESKTOP_READY);
-    await expect(page.getByRole("link", { name: "Kho" })).toBeHidden();
+    await expect(
+      page.getByRole("link", { name: "Kho", exact: true }),
+    ).toBeHidden();
 
     await page.getByRole("button", { name: "Mở menu" }).click();
     const drawer = page.getByRole("dialog");
     await expect(drawer).toBeVisible();
-    await expect(drawer.getByRole("link", { name: "Kho" })).toBeVisible();
+    await expect(
+      drawer.getByRole("link", { name: "Kho", exact: true }),
+    ).toBeVisible();
 
     await page.keyboard.press("Escape");
     await expect(drawer).toBeHidden();

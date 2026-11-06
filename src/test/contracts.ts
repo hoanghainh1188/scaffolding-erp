@@ -38,14 +38,18 @@ const withScope = (
 /** Fresh auth, catalog, ledger and contracts, with the sample catalog. */
 export async function setupContractFixture(
   ctx: TestContext,
+  /** false on an empty database that may not be truncated (the bench). */
+  options: { reset?: boolean } = {},
 ): Promise<ContractFixture> {
   const { createTestUser, resetAuthTables } = await import("./auth");
   const { resetCatalogTables } = await import("./catalog");
   const { resetInventoryTables } = await import("./inventory");
   const { seedCatalog } = await import("@/lib/catalog/seed");
-  await resetAuthTables();
-  await resetCatalogTables();
-  await resetInventoryTables();
+  if (options.reset !== false) {
+    await resetAuthTables();
+    await resetCatalogTables();
+    await resetInventoryTables();
+  }
   const director = await createTestUser(ctx, {
     role: "DIRECTOR",
     username: "minhanh",
