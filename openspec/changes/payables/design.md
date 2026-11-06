@@ -4,7 +4,7 @@
 
 - Phiếu nhập (`goods-receipt`) đã tính tiền hàng mỗi chuyến bằng `receiptGoodsAmount` (`src/domain/receipt-cost.ts`): số thực nhận theo đơn vị dòng đơn (dòng kg lấy kg cân) × đơn giá dòng đơn, làm tròn từng dòng. D3b cộng cùng số đó thành "Phải trả người bán" (`orderReceivingSummary`, `src/domain/receiving-summary.ts`). Không lưu tiền trên phiếu.
 - Phải thu (`receivables`) đã có khuôn: khoản nợ tính ra, phiếu thu / phân bổ / dòng hủy chỉ ghi thêm, tiền trả trước tính ra và tự trừ trong transaction tạo khoản (`settleCredits`), khóa nhà thầu `FOR UPDATE` cuối cùng (`lockCustomer`), hàm thuần ở `src/domain/receivables.ts`.
-- 0.2 #98–#101 (chốt 06/11/2026) và bản vẽ D14c đã duyệt. Nhà cung cấp chưa có số ngày được nợ; nhà thầu có `payment_terms_days` (0–365).
+- 0.2 #98–#106 (chốt 06/11/2026; #102–#106 khi review PR #152) và bản vẽ D14c đã duyệt. Nhà cung cấp chưa có số ngày được nợ; nhà thầu có `payment_terms_days` (0–365).
 - Phiếu nhập ghi sổ bởi Thủ kho trên M3 (`postReceipt`): khóa đơn `FOR UPDATE` → bãi `FOR SHARE` → khóa của `postMovements`.
 
 ## Goals / Non-Goals
@@ -31,7 +31,7 @@
 
 - `allocateOrdered<D extends { key; remaining; label }>({ amount, debts, manual, seen, messages, fail })` → `{ allocations: { debtKey, amount, mode: "AUTO" | "MANUAL" }[], unapplied }`. `debts` **đã sắp** theo thứ tự cố định của bên gọi. Phần chỉ định trước (kiểm thuộc người, ≤ còn lại, tổng ≤ số tiền, 409 khi `seen` cho thấy bị phiếu khác lấy), rồi FIFO. `messages` và `fail(message, status)` do bên gọi đưa vào, nên phải thu vẫn ném `ReceivableRuleError` với đúng chữ cũ.
 - `applyCreditsOrdered({ credits, debts })`: nguồn theo `orderSources` (ngày, mã), khoản theo thứ tự đã sắp.
-- `orderSources`, `overdueOf`, `dueSoonOf`, `dueStatus(remaining, due, today, paidLabel)` (chuyển nguyên từ `receivables.ts`, thêm tham số nhãn "Đã thu đủ" / "Đã trả đủ").
+- `orderSources`, `overdueOf`, `dueSoonOf`, `dueStatus(remaining, due, today, paidLabel)` (chuyển nguyên từ `receivables.ts`, thêm tham số nhãn "Đã thu đủ" / "Đã trả đủ"), `holderStatus({ debts, credit, today, labels })` (luật cột Tình hình của D14 với `DUE_SOON_DAYS` = 7; `customerStatus` của phải thu và `supplierStatus` của phải trả cùng gọi, chỉ khác nhãn "Trả trước" / "Đã ứng trước").
 
 `src/domain/receivables.ts`: `allocate`, `applyCredits`, `debtStatus`, `overdueOf`, `dueSoonOf`, `orderSources` thành lớp mỏng: sắp bằng `orderDebts` rồi gọi lõi. Kiểu `OpenDebt`, `Allocation`, `CreditSource`… giữ nguyên tên và export.
 
@@ -54,7 +54,7 @@
   - Lý do: 0.2 #99 "đổi số ngày chỉ áp cho phiếu nhập sau" cần biết số ngày **tại lúc nhập**; đọc lại từ nhà cung cấp làm hạn của mọi phiếu cũ đổi theo. Giống kỳ tiền thuê lưu `due_date` khi chốt.
   - Phương án khác: lưu lịch sử số ngày được nợ của nhà cung cấp rồi tra theo ngày nhập. Thêm một bảng và một phép tra cho mỗi khoản, không lợi gì hơn. Bỏ.
   - Hạn không phải tiền nên không trái quy ước "không lưu tiền trên phiếu nhập".
-- **Tình hình người bán** (D14c): "Quá hạn N ngày" → không quá hạn mà còn nợ: "Hạn dd/mm" của khoản hạn sớm nhất (**kể cả hạn xa hơn 7 ngày**, như bản vẽ "Hạn 20/11"; D14 chỉ hiện khi ≤ 7 ngày, xem Q3) → chỉ có ứng trước: "Đã ứng trước" → "Hết nợ".
+- **Tình hình người bán** (D14c, 0.2 #104): **cùng luật D14** qua `holderStatus` của lõi chung: "Quá hạn N ngày" → khoản hạn sớm nhất trong 7 ngày tới (hạn ≤ hôm nay + 7): "Hạn dd/mm" → còn nợ, hạn xa hơn: "Chưa đến hạn" → chỉ có ứng trước: "Đã ứng trước" → "Hết nợ". Bản vẽ D14c đã sửa dòng Hưng Thịnh (hạn 20/11, hôm nay 06/11) thành "Chưa đến hạn".
 
 ### D3. Phiếu chi, phân bổ, ứng trước
 
@@ -67,8 +67,8 @@
 **Luật:**
 
 - **Trả tiền hàng:** `allocatePayment` (chỉ định trước, rồi FIFO theo `comparePayables`); phần dư = ứng trước.
-- **Ứng trước:** chỉ nhận khi người bán **không còn khoản còn phải trả** (đề xuất, Q1). Nhờ vậy bất biến giống phải thu: *người bán có ứng trước > 0 thì không còn khoản nào còn nợ*, và loại phiếu chỉ khác ở cách ghi (không có phần chỉ định, nhãn "Ứng trước" trên danh sách, nhật ký).
-  - Phương án khác: cho ứng khi còn nợ, tiền ứng chỉ trừ vào phiếu nhập **ghi sổ sau ngày ứng**. Phải gắn nguồn với khoản theo ngày, bất biến gãy (vừa nợ quá hạn vừa có ứng trước), D14c khó đọc. Bỏ trừ khi anh muốn (Q1).
+- **Ứng trước:** chỉ nhận khi người bán **không còn khoản còn phải trả** (0.2 #102). Nhờ vậy bất biến giống phải thu: *người bán có ứng trước > 0 thì không còn khoản nào còn nợ*, và loại phiếu chỉ khác ở cách ghi (không có phần chỉ định, nhãn "Ứng trước" trên danh sách, nhật ký).
+  - Phương án khác: cho ứng khi còn nợ, tiền ứng chỉ trừ vào phiếu nhập **ghi sổ sau ngày ứng**. Phải gắn nguồn với khoản theo ngày, bất biến gãy (vừa nợ quá hạn vừa có ứng trước), D14c khó đọc. Bỏ (0.2 #102).
 - **Tiền ứng trước tính ra** = Σ phiếu chi còn hiệu lực − Σ phân bổ còn hiệu lực từ chúng. Không lưu số dư.
 - **`settleAdvances(tx, supplierId, actor, today)`** (`src/lib/payables/advances.ts`), như `settleCredits`: khóa nhà cung cấp (D4), đọc khoản còn nợ + nguồn còn dư, `applyAdvances`, chèn dòng `mode = ADVANCE`, trả số đã trừ.
   - Gọi trong `postReceipt` (sau ghi phiếu, sổ kho, trạng thái đơn, trước `logActivity` để nối "· trừ tiền ứng trước x ₫") và trong `cancelPayment` (sau khi chèn dòng hủy).
@@ -114,7 +114,7 @@ Số phát sinh phụ thuộc: dòng phiếu nhập (số, kg cân, trạng thá
 | `payments.manage` (mới) | Giám đốc, Kế toán | ghi, xem trước, hủy phiếu chi |
 
 - Kinh doanh, Thủ kho, Xưởng: không (ui.md "Kinh doanh không thấy Công nợ phải trả"). Menu Công nợ hiện khi có `receivables.view` **hoặc** `payables.view`, mở tab đầu tiên được xem; thanh tab chỉ hiện tab có quyền.
-- **Thủ kho trả tiền mặt lúc nhận hàng:** Thủ kho **không** ghi phiếu chi. Thủ kho báo Kế toán; Kế toán ghi phiếu chi Tiền mặt với **ngày chi = ngày trả thật** (cho phép ngày quá khứ), chỉ định phiếu nhập đó. Lý do: phiếu chi là tiền ra của công ty, một người giữ sổ quỹ; M3 không hiện tiền (spec `goods-receipts`). Phương án khác: thêm ô "Đã trả tiền mặt x ₫" trên M3 tạo phiếu chi tự động: lộ tiền ở mobile, thủ kho phải nhập số tiền khớp tiền hàng mà không thấy tiền hàng. Bỏ ở change này (Q2).
+- **Thủ kho trả tiền mặt lúc nhận hàng:** Thủ kho **không** ghi phiếu chi. Thủ kho báo Kế toán; Kế toán ghi phiếu chi Tiền mặt với **ngày chi = ngày trả thật** (cho phép ngày quá khứ), chỉ định phiếu nhập đó. Lý do: phiếu chi là tiền ra của công ty, một người giữ sổ quỹ; M3 không hiện tiền (spec `goods-receipts`). Phương án khác: thêm ô "Đã trả tiền mặt x ₫" trên M3 tạo phiếu chi tự động: lộ tiền ở mobile, thủ kho phải nhập số tiền khớp tiền hàng mà không thấy tiền hàng. Bỏ (0.2 #103).
 - Giám đốc có cả hai quyền (như `receipts.manage`): đứng thay khi Kế toán nghỉ.
 
 ### D7. CCCD và số tài khoản (điểm cần chốt 5)
@@ -165,12 +165,13 @@ Số phát sinh phụ thuộc: dòng phiếu nhập (số, kg cân, trạng thá
 2. `goods_receipt.due_date date`: thêm cột, `update … set due_date = business_date`, `set not null`. **Trước** khi tạo trigger chỉ ghi thêm.
 3. Ba bảng phiếu chi, check, FK `ON DELETE RESTRICT`, index, trigger `*_append_only` (UPDATE / DELETE / TRUNCATE), trigger cùng nhà cung cấp.
 4. Trigger chỉ ghi thêm cho `goods_receipt`, `goods_receipt_line`, `goods_receipt_cost`; trigger khóa giá `purchase_order_line`.
+   - **TRUNCATE khi dọn test:** hàm trigger của cả **sáu** bảng theo đúng mẫu `scrap_price_append_only` (`0005_goods_receipts.sql`) / `0003_inventory_ledger.sql`: `TG_OP = 'TRUNCATE'` và `inventory_truncate_allowed(current_database(), current_setting('inventory.allow_truncate', true))` thì `RETURN NULL` (cho qua); còn lại `RAISE`. UPDATE / DELETE luôn bị chặn. Nhờ vậy `src/test/catalog.ts` (truncate `goods_receipt_cost`, `goods_receipt_line`, `goods_receipt` trong `truncateWithLedger`, có `set local inventory.allow_truncate = 'on'`) và dọn bảng phiếu chi trong test vẫn chạy; DB thật không bật cờ nên TRUNCATE bị chặn.
 5. Check `activity_log.document_type` thêm `SUPPLIER_PAYMENT`.
 6. `src/db/grants.ts`: thêm 6 bảng vào `APPEND_ONLY_TABLES` (test chống lệch bắt quên).
 
 ## Risks / Trade-offs
 
-- [Phiếu nhập cũ thành nợ quá hạn ngay khi deploy] → Migration Plan bước 2; Q4 hỏi có muốn loại phiếu trước một ngày không.
+- [Phiếu nhập cũ thành nợ quá hạn ngay khi deploy] → hiện chỉ có dữ liệu demo; Migration Plan bước 2 (0.2 #105). Nợ đầu kỳ thật nhập ở `data-migration` (#48).
 - [Khóa phiếu nhập ở DB chặn sửa tay dữ liệu sai] → đúng ý: sai số tiền sửa bằng `ĐCG` (giá vốn) hoặc phiếu chi; sửa tay chỉ owner làm được sau khi tắt trigger, có ghi chép.
 - [Ghi sổ phiếu nhập thêm một khóa nhà cung cấp] → transaction ngắn; chỉ chạm người bán của đơn; hai thủ kho nhập hai đơn của cùng người bán sẽ chạy lần lượt ở bước cuối, chấp nhận.
 - [Tách lõi phân bổ làm đổi phải thu ngoài ý muốn] → test phải thu cũ không sửa và phải xanh; review diff `receivables.ts` chỉ còn lớp mỏng.
@@ -185,10 +186,4 @@ Số phát sinh phụ thuộc: dòng phiếu nhập (số, kg cân, trạng thá
 
 ## Open Questions
 
-Các câu hỏi nêu trong mô tả PR (Q1–Q5); trả lời xong ghi vào `docs/requirements.md` 0.2 trong PR này:
-
-- **Q1.** Ứng trước chỉ khi người bán hết nợ (đề xuất) hay cho ứng khi còn nợ?
-- **Q2.** Chỉ Kế toán / Giám đốc ghi phiếu chi; thủ kho trả tiền mặt thì báo Kế toán ghi (đề xuất)?
-- **Q3.** Tình hình người bán hiện "Hạn dd/mm" của hạn gần nhất kể cả xa hơn 7 ngày (theo bản vẽ D14c), khác D14?
-- **Q4.** Phiếu nhập ghi sổ trước ngày deploy: thành khoản còn nợ, Kế toán ghi phiếu chi bù (đề xuất), hay bỏ qua phiếu trước một ngày chọn?
-- **Q5.** Khóa phiếu nhập đã ghi sổ ở DB (chỉ ghi thêm) và khóa giá dòng đơn đã nhận bằng trigger: đồng ý?
+Không còn câu hỏi treo. Q1–Q5 của PR #152 đã chốt ngày 06/11/2026, ghi ở `docs/requirements.md` 0.2 #102–#106 (Q1 theo đề xuất, Q2 theo đề xuất, Q3 **theo luật D14**, không theo bản vẽ cũ; Q4 theo đề xuất; Q5 đồng ý).

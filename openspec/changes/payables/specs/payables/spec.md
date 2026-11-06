@@ -98,11 +98,15 @@ D14c SHALL hiện "Số liệu đến hết ngày <hôm nay>", câu giải thíc
 - **THEN** ô Tổng phải trả "293.950.000 ₫ · 3 người bán" **AND** ô Quá hạn "55.050.000 ₫ · 2 người bán · lâu nhất 5 ngày" **AND** ô Đến hạn trong 7 ngày "52.500.000 ₫ · Thép Nam Sơn" **AND** ô Đã ứng trước "10.000.000 ₫ · Chị Hoa · tự trừ khi nhập"
 
 ### Requirement: Bảng người bán trên D14c
-Bảng người bán SHALL có cột: người bán (tên; loại · "trả ngay" hoặc "nợ N ngày"), còn phải trả, trong đó quá hạn, đã ứng trước, tình hình. Tình hình SHALL là "Quá hạn N ngày"; không quá hạn mà còn nợ thì "Hạn dd/mm" của khoản hạn sớm nhất; chỉ có ứng trước thì "Đã ứng trước"; còn lại "Hết nợ". Dưới bảng SHALL có câu "Số ngày được nợ đặt ở danh mục người bán (D16), mặc định 0 = trả ngay khi nhập."
+Bảng người bán SHALL có cột: người bán (tên; loại · "trả ngay" hoặc "nợ N ngày"), còn phải trả, trong đó quá hạn, đã ứng trước, tình hình. Tình hình SHALL theo luật của D14 (0.2 #104): "Quá hạn N ngày"; không quá hạn mà khoản hạn sớm nhất trong 7 ngày tới thì "Hạn dd/mm"; còn nợ nhưng hạn xa hơn thì "Chưa đến hạn"; chỉ có ứng trước thì "Đã ứng trước"; còn lại "Hết nợ". Dưới bảng SHALL có câu "Số ngày được nợ đặt ở danh mục người bán (D16), mặc định 0 = trả ngay khi nhập."
 
-#### Scenario: Tình hình theo hạn gần nhất
+#### Scenario: Hạn xa hơn 7 ngày
 - **WHEN** hôm nay 06/11/2026 và Hưng Thịnh (nợ 30 ngày) chỉ còn khoản hạn 20/11/2026
-- **THEN** dòng Hưng Thịnh hiện "Công ty · nợ 30 ngày", tình hình "Hạn 20/11"
+- **THEN** dòng Hưng Thịnh hiện "Công ty · nợ 30 ngày", tình hình "Chưa đến hạn"
+
+#### Scenario: Ranh giới 7 ngày
+- **WHEN** hôm nay 06/11/2026 và khoản hạn sớm nhất của một người bán là 13/11/2026 (còn 7 ngày)
+- **THEN** tình hình là "Hạn 13/11" **AND** nếu hạn là 14/11/2026 (còn 8 ngày) thì tình hình là "Chưa đến hạn"
 
 #### Scenario: Người bán chỉ có ứng trước
 - **WHEN** Chị Hoa (cá nhân, trả ngay) không còn khoản và đã ứng trước 10.000.000 ₫

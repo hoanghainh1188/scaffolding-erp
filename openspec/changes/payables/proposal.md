@@ -38,10 +38,10 @@ Công ty mua hàng cũ, phế liệu của nhiều người bán (công ty, cá 
 - VAT đầu vào, hóa đơn mua hàng (0.2 #101).
 - Phải trả nhà xe, bốc xếp: chi phí chuyến trả ngay, không thành khoản (0.2 #98).
 - Đề nghị chi, Giám đốc duyệt chi, in phiếu chi.
-- Thủ kho ghi phiếu chi trên điện thoại (xem câu hỏi Q2 ở PR).
+- Thủ kho ghi phiếu chi trên điện thoại; M3 không có ô tiền (0.2 #103).
 - Bù trừ phải thu với phải trả khi một đối tác vừa là nhà thầu vừa là người bán.
 - Trả lại hàng cho người bán (giảm khoản phải trả): chưa có nghiệp vụ trả hàng mua.
-- Nhập số phải trả cũ trước khi dùng phần mềm: làm ở `data-migration`.
+- Nhập nợ đầu kỳ người bán (số phải trả cũ từ Excel): làm ở `data-migration` (#48) (0.2 #105).
 - Báo cáo tuổi nợ phải trả, dòng tiền: `management-reports`.
 
 ## Impact
@@ -51,4 +51,4 @@ Công ty mua hàng cũ, phế liệu của nhiều người bán (công ty, cá 
 - **Sổ kho, giá vốn:** **không đổi** số liệu đã có. Không ghi dòng sổ nào; giá vốn, tồn kho, phân bổ chi phí chuyến giữ nguyên. Phiếu nhập cũ chỉ được điền hạn trả.
 - **Code:** `src/domain/allocation.ts` (mới, tách từ `receivables.ts`), `src/domain/payables.ts`, `src/lib/payables/`, `src/lib/receiving/post.ts` (gọi `settleAdvances`), `src/domain/permissions.ts` (`payables.view`, `payments.manage`), `src/lib/navigation.ts`, `src/lib/catalog/partners.ts`, D16, `src/db/grants.ts`.
 - **API:** `GET /api/payables/suppliers`, `GET /api/payables/suppliers/[id]`, `POST /api/payables/payments`, `POST /api/payables/payments/preview`, `POST /api/payables/payments/[id]/cancel`, `GET /api/payables/export`.
-- **Dữ liệu cũ:** mọi phiếu nhập đã ghi sổ trước khi deploy thành khoản còn nợ, hạn = ngày nhập (thường đã quá hạn). Kế toán ghi phiếu chi cho các khoản đã trả (xem Migration Plan trong design và câu hỏi Q4).
+- **Dữ liệu cũ:** mọi phiếu nhập đã ghi sổ trước khi deploy thành khoản còn nợ, hạn = ngày nhập (thường đã quá hạn). Kế toán ghi phiếu chi bù cho các khoản đã trả (0.2 #105, Migration Plan trong design).
