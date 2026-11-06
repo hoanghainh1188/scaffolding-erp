@@ -122,7 +122,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 - **D14. Công nợ**:
     - **[MVP] Phải thu:** theo nhà thầu, tách loại (thuê & cước, bán, đền bù, mua lại, VAT); các khoản nợ với hạn và tình hình; ghi phiếu thu (tự trừ khoản đến hạn sớm nhất trước, trả dư giữ làm tiền trả trước); nộp cọc tiền; hủy phiếu thu có lý do; cọc và bảo lãnh (nhắc bảo lãnh sắp hết hạn); cảnh báo quá hạn; xuất Excel.
     - **D14b. Thanh lý hợp đồng [MVP]:** kiểm điều kiện, cấn trừ cọc vào nợ của hợp đồng, hoàn cọc thừa (0.2 #81).
-    - **[Bản 2] Phải trả:** theo NCC, cá nhân thanh lý phế liệu, đơn vị thuê xe ngoài.
+    - **D14c. Phải trả [Bản 2]:** tab Phải thu / Phải trả; theo người bán (còn phải trả, quá hạn, ứng trước); các khoản theo phiếu nhập với hạn; ghi phiếu chi (trả tiền hàng / ứng trước, tự trừ khoản đến hạn sớm nhất trước); hủy phiếu chi có lý do; xuất Excel (0.2 #98–#101).
 
 #### Báo cáo
 
@@ -159,7 +159,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 | Giai đoạn | Desktop | Mobile |
 |---|---|---|
 | **MVP** | D1 (rút gọn), D2, D3, D4, D5, D5a, D5b, D6, D6b, D6c, D6d, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D14b, D16, D17, D18 | M1, M2, M3, M4, M5, M6a, M6, M7, M9 |
-| **Bản 2** | D1 (đầy đủ), D12 (đầy đủ), D14 (phải trả), D15 | M8 |
+| **Bản 2** | D1 (đầy đủ), D12 (đầy đủ), D14c (phải trả), D15 | M8 |
 
 ### 3.4. Thiết kế đã vẽ (Claude Design)
 
@@ -200,6 +200,7 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Đã duyệt |
 | D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt (vẽ lại 05/11/2026) |
 | D14b Thanh lý hợp đồng | `D14b-ContractClose.dc.html` | `receivables` | Đã duyệt |
+| D14c Công nợ phải trả | `D14c-Payables.dc.html` | `payables` | Đã duyệt |
 | D13 Kết quả kiểm kê | `D13-Stocktake.dc.html` | `stocktake` | Đã duyệt |
 | M6a Bắt đầu kiểm kê | `M6a-StocktakeStart.dc.html` | `stocktake` | Đã duyệt |
 | M6 Đếm hàng | `M6-Stocktake.dc.html` | `stocktake` | Đã duyệt |
