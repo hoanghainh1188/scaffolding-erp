@@ -11,10 +11,12 @@ import {
   monthsOf,
   parsePeriod,
   periodLabel,
+  periodOptions,
   periodRange,
   previousPeriod,
   readPeriod,
   REPORT_FIRST_YEAR,
+  switchKind,
   yearToDate,
 } from "./report-period";
 
@@ -194,5 +196,33 @@ describe("comparableRange (design D11)", () => {
     expect(
       comparableRange(parsePeriod("year", "2025", TODAY), TODAY).label,
     ).toBe("năm 2024");
+  });
+});
+
+describe("period picker", () => {
+  it("switches kind around the start of the period", () => {
+    const october = parsePeriod("month", "2026-10", TODAY);
+    expect(switchKind(october, "quarter").value).toBe("2026-Q4");
+    expect(switchKind(october, "year").value).toBe("2026");
+    expect(
+      switchKind(parsePeriod("quarter", "2026-Q3", TODAY), "month").value,
+    ).toBe("2026-07");
+  });
+
+  it("lists the periods newest first, back to the first year", () => {
+    const months = periodOptions("month", TODAY);
+    expect(months[0]?.value).toBe("2026-11");
+    expect(months.at(-1)?.value).toBe("2020-01");
+    expect(months).toHaveLength(6 * 12 + 11);
+    expect(periodOptions("quarter", TODAY)[0]?.value).toBe("2026-Q4");
+    expect(periodOptions("year", TODAY).map((period) => period.value)).toEqual([
+      "2026",
+      "2025",
+      "2024",
+      "2023",
+      "2022",
+      "2021",
+      "2020",
+    ]);
   });
 });

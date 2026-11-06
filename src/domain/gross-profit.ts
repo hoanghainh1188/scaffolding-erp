@@ -1,9 +1,9 @@
-// Gross profit of D15 (management-reports design D1–D3; 0.2 #107, #111–#113,
-// #116). Revenue before VAT minus the cost and losses the stock ledger
+// Gross profit of D15 (management-reports design D1–D3; 0.2 số 107, số 111–số 113,
+// số 116). Revenue before VAT minus the cost and losses the stock ledger
 // records, no depreciation. Every amount has one day and every period is a
 // sum of months, so this period, the previous one and the year add up.
 // Repair costs are not taken when spent: they sit in the price of the Good
-// stock and reach the profit when that stock leaves (0.2 #111), so the
+// stock and reach the profit when that stock leaves (0.2 số 111), so the
 // "Sửa chữa" line is the damage loss only. Pure functions.
 import { roundHalfUp } from "./average-cost";
 
@@ -97,7 +97,7 @@ export interface RepairSum {
   month: string;
   /** Repair cost on the slip lines: spent, already in the Good price. */
   repairCost: number;
-  /** Damage loss of lines with nothing repaired (0.2 #23). */
+  /** Damage loss of lines with nothing repaired (0.2 số 23). */
   lossAmount: number;
 }
 
@@ -108,7 +108,7 @@ export interface MonthProfit {
   month: string;
   revenue: RevenueParts;
   costs: CostParts;
-  /** Repair cost spent: shown under the table, not taken (0.2 #111). */
+  /** Repair cost spent: shown under the table, not taken (0.2 số 111). */
   repairSpent: number;
   /** Some rental period of the month is not closed. */
   provisional: boolean;

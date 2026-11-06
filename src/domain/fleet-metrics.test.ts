@@ -17,7 +17,7 @@ import {
   otherUses,
   REPORT_ROW_LIMIT,
   sumFleet,
-  useTable,
+  utilizationTable,
   utilizationTenths,
   type FleetBalance,
   type FleetDelta,
@@ -206,7 +206,7 @@ describe("utilization (spec: tỷ lệ khai thác)", () => {
   const fleet = september(opening, deltas);
 
   it("averages the stock at sites day by day", () => {
-    const [row] = useTable([KU, TUBE], fleet);
+    const [row] = utilizationTable([KU, TUBE], fleet);
     expect(row?.code).toBe("PK-KU");
     expect(
       utilizationTenths(row?.siteMilliDays ?? 0, row?.totalMilliDays ?? 0),
@@ -218,7 +218,7 @@ describe("utilization (spec: tỷ lệ khai thác)", () => {
   it("adds every item in tonnes, lists pieces only by item", () => {
     const totals = fleetTotals([KU, TUBE], fleet);
     expect(utilizationTenths(totals.siteKgDays, totals.totalKgDays)).toBe(708);
-    expect(useTable([KU, TUBE], fleet).map((row) => row.code)).toEqual([
+    expect(utilizationTable([KU, TUBE], fleet).map((row) => row.code)).toEqual([
       "PK-KU",
     ]);
   });
@@ -240,7 +240,7 @@ describe("utilization (spec: tỷ lệ khai thác)", () => {
       ]),
       [],
     );
-    const rows = useTable(items, fleet12);
+    const rows = utilizationTable(items, fleet12);
     expect(rows[0]?.code).toBe("M-11");
     const { others } = groupOthers(rows, REPORT_ROW_LIMIT, otherUses);
     expect(others?.name).toBe("2 mã khác");

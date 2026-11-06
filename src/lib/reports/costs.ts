@@ -1,7 +1,7 @@
 // Cost and losses of D15 from the stock ledger (management-reports design
 // D1–D4; spec gross-profit). Two grouped reads over a range of days:
 // ledger value by (month, document type, movement), and the repair slips
-// posted in the range by the month of their ledger lines (0.2 #111: the
+// posted in the range by the month of their ledger lines (0.2 số 111: the
 // repair cost is spent, the damage loss is taken). Nothing is stored.
 import { and, between, eq, sql } from "drizzle-orm";
 

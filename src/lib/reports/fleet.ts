@@ -1,8 +1,8 @@
 // Rental stock of D15 from the ledger (management-reports design D4; spec
-// fleet-metrics; 0.2 #108, #109, #114). Three grouped reads: the New and
+// fleet-metrics; 0.2 số 108, số 109, số 114). Three grouped reads: the New and
 // Good stock before the range, its change by Vietnam day in the range, and
 // what return notes brought back lost, as scrap or for repair. Lines are
-// joined to their location, so REVALUE lines (no location, 0.2 #35) never
+// joined to their location, so REVALUE lines (no location, 0.2 số 35) never
 // count. Nothing is stored.
 import { and, between, eq, inArray, lt, sql } from "drizzle-orm";
 

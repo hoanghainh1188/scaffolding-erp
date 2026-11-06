@@ -228,3 +228,28 @@ export function monthsOf(range: DateRange): string[] {
 /** "số liệu đến hết 31/10/2026". */
 export const dataUntilText = (period: ReportPeriod, today: BusinessDate) =>
   `số liệu đến hết ${formatBusinessDate(periodRange(period, today).to)}`;
+
+/** The period of `kind` that holds the first day of `period`. */
+export function switchKind(
+  period: ReportPeriod,
+  kind: PeriodKind,
+): ReportPeriod {
+  const [year, month] = period.from.split("-").map(Number) as [number, number];
+  if (kind === "year") return build("year", year, 1);
+  if (kind === "quarter") return build("quarter", year, Math.ceil(month / 3));
+  return build("month", year, month);
+}
+
+/** Every period of `kind` D15 offers, newest first. */
+export function periodOptions(
+  kind: PeriodKind,
+  today: BusinessDate,
+): ReportPeriod[] {
+  const options: ReportPeriod[] = [];
+  let at: ReportPeriod | null = switchKind(currentMonth(today), kind);
+  while (at && Number(at.value.slice(0, 4)) >= REPORT_FIRST_YEAR) {
+    options.push(at);
+    at = previousPeriod(at);
+  }
+  return options;
+}

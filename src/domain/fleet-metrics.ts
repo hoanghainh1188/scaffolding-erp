@@ -1,5 +1,5 @@
 // Rental stock of D15 (management-reports design D4; spec fleet-metrics;
-// 0.2 #108, #109, #114). The rental stock of a day is the New and Good
+// 0.2 số 108, số 109, số 114). The rental stock of a day is the New and Good
 // stock at every location at the end of that day; averages are day sums
 // over the days of the period. Losses are the tonnes lost, returned as
 // scrap or returned for repair, per 100 tonnes of average rental stock.
@@ -12,7 +12,7 @@ import { hasStandardWeight, isPieceUnit, type QuantityUnit } from "./quantity";
 /** Rows the D15 tables show before "N mã khác" (spec management-reports). */
 export const REPORT_ROW_LIMIT = 10;
 
-/** Losses are given per this many tonnes of rental stock (0.2 #108). */
+/** Losses are given per this many tonnes of rental stock (0.2 số 108). */
 export const LOSS_BASE_TONS = 100;
 
 export interface FleetItem {
@@ -290,14 +290,14 @@ export interface UseRow {
   count: number;
 }
 
-/** Tenths of a percent at sites, or null without stock (0.2 #109). */
+/** Tenths of a percent at sites, or null without stock (0.2 số 109). */
 export function utilizationTenths(site: number, total: number): number | null {
   if (total <= 0) return null;
   return Number(roundHalfUp(BigInt(site) * 1000n, BigInt(total)));
 }
 
 /** Utilization by item, pieces only, highest first. */
-export function useTable(
+export function utilizationTable(
   items: readonly FleetItem[],
   fleet: FleetSums,
 ): UseRow[] {
@@ -356,7 +356,7 @@ export interface FleetTotals {
   weightless: number;
 }
 
-/** Tonnes of every item (0.2 #109: the whole stock in tonnes). */
+/** Tonnes of every item (0.2 số 109: the whole stock in tonnes). */
 export function fleetTotals(
   items: readonly FleetItem[],
   fleet: FleetSums,

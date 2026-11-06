@@ -90,7 +90,7 @@
 
 ## 4. API và Excel
 
-- [ ] 4.1 `export.ts` + `GET /api/reports/export` bọc `withAuth("reports.view")` (design D10). Integration test:
+- [x] 4.1 `export.ts` + `GET /api/reports/export` bọc `withAuth("reports.view")` (design D10). Integration test:
   - Kinh doanh, Thủ kho, Xưởng nhận 403 và không gọi hàm tính;
   - `period=week` nhận 400 "Kỳ báo cáo không hợp lệ";
   - file `bao-cao-2026-10.xlsx` có đúng 5 sheet và cột theo spec;
@@ -102,22 +102,22 @@
 
 ## 5. Giao diện D15
 
-- [ ] 5.1 Trang `src/app/(desktop)/reports/page.tsx` thay trang giữ chỗ: `requirePermission("reports.view")`, `await connection()`, đọc `period`/`value` qua `parsePeriod`, dòng dưới tiêu đề. Thanh chọn Tháng / Quý / Năm và ô kỳ (client, đổi URL), nút "Xuất Excel". Kiểm:
+- [x] 5.1 Trang `src/app/(desktop)/reports/page.tsx` thay trang giữ chỗ: `requirePermission("reports.view")`, `await connection()`, đọc `period`/`value` qua `parsePeriod`, dòng dưới tiêu đề. Thanh chọn Tháng / Quý / Năm và ô kỳ (client, đổi URL), nút "Xuất Excel". Kiểm:
   - Kinh doanh nhận 403;
   - Thủ kho bị chuyển tới `/m`;
   - test trang giữ chỗ cũ được cập nhật.
-- [ ] 5.2 4 ô số và bảng lợi nhuận gộp 3 cột theo `docs/design/screens/D15-Reports.dc.html` (đổi hex sang token). Gồm:
+- [x] 5.2 4 ô số và bảng lợi nhuận gộp 3 cột theo `docs/design/screens/D15-Reports.dc.html` (đổi hex sang token). Gồm:
   - nhãn dòng theo design D1, D2 (0.2 #111–#113);
   - dấu "tạm tính";
   - % ở ô doanh thu theo design D11;
   - dưới bảng: "Chi phí sửa đã chi trong kỳ", không khấu hao, chưa gồm chi phí ngoài sổ kho, hàng mất và đền bù khác ngày (0.2 #116).
   - Component test: số của ví dụ tính tay; "+ 19,0 % so với tháng 9"; tháng đang chạy "+ 4,2 % so với 01/10 – 06/10" trong khi cột Kỳ trước vẫn đủ tháng 10; năm đang chạy "+ 9,4 % so với 01/01 – 06/11/2025"; phần đem so 0 ₫ thì không có %; ô số khớp dòng bảng; nhãn "Sửa chữa (lỗ hỏng hàng)", "Giảm giá trị khi trả về đổi tình trạng", "Chênh lệch kiểm kê và điều chỉnh"; ghi chú "Chưa gồm chi phí ngoài sổ kho (xe, nhân công…)" và "Hàng mất tính theo ngày trả, đền bù theo ngày duyệt".
-- [ ] 5.3 Biểu đồ doanh thu và lợi nhuận theo tháng, SVG vẽ tay theo token như D1, không thêm thư viện. Component test:
+- [x] 5.3 Biểu đồ doanh thu và lợi nhuận theo tháng, SVG vẽ tay theo token như D1, không thêm thư viện. Component test:
   - 10 cột T1–T10;
   - tháng tạm tính có "*";
   - lợi nhuận âm vẽ dưới trục 0;
   - có nhãn cho trình đọc màn hình.
-- [ ] 5.4 Bảng hao hụt, bảng khai thác (10 dòng + "N mã khác", dòng Cộng, ghi chú năm lũy kế, số mã chưa có trọng lượng). Bảng xếp hạng đầy đủ có nút "Doanh thu" / "Theo kg". Component test:
+- [x] 5.4 Bảng hao hụt, bảng khai thác (10 dòng + "N mã khác", dòng Cộng, ghi chú năm lũy kế, số mã chưa có trọng lượng). Bảng xếp hạng đầy đủ có nút "Doanh thu" / "Theo kg". Component test:
   - gộp mã khác;
   - đổi chế độ xếp hạng đổi thứ tự;
   - cột tấn 1 chữ số lẻ.

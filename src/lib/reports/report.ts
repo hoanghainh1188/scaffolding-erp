@@ -7,7 +7,7 @@ import {
   fleetTotals,
   lossTable,
   sumFleet,
-  useTable,
+  utilizationTable,
   type FleetTotals,
   type LossRow,
   type LossTable,
@@ -116,7 +116,7 @@ export async function buildReport(
     losses: lossTable(fleet.items, periodFleet, fleet.losses, periodMonths),
     lossesYear: lossTable(fleet.items, yearFleet, fleet.losses, yearMonths)
       .total,
-    uses: useTable(fleet.items, periodFleet),
+    uses: utilizationTable(fleet.items, periodFleet),
     fleet: fleetTotals(fleet.items, periodFleet),
     ranking,
   };

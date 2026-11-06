@@ -1,5 +1,5 @@
 // Full customer ranking of the year on D15 (management-reports design D8;
-// 0.2 #93, #95, #110, #115): the D1 top 5 functions without the limit, so
+// 0.2 số 93, số 95, số 110, số 115): the D1 top 5 functions without the limit, so
 // the first five rows are D1's. Revenue = rent + sale before VAT; kg =
 // delivered this year, returns not taken back.
 import { and, between, eq, inArray } from "drizzle-orm";
