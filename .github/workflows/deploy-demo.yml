@@ -1,6 +1,13 @@
 name: Deploy Demo
 
 on:
+  # Vercel deploys every push to main, so a new migration must reach the
+  # Neon seed and demo branches at the same time or the demo breaks (a
+  # missing column fails sign-in). Pushes only migrate: no reseed, no reset.
+  push:
+    branches: [main]
+    paths:
+      - "drizzle/**"
   workflow_dispatch:
     inputs:
       reseed:
@@ -55,7 +62,12 @@ jobs:
           NODE_ENV: development
           DATABASE_URL: ${{ secrets.DEMO_SEED_DATABASE_URL }}
           DEV_SEED_PASSWORD: ${{ secrets.DEV_SEED_PASSWORD }}
+        # The seed only hashes passwords; it signs no session, so a throwaway
+        # secret is enough and the app's real secret stays on Vercel only.
         run: |
+          BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+          echo "::add-mask::$BETTER_AUTH_SECRET"
+          export BETTER_AUTH_SECRET
           echo "Seeding updated demo data..."
           npm run db:seed:demo
 
@@ -78,7 +90,9 @@ jobs:
             echo "No demo unpooled URL or reset option specified; skipping demo branch migration."
           fi
 
+      # A push to main already deploys on Vercel through the Git integration.
       - name: Trigger Vercel Deploy Hook
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
         run: |

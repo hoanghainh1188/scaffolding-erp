@@ -14,13 +14,19 @@ import {
 import { actorByUsername } from "@/lib/activity/actor";
 import { seedActivity } from "@/lib/activity/sample";
 import { createAuth } from "@/lib/auth/auth";
+import { seedContracts } from "@/lib/contracts/sample";
+import { seedDeliveries } from "@/lib/deliveries/sample";
 import { getEnv, isDemoMode } from "@/lib/env";
 import { seedCatalog } from "@/lib/catalog/seed";
+import { seedHolidays } from "@/lib/holidays/sample";
 import { seedValueAdjustments } from "@/lib/inventory/revaluation-sample";
 import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
+import { seedReceivables } from "@/lib/receivables/sample";
 import { SAMPLE_RECEIVING_AT, seedReceiving } from "@/lib/receiving/sample";
 import { seedRepairs } from "@/lib/repairs/sample";
+import { seedReturns } from "@/lib/returns/sample";
+import { seedSiteOperations } from "@/lib/site-transfers/sample";
 import { seedStocktakes } from "@/lib/stocktakes/sample";
 import { DEV_ACCOUNTS, seedAccounts } from "@/lib/users/seed";
 
@@ -127,7 +133,41 @@ export async function runDemoSeed(now: Date = new Date()): Promise<number> {
       `Phiếu điều chỉnh giá mẫu: thêm ${revaluations} phiếu.\n`,
     );
 
+    // The same contracts and the documents hanging off them as db:seed:dev
+    // (contracts → deliveries → returns → site operations → receipts), so
+    // the demo shows D1 and the screens after it filled, not empty.
     const sales = await actorByUsername(handle.db, "kinhdoanh");
+    const contracts =
+      director && sales
+        ? await seedContracts(handle.db, { director, sales })
+        : 0;
+    process.stdout.write(`Hợp đồng mẫu: thêm ${contracts} hợp đồng.\n`);
+
+    const deliveries =
+      sales && warehouse
+        ? await seedDeliveries(handle.db, { sales, warehouse })
+        : 0;
+    process.stdout.write(`Phiếu xuất mẫu: thêm ${deliveries} phiếu.\n`);
+
+    const returns = warehouse ? await seedReturns(handle.db, { warehouse }) : 0;
+    process.stdout.write(`Phiếu thu hồi mẫu: thêm ${returns} phiếu.\n`);
+
+    const siteOperations =
+      director && sales
+        ? await seedSiteOperations(handle.db, { director, sales })
+        : 0;
+    process.stdout.write(
+      `Chuyển công trình, mua lại, đổi hàng mẫu: thêm ${siteOperations} chứng từ.\n`,
+    );
+
+    const holidays = director ? await seedHolidays(handle.db, director) : 0;
+    process.stdout.write(`Ngày nghỉ không tính thuê: thêm ${holidays} dòng.\n`);
+
+    const moneyIn = accountant
+      ? await seedReceivables(handle.db, accountant)
+      : 0;
+    process.stdout.write(`Phiếu thu mẫu: thêm ${moneyIn} phiếu.\n`);
+
     const activity =
       director && accountant && sales && warehouse
         ? await seedActivity(handle.db, {
