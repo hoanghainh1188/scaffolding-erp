@@ -85,7 +85,7 @@ Vì sao đúng:
 - **Hiện hai dòng "Chi phí sửa +x" và "Cộng lại vào kho −x"**: cộng ra đúng như đề xuất nhưng hai dòng luôn triệt tiêu nhau, rối mắt.
 - **Ghi lại sổ kho để không cộng chi phí sửa vào giá Tốt**: đổi 0.2 #23 và số đã có, ngoài phạm vi change chỉ đọc.
 
-Đề xuất này **đổi nghĩa dòng "Chi phí sửa chữa" của bản vẽ D15**, nên cần chủ doanh nghiệp xác nhận (câu hỏi Q1 trong PR). Khi được duyệt thì ghi 0.2 và sửa nhãn dòng thành "Sửa chữa (lỗ hỏng hàng)".
+**Đã chốt** khi review PR #155 (0.2 #111). Bản vẽ D15 đã sửa: dòng "Sửa chữa (lỗ hỏng hàng)" và ghi chú "Chi phí sửa đã chi trong kỳ".
 
 ### D2. Đo "giảm giá trị khi trả về" (điểm cần chốt 2)
 
@@ -99,7 +99,7 @@ Giảm giá trị = −(Σ amount RETURN_OUT + Σ amount RETURN_IN)
 - Một phiếu, một số, cùng ngày ghi sổ.
 - `LOSS_OUT` của phiếu đi vào dòng "Hàng mất", không nằm trong khoản này.
 - Khoản này **gồm cả Mới → Tốt**: Mới ra theo giá BQ Mới, vào bãi theo giá BQ Tốt. Lý do: đó là giá trị sổ thật sự giảm, khớp với phiếu.
-- Nhãn dòng đề xuất: "Giảm giá trị khi trả về đổi tình trạng". Q2 trong PR hỏi xác nhận.
+- Nhãn dòng: "Giảm giá trị khi trả về đổi tình trạng" (đã chốt, 0.2 #112).
 - Số có thể âm khi giá BQ tình trạng nhận cao hơn. Hiện đúng dấu.
 
 **Đã cân nhắc:**
@@ -114,7 +114,8 @@ Giảm giá trị = −(Σ amount RETURN_OUT + Σ amount RETURN_IN)
 **Phiếu điều chỉnh `ĐC`** (`document_type = ADJUSTMENT`: số lượng, tình trạng, vị trí) gộp vào dòng "Chênh lệch kiểm kê và điều chỉnh". Lý do: đó cũng là ghi giảm hoặc tăng không qua chứng từ bán.
 - Chuyển vị trí cộng ra 0.
 - Sửa sai tình trạng làm giảm giá trị như trả về hỏng.
-- Không gộp thì đẳng thức D1 hở. Q3 trong PR.
+- Không gộp thì đẳng thức D1 hở.
+- Đã chốt, 0.2 #113.
 
 **Tồn đầu kỳ** (`OPENING`), **nhập mua** (`PURCHASE_IN`, gồm chi phí chuyến) không vào giá vốn.
 
@@ -138,7 +139,7 @@ Giảm giá trị = −(Σ amount RETURN_OUT + Σ amount RETURN_IN)
 **Hệ quả đã biết.** Hàng mất ghi theo ngày trả, đền bù của nó theo ngày duyệt. Hai ngày này có thể khác tháng (spec có kịch bản).
 - Chọn ngày duyệt vì đó là lúc khoản nợ có thật (D1, D14 cùng luật).
 - Lũy kế năm vẫn đủ cả hai.
-- Q6 trong PR chỉ hỏi xác nhận.
+- Đã chốt, 0.2 #116. D15 ghi chú dưới bảng "Hàng mất tính theo ngày trả, đền bù theo ngày duyệt".
 
 ### D4. Bình quân theo ngày và tốc độ (điểm cần chốt 4)
 
@@ -164,7 +165,7 @@ Bình quân của kỳ = Σ (các tháng) ÷ Σ ngày. Đổi ra tấn bằng `l
 
 **Khoảng đọc.** `S` = ngày sớm nhất trong:
 - đầu năm của kỳ;
-- đầu kỳ trước, chỉ để tính % đổi ở ô doanh thu (bình quân không cần kỳ trước).
+- đầu kỳ trước, cho cột Kỳ trước và % ở ô doanh thu (bình quân không cần kỳ trước).
 
 `E` = min(cuối kỳ, hôm nay).
 
@@ -236,13 +237,14 @@ Cách chặn:
 
 **Hiện trên màn: đủ mọi nhà thầu** (0.2 #110 "đầy đủ"), một bảng cuộn trong khối.
 - Bản vẽ gộp từ dòng 8 thành "11 nhà thầu khác". Theo luật "spec thắng" đề xuất hiện đủ.
-- Q5 trong PR hỏi xác nhận.
+- Đã chốt, 0.2 #115. Bản vẽ đã bỏ dòng gộp.
 
 ### D9. Kỳ, đường dẫn và hàm thuần
 
 - `src/domain/report-period.ts`:
   - `parsePeriod(period, value, today)`: sai hoặc tương lai thì trả tháng này.
   - `periodRange`, `previousPeriod`, `yearToDate`, `periodLabel` ("Tháng 10/2026", "Quý 3/2026", "Năm 2026").
+  - `comparableRange(period, today)`: phần đem so cho % ở ô doanh thu (D11).
   - `REPORT_FIRST_YEAR = 2020`.
 - `src/domain/gross-profit.ts`:
   - `COST_CATEGORIES`;
@@ -268,10 +270,27 @@ Cách chặn:
   - Không ghi nhật ký (giống xuất Excel D14).
 - Không có bảng mới. Chỉ một migration thêm chỉ mục.
 
+### D11. % so với kỳ trước khi kỳ chưa hết (review PR #155)
+
+Kỳ đang chạy chỉ tính đến hôm nay. Nếu so với **cả** kỳ trước thì 6 ngày đầu tháng 11 luôn "thua" cả tháng 10 (khoảng − 80 %), vô nghĩa.
+
+- **Kỳ đã hết**: so với cả kỳ trước, ghi "so với tháng 9", "so với quý 2/2026", "so với năm 2025".
+- **Kỳ chưa hết**: so với **cùng số ngày đầu** của kỳ trước, không quá ngày cuối kỳ trước.
+  - Tháng 11/2026, hôm nay 06/11: 6 ngày thì so 01/10 – 06/10, ghi "so với 01/10 – 06/10".
+  - Năm 2026, hôm nay 06/11 (ngày thứ 310): so 01/01 – 06/11/2025.
+  - Tháng 03/2027, hôm nay 31/03: 31 ngày, kỳ trước chỉ 28 ngày, nên so cả 01/02 – 28/02.
+- Số ngày đếm theo ngày Việt Nam. Năm nhuận lệch một ngày: chấp nhận, vì khoảng ngày được ghi rõ trên ô.
+- Doanh thu phần đem so lấy từ cùng `revenueBook` (lọc theo ngày, các khoản đều có ngày), không gọi thêm truy vấn.
+- **Cột "Kỳ trước" của bảng giữ đủ kỳ** để đọc như báo cáo kỳ.
+
+**Đã cân nhắc:**
+- *So với cả kỳ trước* (bản đầu): sai như trên.
+- *Chia theo ngày rồi nhân lên đủ kỳ*: thuê đều theo ngày nhưng bán và đền bù dồn cục, ước lượng dễ lệch. Bị loại.
+
 ## Risks / Trade-offs
 
 - **[Rủi ro] Chủ doanh nghiệp muốn thấy chi phí sửa trừ thẳng** như bản vẽ.
-  → Q1 trong PR. Nếu chọn trừ thẳng thì phải chấp nhận trừ hai lần, và ghi rõ điều đó vào 0.2.
+  → Đã chốt theo đề xuất (0.2 #111). Dưới bảng vẫn hiện chi phí sửa đã chi.
 - **[Rủi ro] Kỳ năm chậm khi nhiều kỳ chưa chốt.** `statementOf` chạy lại mọi tháng.
   → Bench trước khi xong. Nếu vượt mục tiêu thì tách tải: khối nặng (biểu đồ, xếp hạng) vào `Suspense`, như D1.
 - **[Đánh đổi] Đền bù và hàng mất có thể lệch tháng** (D3).

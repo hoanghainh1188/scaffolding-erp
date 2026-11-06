@@ -4,12 +4,12 @@
 
 Giám đốc và Kế toán chưa xem được công ty **lãi bao nhiêu** và **hàng cho thuê hao hụt, nằm không bao nhiêu**. Tổng quan D1 mới có doanh số (0.2 #90), chưa có giá vốn. Trang `/reports` hiện vẫn là trang giữ chỗ "Đang xây dựng".
 
-Chủ doanh nghiệp đã chốt cách tính ngày 06/11/2026 (0.2 #107–#110, Q12):
+Chủ doanh nghiệp đã chốt cách tính ngày 06/11/2026 (0.2 #107–#110, Q12), bổ sung khi review PR #155 (0.2 #111–#116):
 - lợi nhuận gộp trừ hao hụt thực tế, không trừ khấu hao;
 - hao hụt tính trên 100 tấn hàng cho thuê;
 - tỷ lệ khai thác bình quân theo ngày.
 
-Thiết kế D15 đã duyệt (`docs/design/screens/D15-Reports.dc.html`). **[Bản 2]**, issue #19.
+Thiết kế D15 đã duyệt (`docs/design/screens/D15-Reports.dc.html`), sửa theo 0.2 #111–#115 trong PR này. **[Bản 2]**, issue #19.
 
 ## What Changes
 
@@ -32,7 +32,7 @@ Thiết kế D15 đã duyệt (`docs/design/screens/D15-Reports.dc.html`). **[B�
   - giảm giá trị khi hàng trả về đổi tình trạng;
   - sửa chữa;
   - chênh lệch kiểm kê và điều chỉnh.
-  - Cách tính bảo đảm **mỗi đồng chỉ trừ một lần**. Riêng chi phí sửa chữa cần chủ doanh nghiệp xác nhận cách hiện (câu hỏi Q1 trong PR).
+  - Cách tính bảo đảm **mỗi đồng chỉ trừ một lần**. Chi phí sửa vào lợi nhuận khi hàng rời kho; dòng "Sửa chữa" chỉ gồm lỗ hỏng hàng (0.2 #111).
 - **Hao hụt**: tấn mất, thành phế, phải sửa khi thu hồi, chia cho 100 tấn hàng cho thuê bình quân theo ngày.
 - **Tỷ lệ khai thác**: hàng ở công trình chia cho tổng hàng Mới, Tốt, bình quân theo ngày. Tổng tính theo tấn; chi tiết theo mã tính theo cái.
 - **Quyền**: dùng lại quyền `reports.view` (đang có, chỉ Giám đốc) và **thêm Kế toán** (0.2 #110). Kế toán thấy mục menu "Báo cáo".

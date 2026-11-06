@@ -13,14 +13,15 @@
 
 ## 2. Hàm thuần (test trước)
 
-- [ ] 2.1 `src/domain/report-period.ts` (design D9): `parsePeriod`, `periodRange`, `previousPeriod`, `yearToDate`, `periodLabel`, `REPORT_FIRST_YEAR`. Test theo kịch bản spec "Kỳ báo cáo":
+- [ ] 2.1 `src/domain/report-period.ts` (design D9): `parsePeriod`, `periodRange`, `previousPeriod`, `yearToDate`, `comparableRange`, `periodLabel`, `REPORT_FIRST_YEAR`. Test theo kịch bản spec "Kỳ báo cáo" và "So với kỳ trước ở ô Doanh thu":
   - tháng đang chạy 06/11/2026;
   - quý 3/2026, kỳ trước là quý 2;
   - năm 2026, kỳ trước là 2025;
   - kỳ trước của quý 1 là quý 4 năm trước;
   - tháng 12/2026 ở tương lai thì trả tháng này;
   - `2026-13`, `2019-12`, `week` thì trả tháng này;
-  - nhãn "Tháng 10/2026", "Quý 3/2026", "Năm 2026".
+  - nhãn "Tháng 10/2026", "Quý 3/2026", "Năm 2026";
+  - `comparableRange`: kỳ đã hết thì cả kỳ trước ("so với tháng 9"); tháng 11/2026 ngày 06/11 thì 01/10 – 06/10; năm 2026 ngày 06/11 thì 01/01 – 06/11/2025; tháng 03/2027 ngày 31/03 thì 01/02 – 28/02; quý 4/2026 ngày 06/11 (37 ngày) thì 01/07 – 06/08/2026.
 - [ ] 2.2 `src/domain/gross-profit.ts`: `classifyLedger(documentType, movement)` theo design D1, D2. Test từng cặp:
   - `DELIVERY`/`SALE_OUT` thì giá vốn bán;
   - `BUY_BACK`/`SALE_OUT` thì mua lại;
@@ -105,11 +106,11 @@
   - Thủ kho bị chuyển tới `/m`;
   - test trang giữ chỗ cũ được cập nhật.
 - [ ] 5.2 4 ô số và bảng lợi nhuận gộp 3 cột theo `docs/design/screens/D15-Reports.dc.html` (đổi hex sang token). Gồm:
-  - nhãn dòng theo design D1, D2;
+  - nhãn dòng theo design D1, D2 (0.2 #111–#113);
   - dấu "tạm tính";
-  - "Chi phí sửa đã chi" dưới bảng;
-  - ghi chú không khấu hao.
-  - Component test: số của ví dụ tính tay; "+ 19,0 % so với tháng 9"; kỳ trước 0 ₫ thì không có %; ô số khớp dòng bảng.
+  - % ở ô doanh thu theo design D11;
+  - dưới bảng: "Chi phí sửa đã chi trong kỳ", không khấu hao, chưa gồm chi phí ngoài sổ kho, hàng mất và đền bù khác ngày (0.2 #116).
+  - Component test: số của ví dụ tính tay; "+ 19,0 % so với tháng 9"; tháng đang chạy "+ 4,2 % so với 01/10 – 06/10" trong khi cột Kỳ trước vẫn đủ tháng 10; năm đang chạy "+ 9,4 % so với 01/01 – 06/11/2025"; phần đem so 0 ₫ thì không có %; ô số khớp dòng bảng; nhãn "Sửa chữa (lỗ hỏng hàng)", "Giảm giá trị khi trả về đổi tình trạng", "Chênh lệch kiểm kê và điều chỉnh"; ghi chú "Chưa gồm chi phí ngoài sổ kho (xe, nhân công…)" và "Hàng mất tính theo ngày trả, đền bù theo ngày duyệt".
 - [ ] 5.3 Biểu đồ doanh thu và lợi nhuận theo tháng, SVG vẽ tay theo token như D1, không thêm thư viện. Component test:
   - 10 cột T1–T10;
   - tháng tạm tính có "*";

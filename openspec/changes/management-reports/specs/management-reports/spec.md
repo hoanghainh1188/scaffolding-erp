@@ -38,22 +38,45 @@ D15 SHALL có nút chọn Tháng / Quý / Năm và ô chọn kỳ cụ thể, l�
 - **THEN** trang mở tháng 11/2026
 
 ### Requirement: Bốn ô số đầu trang
-D15 SHALL có 4 ô: **Doanh thu** của kỳ kèm % so với kỳ trước (1 chữ số, dấu + hoặc −; kỳ trước 0 ₫ thì không ghi %); **Lợi nhuận gộp** kèm tỷ suất; **Hao hụt** (tấn trên 100 tấn hàng cho thuê); **Tỷ lệ khai thác** kèm "x / y tấn ở công trình" (bình quân).
-
-#### Scenario: Ô doanh thu so với kỳ trước
-- **WHEN** doanh thu tháng 10/2026 là 535.550.000 ₫, tháng 09/2026 là 450.150.000 ₫
-- **THEN** ô Doanh thu hiện "535.550.000 ₫" và "+ 19,0 % so với tháng 9"
+D15 SHALL có 4 ô: **Doanh thu** của kỳ kèm % so với kỳ trước; **Lợi nhuận gộp** kèm tỷ suất; **Hao hụt** (tấn trên 100 tấn hàng cho thuê); **Tỷ lệ khai thác** kèm "x / y tấn ở công trình" (bình quân).
 
 #### Scenario: Ô khai thác
 - **WHEN** tháng 10/2026 bình quân 285,9 tấn ở công trình trên 412,6 tấn Mới, Tốt
 - **THEN** ô hiện "69,3 %" và "285,9 / 412,6 tấn ở công trình"
 
+### Requirement: So với kỳ trước ở ô Doanh thu
+% SHALL làm tròn 1 chữ số, có dấu + hoặc −. Kỳ đã hết SHALL so với cả kỳ trước ("so với tháng 9"). Kỳ chưa hết SHALL so với **cùng số ngày đầu** của kỳ trước (không quá cuối kỳ trước) và ghi khoảng ngày đó ("so với 01/10 – 06/10"). Phần đem so bằng 0 ₫ thì SHALL không ghi %. Cột "Kỳ trước" của bảng vẫn là đủ kỳ trước.
+
+#### Scenario: Tháng đã hết
+- **WHEN** hôm nay 06/11/2026, doanh thu tháng 10/2026 là 535.550.000 ₫, tháng 09/2026 là 450.150.000 ₫
+- **THEN** ô Doanh thu tháng 10/2026 hiện "535.550.000 ₫" và "+ 19,0 % so với tháng 9"
+
+#### Scenario: Tháng đang chạy
+- **WHEN** hôm nay 06/11/2026, doanh thu 01/11 – 06/11/2026 là 71.300.000 ₫, 01/10 – 06/10/2026 là 68.400.000 ₫, cả tháng 10 là 535.550.000 ₫
+- **THEN** ô Doanh thu tháng 11/2026 hiện "+ 4,2 % so với 01/10 – 06/10" **AND** cột Kỳ trước của bảng là 535.550.000 ₫
+
+#### Scenario: Năm đang chạy
+- **WHEN** hôm nay 06/11/2026, doanh thu 01/01 – 06/11/2026 là 4.486.500.000 ₫, 01/01 – 06/11/2025 là 4.100.000.000 ₫
+- **THEN** ô Doanh thu năm 2026 hiện "+ 9,4 % so với 01/01 – 06/11/2025"
+
+#### Scenario: Ngày đầu kỳ dài hơn kỳ trước
+- **WHEN** hôm nay 31/03/2027 và chọn tháng 03/2027
+- **THEN** ô so với "01/02 – 28/02" (cả tháng 2/2027)
+
+#### Scenario: Phần đem so bằng 0
+- **WHEN** doanh thu 01/10 – 06/10/2026 là 0 ₫
+- **THEN** ô Doanh thu tháng 11/2026 không ghi %
+
 ### Requirement: Bảng lợi nhuận gộp ba cột
-Bảng SHALL có cột Kỳ này, Kỳ trước, Lũy kế năm; dòng Doanh thu (4 dòng con), Giá vốn và hao hụt (6 dòng con), Lợi nhuận gộp, Tỷ suất; dưới bảng ghi "chi phí sửa đã chi" của từng cột và "Hàng cho thuê không trừ khấu hao". Cột có tiền thuê tạm tính SHALL có dấu "tạm tính".
+Bảng SHALL có cột Kỳ này, Kỳ trước, Lũy kế năm; dòng Doanh thu (4 dòng con), Giá vốn và hao hụt (6 dòng con), Lợi nhuận gộp, Tỷ suất; dưới bảng ghi "Chi phí sửa đã chi trong kỳ" của từng cột, "Hàng cho thuê không trừ khấu hao", "Chưa gồm chi phí ngoài sổ kho (xe, nhân công…)" và "Hàng mất tính theo ngày trả, đền bù theo ngày duyệt". Cột có tiền thuê tạm tính SHALL có dấu "tạm tính".
 
 #### Scenario: Khớp ô số
 - **WHEN** Giám đốc xem tháng 10/2026
 - **THEN** dòng Doanh thu và Lợi nhuận gộp của cột Kỳ này bằng đúng số trong ô Doanh thu và ô Lợi nhuận gộp
+
+#### Scenario: Nhãn dòng và ghi chú
+- **WHEN** Giám đốc xem bảng lợi nhuận gộp
+- **THEN** có dòng "Giảm giá trị khi trả về đổi tình trạng", "Sửa chữa (lỗ hỏng hàng)", "Chênh lệch kiểm kê và điều chỉnh" **AND** dưới bảng có "Chưa gồm chi phí ngoài sổ kho (xe, nhân công…)"
 
 ### Requirement: Biểu đồ doanh thu và lợi nhuận theo tháng
 D15 SHALL có biểu đồ mỗi tháng của năm chứa kỳ, từ tháng 1 đến tháng cuối của kỳ (hoặc tháng này): doanh thu và lợi nhuận gộp (triệu ₫). Tháng tạm tính có dấu *. Lợi nhuận âm SHALL vẽ dưới trục 0.
