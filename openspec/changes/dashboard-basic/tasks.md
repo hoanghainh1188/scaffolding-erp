@@ -17,18 +17,18 @@
 
 ## 3. Đọc dữ liệu `src/lib/dashboard/` + integration test
 
-- [ ] 3.1 `loadBillingSources(db, contractIds)` trong `src/lib/billing/` (đọc theo lô, dựng `BillingSource` như `loadBillingSource`); test: với mỗi hợp đồng kết quả **bằng** `loadBillingSource`
-- [ ] 3.2 `revenueDays(db, from, to, today)`: thuê (kỳ đã chốt đọc bảng chụp, kỳ mở `statementOf`) + bán (`deliveredAmounts` phiếu bán đã ghi sổ) + đền bù / mua lại đã duyệt theo ngày duyệt; integration test:
+- [x] 3.1 `loadBillingSources(db, contractIds)` trong `src/lib/billing/` (đọc theo lô, dựng `BillingSource` như `loadBillingSource`); test: với mỗi hợp đồng kết quả **bằng** `loadBillingSource`
+- [x] 3.2 `revenueDays(db, from, to, today)`: thuê (kỳ đã chốt đọc bảng chụp, kỳ mở `statementOf`) + bán (`deliveredAmounts` phiếu bán đã ghi sổ) + đền bù / mua lại đã duyệt theo ngày duyệt; integration test:
   - tổng ngày của tháng đang chạy bằng `beforeVat` của bảng kê D7 (`contractStatement`)
   - tháng đã qua chưa chốt tính **đến hết tháng** (không đến hôm nay), bằng D7 của kỳ đó, có cờ tạm tính
   - dòng điều chỉnh lập trong kỳ mở rồi chốt kỳ: số theo ngày trước và sau khi chốt bằng nhau từng ngày
   - tháng đã chốt bằng Σ (`total_amount − vat_amount`) của `billing_period` tháng đó, kể cả khi sổ kho tính lại ra số khác
   - bán theo ngày giao; phiếu Đang nhặt / Đã hủy không tính
   - đền bù, mua lại đã duyệt không cộng vào thuê / bán; chưa duyệt không tính
-- [ ] 3.3 `pendingApprovals(db, viewer)`: 5 loại theo design D1, sắp theo lúc gửi; số tiền như màn gốc; integration test từng vai trò (Giám đốc, Kế toán, Kinh doanh "Cả hai" / "Chỉ thuê" / "Chỉ bán"); **số đếm = số dòng** dùng cho câu chào
-- [ ] 3.4 `overdueSummary(db, today)` gọi `customerBalances` (`filter: "overdue"`); test khớp ô Quá hạn của D14 và ranh giới hạn trả theo ngày Việt Nam
-- [ ] 3.5 `onSiteSummary(db)`: cái, kg theo công trình và khu vực qua `onSiteTotals`; test với dữ liệu có mã cái, mã mét, mã kg: tổng cái = cột "Tại công trình" của `getStockOverview` **lọc mã đơn vị cái** và = Σ `onSiteByItem` của mọi hợp đồng trên các mã đó (D6); mã mét không vào số cái nhưng vào tấn; Kinh doanh "Chỉ bán" nhận cùng số
-- [ ] 3.6 `stockByCondition(db)`: gom bãi + xưởng theo tình trạng và công trình; test khớp từng mã với `getStockOverview`
+- [x] 3.3 `pendingApprovals(db, viewer)`: 5 loại theo design D1, sắp theo lúc gửi; số tiền như màn gốc; integration test từng vai trò (Giám đốc, Kế toán, Kinh doanh "Cả hai" / "Chỉ thuê" / "Chỉ bán"); **số đếm = số dòng** dùng cho câu chào
+- [x] 3.4 `overdueSummary(db, today)` gọi `customerBalances` (`filter: "overdue"`); test khớp ô Quá hạn của D14 và ranh giới hạn trả theo ngày Việt Nam
+- [x] 3.5 `onSiteSummary(db)`: cái, kg theo công trình và khu vực qua `onSiteTotals`; test với dữ liệu có mã cái, mã mét, mã kg: tổng cái = cột "Tại công trình" của `getStockOverview` **lọc mã đơn vị cái** và = Σ `onSiteByItem` của mọi hợp đồng trên các mã đó (D6); mã mét không vào số cái nhưng vào tấn; Kinh doanh "Chỉ bán" nhận cùng số
+- [x] 3.6 `stockByCondition(db)`: gom bãi + xưởng theo tình trạng và công trình; test khớp từng mã với `getStockOverview`
 - [ ] 3.7 `riskySites(db, viewer, today)`: ba dấu hiệu (nợ quá hạn theo khoản của hợp đồng, `LOSS_OUT` trong 30 ngày, quá ngày kết thúc của bản đang áp dụng mà còn hàng); test từng dấu hiệu, ranh giới, hợp đồng không ngày kết thúc, hai hợp đồng một công trình, Kinh doanh ngoài `canContract` bị bỏ, không có số tiền cho Kinh doanh
 - [ ] 3.8 `topCustomersOfYear(db, year, today)` theo doanh thu và theo kg (0.2 #95: kg đã giao trong năm, không trừ hàng trả); test doanh thu năm = Σ doanh số tháng của nhà thầu; test hàng trả không làm giảm kg
 - [ ] 3.9 `siteLookup(db, viewer, q, today)`: tìm công trình theo mã / tên / nhà thầu không dấu, từng hợp đồng; hàng đang giữ qua `onSiteTotals`; tiền thuê tháng này bằng D7, đang nợ theo khoản của hợp đồng, cọc như D14; test Kinh doanh không có `money`, ngoài phạm vi không có kết quả, cái / tấn theo design D8

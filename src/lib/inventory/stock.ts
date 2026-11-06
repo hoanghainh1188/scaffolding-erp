@@ -73,14 +73,16 @@ const emptyYard = (): Record<Condition, number> => ({
   SCRAP: 0,
 });
 
-interface Bucket {
+/** Stock of one (item, condition) at every location of one type. */
+export interface Bucket {
   itemId: string;
   condition: Condition;
   type: "YARD" | "WORKSHOP" | "SITE";
   milli: number;
 }
 
-async function buckets(db: Database): Promise<Bucket[]> {
+/** D10 and D1 read the same sums (dashboard-basic design D8). */
+export async function stockBuckets(db: Database): Promise<Bucket[]> {
   const rows = await db
     .select({
       itemId: inventoryLedger.itemId,
@@ -137,7 +139,7 @@ export async function getStockOverview(
         avg: inventoryCost.avgCost,
       })
       .from(inventoryCost),
-    buckets(db),
+    stockBuckets(db),
   ]);
 
   const avg = new Map(
