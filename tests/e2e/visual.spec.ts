@@ -484,6 +484,32 @@ test.describe("payables baselines @visual", () => {
   }
 });
 
+// management-reports design D6: D15 for January 2020, before any data on
+// every database, so every number is 0 ₫ or "—" and nothing is masked.
+test.describe("reports baselines @visual", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "sets its own viewport");
+  });
+
+  for (const width of WIDTHS) {
+    test(`d15-reports at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/reports?period=month&value=2020-01");
+      await waitForHydration(page, DESKTOP_READY);
+      await page.addStyleTag({
+        content: "nextjs-portal { display: none !important; }",
+      });
+      await page.evaluate(() => document.fonts.ready);
+      await expect(page).toHaveScreenshot(`d15-reports-${width}.png`, {
+        fullPage: true,
+        mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
+        animations: "disabled",
+        caret: "hide",
+      });
+    });
+  }
+});
+
 // dashboard-basic design D6: D1 as sales (scope "Cả hai"), so a money block
 // showing up for a role without receivables.view changes the image.
 test.describe("dashboard baselines @visual", () => {

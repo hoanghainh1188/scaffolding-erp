@@ -41,7 +41,10 @@ describe("dashboard indexes", () => {
     ["0020_dashboard_basic.sql", 3],
     ["0022_management_reports.sql", 1],
   ])("migration %s only creates indexes", (name, count) => {
-    const file = readFileSync(path.join(process.cwd(), "drizzle", name), "utf8");
+    const file = readFileSync(
+      path.join(process.cwd(), "drizzle", name),
+      "utf8",
+    );
     const statements = file
       .split("--> statement-breakpoint")
       .map((part) => part.trim())

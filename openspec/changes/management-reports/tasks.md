@@ -124,18 +124,19 @@
 
 ## 6. Đo, E2E, tài liệu
 
-- [ ] 6.1 `npm run bench:reports` (`scripts/bench-reports.mts`, dùng lại guard `*_bench` và helper của `bench:dashboard`) đo từng khối kỳ tháng và kỳ năm, hai lần. Ghi `docs/ops/reports-bench.md`. **Mục tiêu**: kỳ năm < 2,5 s, kỳ tháng < 1,5 s. Vượt thì tách khối nặng vào `Suspense` (design Risks) rồi đo lại.
-- [ ] 6.2 E2E `tests/e2e/reports.spec.ts` (design D6):
+- [x] 6.1 `npm run bench:reports` (`scripts/bench-reports.mts`, dùng lại guard `*_bench` và helper của `bench:dashboard`) đo từng khối kỳ tháng và kỳ năm, hai lần. Ghi `docs/ops/reports-bench.md`. **Mục tiêu**: kỳ năm < 2,5 s, kỳ tháng < 1,5 s. Vượt thì tách khối nặng vào `Suspense` (design Risks) rồi đo lại.
+- [x] 6.2 E2E `tests/e2e/reports.spec.ts` (design D6):
   - Giám đốc mở `/reports`: 4 ô, bảng 10 khoản mục, đổi Quý thì URL đổi, đổi "Theo kg";
   - "Xuất Excel" tải `bao-cao-<value>.xlsx`;
   - Kế toán (`statePath("ACCOUNTANT")`) mở được và thấy menu Báo cáo;
   - Kinh doanh nhận 403 ở trang và API.
   - Ảnh mốc `@visual` `/reports?period=month&value=2020-01`.
-- [ ] 6.3 `CLAUDE.md`:
+- [x] 6.3 `CLAUDE.md`:
   - quy ước `src/lib/reports/`: chỉ đọc; doanh thu qua `revenueBook`; giá vốn từ sổ theo `classifyLedger`; luật không trừ hai lần (chi phí sửa vào giá Tốt, khoản Sửa chữa = lỗ hỏng hàng); đẳng thức đối chiếu; bình quân theo ngày `inner join location`; quyền `reports.view`;
   - lệnh `bench:reports`;
   - lưu ý E2E (ảnh mốc kỳ 01/2020, không kiểm số tiền trên DB dev).
-- [ ] 6.4 Chạy `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate management-reports --strict`, tất cả xanh. Coverage `src/domain`, `src/lib` ≥ 80 %. Gắn nhãn `update-snapshots` vào PR apply.
+- [x] 6.4 Chạy `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate management-reports --strict`, tất cả xanh. Coverage `src/domain`, `src/lib` ≥ 80 %. Gắn nhãn `update-snapshots` vào PR apply.
+  - Kết quả 06/11/2026: lint, typecheck, format xanh; Vitest 3.698/3.698 xanh, coverage `src/domain` 97,9 %, `src/lib` 97,5 %; `openspec validate --strict` xanh; `bench:reports` kỳ năm 0,21–0,26 s, kỳ tháng 0,2 s (`docs/ops/reports-bench.md`). E2E: 123 qua, 1 hỏng ở `inventory.spec.ts` tồn đầu kỳ vì DB dev đã có dòng xuất `E2E-KHO-01` Mới của các lần chạy trước (không do change này, như lần apply `payables`; CI chạy trên DB mới); `reports.spec.ts` và `desktop-shell.spec.ts` xanh.
 - [ ] 6.5 Kiểm tra tay, làm trên demo với `giamdoc` và `ketoan`, Edge 1366px:
   - chọn một tháng đã chốt hết kỳ, so doanh thu với D1 và bảng kê D7;
   - so giá vốn hàng bán, hàng mất với thẻ kho D11 của 2–3 mã;
