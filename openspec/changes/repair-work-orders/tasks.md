@@ -115,7 +115,7 @@
 
 ## 9. Seed, E2E, ảnh mốc
 
-- [ ] 9.1 `db:seed:dev` và `db:seed:demo`:
+- [x] 9.1 `db:seed:dev` và `db:seed:demo`:
   - Nhóm "Vật tư phụ" và `VT-QH`, `VT-SON`, `VT-BL12` có tồn ở `XUONG-01`.
   - Đơn giá công `GG-K17` 40.000 ₫, `GG-CH` 10.000 ₫.
   - Một lệnh mẫu Đã đếm như D12.

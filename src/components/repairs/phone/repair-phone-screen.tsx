@@ -19,6 +19,7 @@ import {
   quantityFromDb,
   toQuantity,
 } from "@/domain/quantity";
+import { formatBusinessDate, toBusinessDate } from "@/domain/business-date";
 import { WORK_ORDER_STATUS_LABELS } from "@/domain/repair-work-order";
 import { useDraft } from "@/hooks/use-draft";
 import { callApi } from "@/lib/api-client";
@@ -190,12 +191,9 @@ export function RepairPhoneScreen({
   const rejected =
     draft.record?.state === "REJECTED" ? draft.record.error : null;
   const locked = !draft.editable || busy;
+  // "03/11": the Vietnam day the workshop took the stock.
   const received = order.receivedAt
-    ? new Date(order.receivedAt).toLocaleDateString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        timeZone: "Asia/Ho_Chi_Minh",
-      })
+    ? formatBusinessDate(toBusinessDate(new Date(order.receivedAt))).slice(0, 5)
     : null;
   const total = order.lines.reduce(
     (sum, line) => sum + quantityFromDb(line.taken, line.unit).milli,
@@ -293,6 +291,7 @@ export function RepairPhoneScreen({
               {reported ? (
                 <p className="text-caption text-muted-foreground">{reported}</p>
               ) : null}
+              <span className="text-label">Sửa xong</span>
               <Stepper
                 label="Sửa xong"
                 value={toQuantity(current.goodMilli, line.unit)}
@@ -302,6 +301,7 @@ export function RepairPhoneScreen({
                   setLine(line.itemId, { goodMilli: next.milli })
                 }
               />
+              <span className="text-label">Hỏng → Phế</span>
               <Stepper
                 label="Hỏng → Phế"
                 value={toQuantity(current.scrapMilli, line.unit)}
