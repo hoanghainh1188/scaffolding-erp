@@ -2,12 +2,18 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase } from "@/db/client";
+import { getAdminDatabase } from "@/test/admin";
 import { resetCatalogTables } from "@/test/catalog";
 import { resetInventoryTables, truncateWithLedger } from "@/test/inventory";
 
 import { user } from "./auth";
 import { item, itemGroup, location } from "./catalog";
-import { repairOrder, repairOrderLine } from "./repairs";
+import {
+  repairOrder,
+  repairOrderLine,
+  repairOrderMaterial,
+  repairOrderSubmission,
+} from "./repairs";
 
 const url = process.env.TEST_DATABASE_URL;
 if (!url) {
@@ -245,5 +251,119 @@ describe("posted repair slips", () => {
     ).toContain(frozen);
     const [line] = await db.select().from(repairOrderLine);
     expect(line?.repairCost).toBe(1_980_000);
+  });
+});
+
+describe("work orders (repair-work-orders design D7)", () => {
+  const workOrder = (values: OrderValues = {}) =>
+    insertOrder({ kind: "WORK_ORDER", ...values });
+
+  it("reads old slips as SIMPLE and keeps SIMPLE to draft / posted", async () => {
+    const orderId = await insertOrder();
+    const [row] = await db
+      .select({ kind: repairOrder.kind })
+      .from(repairOrder)
+      .where(eq(repairOrder.id, orderId));
+    expect(row?.kind).toBe("SIMPLE");
+    expect(
+      await errorCode(() =>
+        insertOrder({ code: "PSC-2026-025", status: "ASSIGNED" }),
+      ),
+    ).toBe("23514");
+  });
+
+  it("accepts every work-order status but needs a reason to cancel", async () => {
+    for (const [index, status] of [
+      "DRAFT",
+      "ASSIGNED",
+      "IN_PROGRESS",
+      "AWAITING_CHECK",
+      "COUNTED",
+    ].entries()) {
+      await workOrder({ code: `PSC-2026-03${index}`, status });
+    }
+    expect(
+      await errorCode(() =>
+        workOrder({ code: "PSC-2026-040", status: "CANCELLED" }),
+      ),
+    ).toBe("23514");
+    await workOrder({
+      code: "PSC-2026-041",
+      status: "CANCELLED",
+      cancelReason: "Bán nguyên lô phế",
+      cancelledBy: userId,
+      cancelledAt: new Date(),
+    });
+  });
+
+  it("lets a line wait at 0 / 0 before the workshop reports", async () => {
+    const orderId = await workOrder();
+    await insertLine(orderId, {
+      quantityGood: "0",
+      quantityScrap: "0",
+      repairCost: 0,
+      laborRate: 40_000,
+    });
+    expect(
+      await errorCode(() =>
+        insertLine(orderId, {
+          position: 2,
+          itemId,
+          quantityGood: "30",
+          quantityScrap: "4",
+        }),
+      ),
+    ).toBe("23514");
+  });
+
+  it("freezes the supplies of a posted order", async () => {
+    const orderId = await workOrder({ status: "COUNTED" });
+    await insertLine(orderId);
+    const [line] = await db
+      .select({ id: repairOrderLine.id })
+      .from(repairOrderLine);
+    await db.insert(repairOrderMaterial).values({
+      lineId: line?.id ?? "",
+      itemId,
+      quantity: "6",
+    });
+    await post(orderId);
+    expect(
+      await errorMessage(() =>
+        db.update(repairOrderMaterial).set({ quantity: "60" }),
+      ),
+    ).toContain("Phiếu đã ghi sổ, không sửa hay xóa được");
+  });
+
+  it("refuses a negative labour rate on an item", async () => {
+    expect(
+      await errorCode(() =>
+        db.update(item).set({ repairLaborRate: -1 }).where(eq(item.id, itemId)),
+      ),
+    ).toBe("23514");
+  });
+
+  it("keeps every phone draft id once, append-only", async () => {
+    const orderId = await workOrder({ status: "IN_PROGRESS" });
+    const draftId = crypto.randomUUID();
+    await db
+      .insert(repairOrderSubmission)
+      .values({ orderId, step: "RECEIVE", draftId, createdBy: userId });
+    expect(
+      await errorCode(() =>
+        db
+          .insert(repairOrderSubmission)
+          .values({ orderId, step: "REPORT", draftId, createdBy: userId }),
+      ),
+    ).toBe("23505");
+    const admin = getAdminDatabase();
+    expect(
+      await errorMessage(() =>
+        admin
+          .update(repairOrderSubmission)
+          .set({ step: "COUNT" })
+          .where(eq(repairOrderSubmission.draftId, draftId)),
+      ),
+    ).toContain("chỉ ghi thêm");
   });
 });

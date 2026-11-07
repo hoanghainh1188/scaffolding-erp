@@ -18,6 +18,7 @@ export const APPEND_ONLY_TABLES = [
   "receipt",
   "receipt_allocation",
   "receipt_cancellation",
+  "repair_order_submission",
   "scrap_price",
   "supplier_payment",
   "supplier_payment_allocation",

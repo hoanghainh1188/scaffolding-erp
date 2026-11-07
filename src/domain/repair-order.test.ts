@@ -151,6 +151,7 @@ describe("checkRepairLines", () => {
 
   it("keeps metre items out of repairs with a clear message", () => {
     expect(isRepairableUnit("METER")).toBe(false);
+    expect(isRepairableUnit("LITER")).toBe(false);
     expect(
       fieldError(() =>
         checkRepairLines([line("ONG-49", 10, 10, 0, 0, { unit: "METER" })]),

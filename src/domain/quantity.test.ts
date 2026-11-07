@@ -205,8 +205,8 @@ describe("database numeric(14,3)", () => {
 });
 
 describe("units (catalog-extensions D2)", () => {
-  it("has 7 count units and 2 measure units with labels", () => {
-    expect(QUANTITY_UNITS).toHaveLength(9);
+  it("has 7 count units and 3 measure units with labels", () => {
+    expect(QUANTITY_UNITS).toHaveLength(10);
     expect(QUANTITY_UNITS.filter(isCountUnit)).toEqual([
       "PIECE",
       "BAR",
@@ -261,5 +261,23 @@ describe("totals per unit (0.2 #47)", () => {
   it("shows 0 cái when empty and keeps zero units it was given", () => {
     expect(formatByUnit([])).toBe("0 cái");
     expect(formatByUnit(sumByUnit([{ unit: "BAR", milli: 0 }]))).toBe("0 cây");
+  });
+});
+
+describe("litre (0.2 số 122)", () => {
+  it("is a measure unit with a standard weight", () => {
+    expect(QUANTITY_UNITS).toContain("LITER");
+    expect(QUANTITY_UNIT_LABELS.LITER).toBe("lít");
+    expect(isCountUnit("LITER")).toBe(false);
+    expect(hasStandardWeight("LITER")).toBe(true);
+  });
+
+  it("takes up to 3 decimals", () => {
+    expect(parseQuantity("0,5", "LITER")).toEqual({
+      unit: "LITER",
+      milli: 500,
+    });
+    expect(() => quantityFromNumber(0.0005, "LITER")).toThrow(DomainValueError);
+    expect(formatQuantity(quantityFromNumber(3.5, "LITER"))).toBe("3,5");
   });
 });

@@ -2,15 +2,15 @@
 
 ## 1. Migration và schema
 
-- [ ] 1.1 Thêm `LITER` vào `QUANTITY_UNITS` (`src/domain/quantity.ts`: nhãn "lít", đơn vị đo 3 số lẻ, cần trọng lượng chuẩn, `isRepairableUnit` = false). Migration thay CHECK `item_unit_check`. Unit test: 0,5 lít nhận được, 0,0005 lít bị từ chối, `isRepairableUnit("LITER")` = false. Test chống lệch CHECK ↔ domain xanh.
-- [ ] 1.2 Migration `item.repair_labor_rate bigint null check >= 0`. Schema Drizzle cập nhật. Integration test: −1 bị DB từ chối.
-- [ ] 1.3 Migration `repair_order`:
+- [x] 1.1 Thêm `LITER` vào `QUANTITY_UNITS` (`src/domain/quantity.ts`: nhãn "lít", đơn vị đo 3 số lẻ, cần trọng lượng chuẩn, `isRepairableUnit` = false). Migration thay CHECK `item_unit_check`. Unit test: 0,5 lít nhận được, 0,0005 lít bị từ chối, `isRepairableUnit("LITER")` = false. Test chống lệch CHECK ↔ domain xanh.
+- [x] 1.2 Migration `item.repair_labor_rate bigint null check >= 0`. Schema Drizzle cập nhật. Integration test: −1 bị DB từ chối.
+- [x] 1.3 Migration `repair_order`:
   - Thêm `kind`, các cột người / lúc của từng bước, `return_note`, `cancel_reason`, `receive_posting_id`, `cancel_posting_id`.
   - CHECK `status` mở rộng, và `SIMPLE` chỉ có `DRAFT` / `POSTED`.
   - Integration test (`src/db/schema/repairs.int.test.ts`): phiếu cũ đọc được với `kind = 'SIMPLE'`; `SIMPLE` + `ASSIGNED` bị từ chối.
-- [ ] 1.4 Migration `repair_order_line` thêm `labor_rate`, `reported_good`, `reported_scrap`, `labor_amount`, `material_amount`; nới CHECK số lượng cho 0 / 0. Tạo bảng `repair_order_material` (UNIQUE `line_id, item_id`, `quantity > 0`). Mở rộng trigger khóa cho lệnh `POSTED` / `CANCELLED` (cả vật tư). Integration test: sửa vật tư của lệnh `POSTED` bị trigger chặn.
-- [ ] 1.5 Bảng chỉ ghi thêm `repair_order_submission` (`order_id`, `step`, `draft_id` UNIQUE, `created_by`, `created_at`), trigger `*_append_only`, thêm vào `APPEND_ONLY_TABLES` (`src/db/grants.ts`). Test chống lệch `APPEND_ONLY_TABLES` xanh; UPDATE / DELETE bị trigger chặn.
-- [ ] 1.6 Thêm `repairs.work` (DIRECTOR, WORKSHOP) và `repairs.count` (DIRECTOR, WAREHOUSE) vào `src/domain/permissions.ts`. Test bảng quyền theo spec `auth` xanh.
+- [x] 1.4 Migration `repair_order_line` thêm `labor_rate`, `reported_good`, `reported_scrap`, `labor_amount`, `material_amount`; nới CHECK số lượng cho 0 / 0. Tạo bảng `repair_order_material` (UNIQUE `line_id, item_id`, `quantity > 0`). Mở rộng trigger khóa cho lệnh `POSTED` / `CANCELLED` (cả vật tư). Integration test: sửa vật tư của lệnh `POSTED` bị trigger chặn.
+- [x] 1.5 Bảng chỉ ghi thêm `repair_order_submission` (`order_id`, `step`, `draft_id` UNIQUE, `created_by`, `created_at`), trigger `*_append_only`, thêm vào `APPEND_ONLY_TABLES` (`src/db/grants.ts`). Test chống lệch `APPEND_ONLY_TABLES` xanh; UPDATE / DELETE bị trigger chặn.
+- [x] 1.6 Thêm `repairs.work` (DIRECTOR, WORKSHOP) và `repairs.count` (DIRECTOR, WAREHOUSE) vào `src/domain/permissions.ts`. Test bảng quyền theo spec `auth` xanh.
 
 ## 2. Logic thuần và unit test
 

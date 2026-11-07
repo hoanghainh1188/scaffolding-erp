@@ -1,7 +1,7 @@
 import { DomainValueError } from "./errors";
 
 // Count units take whole numbers, measure units up to 3 decimals
-// (requirements 0.2 #37, catalog-extensions design D2).
+// (requirements 0.2 #37, số 122; catalog-extensions design D2).
 export const COUNT_UNITS = [
   "PIECE",
   "BAR",
@@ -11,7 +11,7 @@ export const COUNT_UNITS = [
   "BOX",
   "CARTON",
 ] as const;
-export const MEASURE_UNITS = ["METER", "KG"] as const;
+export const MEASURE_UNITS = ["METER", "LITER", "KG"] as const;
 export const QUANTITY_UNITS = [...COUNT_UNITS, ...MEASURE_UNITS] as const;
 export type QuantityUnit = (typeof QUANTITY_UNITS)[number];
 
@@ -24,6 +24,7 @@ export const QUANTITY_UNIT_LABELS: Readonly<Record<QuantityUnit, string>> = {
   BOX: "hộp",
   CARTON: "thùng",
   METER: "m",
+  LITER: "lít",
   KG: "kg",
 };
 

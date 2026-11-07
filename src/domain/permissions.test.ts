@@ -34,6 +34,8 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "stock.lookup": ["DIRECTOR", "ACCOUNTANT", "SALES", "WAREHOUSE", "WORKSHOP"],
   "scrap-price.manage": ["DIRECTOR"],
   "repairs.manage": ["DIRECTOR", "ACCOUNTANT"],
+  "repairs.work": ["DIRECTOR", "WORKSHOP"],
+  "repairs.count": ["DIRECTOR", "WAREHOUSE"],
   "stocktake.count": ["DIRECTOR", "WAREHOUSE"],
   "activity.view": ["DIRECTOR"],
   "company.read": ["DIRECTOR", "ACCOUNTANT", "SALES", "WAREHOUSE", "WORKSHOP"],
@@ -77,7 +79,7 @@ describe("can", () => {
     ]);
   });
 
-  it("gives the phone roles only reading, and the storekeeper receiving, counting and picking", () => {
+  it("gives the phone roles only reading, the storekeeper receiving, counting and picking, and the workshop its repair orders", () => {
     const phone: readonly Permission[] = [
       "catalog.read",
       "stock.lookup",
@@ -89,9 +91,10 @@ describe("can", () => {
         permission === "receiving.manage" ||
           permission === "stocktake.count" ||
           permission === "deliveries.pick" ||
-          permission === "returns.receive",
+          permission === "returns.receive" ||
+          permission === "repairs.count",
       );
-      expect(can("WORKSHOP", permission)).toBe(false);
+      expect(can("WORKSHOP", permission)).toBe(permission === "repairs.work");
     }
   });
 });
