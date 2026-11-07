@@ -18,6 +18,8 @@ export interface ReceivingOrder {
   prefilledCosts: { label: string; amount: Money }[];
   expectedCosts: Money;
   yards: { id: string; code: string; name: string }[];
+  /** Workshops are in `yards` too (0.2 số 131). */
+  materialsOnly: boolean;
   scrapPrice: { pricePerKg: Money; updated: string } | null;
 }
 
@@ -33,6 +35,7 @@ export function toReceivingOrder(order: OrderForReceiving): ReceivingOrder {
     prefilledCosts: order.prefilledCosts,
     expectedCosts: order.expectedCosts,
     yards: order.yards,
+    materialsOnly: order.materialsOnly,
     scrapPrice: order.scrapPrice
       ? {
           pricePerKg: order.scrapPrice.pricePerKg,

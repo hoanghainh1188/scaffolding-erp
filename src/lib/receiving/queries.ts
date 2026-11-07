@@ -31,7 +31,7 @@ import type { PurchaseKind, PurchaseStatus } from "@/domain/purchase-order";
 import { quantityFromDb, type QuantityUnit } from "@/domain/quantity";
 import { receiptSummaries, receiptSummary } from "@/lib/purchasing/receipts";
 
-import { waitingText } from "./post";
+import { orderIsMaterialsOnly, waitingText } from "./post";
 import { currentScrapPrice } from "./scrap-price";
 
 const milli = (value: string | null) =>
@@ -161,7 +161,11 @@ export interface OrderForReceiving {
   prefilledCosts: { label: string; amount: Money }[];
   /** For the "chi phí cao" question (design D5b). */
   expectedCosts: Money;
+  /** Places the trip may go into: active yards, plus workshops when
+   * every line is a supply item (0.2 số 131). */
   yards: { id: string; code: string; name: string }[];
+  /** Every order line is a supply item: a workshop may be chosen. */
+  materialsOnly: boolean;
   scrapPrice: { pricePerKg: Money; createdAt: Date } | null;
 }
 
@@ -183,6 +187,7 @@ export async function orderForReceiving(
     .innerJoin(supplier, eq(supplier.id, purchaseOrder.supplierId))
     .where(eq(purchaseOrder.code, code));
   if (!order) return null;
+  const materialsOnly = await orderIsMaterialsOnly(db, order.id);
   const [summary, names, costs, yards, price] = await Promise.all([
     receiptSummary(db, order.id),
     lineNames(db, [order.id]),
@@ -197,7 +202,15 @@ export async function orderForReceiving(
     db
       .select({ id: location.id, code: location.code, name: location.name })
       .from(location)
-      .where(and(eq(location.type, "YARD"), eq(location.status, "ACTIVE")))
+      .where(
+        and(
+          inArray(
+            location.type,
+            materialsOnly ? ["YARD", "WORKSHOP"] : ["YARD"],
+          ),
+          eq(location.status, "ACTIVE"),
+        ),
+      )
       .orderBy(asc(location.code)),
     currentScrapPrice(db),
   ]);
@@ -222,6 +235,7 @@ export async function orderForReceiving(
       expected.reduce((sum, cost) => sum + cost.amount, 0),
     ),
     yards,
+    materialsOnly,
     scrapPrice: price
       ? { pricePerKg: price.pricePerKg, createdAt: price.createdAt }
       : null,

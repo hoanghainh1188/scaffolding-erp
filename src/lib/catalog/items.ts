@@ -23,9 +23,9 @@ import {
 import { toSearchText } from "@/domain/search-text";
 import { WEIGHT_MESSAGES } from "@/domain/weight-conversion";
 
-import { diffFields } from "@/domain/activity-changes";
+import { diffFields, type FieldSpec } from "@/domain/activity-changes";
 import { changeSummary, joinParts } from "@/domain/activity-summary";
-import { ITEM_FIELDS, type ItemView } from "@/lib/activity/fields";
+import { ITEM_FIELDS, moneyText, type ItemView } from "@/lib/activity/fields";
 import { logActivity } from "@/lib/activity/log";
 
 import { claimItemOrKitCode, claimOldCodes } from "./codes";
@@ -64,6 +64,8 @@ export const ITEM_MESSAGES = {
   unit: "Chọn đơn vị của vật tư",
   tooManyOldCodes: `Mỗi vật tư có tối đa ${MAX_OLD_CODES} mã cũ`,
   kgNoWeight: "Vật tư tính theo kg không có trọng lượng chuẩn",
+  laborRate: "Đơn giá công sửa phải là số đồng không âm",
+  laborRateMaterial: "Vật tư phụ không có đơn giá công sửa",
   weightTooBig: "Trọng lượng chuẩn quá lớn",
   negativePrice: "Giá không được âm",
   groupMissing: "Chọn nhóm hàng",
@@ -98,6 +100,8 @@ export interface ItemRow {
   dailyRentalPrice: number | null;
   lostPrice: number | null;
   damagePrice: number | null;
+  /** ₫ per repaired piece (0.2 số 117); null = not set. */
+  repairLaborRate: number | null;
   status: CatalogStatus;
 }
 
@@ -127,6 +131,7 @@ const rowColumns = {
   dailyRentalPrice: item.dailyRentalPrice,
   lostPrice: item.lostPrice,
   damagePrice: item.damagePrice,
+  repairLaborRate: item.repairLaborRate,
   status: item.status,
 };
 
@@ -646,3 +651,69 @@ export async function resolveItemCode(
     .where(eq(itemAlias.codeKey, key));
   return old?.code ?? null;
 }
+
+/**
+ * Sets the piece-rate labour of an equipment item (0.2 số 117, số 123).
+ * Kept apart from updateItem: the accountant sets it (repairs.manage),
+ * while the rest of the item belongs to items.manage.
+ */
+export function setRepairLaborRate(
+  db: Database,
+  actor: Actor,
+  id: string,
+  rate: number | null,
+): Promise<ServiceResult<ItemRow>> {
+  return runService(async () => {
+    if (rate !== null && (!Number.isSafeInteger(rate) || rate < 0)) {
+      return badRequest(ITEM_MESSAGES.laborRate);
+    }
+    const found = await db.transaction(async (tx) => {
+      const [current] = await tx
+        .select({
+          code: item.code,
+          rate: item.repairLaborRate,
+          category: itemGroup.category,
+        })
+        .from(item)
+        .innerJoin(itemGroup, eq(itemGroup.id, item.groupId))
+        .where(eq(item.id, id))
+        .for("update", { of: item });
+      if (!current) return false;
+      if (current.category === "MATERIAL") {
+        throw new ServiceFailure(badRequest(ITEM_MESSAGES.laborRateMaterial));
+      }
+      if (current.rate === rate) return true;
+      await tx
+        .update(item)
+        .set({
+          repairLaborRate: rate,
+          updatedBy: actor.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(item.id, id));
+      const changes = diffFields(
+        LABOR_FIELDS,
+        { repairLaborRate: current.rate },
+        { repairLaborRate: rate },
+      );
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: { type: "ITEM", id, code: current.code },
+        summary: changeSummary(changes),
+        changes,
+      });
+      return true;
+    });
+    if (!found) return notFound();
+    const updated = await getItem(db, id);
+    return updated ? ok(updated) : notFound();
+  });
+}
+
+const LABOR_FIELDS: readonly FieldSpec<{ repairLaborRate: number | null }>[] = [
+  {
+    field: "repairLaborRate",
+    label: "Đơn giá công sửa / cái",
+    value: (r) => moneyText(r.repairLaborRate),
+  },
+];

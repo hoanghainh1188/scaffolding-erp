@@ -105,7 +105,14 @@ function makeReport(today = OCT_TODAY, value = "2026-10"): Report {
     MONTHS,
     revenue,
     ledger,
-    [{ month: "2026-10", repairCost: 14_300_000, lossAmount: 600_000 }],
+    [
+      {
+        month: "2026-10",
+        repairCost: 14_300_000,
+        lossAmount: 600_000,
+        materialCost: 0,
+      },
+    ],
     new Set(["2026-10"]),
   );
   const months = dailyFleet(

@@ -12,6 +12,7 @@ import {
   goodsReceiptCost,
   goodsReceiptLine,
   item,
+  itemGroup,
   location,
   purchaseOrder,
   purchaseOrderCost,
@@ -184,8 +185,32 @@ async function replayOf(
   };
 }
 
-/** The yard the trip goes into: the one asked for, or the only one. */
-async function lockYard(tx: Tx, locationId: string | null | undefined) {
+/**
+ * Every line of the order is a supply item (repair-work-orders design D9,
+ * 0.2 số 131): such an order may go straight into a workshop.
+ */
+export async function orderIsMaterialsOnly(
+  tx: Pick<Tx, "select">,
+  orderId: string,
+): Promise<boolean> {
+  const rows = await tx
+    .select({ category: itemGroup.category })
+    .from(purchaseOrderLine)
+    .innerJoin(item, eq(item.id, purchaseOrderLine.itemId))
+    .innerJoin(itemGroup, eq(itemGroup.id, item.groupId))
+    .where(eq(purchaseOrderLine.orderId, orderId));
+  return rows.length > 0 && rows.every((row) => row.category === "MATERIAL");
+}
+
+/**
+ * Where the trip goes: the yard asked for, or the only one. A workshop is
+ * taken only when it is asked for and the order holds supplies only.
+ */
+async function lockReceiptLocation(
+  tx: Tx,
+  locationId: string | null | undefined,
+  materialsOnly: boolean,
+) {
   const rows = await tx
     .select({ id: location.id, type: location.type, status: location.status })
     .from(location)
@@ -196,15 +221,25 @@ async function lockYard(tx: Tx, locationId: string | null | undefined) {
     )
     .orderBy(asc(location.code))
     .for("share");
+  if (locationId) {
+    const [place] = rows.filter((row) => row.status === "ACTIVE");
+    if (place?.type === "WORKSHOP") {
+      if (!materialsOnly) {
+        throw new PurchaseFieldError(
+          RECEIPT_MESSAGES.workshopNeedsMaterials,
+          "locationId",
+        );
+      }
+      return place.id;
+    }
+    if (place?.type !== "YARD") {
+      throw new PurchaseFieldError(RECEIPT_MESSAGES.yardMissing, "locationId");
+    }
+    return place.id;
+  }
   const yards = rows.filter(
     (row) => row.type === "YARD" && row.status === "ACTIVE",
   );
-  if (locationId) {
-    const [yard] = yards;
-    if (!yard)
-      throw new PurchaseFieldError(RECEIPT_MESSAGES.yardMissing, "locationId");
-    return yard.id;
-  }
   if (yards.length === 0) throw new DomainValueError(RECEIPT_MESSAGES.noYard);
   if (yards.length > 1) {
     throw new PurchaseFieldError(RECEIPT_MESSAGES.yardMissing, "locationId");
@@ -339,7 +374,11 @@ async function postInTransaction(
   );
   if (missing) throw new PurchaseFieldError(missing.question, missing.field);
 
-  const locationId = await lockYard(tx, body.locationId);
+  const locationId = await lockReceiptLocation(
+    tx,
+    body.locationId,
+    await orderIsMaterialsOnly(tx, order.id),
+  );
   const facts = await orderLineFacts(tx, order.id);
   const price = needsScrapPrice(order.kind, paired)
     ? await currentScrapPrice(tx)

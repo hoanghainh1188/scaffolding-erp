@@ -1,6 +1,9 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import { eq } from "drizzle-orm";
+
 import { createDatabase } from "@/db/client";
+import { activityLog } from "@/db/schema";
 import {
   createTestContext,
   createTestUser,
@@ -19,6 +22,7 @@ import {
   createItem,
   deleteItem,
   listItems,
+  setRepairLaborRate,
   updateItem,
   type ItemInput,
 } from "./items";
@@ -354,5 +358,49 @@ describe("kits", () => {
       ok: true,
       data: null,
     });
+  });
+});
+
+describe("repair labour rate (0.2 số 117, số 123)", () => {
+  it("sets, clears and logs the rate of an equipment item", async () => {
+    const k17 = await made(frame);
+    expect(k17.repairLaborRate).toBeNull();
+    const set = await setRepairLaborRate(ctx.db, actor, k17.id, 40_000);
+    expect(set.ok && set.data.repairLaborRate).toBe(40_000);
+    const logged = await ctx.db
+      .select({ summary: activityLog.summary })
+      .from(activityLog)
+      .where(eq(activityLog.documentId, k17.id));
+    expect(logged.map((row) => row.summary)).toContain(
+      "Đơn giá công sửa / cái: – → 40.000 ₫",
+    );
+    const again = await setRepairLaborRate(ctx.db, actor, k17.id, 40_000);
+    expect(again.ok).toBe(true);
+    const cleared = await setRepairLaborRate(ctx.db, actor, k17.id, null);
+    expect(cleared.ok && cleared.data.repairLaborRate).toBeNull();
+  });
+
+  it("refuses a negative rate and a supply item", async () => {
+    const k17 = await made(frame);
+    const negative = await setRepairLaborRate(ctx.db, actor, k17.id, -1_000);
+    expect(negative.ok ? "" : negative.error).toBe(
+      "Đơn giá công sửa phải là số đồng không âm",
+    );
+    const supplies = await createGroup(ctx.db, actor, {
+      name: "Vật tư phụ",
+      category: "MATERIAL",
+    });
+    if (!supplies.ok) throw new Error(supplies.error);
+    const qh = await createItem(ctx.db, actor, {
+      groupId: supplies.data.id,
+      code: "VT-QH",
+      name: "Que hàn",
+      unit: "KG",
+    });
+    if (!qh.ok) throw new Error(qh.error);
+    const material = await setRepairLaborRate(ctx.db, actor, qh.data.id, 1);
+    expect(material.ok ? "" : material.error).toBe(
+      "Vật tư phụ không có đơn giá công sửa",
+    );
   });
 });

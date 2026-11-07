@@ -14,17 +14,17 @@
 
 ## 2. Logic thuần và unit test
 
-- [ ] 2.1 `src/domain/repair-work-order.ts`: trạng thái, bảng bước, `transition(status, step)` (bước sai ném lỗi kèm trạng thái). Unit test đủ mọi cặp hợp lệ / không hợp lệ: Thu hồi khi Đang sửa → lỗi; Ghi sổ khi Chờ nghiệm thu → lỗi.
-- [ ] 2.2 `laborAmount(goodMilli, rate)` và `checkReport(lines)` (sửa xong + phế = lấy ra; vật tư > 0, đúng đơn vị, không trùng trên một dòng; dòng sửa xong 0 không có vật tư). Unit test:
+- [x] 2.1 `src/domain/repair-work-order.ts`: trạng thái, bảng bước, `transition(status, step)` (bước sai ném lỗi kèm trạng thái). Unit test đủ mọi cặp hợp lệ / không hợp lệ: Thu hồi khi Đang sửa → lỗi; Ghi sổ khi Chờ nghiệm thu → lỗi.
+- [x] 2.2 `laborAmount(goodMilli, rate)` và `checkReport(lines)` (sửa xong + phế = lấy ra; vật tư > 0, đúng đơn vị, không trùng trên một dòng; dòng sửa xong 0 không có vật tư). Unit test:
   - `GG-K17` 36 × 40.000 = 1.440.000 ₫; phế không tính công.
   - 30 + 4 ≠ 40 bị từ chối.
   - `VT-SON` dùng trên hai dòng được.
-- [ ] 2.3 `splitMaterialIssue(need, { newMilli, goodMilli })`: lấy Mới trước rồi Tốt, thiếu thì báo số còn. Unit test: `VT-BL12` cần 30, có 20 Mới + 100 Tốt → 20 / 10; cần 6 kg, có 4 kg → lỗi "còn 4 kg".
-- [ ] 2.4 `workOrderPostingLines(...)`:
+- [x] 2.3 `splitMaterialIssue(need, { newMilli, goodMilli })`: lấy Mới trước rồi Tốt, thiếu thì báo số còn. Unit test: `VT-BL12` cần 30, có 20 Mới + 100 Tốt → 20 / 10; cần 6 kg, có 4 kg → lỗi "còn 4 kg".
+- [x] 2.4 `workOrderPostingLines(...)`:
   - Dựng dòng sổ của lần ghi sổ lệnh từ `costRepairLine` (dùng lại, `repairCost = công + vật tư`) và các dòng xuất vật tư.
   - `receiveLines` / `cancelLines` (cặp `TRANSFER_*` Chờ sửa).
   - Unit test ví dụ D12: `GG-K17` chi phí 1.980.000 ₫, giá vào Tốt **221.528 ₫/cái** (giá trị 7.975.000 ₫); `CHEO-1,7` 245.000 ₫ → **42.250 ₫/cái**; tổng giá trị các dòng = +1.640.000 ₫ = công; lấy tại chính xưởng → không có dòng nhận.
-- [ ] 2.5 Sửa `src/domain/gross-profit.ts`:
+- [x] 2.5 Sửa `src/domain/gross-profit.ts`:
   - `RepairSum.materialCost`.
   - `ledgerCostCheck` dùng `repairCost − materialCost`; `repairSpent` vẫn là `repairCost`.
   - Unit test: lệnh D12 cho đẳng thức 0 ₫, và công thức cũ lệch 585.000 ₫ (test đỏ nếu quay lại công thức cũ).
@@ -33,11 +33,11 @@
 
 ## 3. Danh mục và phiếu nhập vật tư
 
-- [ ] 3.1 `src/lib/catalog/`: đọc và ghi `repair_labor_rate`. Chỉ `repairs.manage` sửa được trường này (Kinh doanh gửi kèm → 403 cho trường đó); mã nhóm Vật tư không nhận trường này. Ghi nhật ký qua `logActivity` (`diffFields`). Integration test theo spec `item-catalog`.
-- [ ] 3.2 D9: ô "Đơn giá công sửa / cái" trên form (chỉ hiện khi có `repairs.manage`); chi tiết hiện "Công sửa 40.000 ₫ / cái" cho người có `repairs.view`; đơn vị lít trong danh sách chọn ĐVT. Component test.
+- [x] 3.1 `src/lib/catalog/`: đọc và ghi `repair_labor_rate`. Chỉ `repairs.manage` sửa được trường này (Kinh doanh gửi kèm → 403 cho trường đó); mã nhóm Vật tư không nhận trường này. Ghi nhật ký qua `logActivity` (`diffFields`). Integration test theo spec `item-catalog`.
+- [x] 3.2 D9: ô "Đơn giá công sửa / cái" trên form (chỉ hiện khi có `repairs.manage`); chi tiết hiện "Công sửa 40.000 ₫ / cái" cho người có `repairs.view`; đơn vị lít trong danh sách chọn ĐVT. Component test.
 
-- [ ] 3.3 `src/lib/receiving/post.ts`: nhận vị trí `WORKSHOP` khi mọi dòng của đơn là mã nhóm `MATERIAL`, còn lại chỉ `YARD`; lỗi 422 theo spec `goods-receipts`. Integration test: đơn toàn vật tư nhập `XUONG-01` được (`PURCHASE_IN` tại xưởng); đơn có `GG-K17` gửi `XUONG-01` bị từ chối, không ghi gì.
-- [ ] 3.4 `src/lib/receiving/queries.ts` và M3: cờ `materialsOnly`, ô vị trí nhập có xưởng chỉ khi cờ bật. Component test hai đơn như spec.
+- [x] 3.3 `src/lib/receiving/post.ts`: nhận vị trí `WORKSHOP` khi mọi dòng của đơn là mã nhóm `MATERIAL`, còn lại chỉ `YARD`; lỗi 422 theo spec `goods-receipts`. Integration test: đơn toàn vật tư nhập `XUONG-01` được (`PURCHASE_IN` tại xưởng); đơn có `GG-K17` gửi `XUONG-01` bị từ chối, không ghi gì.
+- [x] 3.4 `src/lib/receiving/queries.ts` và M3: cờ `materialsOnly`, ô vị trí nhập có xưởng chỉ khi cờ bật. Component test hai đơn như spec.
 
 ## 4. Service lệnh sửa (`src/lib/repairs/`)
 

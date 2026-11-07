@@ -6,6 +6,7 @@ import { ItemsFilters } from "@/components/catalog/items-filters";
 import { ItemsHeader } from "@/components/catalog/items-header";
 import { ItemsTable } from "@/components/catalog/items-table";
 import { KitEditorDialog } from "@/components/catalog/kit-editor-dialog";
+import { RepairLaborRate } from "@/components/catalog/repair-labor-rate";
 import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
 import { normalizeItemCode } from "@/domain/item-code";
@@ -100,6 +101,17 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         <ItemKitsPanel
           item={selected}
           kits={kits}
+          laborRate={
+            selected &&
+            selected.category === "EQUIPMENT" &&
+            can(user.role, "repairs.view") ? (
+              <RepairLaborRate
+                key={`${selected.id}-${selected.repairLaborRate ?? ""}`}
+                item={selected}
+                canEdit={can(user.role, "repairs.manage")}
+              />
+            ) : undefined
+          }
           editKit={
             canEdit
               ? (kit) => (

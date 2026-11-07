@@ -39,6 +39,7 @@ const row = (
   dailyRentalPrice: daily,
   lostPrice: null,
   damagePrice: null,
+  repairLaborRate: null,
   status: "ACTIVE",
 });
 
