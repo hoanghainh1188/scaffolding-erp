@@ -10,15 +10,23 @@ interface ItemKitsPanelProps {
   kits: KitRow[];
   /** "Sửa bộ" buttons, only for people who may edit kits. */
   editKit?: (kit: KitRow) => ReactNode;
+  /** The repair labour rate block (repairs.view), above the kits. */
+  laborRate?: ReactNode;
 }
 
 /** D9 right panel: the kits the selected item belongs to (spec item-catalog). */
-export function ItemKitsPanel({ item, kits, editKit }: ItemKitsPanelProps) {
+export function ItemKitsPanel({
+  item,
+  kits,
+  editKit,
+  laborRate,
+}: ItemKitsPanelProps) {
   return (
     <section
       aria-labelledby="item-kits"
       className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-5 min-[1700px]:w-[360px] min-[1700px]:shrink-0"
     >
+      {laborRate}
       <h2 id="item-kits" className="text-h2">
         Thuộc bộ
       </h2>

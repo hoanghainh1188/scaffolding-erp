@@ -49,6 +49,10 @@ export const PERMISSIONS = {
   // simple-repair design D4: the accountant keeps the books (repair cost,
   // damage loss); office roles read slips through repairs.view.
   "repairs.manage": ["DIRECTOR", "ACCOUNTANT"],
+  // repair-work-orders design D6: the workshop takes, works and reports an
+  // order on the phone; the storekeeper counts it. Neither sees any price.
+  "repairs.work": ["DIRECTOR", "WORKSHOP"],
+  "repairs.count": ["DIRECTOR", "WAREHOUSE"],
   // stocktake design D11: the storekeeper counts yards and the workshop on
   // the phone; the director may stand in. Office roles read results through
   // inventory.view; approving uses inventory.approve.

@@ -35,6 +35,7 @@ import {
   type PostingLine,
   type RepairLineInput,
 } from "@/domain/repair-order";
+import { WorkOrderStateError } from "@/domain/repair-work-order";
 import {
   conflict,
   notFound,
@@ -75,6 +76,7 @@ export const REPAIR_SERVICE_MESSAGES = {
   fromLocation: "Chỉ lấy hàng sửa tại bãi hoặc xưởng",
   toLocation: "Chỉ nhập hàng sửa về bãi hoặc xưởng",
   noYard: "Chưa có bãi đang dùng",
+  workOrder: "Đây là lệnh sửa chữa, mở lệnh để làm tiếp",
 } as const;
 
 export interface RepairLineBody {
@@ -110,13 +112,16 @@ export interface PostBody {
 }
 
 /** Field errors answer 422, other rule breaks 400, conflicts 409. */
-async function run<T>(
+export async function runRepair<T>(
   body: () => Promise<ServiceResult<T>>,
 ): Promise<ServiceResult<T>> {
   try {
     return await body();
   } catch (error: unknown) {
     if (error instanceof ServiceFailure) return error.result;
+    if (error instanceof WorkOrderStateError) {
+      return { ok: false, status: 409, error: error.message };
+    }
     if (error instanceof RepairFieldError) {
       return {
         ok: false,
@@ -282,7 +287,7 @@ async function writeLines(
 }
 
 /** Locks the slip by code; throws 404 when it is missing. */
-async function lockSlip(tx: Tx, code: string) {
+export async function lockSlip(tx: Tx, code: string) {
   const [row] = await tx
     .select()
     .from(repairOrder)
@@ -298,7 +303,7 @@ export function createRepairDraft(
   body: RepairBody,
   now: BusinessDate = today(),
 ): Promise<ServiceResult<SavedRepair>> {
-  return run(async () => {
+  return runRepair(async () => {
     const saved = await db.transaction(async (tx) => {
       const checked = await checkSlip(tx, body, now);
       const next = await nextDocumentCode(
@@ -338,10 +343,13 @@ export function updateRepairDraft(
   body: RepairBody,
   now: BusinessDate = today(),
 ): Promise<ServiceResult<SavedRepair>> {
-  return run(async () => {
+  return runRepair(async () => {
     const updatedAt = new Date();
     await db.transaction(async (tx) => {
       const current = await lockSlip(tx, code);
+      if (current.kind !== "SIMPLE") {
+        throw new ServiceFailure(conflict(REPAIR_SERVICE_MESSAGES.workOrder));
+      }
       if (current.status !== "DRAFT") {
         throw new ServiceFailure(conflict(REPAIR_SERVICE_MESSAGES.frozen));
       }
@@ -380,9 +388,12 @@ export function deleteRepairDraft(
   actor: Actor,
   code: string,
 ): Promise<ServiceResult<null>> {
-  return run(async () => {
+  return runRepair(async () => {
     await db.transaction(async (tx) => {
       const current = await lockSlip(tx, code);
+      if (current.kind !== "SIMPLE") {
+        throw new ServiceFailure(conflict(REPAIR_SERVICE_MESSAGES.workOrder));
+      }
       if (current.status !== "DRAFT") {
         throw new ServiceFailure(conflict(REPAIR_SERVICE_MESSAGES.frozen));
       }
@@ -443,9 +454,12 @@ export function postRepairOrder(
   body: PostBody = {},
   now: BusinessDate = today(),
 ): Promise<ServiceResult<PostedRepair>> {
-  return run(async () => {
+  return runRepair(async () => {
     const posted = await db.transaction(async (tx) => {
       const slip = await lockSlip(tx, code);
+      if (slip.kind !== "SIMPLE") {
+        throw new ServiceFailure(conflict(REPAIR_SERVICE_MESSAGES.workOrder));
+      }
       if (slip.status !== "DRAFT") {
         throw new ServiceFailure(
           conflict(REPAIR_SERVICE_MESSAGES.alreadyPosted),

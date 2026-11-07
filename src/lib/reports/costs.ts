@@ -40,20 +40,29 @@ export async function repairSums(
   db: Reader,
   range: DateRange,
 ): Promise<RepairSum[]> {
-  // The posting day is the day of the slip's ledger lines (design D3).
+  // The posting day is the day of the ledger lines of the slip's posting
+  // (design D3). A work order also has transfer lines when the workshop
+  // takes the stock or the order is cancelled; they carry other posting ids,
+  // so they never move the order to the month it was received
+  // (repair-work-orders design D3).
   const posted = db
     .select({
-      orderId: sql<string>`${inventoryLedger.documentId}`.as("order_id"),
+      orderId: sql<string>`${repairOrder.id}`.as("posted_order_id"),
       day: sql<string>`min(${inventoryLedger.businessDate})`.as("day"),
     })
     .from(inventoryLedger)
+    .innerJoin(
+      repairOrder,
+      eq(repairOrder.postingId, inventoryLedger.postingId),
+    )
     .where(
       and(
         eq(inventoryLedger.documentType, REPAIR_DOCUMENT_TYPE),
+        eq(repairOrder.status, "POSTED"),
         between(inventoryLedger.businessDate, range.from, range.to),
       ),
     )
-    .groupBy(inventoryLedger.documentId)
+    .groupBy(repairOrder.id)
     .as("posted");
   const month = sql<string>`to_char(${posted.day}::date, 'YYYY-MM')`;
   const rows = await db
@@ -61,15 +70,15 @@ export async function repairSums(
       month,
       repairCost: sql<string>`sum(${repairOrderLine.repairCost})`,
       lossAmount: sql<string>`sum(coalesce(${repairOrderLine.lossAmount}, 0))`,
+      materialCost: sql<string>`sum(${repairOrderLine.materialAmount})`,
     })
     .from(posted)
-    .innerJoin(repairOrder, eq(repairOrder.id, posted.orderId))
-    .innerJoin(repairOrderLine, eq(repairOrderLine.orderId, repairOrder.id))
-    .where(eq(repairOrder.status, "POSTED"))
+    .innerJoin(repairOrderLine, eq(repairOrderLine.orderId, posted.orderId))
     .groupBy(month);
   return rows.map((row) => ({
     month: row.month,
     repairCost: Number(row.repairCost),
     lossAmount: Number(row.lossAmount),
+    materialCost: Number(row.materialCost),
   }));
 }

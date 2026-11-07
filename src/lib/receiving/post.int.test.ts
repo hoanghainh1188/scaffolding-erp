@@ -15,6 +15,8 @@ import {
 import type { BusinessDate } from "@/domain/business-date";
 import { LANDED_COST_MESSAGES } from "@/domain/landed-cost";
 import { dict } from "@/locales";
+import { createGroup } from "@/lib/catalog/item-groups";
+import { createItem } from "@/lib/catalog/items";
 import { reconcileInventory } from "@/lib/inventory/reconcile";
 import { postMovements } from "@/lib/inventory/post";
 import { closeOrder, updateOrder } from "@/lib/purchasing/orders";
@@ -559,5 +561,76 @@ describe("posting in the activity log (activity-log 5.3)", () => {
     expect(
       (await activityTrail(ctx.db)).filter((row) => row.startsWith("POST")),
     ).toEqual([]);
+  });
+});
+
+describe("supplies straight into the workshop (0.2 số 131)", () => {
+  async function placeId(code: string) {
+    const [row] = await ctx.db
+      .select({ id: location.id })
+      .from(location)
+      .where(eq(location.code, code));
+    return row?.id ?? "";
+  }
+
+  async function suppliesOrder() {
+    const group = await createGroup(ctx.db, fx.director, {
+      name: "Vật tư phụ",
+      category: "MATERIAL",
+    });
+    if (!group.ok) throw new Error(group.error);
+    const qh = await createItem(ctx.db, fx.director, {
+      groupId: group.data.id,
+      code: "VT-QH",
+      name: "Que hàn",
+      unit: "KG",
+    });
+    if (!qh.ok) throw new Error(qh.error);
+    const one = await placedOrder(ctx, fx, {
+      ...d3Order(fx),
+      kind: "NEW",
+      lines: [
+        { itemId: qh.data.id, unit: "KG", quantity: "20", unitPrice: 45_000 },
+      ],
+      costs: [],
+    });
+    return {
+      code: one,
+      line: (await orderLineIds(ctx, one)).get("VT-QH") ?? "",
+      itemId: qh.data.id,
+    };
+  }
+
+  it("posts a supplies-only order into XUONG-01", async () => {
+    const order = await suppliesOrder();
+    const workshop = await placeId("XUONG-01");
+    await posted({
+      ...oneLine(order, "20", { kind: "NEW" }),
+      locationId: workshop,
+    });
+    const rows = await ctx.db
+      .select({
+        locationId: inventoryLedger.locationId,
+        movement: inventoryLedger.movement,
+        quantity: inventoryLedger.quantity,
+      })
+      .from(inventoryLedger)
+      .where(eq(inventoryLedger.itemId, order.itemId));
+    expect(rows).toEqual([
+      { locationId: workshop, movement: "PURCHASE_IN", quantity: "20.000" },
+    ]);
+  });
+
+  it("refuses the workshop for an order with equipment", async () => {
+    const order = await khungOrder("NEW", "10");
+    const before = await ledgerCount();
+    const result = await post({
+      ...oneLine(order, "10", { kind: "NEW" }),
+      locationId: await placeId("XUONG-01"),
+    });
+    expect(result.ok ? "" : result.error).toBe(
+      "Chỉ đơn toàn vật tư phụ mới nhập vào xưởng, chọn một bãi",
+    );
+    expect(await ledgerCount()).toBe(before);
   });
 });

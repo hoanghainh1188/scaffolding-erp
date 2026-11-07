@@ -74,6 +74,7 @@ const ORDER: ReceivingOrder = {
   ],
   expectedCosts: toMoney(4_880_000),
   yards: [{ id: "bai", code: "BAI-01", name: "Bãi chính" }],
+  materialsOnly: false,
   scrapPrice: { pricePerKg: toMoney(7_500), updated: "20/10/2026" },
 };
 
@@ -331,5 +332,37 @@ describe("ReceiptFormView (M3)", () => {
         within(mam).getByLabelText("Thực nhận Mâm giàn giáo 1,6m"),
       ).toHaveFocus(),
     );
+  });
+});
+
+describe("M3 place for a supplies-only order (0.2 số 131)", () => {
+  it("offers the workshop when every line is a supply", async () => {
+    render(
+      <ReceiptFormView
+        order={{
+          ...ORDER,
+          kind: "NEW",
+          lines: [line("qh", "VT-QH", "Que hàn", 20_000, "KG")],
+          yards: [
+            { id: "bai", code: "BAI-01", name: "Bãi chính" },
+            { id: "xuong", code: "XUONG-01", name: "Xưởng" },
+          ],
+          materialsOnly: true,
+        }}
+        userId="vantung"
+      />,
+    );
+    const select = await screen.findByLabelText("Nhập vào");
+    expect(
+      within(select)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Chọn bãi hoặc xưởng", "Bãi chính", "Xưởng"]);
+  });
+
+  it("keeps an order with equipment to the yard", async () => {
+    renderForm();
+    await screen.findByLabelText("Xe");
+    expect(screen.queryByLabelText("Nhập vào")).toBeNull();
   });
 });

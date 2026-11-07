@@ -33,6 +33,7 @@ describe("actions and groups (design D3)", () => {
     ]);
     expect(GROUP_ACTIONS.REVERSAL).toEqual([
       "RETURN",
+      "RECALL",
       "REJECT",
       "CANCEL",
       "CLOSE",
@@ -62,6 +63,16 @@ describe("actions and groups (design D3)", () => {
     expect(actionLabel("DELETE_DRAFT", "REPAIR_ORDER")).toBe("Xóa nháp");
     expect(actionLabel("SIGN_IN", null)).toBe("Đăng nhập");
     expect(actionLabel("REJECT", "COMPENSATION_NOTE")).toBe("Từ chối");
+    expect(actionLabel("RETURN", "REPAIR_ORDER")).toBe("Trả lại xưởng");
+    expect(actionLabel("ASSIGN", "REPAIR_ORDER")).toBe("Giao xưởng");
+    expect(GROUP_ACTIONS.UPDATE).toEqual([
+      "UPDATE",
+      "START",
+      "ASSIGN",
+      "RECEIVE",
+      "REPORT",
+      "COUNT",
+    ]);
   });
 
   it("labels every document type", () => {

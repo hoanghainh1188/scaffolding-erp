@@ -70,6 +70,8 @@ export interface ItemView {
   dailyRentalPrice: number | null;
   lostPrice: number | null;
   damagePrice: number | null;
+  /** Piece-rate labour of a repair (0.2 số 117); only on equipment. */
+  repairLaborRate?: number | null;
   status: string;
 }
 
@@ -96,6 +98,11 @@ export const ITEM_FIELDS: readonly FieldSpec<ItemView>[] = [
     field: "damagePrice",
     label: "Giá đền hỏng",
     value: (r) => moneyText(r.damagePrice),
+  },
+  {
+    field: "repairLaborRate",
+    label: "Đơn giá công sửa / cái",
+    value: (r) => moneyText(r.repairLaborRate),
   },
   status<ItemView>(),
 ];

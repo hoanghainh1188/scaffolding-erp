@@ -29,6 +29,11 @@ const ACTION_TONES: Readonly<Record<ActivityAction, BadgeTone>> = {
   DELETE: "destructive",
   SIGN_IN: "muted",
   START: "highlight",
+  ASSIGN: "neutral",
+  RECALL: "warning",
+  RECEIVE: "highlight",
+  REPORT: "highlight",
+  COUNT: "highlight",
 };
 
 export function actionBadge(

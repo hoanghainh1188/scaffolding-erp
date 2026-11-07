@@ -17,6 +17,7 @@ import { seedPayables } from "@/lib/payables/sample";
 import { seedReceivables } from "@/lib/receivables/sample";
 import { seedReceiving } from "@/lib/receiving/sample";
 import { seedRepairs } from "@/lib/repairs/sample";
+import { seedWorkOrders } from "@/lib/repairs/work-sample";
 import { seedReturns } from "@/lib/returns/sample";
 import { seedSiteOperations } from "@/lib/site-transfers/sample";
 import { seedStocktakes } from "@/lib/stocktakes/sample";
@@ -113,6 +114,20 @@ async function main(): Promise<number> {
     // Sample supplier terms and payment (payables 8.1).
     const moneyOut = accountant ? await seedPayables(handle.db, accountant) : 0;
     process.stdout.write(`Phải trả mẫu: thêm ${moneyOut} dòng.\n`);
+    // Sample work order counted like drawing D12 (repair-work-orders 9.1).
+    const workshopUser = await actorByUsername(handle.db, "xuong");
+    const workOrders =
+      director && accountant && warehouse && workshopUser
+        ? await seedWorkOrders(handle.db, {
+            director,
+            accountant,
+            warehouse,
+            workshop: workshopUser,
+          })
+        : 0;
+    process.stdout.write(
+      `Vật tư phụ và lệnh sửa mẫu: thêm ${workOrders} bản ghi.\n`,
+    );
     // Sample activity log like drawing D18 (activity-log design D13).
     const activity =
       director && accountant && sales && warehouse

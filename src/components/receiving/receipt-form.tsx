@@ -225,7 +225,9 @@ export function ReceiptFormView({
           {order.yards.length > 1 && (
             <>
               <dt className="text-muted-foreground">
-                <label htmlFor="receipt-yard">Bãi nhập</label>
+                <label htmlFor="receipt-yard">
+                  {order.materialsOnly ? "Nhập vào" : "Bãi nhập"}
+                </label>
               </dt>
               <dd>
                 <select
@@ -238,7 +240,9 @@ export function ReceiptFormView({
                   }}
                   className="h-10 w-full rounded-md border bg-card px-2"
                 >
-                  <option value="">Chọn bãi</option>
+                  <option value="">
+                    {order.materialsOnly ? "Chọn bãi hoặc xưởng" : "Chọn bãi"}
+                  </option>
                   {order.yards.map((yard) => (
                     <option key={yard.id} value={yard.id}>
                       {yard.name}

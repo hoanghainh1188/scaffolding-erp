@@ -117,6 +117,8 @@ export const item = pgTable(
     dailyRentalPrice: bigint("daily_rental_price", { mode: "number" }),
     lostPrice: bigint("lost_price", { mode: "number" }),
     damagePrice: bigint("damage_price", { mode: "number" }),
+    /** ₫ per repaired piece, piece-rate labour (0.2 số 117); null = not set. */
+    repairLaborRate: bigint("repair_labor_rate", { mode: "number" }),
     searchText: text("search_text").notNull(),
     ...audit(),
   },
@@ -128,7 +130,7 @@ export const item = pgTable(
     ),
     check(
       "item_prices_check",
-      sql`coalesce(${table.dailyRentalPrice}, 0) >= 0 and coalesce(${table.lostPrice}, 0) >= 0 and coalesce(${table.damagePrice}, 0) >= 0`,
+      sql`coalesce(${table.dailyRentalPrice}, 0) >= 0 and coalesce(${table.lostPrice}, 0) >= 0 and coalesce(${table.damagePrice}, 0) >= 0 and coalesce(${table.repairLaborRate}, 0) >= 0`,
     ),
     itemCodeCheck("item_code_check", table.code),
     statusCheck("item_status_check", table.status),

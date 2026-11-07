@@ -60,7 +60,9 @@ export function OutboxRunner({ userId }: { userId: string }) {
             ? `Đã xuất ${notice.code}`
             : notice.kind === "TRANSFER"
               ? `Đã chuyển ${notice.code}`
-              : `Đã nhập kho ${notice.code} · ${notice.title}`}
+              : notice.kind === "REPAIR"
+                ? `Đã gửi ${notice.code} về văn phòng`
+                : `Đã nhập kho ${notice.code} · ${notice.title}`}
       </span>
       <Button
         variant="ghost"

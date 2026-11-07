@@ -31,7 +31,8 @@ const repair = (
   month: string,
   repairCost: number,
   lossAmount: number,
-): RepairSum => ({ month, repairCost, lossAmount });
+  materialCost = 0,
+): RepairSum => ({ month, repairCost, lossAmount, materialCost });
 const noRevenue = new Map<string, RevenueParts>();
 
 function totalsOf(
@@ -240,6 +241,46 @@ describe("no cost taken twice (design D1, 0.2 #111)", () => {
     expect(total.costs.repair).toBe(0);
     expect(total.repairSpent).toBe(1_980_000);
     expect(ledgerCostCheck(ledger, repairs)).toBe(0);
+  });
+
+  it("work order D12: supplies are not taken twice (repair-work-orders D3)", () => {
+    const ledger = [
+      line("2026-11", "REPAIR", "TRANSFER_OUT", -7_000_000),
+      line("2026-11", "REPAIR", "TRANSFER_IN", 7_000_000),
+      line("2026-11", "REPAIR", "REPAIR_OUT", -6_400_000),
+      line("2026-11", "REPAIR", "REPAIR_IN", 7_975_000),
+      line("2026-11", "REPAIR", "REPAIR_IN", 405_000),
+      line("2026-11", "REPAIR", "REPAIR_OUT", -600_000),
+      line("2026-11", "REPAIR", "REPAIR_IN", 845_000),
+      line("2026-11", "REPAIR", "REPAIR_OUT", -585_000),
+    ];
+    const repairs = [repair("2026-11", 2_225_000, 0, 585_000)];
+    const { total } = totalsOf(["2026-11"], ledger, repairs);
+    expect(total.costs.repair).toBe(0);
+    expect(total.costTotal).toBe(0);
+    expect(total.repairSpent).toBe(2_225_000);
+    expect(ledgerCostCheck(ledger, repairs)).toBe(0);
+    // The old check added the supplies back and was 585.000 ₫ off.
+    expect(ledgerCostCheck(ledger, [repair("2026-11", 2_225_000, 0)])).toBe(
+      585_000,
+    );
+  });
+
+  it("work order with supplies, then the stock is lost", () => {
+    const months = ["2026-11", "2026-12"];
+    const ledger = [
+      line("2026-11", "REPAIR", "REPAIR_OUT", -2_500_000),
+      line("2026-11", "REPAIR", "REPAIR_IN", 3_000_000),
+      line("2026-11", "REPAIR", "REPAIR_OUT", -200_000),
+      line("2026-12", RETURN, "LOSS_OUT", -3_000_000),
+    ];
+    const repairs = [repair("2026-11", 500_000, 0, 200_000)];
+    const { rows, total } = totalsOf(months, ledger, repairs);
+    expect(sumMonths(rows, ["2026-11"]).costTotal).toBe(0);
+    expect(rows[0]?.repairSpent).toBe(500_000);
+    expect(rows[1]?.costs.loss).toBe(3_000_000);
+    expect(total.costTotal).toBe(3_000_000);
+    expect(ledgerCostCheck(ledger, repairs)).toBe(3_000_000);
   });
 
   it("keeps a negative write-down when the stock comes back dearer", () => {

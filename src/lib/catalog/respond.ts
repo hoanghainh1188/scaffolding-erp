@@ -63,6 +63,8 @@ export const itemBody = z.object({
   dailyRentalPrice: money.optional(),
   lostPrice: money.optional(),
   damagePrice: money.optional(),
+  /** Set through its own route (repairs.manage); here it is refused. */
+  repairLaborRate: z.unknown().optional(),
   status: statusField.optional(),
 });
 

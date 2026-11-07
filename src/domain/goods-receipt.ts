@@ -46,6 +46,8 @@ export const RECEIPT_MESSAGES = {
   closedShort: "Nhận thiếu, không chờ giao bù",
   noYard: "Chưa có bãi đang dùng để nhập hàng",
   yardMissing: "Chọn bãi nhập hàng",
+  workshopNeedsMaterials:
+    "Chỉ đơn toàn vật tư phụ mới nhập vào xưởng, chọn một bãi",
 } as const;
 
 /** The order changed under the phone (design D5): HTTP 409, not a form error. */

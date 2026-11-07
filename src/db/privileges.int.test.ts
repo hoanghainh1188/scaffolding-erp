@@ -46,6 +46,7 @@ const UPDATE_COLUMN: Readonly<
   receipt: "amount",
   receipt_allocation: "amount",
   receipt_cancellation: "reason",
+  repair_order_submission: "created_at",
   scrap_price: "created_at",
   supplier_payment: "amount",
   supplier_payment_allocation: "amount",

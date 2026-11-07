@@ -97,6 +97,12 @@ export interface RepairSum {
   month: string;
   /** Repair cost on the slip lines: spent, already in the Good price. */
   repairCost: number;
+  /**
+   * The part of repairCost that is supplies issued from stock (work
+   * orders, repair-work-orders design D3): it moved value inside the
+   * ledger, so the check must not add it back. 0 on simple slips.
+   */
+  materialCost: number;
   /** Damage loss of lines with nothing repaired (0.2 số 23). */
   lossAmount: number;
 }
@@ -208,7 +214,9 @@ export function sumMonths(
 
 /**
  * The check of design D1: cost and losses = − the ledger value of every
- * line but stock coming in, + the repair cost of the slips.
+ * line but stock coming in, + the repair cost that did not go through the
+ * ledger (typed cost of simple slips, labour of work orders; supplies are
+ * already ledger lines, repair-work-orders design D3).
  */
 export function ledgerCostCheck(
   ledger: readonly LedgerSum[],
@@ -217,7 +225,10 @@ export function ledgerCostCheck(
   const ledgerValue = ledger
     .filter((row) => !ACQUISITIONS.has(row.movement))
     .reduce((sum, row) => sum + row.amount, 0);
-  const spent = repairs.reduce((sum, row) => sum + row.repairCost, 0);
+  const spent = repairs.reduce(
+    (sum, row) => sum + row.repairCost - row.materialCost,
+    0,
+  );
   return -ledgerValue + spent;
 }
 

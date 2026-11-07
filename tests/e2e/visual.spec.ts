@@ -538,3 +538,54 @@ test.describe("dashboard baselines @visual", () => {
     });
   }
 });
+
+// repair-work-orders task 9.4: the seed's work orders (src/lib/repairs/
+// work-sample.ts), reached from their lists since codes follow the
+// database: D12 of the order counted like drawing D12 (money masked, the
+// averages move with other tests), M8 of the one being repaired.
+test.describe("repair work order baselines @visual", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "sets its own viewport");
+  });
+
+  async function shoot(page: Page, name: string) {
+    await zeroMaskedDigits(page);
+    await page.addStyleTag({
+      content: "nextjs-portal { display: none !important; }",
+    });
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page).toHaveScreenshot(`${name}.png`, {
+      fullPage: true,
+      mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
+      animations: "disabled",
+      caret: "hide",
+    });
+  }
+
+  for (const width of WIDTHS) {
+    test(`d12-work-order at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/repairs?status=counted");
+      await waitForHydration(page, DESKTOP_READY);
+      await page
+        .getByRole("link", { name: /^PSC-\d{4}-\d{3,}$/ })
+        .last()
+        .click();
+      await expect(
+        page.getByRole("heading", { level: 1, name: /^Lệnh sửa chữa/ }),
+      ).toBeVisible();
+      await waitForHydration(page, DESKTOP_READY);
+      await shoot(page, `d12-work-order-${width}`);
+    });
+
+    test(`m8-repair at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/m/repairs");
+      await waitForHydration(page, MOBILE_READY);
+      await page.getByRole("link", { name: "Tiếp tục" }).last().click();
+      await expect(page.getByText("Lệnh sửa chữa").first()).toBeVisible();
+      await waitForHydration(page, MOBILE_READY);
+      await shoot(page, `m8-repair-${width}`);
+    });
+  }
+});

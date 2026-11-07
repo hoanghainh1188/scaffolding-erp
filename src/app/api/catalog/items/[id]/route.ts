@@ -1,4 +1,6 @@
-import { withAuth } from "@/lib/auth/guard";
+import { can } from "@/domain/permissions";
+import { fail } from "@/lib/api-response";
+import { GUARD_MESSAGES, withAuth } from "@/lib/auth/guard";
 import { deleteItem, updateItem } from "@/lib/catalog/items";
 import {
   NOT_FOUND,
@@ -13,11 +15,16 @@ type Params = { id: string };
 
 /** Edits, archives (status) or restores; code and unit never change. */
 export const PATCH = withAuth<Params>(
-  async (request, { actor, params }) => {
+  async (request, { actor, params, user }) => {
     if (!isUuid(params.id)) return NOT_FOUND();
     const body = await readJson(request, itemBody);
     if (!body.ok) return body.response;
-    return respond(await updateItem(catalogDb(), actor, params.id, body.data));
+    const { repairLaborRate, ...input } = body.data;
+    // The labour rate belongs to repairs.manage (0.2 số 123), not items.manage.
+    if (repairLaborRate !== undefined && !can(user.role, "repairs.manage")) {
+      return fail(GUARD_MESSAGES.forbidden, 403);
+    }
+    return respond(await updateItem(catalogDb(), actor, params.id, input));
   },
   { permission: "items.manage" },
 );

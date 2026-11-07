@@ -149,7 +149,7 @@ type LineQuantity = "taken" | "good" | "scrap";
  * "40 cái, 5 bó". `bare` drops the label when every line shares one unit
  * ("4 phế liệu").
  */
-function sumByUnit(
+export function sumByUnit(
   lines: readonly RepairLineView[],
   pick: LineQuantity,
   bare = false,
@@ -183,6 +183,79 @@ export function postedSummary(view: RepairView, confirmed: string | null) {
   return joinParts(
     `${sumByUnit(view.lines, "good")} về Tốt, ${sumByUnit(view.lines, "scrap", true)} phế liệu`,
     `chi phí ${moneyText(cost)}`,
+    confirmed,
+  );
+}
+
+// Work orders (repair-work-orders spec activity-log): the phone steps carry
+// no price; posting gives labour, supplies and the repair cost.
+
+/** "XUONG-01 · tổ anh Lực · 2 mã hàng · 60 cái" (Giao xưởng). */
+export function assignSummary(view: RepairView): string {
+  return joinParts(
+    view.to,
+    view.repairedBy,
+    countText(view.lines.length, "mã hàng"),
+    sumByUnit(view.lines, "taken"),
+  );
+}
+
+/** "BAI-01 → XUONG-01 · 60 cái" (Nhận lệnh, Hủy after receiving). */
+export function moveSummary(
+  view: RepairView,
+  direction: "receive" | "cancel",
+): string {
+  const path =
+    direction === "receive"
+      ? `${view.from} → ${view.to}`
+      : `${view.to} → ${view.from}`;
+  return joinParts(path, sumByUnit(view.lines, "taken"));
+}
+
+/** "56 cái sửa xong, 4 phế · 3 vật tư" (Báo sửa xong, Đếm xong). */
+export function reportSummary(view: RepairView, materials: number): string {
+  return joinParts(
+    `${sumByUnit(view.lines, "good")} sửa xong, ${sumByUnit(view.lines, "scrap", true)} phế`,
+    materials > 0 && countText(materials, "vật tư"),
+  );
+}
+
+/** "GG-K17: xưởng báo 36 / 4, đếm 35 / 5" for lines the count changed. */
+export function countDifferences(
+  lines: readonly {
+    code: string;
+    unit: QuantityUnit;
+    reportedGood: string;
+    reportedScrap: string;
+    good: string;
+    scrap: string;
+  }[],
+): string | null {
+  const parts = lines
+    .filter(
+      (line) =>
+        quantityFromDb(line.reportedGood, line.unit).milli !==
+          quantityFromDb(line.good, line.unit).milli ||
+        quantityFromDb(line.reportedScrap, line.unit).milli !==
+          quantityFromDb(line.scrap, line.unit).milli,
+    )
+    .map(
+      (line) =>
+        `${line.code}: xưởng báo ${amount(line.reportedGood, line.unit)} / ${amount(line.reportedScrap, line.unit)}, đếm ${amount(line.good, line.unit)} / ${amount(line.scrap, line.unit)}`,
+    );
+  return parts.length > 0 ? parts.join("; ") : null;
+}
+
+/** "56 cái về Tốt, 4 phế liệu · công 1.640.000 ₫, vật tư 585.000 ₫ · chi phí 2.225.000 ₫". */
+export function workPostedSummary(
+  view: RepairView,
+  totals: { labor: number; material: number },
+  confirmed: string | null,
+): string {
+  return joinParts(
+    `${sumByUnit(view.lines, "good")} về Tốt, ${sumByUnit(view.lines, "scrap", true)} phế liệu`,
+    `công ${moneyText(totals.labor)}, vật tư ${moneyText(totals.material)}`,
+    `chi phí ${moneyText(totals.labor + totals.material)}`,
     confirmed,
   );
 }

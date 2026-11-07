@@ -9,9 +9,12 @@ import { describe, expect, it } from "vitest";
 
 const LIB = join(process.cwd(), "src/lib");
 
-/** Exported names that start like a write. */
+/**
+ * Exported names that start like a write, and the steps of a repair work
+ * order (repair-work-orders task 4.7), named after what they do.
+ */
 const WRITE_NAME =
-  /^(create|update|delete|place|cancel|close|post|set|submit|approve|return|request|start|reset|unlock|lock|change|sign)[A-Z]/;
+  /^(create|update|delete|place|cancel|close|post|set|submit|approve|return|request|start|reset|unlock|lock|change|sign)[A-Z]|^(assign|recall|receive|report|count)WorkOrder$/;
 
 /** Files that never act for a signed-in user, so never log. */
 const SKIPPED_FILE =
@@ -29,6 +32,10 @@ export const NOT_LOGGED: Readonly<Record<string, string>> = {
     "ledger helper; the document's own service logs the action",
   "inventory/adjustments.ts#lockAdjustment":
     "row lock shared with trip-adjustments.ts; the command logs",
+  "repairs/orders.ts#lockSlip":
+    "row lock shared by the repair commands; the command logs",
+  "repairs/work-orders.ts#lockWorkOrder":
+    "row lock shared by the work-order commands; the command logs",
   "inventory/post.ts#lockForPosting":
     "row locks before posting; writes nothing",
   "contracts/records.ts#lockContract":

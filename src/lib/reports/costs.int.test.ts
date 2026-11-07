@@ -3,10 +3,12 @@
 // app's services; the stocktake and the value correction are written with
 // postMovements under their document types (their services are tested in
 // their own changes).
+import { randomUUID } from "node:crypto";
+
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { inventoryLedger, returnNote } from "@/db/schema";
+import { inventoryLedger, repairOrder, returnNote } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import {
   ledgerCostCheck,
@@ -21,7 +23,16 @@ import {
   submitAdjustment,
 } from "@/lib/inventory/adjustments";
 import { postMovements } from "@/lib/inventory/post";
+import { createGroup } from "@/lib/catalog/item-groups";
+import { createItem, setRepairLaborRate } from "@/lib/catalog/items";
 import { createRepairDraft, postRepairOrder } from "@/lib/repairs/orders";
+import {
+  countWorkOrder,
+  receiveWorkOrder,
+  reportWorkOrder,
+} from "@/lib/repairs/work-floor";
+import { assignWorkOrder, createWorkOrder } from "@/lib/repairs/work-orders";
+import { postWorkOrder } from "@/lib/repairs/work-post";
 import { setScrapPrice } from "@/lib/receiving/scrap-price";
 import { returnDetail } from "@/lib/returns/queries";
 import { createTestContext } from "@/test/auth";
@@ -47,7 +58,7 @@ async function costsOf(range = NOVEMBER) {
     ledgerSums(ctx.db, range),
     repairSums(ctx.db, range),
   ]);
-  const months = ["2026-11"];
+  const months = [range.from.slice(0, 7)];
   const rows = monthlyProfit(months, new Map(), ledger, repairs, new Set());
   return { ledger, repairs, total: sumMonths(rows, months) };
 }
@@ -158,6 +169,138 @@ describe("cost lines of a month", () => {
     expect(total.repairSpent).toBe(500_000);
     expect(await valueOf(draft.data.code)).toBe(500_000);
     expect(ledgerCostCheck(ledger, repairs)).toBe(total.costTotal);
+  });
+
+  it("counts a work order in the month it is posted, supplies not twice (repair-work-orders 5.1)", async () => {
+    const posted = await returnOf(ctx, fx, { "GG-K17": [0, 10, 0, 0] });
+    if (!posted.ok) throw new Error(posted.error);
+    const workshop = await fx.place("XUONG-01");
+    const group = await createGroup(ctx.db, fx.director, {
+      name: "Vật tư phụ",
+      category: "MATERIAL",
+    });
+    if (!group.ok) throw new Error(group.error);
+    const qh = await createItem(ctx.db, fx.director, {
+      groupId: group.data.id,
+      code: "VT-QH",
+      name: "Que hàn",
+      unit: "KG",
+    });
+    if (!qh.ok) throw new Error(qh.error);
+    await ctx.db.transaction((tx) =>
+      postMovements(
+        tx,
+        fx.director,
+        {
+          documentType: "OPENING",
+          documentId: null,
+          documentCode: "TĐK-2026-010",
+          businessDate: d("2026-11-01"),
+          lines: [
+            {
+              itemId: qh.data.id,
+              condition: "NEW",
+              locationId: workshop,
+              movement: "OPENING",
+              quantityMilli: 18_000,
+              amount: 810_000,
+              description: "Tồn đầu kỳ",
+            },
+          ],
+        },
+        d("2026-11-01"),
+      ),
+    );
+    const rate = await setRepairLaborRate(
+      ctx.db,
+      fx.director,
+      fx.item("GG-K17"),
+      30_000,
+    );
+    if (!rate.ok) throw new Error(rate.error);
+    const made = await createWorkOrder(
+      ctx.db,
+      fx.accountant,
+      {
+        workshopId: workshop,
+        fromLocationId: fx.yard,
+        lines: [{ itemId: fx.item("GG-K17"), quantityTaken: "10" }],
+      },
+      NOV_6,
+    );
+    if (!made.ok) throw new Error(made.error);
+    const code = made.data.code;
+    const seen = async () => {
+      const [row] = await ctx.db
+        .select({ updatedAt: repairOrder.updatedAt })
+        .from(repairOrder)
+        .where(eq(repairOrder.code, code));
+      return { updatedAt: row?.updatedAt.toISOString() };
+    };
+    const lines = [
+      {
+        itemId: fx.item("GG-K17"),
+        good: "10",
+        scrap: "0",
+        materials: [{ itemId: qh.data.id, quantity: "4" }],
+      },
+    ];
+    for (const step of [
+      async () => assignWorkOrder(ctx.db, fx.accountant, code, await seen()),
+      async () =>
+        receiveWorkOrder(
+          ctx.db,
+          fx.director,
+          code,
+          { draftId: randomUUID(), ...(await seen()) },
+          NOV_6,
+        ),
+      async () =>
+        reportWorkOrder(
+          ctx.db,
+          fx.director,
+          code,
+          { draftId: randomUUID(), ...(await seen()), lines },
+          NOV_6,
+        ),
+      async () =>
+        countWorkOrder(ctx.db, fx.director, code, {
+          draftId: randomUUID(),
+          ...(await seen()),
+          lines,
+        }),
+      async () =>
+        postWorkOrder(
+          ctx.db,
+          fx.accountant,
+          code,
+          await seen(),
+          d("2026-12-01"),
+        ),
+    ]) {
+      const result = await step();
+      if (!result.ok) throw new Error(result.error);
+    }
+    const november = await costsOf();
+    expect(november.total.repairSpent).toBe(0);
+    const december = await costsOf({
+      from: d("2026-12-01"),
+      to: d("2026-12-31"),
+    });
+    // Labour 10 × 30.000 + supplies 4 kg × 45.000.
+    expect(december.repairs).toEqual([
+      {
+        month: "2026-12",
+        repairCost: 480_000,
+        lossAmount: 0,
+        materialCost: 180_000,
+      },
+    ]);
+    expect(december.total.repairSpent).toBe(480_000);
+    expect(december.total.costs.repair).toBe(0);
+    expect(ledgerCostCheck(december.ledger, december.repairs)).toBe(
+      december.total.costTotal,
+    );
   });
 
   it("puts a condition fix with the count line, not the value correction", async () => {
