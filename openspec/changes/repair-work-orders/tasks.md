@@ -70,19 +70,19 @@
 
 ## 5. Báo cáo D15 và hàng cho thuê
 
-- [ ] 5.1 `src/lib/reports/costs.ts` `repairSums`: nối sổ theo `repair_order.posting_id`, cộng `material_amount`. Integration test:
+- [x] 5.1 `src/lib/reports/costs.ts` `repairSums`: nối sổ theo `repair_order.posting_id`, cộng `material_amount`. Integration test:
   - Lệnh nhận 30/10, ghi sổ 02/11 → chi phí đã chi vào tháng 11.
   - D15 tháng có lệnh D12: khoản Sửa chữa 0 ₫, "Chi phí sửa đã chi 2.225.000 ₫", và `ledgerCostCheck` khớp tổng giá vốn và hao hụt.
-- [ ] 5.2 `src/lib/reports/fleet.ts`: chỉ mã nhóm `EQUIPMENT`. Integration test: 18 kg `VT-QH` Mới ở `XUONG-01` không vào hàng cho thuê bình quân, hao hụt, khai thác. Chạy `npm run bench:reports` so với số đo trước (ghi kết quả vào PR).
+- [x] 5.2 `src/lib/reports/fleet.ts`: chỉ mã nhóm `EQUIPMENT`. Integration test: 18 kg `VT-QH` Mới ở `XUONG-01` không vào hàng cho thuê bình quân, hao hụt, khai thác. Chạy `npm run bench:reports` so với số đo trước (ghi kết quả vào PR).
 
 ## 6. API
 
-- [ ] 6.1 Desktop `/api/repairs/**`:
+- [x] 6.1 Desktop `/api/repairs/**`:
   - Tạo, sửa, xóa, `assign`, `recall`, `return`, `cancel`, `post` (chọn đường theo `kind`).
   - `withAuth` đúng quyền.
   - Integration test (`repairs-api.int.test.ts`): Xưởng, Thủ kho gọi `/post` → 403; Kinh doanh gọi `assign` → 403; 409 khi `updatedAt` lệch.
   - `src/app/route-guards.test.ts` xanh.
-- [ ] 6.2 Điện thoại `/api/m/repairs/**`:
+- [x] 6.2 Điện thoại `/api/m/repairs/**`:
   - Danh sách, chi tiết, `receive`, `report`, `count`, `materials`.
   - `repairs.work` / `repairs.count` theo route; Kế toán → 403.
   - Test JSON không có khóa nào khớp `/price|cost|amount|rate|labor|value/i`, kể cả với Giám đốc.

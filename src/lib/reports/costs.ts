@@ -47,7 +47,7 @@ export async function repairSums(
   // (repair-work-orders design D3).
   const posted = db
     .select({
-      orderId: sql<string>`${repairOrder.id}`.as("order_id"),
+      orderId: sql<string>`${repairOrder.id}`.as("posted_order_id"),
       day: sql<string>`min(${inventoryLedger.businessDate})`.as("day"),
     })
     .from(inventoryLedger)

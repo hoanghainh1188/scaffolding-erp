@@ -3,11 +3,12 @@
 // Good stock before the range, its change by Vietnam day in the range, and
 // what return notes brought back lost, as scrap or for repair. Lines are
 // joined to their location, so REVALUE lines (no location, 0.2 số 35) never
-// count. Nothing is stored.
+// count. Only equipment items: supplies are not rental stock
+// (repair-work-orders, 0.2 số 125). Nothing is stored.
 import { and, between, eq, inArray, lt, sql } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
-import { inventoryLedger, item, location } from "@/db/schema";
+import { inventoryLedger, item, itemGroup, location } from "@/db/schema";
 import type { BusinessDate } from "@/domain/business-date";
 import {
   dailyFleet,
@@ -44,6 +45,9 @@ async function fleetItems(db: Reader): Promise<FleetItem[]> {
       standardWeightKg: item.standardWeightKg,
     })
     .from(item)
+    .innerJoin(itemGroup, eq(itemGroup.id, item.groupId))
+    // Supplies (que hàn, sơn…) are not rental stock (0.2 số 125).
+    .where(eq(itemGroup.category, "EQUIPMENT"))
     .orderBy(item.code);
   return rows.map((row) => ({ ...row, unit: unitFromDb(row.unit) }));
 }
@@ -68,7 +72,9 @@ async function openingStock(
       ),
     )
     .groupBy(inventoryLedger.itemId, location.type);
-  return rows.map((row) => toBalance(row, units));
+  return rows
+    .filter((row) => units.has(row.itemId))
+    .map((row) => toBalance(row, units));
 }
 
 function toBalance(
@@ -108,10 +114,12 @@ async function dailyChanges(
       inventoryLedger.itemId,
       location.type,
     );
-  return rows.map((row) => ({
-    date: row.date as BusinessDate,
-    ...toBalance(row, units),
-  }));
+  return rows
+    .filter((row) => units.has(row.itemId))
+    .map((row) => ({
+      date: row.date as BusinessDate,
+      ...toBalance(row, units),
+    }));
 }
 
 /** What return notes brought back lost, as scrap or for repair. */
@@ -139,13 +147,15 @@ async function returnLosses(
       ),
     )
     .groupBy(month, inventoryLedger.itemId, kind);
-  return rows.map((row) => ({
-    month: row.month,
-    itemId: row.itemId,
-    kind: row.kind,
-    milli: quantityFromDb(row.quantity, units.get(row.itemId)?.unit ?? "KG")
-      .milli,
-  }));
+  return rows
+    .filter((row) => units.has(row.itemId))
+    .map((row) => ({
+      month: row.month,
+      itemId: row.itemId,
+      kind: row.kind,
+      milli: quantityFromDb(row.quantity, units.get(row.itemId)?.unit ?? "KG")
+        .milli,
+    }));
 }
 
 /** Day sums by month and returned losses of `range`. */

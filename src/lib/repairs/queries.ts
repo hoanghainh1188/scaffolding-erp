@@ -36,9 +36,9 @@ import { REPAIRABLE_UNITS } from "@/domain/repair-order";
 import { unitFromDb } from "@/lib/inventory/unit";
 import { currentScrapPrice } from "@/lib/receiving/scrap-price";
 
-import type { RepairStatus } from "./labels";
+import type { RepairKind, RepairStatus } from "./labels";
 
-export type { RepairStatus } from "./labels";
+export type { RepairKind, RepairStatus } from "./labels";
 
 const milli = (value: string | null) =>
   value === null ? 0 : quantityFromDb(value, "KG").milli;
@@ -50,6 +50,7 @@ const poster = alias(user, "poster");
 
 export interface RepairSummary {
   code: string;
+  kind: RepairKind;
   status: RepairStatus;
   repairDate: string;
   fromCode: string;
@@ -57,6 +58,8 @@ export interface RepairSummary {
   toCode: string;
   toName: string;
   lineCount: number;
+  /** Taken per unit. */
+  taken: UnitAmount[];
   /** To Good per unit (0.2 #47). */
   good: UnitAmount[];
   scrap: UnitAmount[];
@@ -66,6 +69,18 @@ export interface RepairSummary {
 }
 
 /** Newest first (spec "Danh sách phiếu sửa chữa"). */
+/** The kind of a slip by code, null when there is none. */
+export async function repairKindOf(
+  db: Database,
+  code: string,
+): Promise<RepairKind | null> {
+  const [row] = await db
+    .select({ kind: repairOrder.kind })
+    .from(repairOrder)
+    .where(eq(repairOrder.code, code));
+  return (row?.kind as RepairKind | undefined) ?? null;
+}
+
 export async function listRepairOrders(
   db: Database,
   filter: { status?: RepairStatus } = {},
@@ -89,6 +104,7 @@ export async function listRepairOrders(
   const rows = await db
     .select({
       code: repairOrder.code,
+      kind: repairOrder.kind,
       status: repairOrder.status,
       repairDate: repairOrder.repairDate,
       fromCode: fromPlace.code,
@@ -112,6 +128,7 @@ export async function listRepairOrders(
     .select({
       code: repairOrder.code,
       unit: item.unit,
+      taken: sql<string>`sum(${repairOrderLine.quantityTaken})`,
       good: sql<string>`sum(${repairOrderLine.quantityGood})`,
       scrap: sql<string>`sum(${repairOrderLine.quantityScrap})`,
     })
@@ -120,7 +137,7 @@ export async function listRepairOrders(
     .innerJoin(item, eq(item.id, repairOrderLine.itemId))
     .where(where.length ? and(...where) : undefined)
     .groupBy(repairOrder.code, item.unit);
-  const amounts = (code: string, pick: "good" | "scrap") =>
+  const amounts = (code: string, pick: "taken" | "good" | "scrap") =>
     sumByUnit(
       perUnit
         .filter((row) => row.code === code)
@@ -131,6 +148,7 @@ export async function listRepairOrders(
     );
   return rows.map((row) => ({
     code: row.code,
+    kind: row.kind as RepairKind,
     status: row.status as RepairStatus,
     repairDate: row.repairDate,
     fromCode: row.fromCode,
@@ -138,6 +156,7 @@ export async function listRepairOrders(
     toCode: row.toCode,
     toName: row.toName,
     lineCount: row.lineCount ?? 0,
+    taken: amounts(row.code, "taken"),
     good: amounts(row.code, "good"),
     scrap: amounts(row.code, "scrap"),
     cost: toMoney(Number(row.cost ?? 0)),

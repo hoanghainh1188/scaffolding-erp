@@ -133,6 +133,7 @@ function answer(status: number, body: unknown) {
 describe("RepairList", () => {
   const row: RepairSummary = {
     code: "PSC-2026-024",
+    kind: "SIMPLE",
     status: "DRAFT",
     repairDate: "2026-10-28",
     fromCode: "BAI-01",
@@ -140,6 +141,10 @@ describe("RepairList", () => {
     toCode: "BAI-01",
     toName: "Bãi chính",
     lineCount: 2,
+    taken: [
+      { unit: "PIECE", milli: 60 * K },
+      { unit: "BUNDLE", milli: 9 * K },
+    ],
     good: [
       { unit: "PIECE", milli: 56 * K },
       { unit: "BUNDLE", milli: 9 * K },

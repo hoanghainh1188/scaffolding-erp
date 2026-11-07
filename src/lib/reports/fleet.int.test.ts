@@ -5,6 +5,8 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import type { BusinessDate } from "@/domain/business-date";
 import { sumFleet, type DaySums } from "@/domain/fleet-metrics";
 import { monthsOf, type DateRange } from "@/domain/report-period";
+import { createGroup } from "@/lib/catalog/item-groups";
+import { createItem } from "@/lib/catalog/items";
 import { postMovements } from "@/lib/inventory/post";
 import { setScrapPrice } from "@/lib/receiving/scrap-price";
 import { createRepairDraft, postRepairOrder } from "@/lib/repairs/orders";
@@ -199,5 +201,51 @@ describe("rental stock by day", () => {
       whole.totalMilliDays,
     );
     expect(head.siteMilliDays + tail.siteMilliDays).toBe(whole.siteMilliDays);
+  });
+});
+
+describe("supplies are not rental stock (0.2 số 125)", () => {
+  it("leaves supply items out of the fleet", async () => {
+    const group = await createGroup(ctx.db, fx.director, {
+      name: "Vật tư phụ",
+      category: "MATERIAL",
+    });
+    if (!group.ok) throw new Error(group.error);
+    const qh = await createItem(ctx.db, fx.director, {
+      groupId: group.data.id,
+      code: "VT-QH",
+      name: "Que hàn",
+      unit: "KG",
+    });
+    if (!qh.ok) throw new Error(qh.error);
+    const workshop = await fx.place("XUONG-01");
+    await ctx.db.transaction((tx) =>
+      postMovements(
+        tx,
+        fx.director,
+        {
+          documentType: "OPENING",
+          documentId: null,
+          documentCode: "TĐK-2026-011",
+          businessDate: d("2026-11-03"),
+          lines: [
+            {
+              itemId: qh.data.id,
+              condition: "NEW",
+              locationId: workshop,
+              movement: "OPENING",
+              quantityMilli: 18 * K,
+              amount: 810_000,
+              description: "Tồn đầu kỳ",
+            },
+          ],
+        },
+        d("2026-11-03"),
+      ),
+    );
+    const fleet = await reportFleet(ctx.db, day("2026-11-03"));
+    expect(fleet.items.map((entry) => entry.code)).not.toContain("VT-QH");
+    const sums = sumFleet(fleet.months, ["2026-11"]);
+    expect(sums.byItem.has(qh.data.id)).toBe(false);
   });
 });

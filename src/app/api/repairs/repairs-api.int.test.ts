@@ -4,7 +4,6 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import type { BusinessDate } from "@/domain/business-date";
 import { can, type Permission } from "@/domain/permissions";
-import { REPAIR_MESSAGES } from "@/domain/repair-order";
 import { ROLES, type Role } from "@/domain/role";
 import { postMovements } from "@/lib/inventory/post";
 import { createRepairDraft, type RepairBody } from "@/lib/repairs/orders";
@@ -131,13 +130,24 @@ const READS: Call[] = [
   },
 ];
 
+/** A new repair is a work order (0.2 số 121). */
+const workOrder = () => ({
+  workshopId: fx.place("XUONG-01"),
+  fromLocationId: fx.place("BAI-01"),
+  lines: [{ itemId: fx.item("GG-CH"), quantityTaken: "20" }],
+});
+
 const WRITES: Call[] = [
   {
     name: "POST repairs",
     permission: "repairs.manage",
     run: (cookie) =>
       list.POST(
-        appRequest("/api/repairs", { method: "POST", cookie, body: body() }),
+        appRequest("/api/repairs", {
+          method: "POST",
+          cookie,
+          body: workOrder(),
+        }),
       ),
   },
   {
@@ -211,22 +221,34 @@ describe("/api/repairs bodies", () => {
     expect(response.status).toBe(400);
   });
 
-  it("answers field errors with the field", async () => {
+  it("refuses a new simple slip (0.2 số 121)", async () => {
     const response = await list.POST(
       appRequest("/api/repairs", {
         method: "POST",
         cookie: accountant(),
-        body: {
-          ...body(),
-          lines: [{ ...body().lines?.[0], quantityGood: "10" }],
-        },
+        body: body(),
       }),
     );
     expect(response.status).toBe(422);
     expect(await response.json()).toMatchObject({
       success: false,
-      error: REPAIR_MESSAGES.sumMismatch("GG-CH", 10_000, 20_000),
-      data: { field: "lines.0.quantityGood" },
+      error: "Phiếu sửa đơn giản không lập mới nữa, dùng lệnh sửa chữa",
+    });
+  });
+
+  it("answers field errors with the field", async () => {
+    const response = await list.POST(
+      appRequest("/api/repairs", {
+        method: "POST",
+        cookie: accountant(),
+        body: { ...workOrder(), workshopId: fx.place("BAI-01") },
+      }),
+    );
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({
+      success: false,
+      error: "Chọn một xưởng đang dùng",
+      data: { field: "workshopId" },
     });
   });
 
