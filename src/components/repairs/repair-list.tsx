@@ -1,4 +1,5 @@
-// The repair slip list (spec "Danh sách phiếu sửa chữa").
+// The repair list (spec "Danh sách phiếu sửa chữa"): simple slips and work
+// orders together; a work order has no cost until posted.
 import Link from "next/link";
 
 import { TabLinks } from "@/components/catalog/tab-links";
@@ -17,7 +18,7 @@ interface RepairListProps {
 }
 
 export function RepairList({ rows, status, canManage }: RepairListProps) {
-  const tab = (value: "draft" | "posted" | undefined, label: string) => ({
+  const tab = (value: string | undefined, label: string) => ({
     label,
     href: value ? `/repairs?status=${value}` : "/repairs",
     active: status === value?.toUpperCase(),
@@ -29,13 +30,13 @@ export function RepairList({ rows, status, canManage }: RepairListProps) {
         <div className="flex flex-col gap-1">
           <h1 className="text-h1">Sửa chữa</h1>
           <p className="text-sm text-muted-foreground">
-            Chuyển hàng Chờ sửa sang Tốt (sửa xong) hoặc Phế liệu (hỏng hẳn),
-            cộng chi phí sửa vào giá vốn.
+            Văn phòng giao lệnh cho xưởng, xưởng sửa và báo trên điện thoại, Thủ
+            kho đếm lại, Kế toán ghi sổ: hàng Chờ sửa về Tốt hoặc Phế liệu.
           </p>
         </div>
         {canManage ? (
           <Button asChild>
-            <Link href="/repairs/new">Phiếu mới</Link>
+            <Link href="/repairs/new">Lệnh mới</Link>
           </Button>
         ) : null}
       </div>
@@ -44,7 +45,12 @@ export function RepairList({ rows, status, canManage }: RepairListProps) {
         tabs={[
           tab(undefined, "Tất cả"),
           tab("draft", "Nháp"),
+          tab("assigned", "Đã giao"),
+          tab("in_progress", "Đang sửa"),
+          tab("awaiting_check", "Chờ nghiệm thu"),
+          tab("counted", "Chờ ghi sổ"),
           tab("posted", "Đã ghi sổ"),
+          tab("cancelled", "Đã hủy"),
         ]}
       />
       <section
@@ -61,8 +67,9 @@ export function RepairList({ rows, status, canManage }: RepairListProps) {
                   {[
                     "Mã phiếu",
                     "Ngày sửa xong",
-                    "Lấy tại → Nhập về",
+                    "Lấy tại → Nhập về / xưởng",
                     "Số mã",
+                    "Lấy ra",
                     "Sửa xong",
                     "Phế liệu",
                     "Chi phí sửa",
@@ -71,7 +78,7 @@ export function RepairList({ rows, status, canManage }: RepairListProps) {
                     <th
                       key={label}
                       scope="col"
-                      className={`border-b px-3 py-2.5 font-semibold ${index >= 3 && index <= 6 ? "text-right" : ""}`}
+                      className={`border-b px-3 py-2.5 font-semibold ${index >= 3 && index <= 7 ? "text-right" : ""}`}
                     >
                       {label}
                     </th>
@@ -96,10 +103,15 @@ export function RepairList({ rows, status, canManage }: RepairListProps) {
                       {formatBusinessDate(row.repairDate)}
                     </td>
                     <td className="border-b px-3 py-2.5">
-                      {row.fromName} → {row.toName}
+                      {row.kind === "WORK_ORDER" && row.fromCode === row.toCode
+                        ? row.toName
+                        : `${row.fromName} → ${row.toName}`}
                     </td>
                     <td className="border-b px-3 py-2.5 text-right tabular-nums">
                       {row.lineCount}
+                    </td>
+                    <td className="border-b px-3 py-2.5 text-right tabular-nums">
+                      {formatByUnit(row.taken)}
                     </td>
                     <td className="border-b px-3 py-2.5 text-right tabular-nums">
                       {formatByUnit(row.good)}
@@ -108,7 +120,9 @@ export function RepairList({ rows, status, canManage }: RepairListProps) {
                       {formatByUnit(row.scrap)}
                     </td>
                     <td className="border-b px-3 py-2.5 text-right tabular-nums">
-                      {formatMoney(row.cost)}
+                      {row.kind === "WORK_ORDER" && row.status !== "POSTED"
+                        ? "—"
+                        : formatMoney(row.cost)}
                     </td>
                     <td className="border-b px-3 py-2.5">
                       <RepairStatusBadge status={row.status} />

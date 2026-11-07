@@ -2,26 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 
-import { RepairForm } from "@/components/repairs/repair-form";
+import { WorkOrderForm } from "@/components/repairs/work-order-form";
 import { getDatabase } from "@/db/client";
-import { toBusinessDate } from "@/domain/business-date";
 import { requirePermission } from "@/lib/auth/guard";
-import { defaultRepairLocation } from "@/lib/repairs/orders";
 import { awaitingRepair, repairPlaces } from "@/lib/repairs/queries";
 
-export const metadata: Metadata = { title: "Phiếu sửa chữa mới" };
+export const metadata: Metadata = { title: "Lệnh sửa chữa mới" };
 
-/** D12: a new repair slip. */
+/** D12: a new repair is a work order (0.2 số 121). */
 export default async function Page() {
   await requirePermission("repairs.manage");
   const db = getDatabase();
-  const [places, yard] = await Promise.all([
-    repairPlaces(db),
-    defaultRepairLocation(db),
-  ]);
-  const start = yard?.id ?? places[0]?.id ?? "";
-  const awaiting = start
-    ? await awaitingRepair(db, start)
+  const places = await repairPlaces(db);
+  const yard = places.find((place) => place.type === "YARD");
+  const awaiting = yard
+    ? await awaitingRepair(db, yard.id)
     : { items: [], scrapPricePerKg: null };
   await connection();
   return (
@@ -31,14 +26,9 @@ export default async function Page() {
           Sửa chữa
         </Link>{" "}
         <span aria-hidden>/</span>{" "}
-        <span className="text-foreground">Phiếu mới</span>
+        <span className="text-foreground">Lệnh mới</span>
       </nav>
-      <RepairForm
-        places={places}
-        today={toBusinessDate(new Date())}
-        defaultLocationId={start}
-        awaiting={awaiting}
-      />
+      <WorkOrderForm places={places} awaiting={awaiting.items} />
     </div>
   );
 }

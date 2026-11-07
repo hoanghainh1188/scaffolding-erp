@@ -89,8 +89,8 @@
 
 ## 7. Giao diện desktop D12 và danh sách
 
-- [ ] 7.1 `/repairs`: danh sách gộp hai loại, lọc trạng thái mới trên URL, nút "Lệnh mới", cột chi phí "—" khi lệnh chưa ghi sổ. Component test theo spec `repair-orders`.
-- [ ] 7.2 D12 lệnh (`/repairs/<mã>` khi `kind = WORK_ORDER`), theo `docs/design/screens/D12-RepairOrder.dc.html` (bản đã sửa trong PR propose: "Nhập 56 Tốt, 4 Phế liệu ở BAI-01", nhãn "Vật tư phụ (giá BQ)"), dùng token, không hex:
+- [x] 7.1 `/repairs`: danh sách gộp hai loại, lọc trạng thái mới trên URL, nút "Lệnh mới", cột chi phí "—" khi lệnh chưa ghi sổ. Component test theo spec `repair-orders`.
+- [x] 7.2 D12 lệnh (`/repairs/<mã>` khi `kind = WORK_ORDER`), theo `docs/design/screens/D12-RepairOrder.dc.html` (bản đã sửa trong PR propose: "Nhập 56 Tốt, 4 Phế liệu ở BAI-01", nhãn "Vật tư phụ (giá BQ)"), dùng token, không hex:
   - Tiến trình 6 bước.
   - Bảng hàng / công / vật tư.
   - Khối giá vốn khi vào Tốt.
@@ -98,7 +98,7 @@
   - Nút theo trạng thái và quyền.
   - Hộp lý do trả lại / hủy, hỏi lại chi phí cao.
   - Component test với số ví dụ D12 (221.528 ₫, "Công 1.640.000 ₫ · vật tư 585.000 ₫").
-- [ ] 7.3 D12 lệnh Nháp: chọn xưởng, tổ, chỗ lấy, danh sách "Đang chờ sửa tại …" để thêm mã, nút "Giao xưởng". Phiếu `SIMPLE` vẫn mở D12 đơn giản cũ (test cũ của `simple-repair` xanh).
+- [x] 7.3 D12 lệnh Nháp: chọn xưởng, tổ, chỗ lấy, danh sách "Đang chờ sửa tại …" để thêm mã, nút "Giao xưởng". Phiếu `SIMPLE` vẫn mở D12 đơn giản cũ (test cũ của `simple-repair` xanh).
 
 ## 8. Giao diện điện thoại M8 và M1
 

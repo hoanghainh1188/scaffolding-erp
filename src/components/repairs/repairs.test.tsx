@@ -165,16 +165,43 @@ describe("RepairList", () => {
     expect(within(table).getByText("56 cái, 9 bó")).toBeInTheDocument();
     expect(within(table).getByText("Nháp")).toBeInTheDocument();
     expect(within(table).getByText("28/10/2026")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Phiếu mới" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Lệnh mới" })).toHaveAttribute(
       "href",
       "/repairs/new",
+    );
+  });
+
+  it("shows no cost for a work order not posted yet", () => {
+    render(
+      <RepairList
+        rows={[
+          {
+            ...row,
+            code: "PSC-2026-031",
+            kind: "WORK_ORDER",
+            status: "COUNTED",
+            fromName: "Bãi chính",
+            toName: "Xưởng",
+            toCode: "XUONG-01",
+          },
+        ]}
+        status="COUNTED"
+        canManage
+      />,
+    );
+    const table = screen.getByRole("table");
+    expect(within(table).getByText("—")).toBeInTheDocument();
+    expect(within(table).getByText("Chờ ghi sổ")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Chờ ghi sổ" })).toHaveAttribute(
+      "href",
+      "/repairs?status=counted",
     );
   });
 
   it("keeps the filter in the URL and hides Phiếu mới from readers", () => {
     render(<RepairList rows={[]} status="POSTED" canManage={false} />);
     expect(screen.getByText("Chưa có phiếu sửa chữa")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Phiếu mới" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Lệnh mới" })).toBeNull();
     expect(screen.getByRole("link", { name: "Đã ghi sổ" })).toHaveAttribute(
       "aria-current",
       "page",
