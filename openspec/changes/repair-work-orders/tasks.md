@@ -41,18 +41,18 @@
 
 ## 4. Service lệnh sửa (`src/lib/repairs/`)
 
-- [ ] 4.1 `work-orders.ts`: tạo, sửa nháp (chỉ `DRAFT`, so `updatedAt` → 409), xóa nháp. Kiểm xưởng loại `WORKSHOP`, chỗ lấy là bãi hoặc chính xưởng, mã sửa được. `POST` kiểu phiếu đơn giản bị 422. Mỗi hàm gọi `logActivity`. Integration test.
-- [ ] 4.2 `assign` (chụp `labor_rate`, thiếu đơn giá thì từ chối) và `recall` (xóa số đã chụp). Integration test: đổi đơn giá ở danh mục sau khi giao không đổi `labor_rate` của lệnh.
-- [ ] 4.3 `receive(draftId, updatedAt)`: khóa lệnh → `lockForPosting` → `postMovements` `TRANSFER_*` (posting riêng, lưu `receive_posting_id`). Tìm `draftId` trong `repair_order_submission` **trước** khi khóa lệnh; đã dùng thì trả trạng thái hiện tại, không ghi. Integration test:
+- [x] 4.1 `work-orders.ts`: tạo, sửa nháp (chỉ `DRAFT`, so `updatedAt` → 409), xóa nháp. Kiểm xưởng loại `WORKSHOP`, chỗ lấy là bãi hoặc chính xưởng, mã sửa được. `POST` kiểu phiếu đơn giản bị 422. Mỗi hàm gọi `logActivity`. Integration test.
+- [x] 4.2 `assign` (chụp `labor_rate`, thiếu đơn giá thì từ chối) và `recall` (xóa số đã chụp). Integration test: đổi đơn giá ở danh mục sau khi giao không đổi `labor_rate` của lệnh.
+- [x] 4.3 `receive(draftId, updatedAt)`: khóa lệnh → `lockForPosting` → `postMovements` `TRANSFER_*` (posting riêng, lưu `receive_posting_id`). Tìm `draftId` trong `repair_order_submission` **trước** khi khóa lệnh; đã dùng thì trả trạng thái hiện tại, không ghi. Integration test:
   - Tồn `BAI-01` 201 → 161 và `XUONG-01` 0 → 40.
   - Giá BQ, tổng giá trị không đổi.
   - Bãi thiếu hàng → từ chối, không ghi.
   - Gửi lại cùng `draftId` → chỉ 4 dòng sổ.
-- [ ] 4.4 `report` (Xưởng) và `count` (Thủ kho): lưu số và vật tư, `reported_*` chỉ do `report` ghi, so `updatedAt`, ghi `draftId` vào `repair_order_submission` (tìm trước, đã dùng thì không ghi). `returnToWorkshop` (bắt buộc lý do, bỏ số đếm). Integration test:
+- [x] 4.4 `report` (Xưởng) và `count` (Thủ kho): lưu số và vật tư, `reported_*` chỉ do `report` ghi, so `updatedAt`, ghi `draftId` vào `repair_order_submission` (tìm trước, đã dùng thì không ghi). `returnToWorkshop` (bắt buộc lý do, bỏ số đếm). Integration test:
   - Trả lại khi Thủ kho đang đếm → lệnh đếm 409.
   - Thủ kho đếm khác xưởng thì giữ cả hai số.
   - Báo (`d1`) → trả lại → báo lần hai (`d2`) → gửi lại `d1`: số của lần hai giữ nguyên, không có dòng nhật ký thêm.
-- [ ] 4.5 `postWorkOrder`:
+- [x] 4.5 `postWorkOrder`:
   - Thứ tự khóa theo design D5.
   - Đọc tồn vật tư ở xưởng dưới khóa.
   - Giá sắt vụn khi có phế.
@@ -65,8 +65,8 @@
     - Ghi sổ hai lần → một bộ dòng.
     - `npm run inventory:check` không lệch.
     - Ghi cùng lúc với một phiếu nhập cùng mã cho giá BQ đúng.
-- [ ] 4.6 `cancel` (bắt buộc lý do; sau nhận thì ghi chuyển ngược, posting riêng; xưởng thiếu hàng thì từ chối). Integration test cả hai trường hợp.
-- [ ] 4.7 Test tĩnh `src/lib/activity/coverage.test.ts` bắt đủ hàm ghi mới gọi `logActivity`. Tóm tắt nhật ký theo spec `activity-log` (Nhận lệnh, Đếm khác số, Ghi sổ có công / vật tư). Integration test cho từng tóm tắt.
+- [x] 4.6 `cancel` (bắt buộc lý do; sau nhận thì ghi chuyển ngược, posting riêng; xưởng thiếu hàng thì từ chối). Integration test cả hai trường hợp.
+- [x] 4.7 Test tĩnh `src/lib/activity/coverage.test.ts` bắt đủ hàm ghi mới gọi `logActivity`. Tóm tắt nhật ký theo spec `activity-log` (Nhận lệnh, Đếm khác số, Ghi sổ có công / vật tư). Integration test cho từng tóm tắt.
 
 ## 5. Báo cáo D15 và hàng cho thuê
 

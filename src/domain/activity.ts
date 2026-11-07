@@ -21,6 +21,12 @@ export const ACTIVITY_ACTIONS = [
   "SEND",
   "CLOSE_PERIOD",
   "SETTLE",
+  // repair-work-orders: the steps of a repair work order.
+  "ASSIGN",
+  "RECALL",
+  "RECEIVE",
+  "REPORT",
+  "COUNT",
 ] as const;
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
@@ -41,6 +47,11 @@ export const ACTION_LABELS: Readonly<Record<ActivityAction, string>> = {
   SEND: "Gửi điện thoại",
   CLOSE_PERIOD: "Chốt kỳ",
   SETTLE: "Thanh lý",
+  ASSIGN: "Giao xưởng",
+  RECALL: "Thu hồi lệnh",
+  RECEIVE: "Nhận lệnh",
+  REPORT: "Báo sửa xong",
+  COUNT: "Đếm xong",
 };
 
 export const ACTION_GROUPS = [
@@ -65,9 +76,17 @@ export const GROUP_ACTIONS: Readonly<
   Record<ActionGroup, readonly ActivityAction[]>
 > = {
   CREATE: ["CREATE"],
-  UPDATE: ["UPDATE", "START"],
+  UPDATE: ["UPDATE", "START", "ASSIGN", "RECEIVE", "REPORT", "COUNT"],
   APPROVAL: ["SUBMIT", "SEND", "APPROVE", "POST", "CLOSE_PERIOD", "SETTLE"],
-  REVERSAL: ["RETURN", "REJECT", "CANCEL", "CLOSE", "DELETE_DRAFT", "DELETE"],
+  REVERSAL: [
+    "RETURN",
+    "RECALL",
+    "REJECT",
+    "CANCEL",
+    "CLOSE",
+    "DELETE_DRAFT",
+    "DELETE",
+  ],
   SIGN_IN: ["SIGN_IN"],
 };
 
@@ -83,6 +102,7 @@ export const APPROVAL_TILE_ACTIONS: readonly ActivityAction[] = [
 export const EDIT_TILE_ACTIONS: readonly ActivityAction[] = [
   "UPDATE",
   "RETURN",
+  "RECALL",
   "REJECT",
   "CANCEL",
   "CLOSE",
@@ -159,6 +179,7 @@ export function actionLabel(
   type: DocumentType | null,
 ): string {
   if (action === "SUBMIT" && type === "PURCHASE_ORDER") return "Đặt đơn";
+  if (action === "RETURN" && type === "REPAIR_ORDER") return "Trả lại xưởng";
   return ACTION_LABELS[action];
 }
 

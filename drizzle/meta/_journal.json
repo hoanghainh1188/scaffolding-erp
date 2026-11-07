@@ -169,6 +169,13 @@
       "when": 1794015478296,
       "tag": "0023_repair_work_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794016411786,
+      "tag": "0024_repair_work_order_activity",
+      "breakpoints": true
     }
   ]
 }
