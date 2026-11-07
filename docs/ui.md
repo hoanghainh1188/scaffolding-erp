@@ -102,7 +102,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 - **D12. Sửa chữa**:
     - **[MVP] Phiếu sửa chữa đơn giản:** chọn mã hàng và số lượng từ Chờ sửa → chuyển sang Tốt (hoặc Phế liệu). Nhập tổng chi phí. Hiện Cost Breakdown: giá vốn cũ + chi phí sửa = giá vốn mới.
-    - **[Bản 2] Lệnh sửa chữa đầy đủ:** danh sách lệnh (Nháp / Đang sửa / Đã nghiệm thu), vật tư phụ, công thợ, nghiệm thu.
+    - **[Bản 2] Lệnh sửa chữa đầy đủ** (`D12-RepairOrder.dc.html`, 0.2 #117–#120): tiến trình Nháp → Giao xưởng → Xưởng nhận → Báo sửa xong → Thủ kho đếm → Ghi sổ; bảng hàng sửa với công khoán và vật tư phụ theo từng mã; giá vốn khi vào Tốt; ghi sổ hoặc trả lại xưởng; tồn vật tư ở xưởng.
 
 #### Bán & Cho thuê
 
@@ -156,7 +156,7 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 - **M6. Đếm hàng** **[MVP]**: Đếm mù (không hiện số sổ). Mỗi mã đếm theo tình trạng bằng Stepper, bấm "Xong mã này". Thêm hàng không có trong danh sách. Gửi kết quả về văn phòng (D13).
 - **M7. Lịch sử** **[MVP]**: Phiếu đã làm, lọc theo loại và ngày. Phiếu nháp chưa gửi hiện ở đầu danh sách.
 - **M9. Xác nhận chuyển công trình** **[MVP]**: Người đi xe xem lộ trình, sửa số thực chở bằng stepper, nhập biển số, bấm xác nhận khi hàng đã hạ ở công trình nhận. Không hiện giá (0.2 #66).
-- **M8. Sửa chữa tại Xưởng** **[Bản 2]**: Xem lệnh được giao. Ghi vật tư phụ và công thợ. Báo hoàn thành để văn phòng nghiệm thu.
+- **M8. Sửa chữa tại Xưởng** **[Bản 2]** (`M8-Repair.dc.html`): nhận lệnh; mỗi mã có stepper Sửa xong, Hỏng → Phế và vật tư đã dùng; không hiện giá; nháp lưu trên máy; Báo sửa xong. Thủ kho dùng cùng màn để đếm lại khi nghiệm thu.
 
 ### 3.3. Tổng hợp theo giai đoạn
 
@@ -201,6 +201,8 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | D6d Đổi hàng | `D6d-Exchange.dc.html` | `site-operations` | Chờ duyệt |
 | M9 Xác nhận chuyển công trình | `M9-SiteTransfer.dc.html` | `site-operations` | Chờ duyệt |
 | D12 Sửa chữa đơn giản | `D12-Repair.dc.html` | `simple-repair` | Đã duyệt |
+| D12 Lệnh sửa chữa đầy đủ | `D12-RepairOrder.dc.html` | `repair-work-orders` | Đã duyệt |
+| M8 Sửa chữa tại xưởng | `M8-Repair.dc.html` | `repair-work-orders` | Đã duyệt |
 | D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Đã duyệt |
 | D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt (vẽ lại 05/11/2026) |
 | D14b Thanh lý hợp đồng | `D14b-ContractClose.dc.html` | `receivables` | Đã duyệt |

@@ -135,6 +135,10 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 114 | Hàng cho thuê bình quân | Gồm hàng **Mới, Tốt ở mọi vị trí: bãi, xưởng, công trình** (hàng Tốt vừa sửa xong ở xưởng vẫn là hàng cho thuê); dùng cho hao hụt (#108) và tỷ lệ khai thác (#109) (chốt 06/11/2026 khi review PR #155, change `management-reports`) |
 | 115 | Xếp hạng nhà thầu trên D15 | Hiện **đủ mọi nhà thầu** (bảng cuộn), không gộp "N nhà thầu khác"; Excel cũng đủ (chốt 06/11/2026 khi review PR #155, change `management-reports`) |
 | 116 | Tháng của hàng mất và đền bù | Hàng mất tính theo **ngày trả** (ngày ghi sổ phiếu thu hồi), đền bù theo **ngày duyệt**; hai khoản có thể rơi vào hai tháng khác nhau, D15 ghi chú dưới bảng. Lũy kế năm đủ cả hai (chốt 06/11/2026 khi review PR #155, change `management-reports`) |
+| 117 | Công thợ sửa chữa | **Khoán theo cái**: mỗi mã hàng có **đơn giá công sửa / cái** (trường mới ở danh mục mã hàng D9). Công của một dòng lệnh = **số sửa xong × đơn giá**; hàng thành phế không tính công (chốt 07/11/2026, change `repair-work-orders`, thiết kế D12 đầy đủ, M8) |
+| 118 | Vật tư phụ khi sửa | Vật tư phụ (que hàn, sơn, bu lông…) là mã nhóm **Vật tư** (`MATERIAL`) trong danh mục, có tồn ở xưởng. Xưởng ghi số lượng dùng **theo từng dòng mã hàng** của lệnh; ghi sổ thì **trừ tồn theo giá BQ**. Chi phí sửa của dòng = công khoán + vật tư; chia cho hàng sửa xong như #23 (chốt 07/11/2026, change `repair-work-orders`) |
+| 119 | Rút hàng sang xưởng | Hàng Chờ sửa **chuyển vị trí bãi → xưởng khi xưởng nhận lệnh** (ghi sổ chuyển vị trí, không đổi giá). Giá trị Tốt / Phế liệu, công, vật tư chỉ ghi sổ khi **ghi sổ lệnh** (chốt 07/11/2026, change `repair-work-orders`) |
+| 120 | Nghiệm thu lệnh sửa | Luồng: Kế toán / Giám đốc lập lệnh và giao xưởng → Xưởng nhận (M8) → Xưởng ghi sửa xong, phế, vật tư và **báo sửa xong** (M8, không thấy giá) → **Thủ kho đếm lại** và xác nhận số → **Kế toán ghi sổ** (`repairs.manage` như nay), có thể trả lại xưởng sửa số (chốt 07/11/2026, change `repair-work-orders`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 
