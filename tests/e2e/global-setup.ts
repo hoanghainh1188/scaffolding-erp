@@ -49,7 +49,8 @@ import { changeSiteTransferStatus } from "@/lib/site-transfers/service";
 import { seedContracts } from "@/lib/contracts/sample";
 import { createAuth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
-import { createItem } from "@/lib/catalog/items";
+import { createGroup } from "@/lib/catalog/item-groups";
+import { createItem, setRepairLaborRate } from "@/lib/catalog/items";
 import { seedCatalog } from "@/lib/catalog/seed";
 import { toBusinessDate } from "@/domain/business-date";
 import type { MovementDraft } from "@/domain/movement";
@@ -59,6 +60,8 @@ import { seedPurchasing } from "@/lib/purchasing/sample";
 import { seedReceiving } from "@/lib/receiving/sample";
 import { currentScrapPrice, setScrapPrice } from "@/lib/receiving/scrap-price";
 import { seedRepairs } from "@/lib/repairs/sample";
+import { seedWorkOrders } from "@/lib/repairs/work-sample";
+import { cancelWorkOrder, deleteWorkOrder } from "@/lib/repairs/work-orders";
 import { createHoliday } from "@/lib/holidays/service";
 import { seedStocktakes } from "@/lib/stocktakes/sample";
 import { cancelStocktake } from "@/lib/stocktakes/sessions";
@@ -211,6 +214,140 @@ async function ensureRepairStock(db: Database, actor: ActivityActor) {
       documentType: "E2E",
       documentId: null,
       documentCode: "E2E-SUA",
+      businessDate: toBusinessDate(new Date()),
+      lines,
+    }),
+  );
+}
+
+/** The supply item work-order E2E reports (repair-work-orders task 9.2). */
+export const E2E_SUPPLY_ITEM = "E2E-VT-01";
+
+/**
+ * repairs.spec.ts walks a work order from BAI-01 through XUONG-01: it needs
+ * a labour rate on E2E-KHO-01, Chờ sửa of it at the yard and a supply item
+ * with stock at the workshop. Orders e2e.* left open are dropped (a draft
+ * deleted, others cancelled, which sends received stock back). Ledger
+ * lines stay, like any E2E row.
+ */
+async function ensureWorkOrderStock(db: Database, actor: ActivityActor) {
+  const places = await db
+    .select({ id: location.id, code: location.code })
+    .from(location);
+  const workshop = places.find((place) => place.code === "XUONG-01")?.id;
+  const yard = places.find((place) => place.code === "BAI-01")?.id;
+  const [kho] = await db
+    .select({ id: item.id, rate: item.repairLaborRate })
+    .from(item)
+    .where(eq(item.code, E2E_STOCK_ITEMS[0]));
+  if (!kho || !workshop || !yard) return;
+  const open = await db
+    .select({
+      code: repairOrder.code,
+      status: repairOrder.status,
+      updatedAt: repairOrder.updatedAt,
+    })
+    .from(repairOrder)
+    .innerJoin(user, eq(user.id, repairOrder.createdBy))
+    .where(
+      and(
+        eq(repairOrder.kind, "WORK_ORDER"),
+        notInArray(repairOrder.status, ["POSTED", "CANCELLED"]),
+        like(user.username, "e2e.%"),
+        // The D12 / M8 samples (seedWorkOrders) stay for the baselines.
+        sql`${repairOrder.repairedBy} is distinct from 'tổ anh Lực'`,
+      ),
+    );
+  for (const order of open) {
+    const done =
+      order.status === "DRAFT"
+        ? await deleteWorkOrder(db, actor, order.code)
+        : await cancelWorkOrder(db, actor, order.code, {
+            updatedAt: order.updatedAt.toISOString(),
+            reason: "E2E dọn lệnh lần trước",
+          });
+    if (!done.ok) throw new Error(`${order.code}: ${done.error}`);
+  }
+  if (kho.rate === null) {
+    const rate = await setRepairLaborRate(db, actor, kho.id, 10_000);
+    if (!rate.ok) throw new Error(rate.error);
+  }
+  const [group] = await db
+    .select({ id: itemGroup.id })
+    .from(itemGroup)
+    .where(eq(itemGroup.category, "MATERIAL"))
+    .limit(1);
+  let groupId = group?.id;
+  if (!groupId) {
+    const created = await createGroup(db, actor, {
+      name: "Vật tư phụ",
+      category: "MATERIAL",
+    });
+    if (!created.ok) throw new Error(created.error);
+    groupId = created.data.id;
+  }
+  let [supply] = await db
+    .select({ id: item.id })
+    .from(item)
+    .where(eq(item.code, E2E_SUPPLY_ITEM));
+  if (!supply) {
+    const created = await createItem(db, actor, {
+      code: E2E_SUPPLY_ITEM,
+      name: "Vật tư thử E2E",
+      groupId,
+      unit: "KG",
+    });
+    if (!created.ok) throw new Error(created.error);
+    supply = { id: created.data.id };
+  }
+  const stockOf = async (
+    itemId: string,
+    condition: "NEEDS_REPAIR" | "NEW",
+    locationId: string,
+  ) => {
+    const [row] = await db
+      .select({
+        total: sql<string>`coalesce(sum(${inventoryLedger.quantity}), 0)`,
+      })
+      .from(inventoryLedger)
+      .where(
+        and(
+          eq(inventoryLedger.itemId, itemId),
+          eq(inventoryLedger.condition, condition),
+          eq(inventoryLedger.locationId, locationId),
+        ),
+      );
+    return Number(row?.total ?? 0);
+  };
+  const lines: MovementDraft[] = [];
+  if ((await stockOf(kho.id, "NEEDS_REPAIR", yard)) < 5) {
+    lines.push({
+      itemId: kho.id,
+      condition: "NEEDS_REPAIR",
+      locationId: yard,
+      movement: "ADJUST_IN",
+      quantityMilli: 10_000,
+      unitCost: 50_000,
+      description: "E2E: hàng chờ sửa cho lệnh sửa",
+    });
+  }
+  if ((await stockOf(supply.id, "NEW", workshop)) < 10) {
+    lines.push({
+      itemId: supply.id,
+      condition: "NEW",
+      locationId: workshop,
+      movement: "ADJUST_IN",
+      quantityMilli: 20_000,
+      unitCost: 40_000,
+      description: "E2E: vật tư phụ ở xưởng",
+    });
+  }
+  if (lines.length === 0) return;
+  await db.transaction((tx) =>
+    postMovements(tx, actor, {
+      documentType: "E2E",
+      documentId: null,
+      documentCode: "E2E-LSC",
       businessDate: toBusinessDate(new Date()),
       lines,
     }),
@@ -780,6 +917,22 @@ export default async function globalSetup(): Promise<void> {
       // The D12 sample draft PSC-<year>-022 (simple-repair design D13), once.
       await seedRepairs(handle.db, director);
       await ensureRepairStock(handle.db, director);
+      // Work orders (repair-work-orders 9.2): stock, rate, a supply item,
+      // and the D12 / M8 sample order once (counted like drawing D12).
+      await ensureWorkOrderStock(handle.db, director);
+      {
+        const accountant = await actorByUsername(handle.db, "e2e.ketoan");
+        const warehouse = await actorByUsername(handle.db, "e2e.thukho");
+        const workshop = await actorByUsername(handle.db, "e2e.xuong");
+        if (accountant && warehouse && workshop) {
+          await seedWorkOrders(handle.db, {
+            director,
+            accountant,
+            warehouse,
+            workshop,
+          });
+        }
+      }
       // The D13 sample session at BAI-01 (stocktake design D16), once; the
       // workshop is left free for stocktake.spec.ts.
       await cancelTestStocktakes(handle.db, director);

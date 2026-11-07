@@ -1,8 +1,9 @@
-// Sample work order for `npm run db:seed:dev` and `db:seed:demo`
+// Sample work orders for `npm run db:seed:dev` and `db:seed:demo`
 // (repair-work-orders task 9.1): the supply items of drawing D12 with stock
-// at XUONG-01, labour rates for GG-K17 and GG-CH, and one order counted by
-// the storekeeper, waiting to be posted like D12 (GG-CH stands in for
-// CHEO-1,7, which the sample catalog has not). Runs once: fixed draft ids,
+// at XUONG-01, labour rates for GG-K17 and GG-CH, one order counted by the
+// storekeeper, waiting to be posted like D12, and one the workshop is
+// repairing like M8 (GG-CH stands in for CHEO-1,7, which the sample
+// catalog has not). Runs once: fixed draft ids,
 // and nothing is added when a work order exists already.
 import { and, eq, inArray } from "drizzle-orm";
 
@@ -64,6 +65,8 @@ const DRAFTS = {
   receive: "8f1c2a10-0000-4000-8000-000000000031",
   report: "8f1c2a10-0000-4000-8000-000000000032",
   count: "8f1c2a10-0000-4000-8000-000000000033",
+  /** The second order, taken by the workshop only (M8 "Đang sửa"). */
+  secondReceive: "8f1c2a10-0000-4000-8000-000000000034",
 } as const;
 
 export interface WorkOrderActors {
@@ -251,5 +254,27 @@ export async function seedWorkOrders(
       lines: report,
     }),
   );
-  return lines + 1;
+  // A second order like drawing M8: taken by the workshop, being repaired.
+  // Left assigned when the yard has too few Chờ sửa for it.
+  const second = must(
+    await createWorkOrder(db, actors.accountant, {
+      workshopId: workshop,
+      fromLocationId: yard,
+      repairedBy: "tổ anh Lực",
+      lines: [
+        { itemId: k17, quantityTaken: "40" },
+        { itemId: ch, quantityTaken: "20" },
+      ],
+    }),
+  ).code;
+  must(
+    await assignWorkOrder(db, actors.accountant, second, {
+      updatedAt: await updatedAtOf(db, second),
+    }),
+  );
+  await receiveWorkOrder(db, actors.workshop, second, {
+    draftId: DRAFTS.secondReceive,
+    updatedAt: await updatedAtOf(db, second),
+  });
+  return lines + 2;
 }

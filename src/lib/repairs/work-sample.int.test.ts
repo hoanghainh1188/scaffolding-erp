@@ -58,12 +58,15 @@ describe("seedWorkOrders", () => {
         username: "thukho",
       }),
     };
-    expect(await seedWorkOrders(ctx.db, actors)).toBe(4);
+    expect(await seedWorkOrders(ctx.db, actors)).toBe(5);
     expect(await seedWorkOrders(ctx.db, actors)).toBe(0);
     const orders = await ctx.db
       .select({ status: repairOrder.status })
       .from(repairOrder)
       .where(eq(repairOrder.kind, "WORK_ORDER"));
-    expect(orders).toEqual([{ status: "COUNTED" }]);
+    expect(orders.map((order) => order.status).sort()).toEqual([
+      "COUNTED",
+      "IN_PROGRESS",
+    ]);
   });
 });

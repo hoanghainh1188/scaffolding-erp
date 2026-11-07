@@ -238,7 +238,8 @@ export function RepairPhoneScreen({
       {received ? (
         <p className="text-body">
           Đã nhận {formatQuantity(toQuantity(total, "PIECE"))} cái từ{" "}
-          {order.fromCode} ngày {received}. Sửa xong + Phế phải bằng số nhận.
+          {order.fromCode} ngày <span data-mask>{received}</span>. Sửa xong +
+          Phế phải bằng số nhận.
         </p>
       ) : null}
       {order.returnNote ? (

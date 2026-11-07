@@ -122,13 +122,13 @@
   - Mã yêu cầu cố định, chạy lại không thêm.
   - Cập nhật mô tả `db:seed:dev` trong `CLAUDE.md`.
   - Integration test `sample.int.test.ts`: chạy hai lần vẫn một lệnh mẫu.
-- [ ] 9.2 Global setup E2E:
+- [x] 9.2 Global setup E2E:
   - `E2E-VT-01` (nhóm Vật tư) giữ ≥ 10 kg ở `XUONG-01`.
   - Đơn giá công `E2E-KHO-01`.
   - ≥ 5 `E2E-KHO-01` Chờ sửa ở `BAI-01`.
   - Hủy lệnh chưa ghi sổ do `e2e.*` lập.
   - Ghi quy ước vào `CLAUDE.md` (mục lưu ý E2E).
-- [ ] 9.3 `tests/e2e/repairs.spec.ts` (nhóm nối tiếp):
+- [x] 9.3 `tests/e2e/repairs.spec.ts` (nhóm nối tiếp):
   - Luồng đủ 6 bước: Kế toán → Xưởng (`statePath("WORKSHOP")`) → Thủ kho (`statePath("WAREHOUSE")`) → Kế toán.
   - Kiểm theo chênh lệch tồn `BAI-01` / `XUONG-01` và tồn vật tư: sau ghi sổ, Tốt `E2E-KHO-01` tăng ở `BAI-01` (0.2 #130), Chờ sửa ở `XUONG-01` về như trước khi nhận.
   - Thêm một test trả lại xưởng, một test 403.
