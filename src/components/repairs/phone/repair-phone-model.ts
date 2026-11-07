@@ -9,6 +9,7 @@ import {
   sumByUnit,
   toQuantity,
   formatByUnit,
+  isPieceUnit,
   type QuantityUnit,
 } from "@/domain/quantity";
 import type { PhoneOrder } from "@/lib/repairs/phone-queries";
@@ -108,7 +109,7 @@ export function footerText(
   );
   const taken = by((line) => milli(line.taken, line.unit));
   const bare = (amounts: { unit: QuantityUnit; milli: number }[]) =>
-    amounts.length === 1 && amounts[0]?.unit === "PIECE"
+    amounts.length === 1 && amounts[0] && isPieceUnit(amounts[0].unit)
       ? formatQuantity(toQuantity(amounts[0].milli, "PIECE"))
       : formatByUnit(amounts);
   return `${bare(good)} sửa xong · ${bare(scrap)} phế · đủ ${bare(done)} / ${bare(taken)}`;
