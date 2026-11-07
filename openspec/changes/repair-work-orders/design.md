@@ -17,7 +17,8 @@
   - `repairSums` lấy ngày ghi sổ bằng `min(business_date)` của mọi dòng sổ có `document_type = 'REPAIR'`.
 - Danh mục: `item_group.category` đã có `EQUIPMENT` / `MATERIAL`. Chưa có đơn vị lít. Seed chưa có mã vật tư nào.
 - Vai trò `WORKSHOP` hiện chỉ có `catalog.read`, `stock.lookup`. Chưa có màn nào cho Xưởng.
-- Bản vẽ D12 ghi "Vật tư phụ (giá BQ ở XUONG-01)". Nhưng giá BQ tính chung mọi vị trí (0.2 #24), nên nhãn khi code là "Vật tư phụ (giá BQ)". Chỉ **tồn** mới tính theo xưởng.
+- Bản vẽ D12 ghi "Vật tư phụ (giá BQ ở XUONG-01)" và "Nhập 56 Tốt, 4 Phế liệu ở XUONG-01". PR này sửa bản vẽ thành "Vật tư phụ (giá BQ)" (giá BQ tính chung mọi vị trí, 0.2 #24) và "ở BAI-01" (0.2 #130).
+- Phiếu nhập (`src/lib/receiving/post.ts`, `queries.ts`) chỉ nhận vào bãi (`type = 'YARD'`).
 
 ## Goals / Non-Goals
 
@@ -82,6 +83,15 @@
 - **Lý do:** `REPAIR_OUT` đã có nghĩa "đưa ra khỏi kho để sửa", xuất theo giá BQ, và `classifyLedger` trả `null` (xem D3).
 - **Đã cân nhắc:** loại mới `CONSUME_OUT`. Nó rõ nghĩa hơn khi đọc thẻ kho, nhưng phải sửa CHECK. Thẻ kho đã hiện mô tả dòng "PSC-2026-031: vật tư sửa GG-K17", nên đủ rõ. Bỏ.
 
+**Nơi nhập Tốt và Phế liệu khi ghi sổ (0.2 #130):**
+
+- `REPAIR_OUT` Chờ sửa **ở xưởng** (hàng đã chuyển sang lúc nhận). `REPAIR_IN` Tốt và Phế liệu **ở chỗ lấy hàng** (`from_location_id`, bãi gốc). Lệnh lấy tại chính xưởng thì nhập ở xưởng. Vật tư trừ ở xưởng.
+- **Lý do:** phiếu xuất chỉ lấy hàng từ một bãi (`deliveries`). Hàng sửa xong để ở xưởng thì không cho thuê được, muốn đưa về bãi phải lập `ĐC` vị trí (cần Giám đốc duyệt). Thực tế xưởng sửa xong thì đưa hàng về bãi, Thủ kho đếm ở bãi lúc nghiệm thu.
+- `REPAIR_OUT` và `REPAIR_IN` của cùng một dòng nằm ở hai vị trí khác nhau là bình thường: phiếu sửa đơn giản đã cho "lấy tại" khác "nhập về".
+- **Đã cân nhắc:**
+  - Nhập Tốt ở xưởng (bản vẽ đầu): hàng kẹt ở xưởng. Bỏ.
+  - Thêm bước "xưởng trả hàng về bãi" (chuyển `TRANSFER_*` Tốt xưởng → bãi): thêm một lần ghi sổ, mà kết quả giống hệt. Bỏ.
+
 **Hủy lệnh sau khi xưởng đã nhận:**
 
 - Ghi chuyển ngược xưởng → chỗ lấy (`TRANSFER_*`, `posting_id` riêng, lưu ở `cancel_posting_id`), ngày hủy, trong transaction hủy.
@@ -111,19 +121,19 @@ Vật tư đi qua sổ hai lần: `PURCHASE_IN` (không vào giá vốn), rồi 
 
 **Ví dụ số (lệnh D12, tháng 11/2026, không có chứng từ khác):**
 
-| Dòng sổ của lần ghi sổ | Giá trị |
+| Dòng sổ của lần ghi sổ (vị trí) | Giá trị |
 |---|---|
-| `REPAIR_OUT` −40 `GG-K17` Chờ sửa × 160.000 | −6.400.000 |
-| `REPAIR_IN` +36 `GG-K17` Tốt | +7.975.000 |
-| `REPAIR_IN` +4 `GG-K17` Phế liệu | +405.000 |
-| `REPAIR_OUT` −20 `CHEO-1,7` Chờ sửa × 30.000 | −600.000 |
-| `REPAIR_IN` +20 `CHEO-1,7` Tốt | +845.000 |
-| `REPAIR_OUT` −6 kg `VT-QH` | −270.000 |
+| `REPAIR_OUT` −40 `GG-K17` Chờ sửa × 160.000 (`XUONG-01`) | −6.400.000 |
+| `REPAIR_IN` +36 `GG-K17` Tốt (`BAI-01`) | +7.975.000 |
+| `REPAIR_IN` +4 `GG-K17` Phế liệu (`BAI-01`) | +405.000 |
+| `REPAIR_OUT` −20 `CHEO-1,7` Chờ sửa × 30.000 (`XUONG-01`) | −600.000 |
+| `REPAIR_IN` +20 `CHEO-1,7` Tốt (`BAI-01`) | +845.000 |
+| `REPAIR_OUT` −6 kg `VT-QH` (`XUONG-01`) | −270.000 |
 | `REPAIR_OUT` −3 lít `VT-SON` (dòng `GG-K17`) | −270.000 |
 | `REPAIR_OUT` −0,5 lít `VT-SON` (dòng `CHEO-1,7`) | −45.000 |
 | **Cộng** | **+1.640.000** = công |
 
-Dòng chuyển bãi → xưởng lúc nhận cộng 0.
+Dòng chuyển bãi → xưởng lúc nhận cộng 0. Vị trí không ảnh hưởng tổng (D15 không đọc theo vị trí).
 
 - Đẳng thức mới: −1.640.000 + (2.225.000 − 585.000) = **0** = khoản Sửa chữa (lỗ hỏng hàng 0). Đúng.
 - Đẳng thức cũ: −1.640.000 + 2.225.000 = 585.000 ≠ 0. Vật tư bị tính thêm một lần. Test phải bắt trường hợp này (spec `gross-profit`).
@@ -175,7 +185,7 @@ Dòng chuyển bãi → xưởng lúc nhận cộng 0.
 - **Nhận lệnh, hủy sau nhận:** khóa lệnh → `lockForPosting({ itemIds: mã của lệnh, locationIds: [chỗ lấy, xưởng], pairs: (mã, NEEDS_REPAIR) })` → `postMovements`.
 - **Ghi sổ:**
   1. Khóa lệnh.
-  2. `lockForPosting` với `itemIds` = mã sửa ∪ mã vật tư (sắp tăng dần như hiện nay), `locationIds = [xưởng]`, `pairs` = (mã sửa, NEEDS_REPAIR | GOOD | SCRAP) ∪ (vật tư, NEW | GOOD).
+  2. `lockForPosting` với `itemIds` = mã sửa ∪ mã vật tư (sắp tăng dần như hiện nay), `locationIds = [xưởng, chỗ lấy]` (sắp tăng dần), `pairs` = (mã sửa, NEEDS_REPAIR | GOOD | SCRAP) ∪ (vật tư, NEW | GOOD).
   3. Đọc tồn vật tư tại xưởng dưới khóa, chia Mới trước rồi Tốt.
   4. Đọc giá sắt vụn.
   5. Tính bằng hàm thuần.
@@ -187,8 +197,11 @@ Dòng chuyển bãi → xưởng lúc nhận cộng 0.
   - Chỉ đụng nhau khi văn phòng trả lại lệnh lúc Thủ kho đang đếm.
   - Khi đó `updated_at` lệch và Thủ kho nhận 409. Nháp trên máy giữ nguyên.
 - **Gửi lại từ điện thoại:**
-  - Nhận lệnh, Báo sửa xong, Đếm xong mang `draftId` sinh trên máy, lưu ở `received_draft_id`, `reported_draft_id`, `counted_draft_id` (mỗi cột UNIQUE).
-  - Gửi lại cùng `draftId` sau khi đã làm thì trả trạng thái hiện tại, không ghi lần hai (như `client_draft_id` của phiếu nhập).
+  - Nhận lệnh, Báo sửa xong, Đếm xong mang `draftId` sinh trên máy (mỗi lần bấm một `draftId` mới).
+  - Server lưu **mọi** `draftId` đã dùng vào bảng chỉ ghi thêm `repair_order_submission` (xem D7), trong transaction của bước đó.
+  - Thứ tự: tìm `draftId` **trước** khi khóa lệnh và so `updatedAt` (như `postDelivery` tìm mã nháp trước). Gặp `draftId` đã dùng thì trả trạng thái hiện tại của lệnh, không ghi gì, kể cả khi lệnh đã qua nhiều bước sau đó.
+  - **Lý do không dùng cột `*_draft_id` trên lệnh:** lệnh bị trả lại rồi xưởng báo lần hai thì cột bị ghi đè. Nếu điện thoại gửi lại yêu cầu báo **lần một** (mạng chập chờn), server không còn nhận ra, và số cũ đè lên số lần hai.
+  - Ví dụ: báo (`d1`) → trả lại → báo lần hai (`d2`) → yêu cầu `d1` tới muộn → server thấy `d1` đã dùng, trả trạng thái hiện tại, số của `d2` giữ nguyên.
 
 ### D6. Quyền (điểm cần chốt 6)
 
@@ -213,7 +226,6 @@ Dòng chuyển bãi → xưởng lúc nhận cộng 0.
 - Với `WORK_ORDER`, `to_location_id` là xưởng. Service kiểm loại `WORKSHOP` khi lưu.
 - Các cặp người / lúc: `assigned_by/at`, `received_by/at`, `reported_by/at`, `counted_by/at`, `returned_by/at` + `return_note`, `cancelled_by/at` + `cancel_reason`.
 - `receive_posting_id`, `cancel_posting_id`.
-- Ba cột `*_draft_id` UNIQUE.
 - `repair_date` của lệnh = ngày báo sửa xong (cập nhật khi báo), để danh sách và D12 cũ đọc được.
 
 **Bảng `repair_order_line`** (thêm):
@@ -230,6 +242,14 @@ Dòng chuyển bãi → xưởng lúc nhận cộng 0.
 - `quantity numeric(14,3) > 0`.
 - `amount bigint null` (lúc ghi sổ, = − tổng dòng sổ vật tư của dòng).
 - UNIQUE(`line_id`, `item_id`).
+
+**Bảng mới `repair_order_submission`** (chỉ ghi thêm, thêm vào `APPEND_ONLY_TABLES`, trigger `*_append_only`):
+
+- `id`, `order_id` → `repair_order` RESTRICT.
+- `step` (`RECEIVE` | `REPORT` | `COUNT`).
+- `draft_id uuid` UNIQUE.
+- `created_by`, `created_at`.
+- Lệnh Nháp xóa được nên chưa có dòng nào (chỉ ba bước của điện thoại ghi vào đây, đều sau Nháp).
 
 **Trigger:**
 
@@ -286,7 +306,7 @@ Dòng chuyển bãi → xưởng lúc nhận cộng 0.
   3. Báo sửa xong 2 Tốt + 0,5 kg vật tư.
   4. Thủ kho đếm.
   5. Kế toán ghi sổ.
-- Kiểm theo **chênh lệch** tồn ở `BAI-01`, `XUONG-01` (sổ kho không xóa được).
+- Kiểm theo **chênh lệch** tồn ở `BAI-01`, `XUONG-01` (sổ kho không xóa được): sau ghi sổ, `E2E-KHO-01` Tốt tăng ở `BAI-01`, Chờ sửa ở `XUONG-01` về như trước khi nhận.
 - Thêm một test trả lại xưởng, một test 403 (Xưởng gọi `/post`, Kế toán gọi `/api/m/repairs`).
 - Xưởng dùng `statePath("WORKSHOP")` (`e2e.xuong` đã có), Thủ kho dùng `statePath("WAREHOUSE")`.
 
@@ -296,6 +316,20 @@ Dòng chuyển bãi → xưởng lúc nhận cộng 0.
 - M8 lệnh mẫu: trạng thái Đang sửa, không có tiền, không cần mask.
 - D9, D10 đổi vì thêm 3 mã vật tư: chụp lại.
 - Gắn nhãn `update-snapshots`.
+
+### D9. Phiếu nhập vật tư vào xưởng (0.2 #131)
+
+- **Vấn đề:** lệnh sửa trừ vật tư ở xưởng, nhưng phiếu nhập chỉ nhận vào bãi. Không sửa thì tồn vật tư ở xưởng chỉ có qua phiếu `ĐC` (cần Giám đốc duyệt).
+- **Chọn:**
+  - `lockYard` (`src/lib/receiving/post.ts`) đổi thành `lockReceiptLocation`: nhận `YARD`; nhận `WORKSHOP` chỉ khi **mọi dòng của đơn** là mã nhóm `MATERIAL` (đọc `item_group.category` dưới cùng khóa `FOR SHARE` của vật tư).
+  - Sai thì 422 "Chỉ đơn toàn vật tư phụ mới nhập vào xưởng, chọn một bãi".
+  - Không chọn vị trí mà có nhiều chỗ hợp lệ thì vẫn bắt chọn, như nay.
+  - `queries.ts` (dữ liệu M3) trả thêm cờ `materialsOnly` và danh sách xưởng khi cờ bật.
+- **Lý do xét theo "mọi dòng của đơn":** một chuyến xe vào một vị trí. Đơn trộn thiết bị và vật tư thì nhập bãi, rồi vật tư sang xưởng bằng `ĐC`, ít gặp.
+- **Đã cân nhắc:**
+  - Cho mọi phiếu chọn xưởng: hàng thiết bị vào xưởng sẽ kẹt như lỗi của 0.2 #130. Bỏ.
+  - Xét theo từng dòng (tách một chuyến thành hai vị trí): đổi luật "một chuyến một phiếu một bãi". Bỏ.
+- **Seed:** vật tư mẫu giữ tồn đầu kỳ tại `XUONG-01` (nhanh, không cần đơn mẫu). Integration test của phiếu nhập phủ đường nhập vào xưởng.
 
 ## Risks / Trade-offs
 

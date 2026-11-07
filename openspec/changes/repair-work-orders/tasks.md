@@ -5,11 +5,12 @@
 - [ ] 1.1 Thêm `LITER` vào `QUANTITY_UNITS` (`src/domain/quantity.ts`: nhãn "lít", đơn vị đo 3 số lẻ, cần trọng lượng chuẩn, `isRepairableUnit` = false). Migration thay CHECK `item_unit_check`. Unit test: 0,5 lít nhận được, 0,0005 lít bị từ chối, `isRepairableUnit("LITER")` = false. Test chống lệch CHECK ↔ domain xanh.
 - [ ] 1.2 Migration `item.repair_labor_rate bigint null check >= 0`. Schema Drizzle cập nhật. Integration test: −1 bị DB từ chối.
 - [ ] 1.3 Migration `repair_order`:
-  - Thêm `kind`, các cột người / lúc của từng bước, `return_note`, `cancel_reason`, `receive_posting_id`, `cancel_posting_id`, ba cột `*_draft_id` UNIQUE.
+  - Thêm `kind`, các cột người / lúc của từng bước, `return_note`, `cancel_reason`, `receive_posting_id`, `cancel_posting_id`.
   - CHECK `status` mở rộng, và `SIMPLE` chỉ có `DRAFT` / `POSTED`.
   - Integration test (`src/db/schema/repairs.int.test.ts`): phiếu cũ đọc được với `kind = 'SIMPLE'`; `SIMPLE` + `ASSIGNED` bị từ chối.
 - [ ] 1.4 Migration `repair_order_line` thêm `labor_rate`, `reported_good`, `reported_scrap`, `labor_amount`, `material_amount`; nới CHECK số lượng cho 0 / 0. Tạo bảng `repair_order_material` (UNIQUE `line_id, item_id`, `quantity > 0`). Mở rộng trigger khóa cho lệnh `POSTED` / `CANCELLED` (cả vật tư). Integration test: sửa vật tư của lệnh `POSTED` bị trigger chặn.
-- [ ] 1.5 Thêm `repairs.work` (DIRECTOR, WORKSHOP) và `repairs.count` (DIRECTOR, WAREHOUSE) vào `src/domain/permissions.ts`. Test bảng quyền theo spec `auth` xanh.
+- [ ] 1.5 Bảng chỉ ghi thêm `repair_order_submission` (`order_id`, `step`, `draft_id` UNIQUE, `created_by`, `created_at`), trigger `*_append_only`, thêm vào `APPEND_ONLY_TABLES` (`src/db/grants.ts`). Test chống lệch `APPEND_ONLY_TABLES` xanh; UPDATE / DELETE bị trigger chặn.
+- [ ] 1.6 Thêm `repairs.work` (DIRECTOR, WORKSHOP) và `repairs.count` (DIRECTOR, WAREHOUSE) vào `src/domain/permissions.ts`. Test bảng quyền theo spec `auth` xanh.
 
 ## 2. Logic thuần và unit test
 
@@ -30,23 +31,27 @@
   - Unit test: ví dụ `H1,7` có vật tư 200.000 ₫ rồi mất (spec `gross-profit`), tổng ba tháng không trừ vật tư hai lần.
   - Phiếu đơn giản cũ (`materialCost` = 0) cho đúng số cũ.
 
-## 3. Danh mục: đơn giá công
+## 3. Danh mục và phiếu nhập vật tư
 
 - [ ] 3.1 `src/lib/catalog/`: đọc và ghi `repair_labor_rate`. Chỉ `repairs.manage` sửa được trường này (Kinh doanh gửi kèm → 403 cho trường đó); mã nhóm Vật tư không nhận trường này. Ghi nhật ký qua `logActivity` (`diffFields`). Integration test theo spec `item-catalog`.
 - [ ] 3.2 D9: ô "Đơn giá công sửa / cái" trên form (chỉ hiện khi có `repairs.manage`); chi tiết hiện "Công sửa 40.000 ₫ / cái" cho người có `repairs.view`; đơn vị lít trong danh sách chọn ĐVT. Component test.
+
+- [ ] 3.3 `src/lib/receiving/post.ts`: nhận vị trí `WORKSHOP` khi mọi dòng của đơn là mã nhóm `MATERIAL`, còn lại chỉ `YARD`; lỗi 422 theo spec `goods-receipts`. Integration test: đơn toàn vật tư nhập `XUONG-01` được (`PURCHASE_IN` tại xưởng); đơn có `GG-K17` gửi `XUONG-01` bị từ chối, không ghi gì.
+- [ ] 3.4 `src/lib/receiving/queries.ts` và M3: cờ `materialsOnly`, ô vị trí nhập có xưởng chỉ khi cờ bật. Component test hai đơn như spec.
 
 ## 4. Service lệnh sửa (`src/lib/repairs/`)
 
 - [ ] 4.1 `work-orders.ts`: tạo, sửa nháp (chỉ `DRAFT`, so `updatedAt` → 409), xóa nháp. Kiểm xưởng loại `WORKSHOP`, chỗ lấy là bãi hoặc chính xưởng, mã sửa được. `POST` kiểu phiếu đơn giản bị 422. Mỗi hàm gọi `logActivity`. Integration test.
 - [ ] 4.2 `assign` (chụp `labor_rate`, thiếu đơn giá thì từ chối) và `recall` (xóa số đã chụp). Integration test: đổi đơn giá ở danh mục sau khi giao không đổi `labor_rate` của lệnh.
-- [ ] 4.3 `receive(draftId, updatedAt)`: khóa lệnh → `lockForPosting` → `postMovements` `TRANSFER_*` (posting riêng, lưu `receive_posting_id`). `draftId` lặp lại thì trả kết quả cũ. Integration test:
+- [ ] 4.3 `receive(draftId, updatedAt)`: khóa lệnh → `lockForPosting` → `postMovements` `TRANSFER_*` (posting riêng, lưu `receive_posting_id`). Tìm `draftId` trong `repair_order_submission` **trước** khi khóa lệnh; đã dùng thì trả trạng thái hiện tại, không ghi. Integration test:
   - Tồn `BAI-01` 201 → 161 và `XUONG-01` 0 → 40.
   - Giá BQ, tổng giá trị không đổi.
   - Bãi thiếu hàng → từ chối, không ghi.
   - Gửi lại cùng `draftId` → chỉ 4 dòng sổ.
-- [ ] 4.4 `report` (Xưởng) và `count` (Thủ kho): lưu số và vật tư, `reported_*` chỉ do `report` ghi, so `updatedAt`, `draftId`. `returnToWorkshop` (bắt buộc lý do, bỏ số đếm). Integration test:
+- [ ] 4.4 `report` (Xưởng) và `count` (Thủ kho): lưu số và vật tư, `reported_*` chỉ do `report` ghi, so `updatedAt`, ghi `draftId` vào `repair_order_submission` (tìm trước, đã dùng thì không ghi). `returnToWorkshop` (bắt buộc lý do, bỏ số đếm). Integration test:
   - Trả lại khi Thủ kho đang đếm → lệnh đếm 409.
   - Thủ kho đếm khác xưởng thì giữ cả hai số.
+  - Báo (`d1`) → trả lại → báo lần hai (`d2`) → gửi lại `d1`: số của lần hai giữ nguyên, không có dòng nhật ký thêm.
 - [ ] 4.5 `postWorkOrder`:
   - Thứ tự khóa theo design D5.
   - Đọc tồn vật tư ở xưởng dưới khóa.
@@ -54,7 +59,7 @@
   - Xác nhận chi phí cao (422 như phiếu đơn giản).
   - Ghi dòng sổ, cập nhật dòng lệnh và vật tư **trước** khi đổi `POSTED`.
   - Integration test:
-    - Ví dụ D12 đủ số.
+    - Ví dụ D12 đủ số; Chờ sửa xuất ở `XUONG-01`, Tốt và Phế liệu nhập ở `BAI-01` (tồn `BAI-01` 920 → 956 Tốt, 42 → 46 Phế liệu; `XUONG-01` 40 → 0 Chờ sửa); lệnh lấy tại chính xưởng nhập ở xưởng.
     - Tồn `VT-QH` 18 → 12 kg, `VT-SON` 12 → 8,5 lít; tổng giá trị kho giảm 585.000 ₫ ở hai mã vật tư.
     - Thiếu vật tư → từ chối, không ghi gì.
     - Ghi sổ hai lần → một bộ dòng.
@@ -85,7 +90,7 @@
 ## 7. Giao diện desktop D12 và danh sách
 
 - [ ] 7.1 `/repairs`: danh sách gộp hai loại, lọc trạng thái mới trên URL, nút "Lệnh mới", cột chi phí "—" khi lệnh chưa ghi sổ. Component test theo spec `repair-orders`.
-- [ ] 7.2 D12 lệnh (`/repairs/<mã>` khi `kind = WORK_ORDER`), theo `docs/design/screens/D12-RepairOrder.dc.html`, dùng token, không hex:
+- [ ] 7.2 D12 lệnh (`/repairs/<mã>` khi `kind = WORK_ORDER`), theo `docs/design/screens/D12-RepairOrder.dc.html` (bản đã sửa trong PR propose: "Nhập 56 Tốt, 4 Phế liệu ở BAI-01", nhãn "Vật tư phụ (giá BQ)"), dùng token, không hex:
   - Tiến trình 6 bước.
   - Bảng hàng / công / vật tư.
   - Khối giá vốn khi vào Tốt.
@@ -125,7 +130,7 @@
   - Ghi quy ước vào `CLAUDE.md` (mục lưu ý E2E).
 - [ ] 9.3 `tests/e2e/repairs.spec.ts` (nhóm nối tiếp):
   - Luồng đủ 6 bước: Kế toán → Xưởng (`statePath("WORKSHOP")`) → Thủ kho (`statePath("WAREHOUSE")`) → Kế toán.
-  - Kiểm theo chênh lệch tồn `BAI-01` / `XUONG-01` và tồn vật tư.
+  - Kiểm theo chênh lệch tồn `BAI-01` / `XUONG-01` và tồn vật tư: sau ghi sổ, Tốt `E2E-KHO-01` tăng ở `BAI-01` (0.2 #130), Chờ sửa ở `XUONG-01` về như trước khi nhận.
   - Thêm một test trả lại xưởng, một test 403.
   - `npm run test:e2e` xanh.
 - [ ] 9.4 Ảnh mốc `@visual`: D12 lệnh mẫu (ô tiền `data-mask`), M8 Đang sửa, D9 / D10 sau khi thêm mã vật tư. Gắn nhãn `update-snapshots` vào PR, CI xanh.
@@ -136,5 +141,7 @@
 - [ ] 10.2 Kiểm tra tay trên Edge 1366px (D12 lệnh, `/repairs`, D9) và điện thoại 390px (M1, M8) so với file thiết kế; nếu chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào #33.
 
 ## Workflow follow-up
+
+- Apply mở **PR code riêng** (nhánh `repair-work-orders`, PR mới sau khi PR propose merge) để review code trước khi merge.
 
 - Sau khi merge PR apply: `/opsx:archive repair-work-orders` → PR "docs: archive repair-work-orders" (`Closes #16`).

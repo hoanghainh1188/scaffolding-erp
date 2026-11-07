@@ -8,7 +8,7 @@ Vật tư phụ dùng khi sửa SHALL ra khỏi kho bằng dòng `REPAIR_OUT` c�
 - **THEN** giá BQ của `VT-QH`, `VT-SON` không đổi **AND** dòng `REPAIR_IN` Tốt của `GG-K17` gồm 540.000 ₫ vật tư và 1.440.000 ₫ công
 
 ### Requirement: Chuyển hàng sang xưởng theo lệnh sửa
-Khi xưởng nhận lệnh, hàng Chờ sửa SHALL chuyển vị trí bằng cặp dòng `TRANSFER_OUT` / `TRANSFER_IN` cùng tình trạng Chờ sửa, chứng từ là mã lệnh, theo giá BQ, không đổi giá BQ và tổng giá trị. Các dòng này SHALL có mã ghi sổ riêng với lần ghi sổ lệnh, để màn hình và báo cáo phân biệt "nhận hàng" với "ghi sổ lệnh".
+Khi xưởng nhận lệnh, hàng Chờ sửa SHALL chuyển vị trí bằng cặp dòng `TRANSFER_OUT` / `TRANSFER_IN` cùng tình trạng Chờ sửa, chứng từ là mã lệnh, theo giá BQ, không đổi giá BQ và tổng giá trị. Khi ghi sổ lệnh, Chờ sửa SHALL xuất ở xưởng còn Tốt, Phế liệu SHALL nhập về vị trí lấy hàng (`REPAIR_OUT` và `REPAIR_IN` khác vị trí, 0.2 #130). Các dòng chuyển SHALL có mã ghi sổ riêng với lần ghi sổ lệnh, để màn hình và báo cáo phân biệt "nhận hàng" với "ghi sổ lệnh".
 
 #### Scenario: Nhận lệnh rồi ghi sổ khác ngày
 - **WHEN** `PSC-2026-031` nhận ngày 03/11/2026 và ghi sổ ngày 07/11/2026

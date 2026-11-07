@@ -47,6 +47,13 @@ Bấm "Nhận lệnh" SHALL hỏi lại "Nhận N cái từ <chỗ lấy> về <
 - **WHEN** server đã ghi nhận `PSC-2026-031` nhưng điện thoại mất mạng trước khi nhận trả lời, rồi gửi lại cùng mã nháp
 - **THEN** điện thoại nhận "Đã nhận lệnh PSC-2026-031" **AND** sổ chỉ có một bộ 4 dòng chuyển hàng
 
+### Requirement: Yêu cầu cũ gửi lại không ghi đè
+Mỗi lần bấm Nhận lệnh, Báo sửa xong, Đếm xong SHALL mang một mã nháp mới. Server SHALL nhớ mọi mã nháp đã dùng của lệnh; gặp lại mã đã dùng SHALL trả trạng thái hiện tại của lệnh và không ghi gì, kể cả khi lệnh đã qua các bước sau.
+
+#### Scenario: Yêu cầu báo lần một tới muộn
+- **WHEN** xưởng báo `PSC-2026-031` sửa xong 30 (mã nháp `d1`), văn phòng trả lại, xưởng báo lần hai sửa xong 36 (mã nháp `d2`), rồi yêu cầu `d1` bị kẹt mạng mới tới server
+- **THEN** server trả trạng thái hiện tại (Chờ nghiệm thu, sửa xong 36) **AND** số của lần hai giữ nguyên **AND** nhật ký không có dòng Báo sửa xong thứ ba
+
 ### Requirement: Nháp số sửa trên máy
 Số đã ghi trên M8 SHALL lưu nháp trên máy theo luật `mobile-drafts` (tự lưu, chỉ của người tạo, gửi lại khi có mạng, nhãn "Nháp cũ"). Báo sửa xong và Đếm xong SHALL gửi cả số và vật tư cùng thời điểm sửa cuối của lệnh; server từ chối (409, sai số) SHALL mở lại nháp kèm thông báo, không mất số.
 

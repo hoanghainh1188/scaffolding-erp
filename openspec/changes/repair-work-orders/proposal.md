@@ -17,7 +17,7 @@
 - **Thủ kho đếm lại** trên cùng màn M8 và xác nhận số. D12 hiện số xưởng báo cạnh số Thủ kho đếm khi hai số khác nhau.
 - **Kế toán ghi sổ lệnh** trong một transaction:
   - Xuất Chờ sửa ở xưởng.
-  - Nhập Tốt và Phế liệu ở xưởng.
+  - Nhập Tốt và Phế liệu **về bãi gốc** (bãi đã lấy hàng), để phiếu xuất lấy được hàng vừa sửa (0.2 #130).
   - Xuất vật tư ở xưởng theo giá BQ.
   - Công = sửa xong × đơn giá đã chụp. Chi phí sửa = công + vật tư, tính ra, không nhập tay.
   - Phế liệu, phần hỏng, giá vào Tốt dùng đúng công thức 0.2 #23.
@@ -33,6 +33,7 @@
   - Phiếu Nháp cũ vẫn sửa, xóa, ghi sổ được như trước.
   - Phiếu đã ghi sổ giữ nguyên. **BREAKING** cho cách làm của Kế toán: bỏ ô "Chi phí sửa" gõ tay cho phiếu mới.
 - **Nhật ký thao tác** ghi mọi bước của lệnh.
+- **Phiếu nhập (M3)** nhập được thẳng vào xưởng khi mọi dòng của đơn là vật tư phụ, để xưởng có tồn vật tư (0.2 #131).
 
 ## Capabilities
 
@@ -51,18 +52,19 @@
 - `auth`: bảng quyền thêm `repairs.work`, `repairs.count`.
 - `mobile-home`: khối "Sửa chữa" trên M1.
 - `activity-log`: các thao tác của lệnh sửa.
+- `goods-receipts`: phiếu nhập được nhập thẳng vào xưởng khi đơn toàn mã nhóm Vật tư (0.2 #131).
 
 ## Impact
 
 - **DB** (migration mới trong `drizzle/`):
   - `repair_order` thêm loại phiếu (`SIMPLE` / `WORK_ORDER`), trạng thái mới, xưởng, các mốc giao / nhận / báo xong / đếm / hủy, mã ghi sổ của lần nhận.
   - `repair_order_line` thêm đơn giá công đã chụp, số xưởng báo, công và vật tư lúc ghi sổ.
-  - Bảng mới `repair_order_material`.
+  - Bảng mới `repair_order_material` và bảng chỉ ghi thêm `repair_order_submission` (mọi mã nháp đã dùng của lệnh).
   - `item.repair_labor_rate`, đơn vị `LITER`.
   - Không đổi ràng buộc loại biến động của sổ kho.
 - **Code**:
   - `src/domain/repair-order.ts` (thêm `transition()`, công, vật tư) và `src/domain/quantity.ts` (lít).
-  - `src/lib/repairs/`, `src/lib/reports/costs.ts`, `src/lib/reports/fleet.ts`, `src/domain/gross-profit.ts`, `src/domain/permissions.ts`.
+  - `src/lib/repairs/`, `src/lib/receiving/post.ts`, `src/lib/receiving/queries.ts`, `src/lib/reports/costs.ts`, `src/lib/reports/fleet.ts`, `src/domain/gross-profit.ts`, `src/domain/permissions.ts`.
   - Trang `/repairs`, `/m/repairs`, API `/api/repairs/**`, `/api/m/repairs/**`, M1.
 - **Số liệu đã có**:
   - Dòng sổ cũ không đổi. Phiếu sửa đã ghi sổ đọc như cũ.

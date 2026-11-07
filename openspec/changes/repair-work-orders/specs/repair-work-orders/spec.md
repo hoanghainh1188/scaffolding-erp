@@ -4,7 +4,7 @@ Lệnh sửa chữa đi từ văn phòng giao việc, xưởng rút hàng Chờ 
 ## ADDED Requirements
 
 ### Requirement: Lệnh sửa chữa và mã lệnh
-Lệnh sửa chữa SHALL dùng cùng dãy mã `PSC-<năm>-<số 3 chữ số>` với phiếu sửa đơn giản, cấp khi lưu nháp lần đầu. Lệnh SHALL có xưởng (vị trí loại xưởng, đang dùng), tổ sửa (tùy chọn, tối đa 100 ký tự), vị trí lấy hàng (bãi đang dùng hoặc chính xưởng đó), ghi chú (tùy chọn, tối đa 500 ký tự) và một hoặc nhiều dòng mã hàng. Hàng Tốt, Phế liệu và vật tư của lệnh SHALL ghi ở xưởng của lệnh.
+Lệnh sửa chữa SHALL dùng cùng dãy mã `PSC-<năm>-<số 3 chữ số>` với phiếu sửa đơn giản, cấp khi lưu nháp lần đầu. Lệnh SHALL có xưởng (vị trí loại xưởng, đang dùng), tổ sửa (tùy chọn, tối đa 100 ký tự), vị trí lấy hàng (bãi đang dùng hoặc chính xưởng đó), ghi chú (tùy chọn, tối đa 500 ký tự) và một hoặc nhiều dòng mã hàng.
 
 #### Scenario: Mã tiếp theo sau phiếu đơn giản
 - **WHEN** phiếu gần nhất năm 2026 là phiếu sửa đơn giản `PSC-2026-030` và Kế toán lưu nháp lệnh mới
@@ -17,6 +17,13 @@ Lệnh sửa chữa SHALL dùng cùng dãy mã `PSC-<năm>-<số 3 chữ số>` 
 #### Scenario: Lấy hàng tại công trình
 - **WHEN** Kế toán chọn vị trí lấy hàng `CT-0003`
 - **THEN** hệ thống từ chối với "Chỉ lấy hàng sửa tại bãi hoặc tại chính xưởng của lệnh"
+
+### Requirement: Vị trí các dòng sổ của lệnh
+Khi ghi sổ, Chờ sửa SHALL xuất ở xưởng và vật tư SHALL trừ ở xưởng, còn hàng Tốt và Phế liệu SHALL nhập về **vị trí lấy hàng** (bãi gốc; lệnh lấy tại chính xưởng thì nhập ở xưởng), vì phiếu xuất chỉ lấy hàng từ bãi (0.2 #130).
+
+#### Scenario: Hàng sửa xong về bãi gốc
+- **WHEN** `PSC-2026-031` lấy tại `BAI-01`, xưởng `XUONG-01`, ghi sổ 36 Tốt, 4 Phế liệu `GG-K17`
+- **THEN** `REPAIR_OUT` Chờ sửa ghi tại `XUONG-01` **AND** `REPAIR_IN` Tốt, Phế liệu ghi tại `BAI-01` **AND** dòng xuất vật tư ghi tại `XUONG-01`
 
 ### Requirement: Dòng của lệnh
 Mỗi dòng SHALL là một mã hàng đang dùng sửa được (đơn vị đếm có trọng lượng chuẩn, như phiếu sửa đơn giản) với số lấy ra là số nguyên > 0. Một mã chỉ có một dòng. Dòng chỉ thêm, bớt, đổi số lấy ra khi lệnh là Nháp. Lệnh không có dòng nào SHALL không lưu được.
@@ -107,7 +114,7 @@ Khi lệnh Đang sửa, xưởng SHALL ghi được trên M8 (lưu nháp trên m
 - **THEN** lệnh lưu được **AND** tổng `VT-SON` của lệnh là 3,5 lít
 
 ### Requirement: Thủ kho đếm nghiệm thu
-Khi lệnh Chờ nghiệm thu, Thủ kho SHALL ghi số sửa xong, phế liệu mình đếm cho mỗi dòng (mặc định bằng số xưởng báo) và sửa được vật tư đã dùng, rồi bấm "Đếm xong". Sửa xong + phế SHALL bằng số lấy ra. Số xưởng báo SHALL được giữ lại; ghi sổ dùng số Thủ kho đếm.
+Khi lệnh Chờ nghiệm thu (xưởng đã đưa hàng về bãi gốc), Thủ kho SHALL ghi số sửa xong, phế liệu mình đếm tại bãi cho mỗi dòng (mặc định bằng số xưởng báo) và sửa được vật tư đã dùng, rồi bấm "Đếm xong". Sửa xong + phế SHALL bằng số lấy ra. Số xưởng báo SHALL được giữ lại; ghi sổ dùng số Thủ kho đếm.
 
 #### Scenario: Thủ kho đếm khác xưởng
 - **WHEN** xưởng báo `GG-K17` sửa xong 36, phế 4 và Thủ kho đếm sửa xong 35, phế 5
@@ -159,13 +166,21 @@ Ghi sổ SHALL xuất mỗi vật tư đã dùng của mỗi dòng bằng `REPAI
 - **THEN** sổ có `REPAIR_OUT` −20 Mới (−50.000 ₫) và −10 Tốt (−20.000 ₫) **AND** vật tư của dòng là 70.000 ₫
 
 ### Requirement: Ghi sổ lệnh sửa
-Ghi sổ SHALL, trong một transaction, ghi cho mỗi dòng: `REPAIR_OUT` −(số lấy ra) Chờ sửa tại xưởng theo B; `REPAIR_IN` +(sửa xong) Tốt tại xưởng, giá trị = sửa xong × B + chi phí sửa + phần hỏng; `REPAIR_IN` +(phế) Phế liệu tại xưởng; và các dòng xuất vật tư. Ngày nghiệp vụ SHALL là ngày ghi sổ. Lệnh SHALL lưu công, vật tư và chi phí sửa của từng dòng lúc ghi sổ.
+Ghi sổ SHALL, trong một transaction, ghi cho mỗi dòng: `REPAIR_OUT` −(số lấy ra) Chờ sửa tại xưởng theo B; `REPAIR_IN` +(sửa xong) Tốt tại vị trí lấy hàng, giá trị = sửa xong × B + chi phí sửa + phần hỏng; `REPAIR_IN` +(phế) Phế liệu tại vị trí lấy hàng; và các dòng xuất vật tư tại xưởng. Ngày nghiệp vụ SHALL là ngày ghi sổ. Lệnh SHALL lưu công, vật tư và chi phí sửa của từng dòng lúc ghi sổ.
 
 #### Scenario: Ví dụ D12
-- **WHEN** Kế toán ghi sổ `PSC-2026-031` tại `XUONG-01`: `GG-K17` (13,5 kg/cái, B 160.000 ₫) lấy 40, sửa xong 36, phế 4, đơn giá công 40.000 ₫, vật tư 6 kg `VT-QH` (45.000 ₫) và 3 lít `VT-SON` (90.000 ₫); `CHEO-1,7` (B 30.000 ₫) lấy 20, sửa xong 20, phế 0, đơn giá công 10.000 ₫, vật tư 0,5 lít `VT-SON`; giá sắt vụn 7.500 ₫/kg
+- **WHEN** Kế toán ghi sổ `PSC-2026-031` (lấy tại `BAI-01`, xưởng `XUONG-01`): `GG-K17` (13,5 kg/cái, B 160.000 ₫) lấy 40, sửa xong 36, phế 4, đơn giá công 40.000 ₫, vật tư 6 kg `VT-QH` (45.000 ₫) và 3 lít `VT-SON` (90.000 ₫); `CHEO-1,7` (B 30.000 ₫) lấy 20, sửa xong 20, phế 0, đơn giá công 10.000 ₫, vật tư 0,5 lít `VT-SON`; giá sắt vụn 7.500 ₫/kg
 - **THEN** `GG-K17`: công 1.440.000 ₫, vật tư 540.000 ₫, chi phí sửa **1.980.000 ₫**, phế liệu 405.000 ₫, phần hỏng 235.000 ₫, `REPAIR_IN` +36 Tốt giá trị 7.975.000 ₫ (**221.528 ₫/cái**)
 - **AND** `CHEO-1,7`: công 200.000 ₫, vật tư 45.000 ₫, chi phí sửa 245.000 ₫, `REPAIR_IN` +20 Tốt giá trị 845.000 ₫ (**42.250 ₫/cái**)
 - **AND** chi phí sửa của lệnh là 2.225.000 ₫ (công 1.640.000 ₫, vật tư 585.000 ₫)
+
+#### Scenario: Tồn bãi và xưởng trước và sau ghi sổ
+- **WHEN** trước ghi sổ `PSC-2026-031`, `GG-K17` có tại `BAI-01` 161 Chờ sửa, 920 Tốt, 42 Phế liệu và tại `XUONG-01` 40 Chờ sửa (đã chuyển lúc nhận)
+- **THEN** sau ghi sổ `XUONG-01` còn 0 Chờ sửa `GG-K17` **AND** `BAI-01` có 161 Chờ sửa, 956 Tốt, 46 Phế liệu **AND** phiếu xuất lấy được 36 cái Tốt mới sửa từ `BAI-01`
+
+#### Scenario: Lệnh lấy hàng tại chính xưởng
+- **WHEN** lệnh có vị trí lấy hàng `XUONG-01` ghi sổ 10 `GG-K17` sửa xong
+- **THEN** `REPAIR_IN` +10 Tốt ghi tại `XUONG-01`
 
 #### Scenario: Tổng giá trị sổ của lần ghi sổ bằng công trừ lỗ hỏng hàng
 - **WHEN** ghi sổ lệnh ví dụ D12 ở trên
@@ -244,7 +259,7 @@ D12 của lệnh SHALL có: đầu trang (mã, xưởng, tổ, nhãn trạng th�
 
 #### Scenario: Khối khi ghi sổ
 - **WHEN** lệnh lấy tại `BAI-01`, xưởng `XUONG-01`, dùng 6 kg que hàn, 3,5 lít sơn
-- **THEN** khối "Khi ghi sổ" hiện "Xuất 60 Chờ sửa ở XUONG-01 (đã chuyển từ BAI-01 lúc xưởng nhận lệnh)", "Nhập 56 Tốt, 4 Phế liệu ở XUONG-01" và "Xuất vật tư: 6 kg que hàn, 3,5 lít sơn theo giá BQ"
+- **THEN** khối "Khi ghi sổ" hiện "Xuất 60 Chờ sửa ở XUONG-01 (đã chuyển từ BAI-01 lúc xưởng nhận lệnh)", "Nhập 56 Tốt, 4 Phế liệu ở BAI-01" và "Xuất vật tư: 6 kg que hàn, 3,5 lít sơn theo giá BQ"
 
 #### Scenario: Nút theo trạng thái
 - **WHEN** Kế toán mở lệnh Đang sửa
