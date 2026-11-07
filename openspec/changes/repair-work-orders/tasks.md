@@ -102,8 +102,8 @@
 
 ## 8. Giao diện điện thoại M8 và M1
 
-- [ ] 8.1 `/m/repairs`: thẻ theo quyền (Nhận lệnh, Tiếp tục, Đếm nghiệm thu), không có giá. Component test theo spec `repair-mobile`.
-- [ ] 8.2 M8 `/m/repairs/<mã>` theo `docs/design/screens/M8-Repair.dc.html`:
+- [x] 8.1 `/m/repairs`: thẻ theo quyền (Nhận lệnh, Tiếp tục, Đếm nghiệm thu), không có giá. Component test theo spec `repair-mobile`.
+- [x] 8.2 M8 `/m/repairs/<mã>` theo `docs/design/screens/M8-Repair.dc.html`:
   - Stepper Sửa xong / Hỏng → Phế.
   - Vật tư và "+ Thêm vật tư".
   - Chân màn "56 sửa xong · 4 phế · đủ 60 / 60".
@@ -111,7 +111,7 @@
   - Nháp trên máy qua `src/lib/drafts/` (loại nháp mới, gửi lại khi có mạng, "Bị từ chối" khi lệnh đã hủy).
   - Hộp hỏi lại khi nhận lệnh.
   - Component test.
-- [ ] 8.3 M1: khối "Sửa chữa" cho `repairs.work` / `repairs.count`, tính vào N, nhãn "Văn phòng trả lại"; nháp M8 hiện ở thanh "N phiếu chưa gửi" và M7. Component test theo spec `mobile-home`.
+- [x] 8.3 M1: khối "Sửa chữa" cho `repairs.work` / `repairs.count`, tính vào N, nhãn "Văn phòng trả lại"; nháp M8 hiện ở thanh "N phiếu chưa gửi" và M7. Component test theo spec `mobile-home`.
 
 ## 9. Seed, E2E, ảnh mốc
 

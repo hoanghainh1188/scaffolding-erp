@@ -117,6 +117,25 @@ export function transferSender(fetcher: typeof fetch = fetch): Sender {
   };
 }
 
+/**
+ * M8 "Báo sửa xong" / "Đếm xong" (repair-work-orders design D5): every
+ * press is its own draft, whose id the server remembers, so a resend of an
+ * earlier report answers the order as it is now and writes nothing.
+ */
+export function repairSender(fetcher: typeof fetch = fetch): Sender {
+  return (record) => {
+    const payload = record.payload as {
+      step?: "report" | "count";
+      body?: object;
+    } | null;
+    return postJson(
+      fetcher,
+      `/api/m/repairs/${encodeURIComponent(record.documentRef)}/${payload?.step ?? "report"}`,
+      { ...payload?.body, draftId: record.draftId },
+    );
+  };
+}
+
 /** A photo kept in a return draft until the note is posted (design D13). */
 export interface DraftPhoto {
   clientPhotoId: string;
@@ -272,6 +291,7 @@ export function draftSender(
   const stocktake = stocktakeSender(fetcher);
   const delivery = deliverySender(fetcher);
   const transfer = transferSender(fetcher);
+  const repair = repairSender(fetcher);
   const returned = store ? returnSender(store, fetcher) : null;
   return (record) =>
     record.kind === "STOCKTAKE"
@@ -280,9 +300,11 @@ export function draftSender(
         ? delivery(record)
         : record.kind === "TRANSFER"
           ? transfer(record)
-          : record.kind === "RETURN" && returned
-            ? returned(record)
-            : receipt(record);
+          : record.kind === "REPAIR"
+            ? repair(record)
+            : record.kind === "RETURN" && returned
+              ? returned(record)
+              : receipt(record);
 }
 
 /** Drafts this tab is sending now. */
