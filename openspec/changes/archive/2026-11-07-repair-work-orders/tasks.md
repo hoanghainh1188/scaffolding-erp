@@ -133,12 +133,12 @@
   - Kiểm theo chênh lệch tồn `BAI-01` / `XUONG-01` và tồn vật tư: sau ghi sổ, Tốt `E2E-KHO-01` tăng ở `BAI-01` (0.2 #130), Chờ sửa ở `XUONG-01` về như trước khi nhận.
   - Thêm một test trả lại xưởng, một test 403.
   - `npm run test:e2e` xanh.
-- [ ] 9.4 Ảnh mốc `@visual`: D12 lệnh mẫu (ô tiền `data-mask`), M8 Đang sửa, D9 / D10 sau khi thêm mã vật tư. Gắn nhãn `update-snapshots` vào PR, CI xanh.
+- [x] 9.4 Ảnh mốc `@visual`: D12 lệnh mẫu (ô tiền `data-mask`), M8 Đang sửa, D9 / D10 sau khi thêm mã vật tư. Gắn nhãn `update-snapshots` vào PR, CI xanh.
 
 ## 10. Kiểm tra cuối
 
-- [ ] 10.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate repair-work-orders --strict` đều xanh; `npm run inventory:check` không lệch trên DB dev sau E2E.
-- [ ] 10.2 Kiểm tra tay trên Edge 1366px (D12 lệnh, `/repairs`, D9) và điện thoại 390px (M1, M8) so với file thiết kế; nếu chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào #33.
+- [x] 10.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate repair-work-orders --strict` đều xanh; `npm run inventory:check` không lệch trên DB dev sau E2E.
+- [ ] 10.2 Kiểm tra tay trên Edge 1366px (D12 lệnh, `/repairs`, D9) và điện thoại 390px (M1, M8) so với file thiết kế; nếu chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào #33. **Làm sau, theo dõi ở #33 (mục 18).**
 
 ## Workflow follow-up
 
