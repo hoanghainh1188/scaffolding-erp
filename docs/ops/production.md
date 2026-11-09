@@ -155,11 +155,37 @@ Tài liệu quy chuẩn vận hành, bảo mật và quy trình ứng phó khẩ
   DATABASE_URL="<PROD_DATABASE_URL>" npm run auth:unlock -- --all
   ```
 
+### Sự cố: Mất điện thoại xác thực 2 lớp
+
+Giám đốc, Kế toán và tài khoản có cờ Admin hệ thống phải bật xác thực 2 lớp.
+
+**Trước khi gỡ, luôn xác minh đúng người yêu cầu:** gặp mặt hoặc gọi vào số đã biết. Không làm theo tin nhắn.
+
+1. Người đó **còn mã dự phòng**: đăng nhập bằng mã dự phòng, vào **Xác thực 2 lớp → Đổi điện thoại**. Không cần ai giúp.
+2. Hết mã dự phòng: **admin hệ thống** vào **Cài đặt → Người dùng**, chọn **Gỡ xác thực 2 lớp** ở dòng của người đó, nhập mật khẩu và mã của chính admin.
+3. Admin cũng mất điện thoại, hoặc chưa ai có cờ: người giữ quyền vào DB chạy lệnh cứu hộ:
+   ```bash
+   DATABASE_URL="<PROD_DATABASE_URL>" npm run auth:reset-2fa -- --username <tên_đăng_nhập>
+   ```
+4. Sau khi gỡ, người đó đăng nhập và bật lại ngay. Kiểm tra dòng nhật ký ở **Nhật ký thao tác** (D18).
+
+Nhập sai mã nhiều lần thì chờ 15 phút hoặc chạy `auth:unlock` (mục trên); lệnh này gỡ cả khóa do sai mã.
+
+**Cờ Admin hệ thống** chỉ đặt bằng lệnh, không có trên giao diện. Khi lên production, đặt cho ít nhất một người:
+
+```bash
+DATABASE_URL="<PROD_DATABASE_URL>" npm run auth:set-admin -- --username <tên_đăng_nhập>
+```
+
+Gỡ cờ: thêm `--off`. Nên đặt cho hơn một người để khi một người mất máy vẫn có người gỡ giúp.
+
 ### Sự cố 6: Quy trình Xoay vòng Khóa bảo mật (Secret Rotation)
 Khi có sự cố rò rỉ secret hoặc nhân sự quản trị rời khỏi dự án:
-1. **Đổi `BETTER_AUTH_SECRET`**:
+1. **Đổi khóa ký phiên** (bí mật xác thực 2 lớp được mã hóa bằng khóa này, đổi sai cách thì Giám đốc và Kế toán không đăng nhập được):
    - Sinh chuỗi ngẫu nhiên mới: `openssl rand -base64 32`.
-   - Cập nhật biến môi trường trên Vercel Production và Redeploy.
+   - **Không xóa `BETTER_AUTH_SECRET` cũ.** Thêm biến `BETTER_AUTH_SECRETS` trên Vercel Production: lần đầu `1:<khóa mới>`; lần sau `2:<khóa mới hơn>,1:<khóa trước>`. Redeploy.
+   - *Xoay định kỳ*: làm như trên là đủ, dữ liệu cũ vẫn đọc được.
+   - *Nghi lộ khóa*: bí mật xác thực 2 lớp coi như đã lộ. Sau khi đổi khóa, chạy `npm run auth:reset-2fa` cho mọi Giám đốc, Kế toán, admin rồi yêu cầu họ bật lại.
    - *Hệ quả*: Toàn bộ phiên đăng nhập của người dùng sẽ hết hạn và buộc phải đăng nhập lại.
 2. **Đổi Mật khẩu Database trên Neon**:
    - Role app: SQL Editor (owner) → `ALTER ROLE erp_app PASSWORD '<mật khẩu mới>';` → cập nhật `DATABASE_URL` trên Vercel và secret `PROD_DATABASE_URL`, Redeploy.

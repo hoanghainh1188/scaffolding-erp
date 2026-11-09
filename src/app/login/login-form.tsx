@@ -9,13 +9,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { dict } from "@/locales";
 
-import { signInAction, type SignInFormState } from "./actions";
+import { loginAction, type SignInFormState } from "./actions";
+import { TwoFactorStep } from "./two-factor-step";
 
-const INITIAL: SignInFormState = { error: null, username: "" };
+const INITIAL: SignInFormState = {
+  error: null,
+  username: "",
+  step: "password",
+};
 
 export function LoginForm({ next }: { next: string | null }) {
-  const [state, action, pending] = useActionState(signInAction, INITIAL);
+  const [state, action, pending] = useActionState(loginAction, INITIAL);
   const [showPassword, setShowPassword] = useState(false);
+
+  if (state.step === "code") {
+    return (
+      <TwoFactorStep
+        action={action}
+        pending={pending}
+        error={state.error}
+        username={state.username}
+        next={next}
+      />
+    );
+  }
 
   return (
     <form action={action} className="flex w-full max-w-[400px] flex-col gap-5">

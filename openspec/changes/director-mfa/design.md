@@ -116,7 +116,7 @@ Validate bằng schema. `confirm`, `replace` thêm giới hạn 5 lần/phút th
 
 Bí mật TOTP mã hóa bằng khóa này, nên quy trình đổi khóa hiện tại sẽ làm Giám đốc và Kế toán không đăng nhập được.
 
-- **Xoay định kỳ:** dùng `BETTER_AUTH_SECRETS` (`"2:<mới>,1:<cũ>"`), thư viện có sẵn, vẫn giải mã được dữ liệu cũ. Có integration test.
+- **Xoay định kỳ:** thêm `BETTER_AUTH_SECRETS` (`"1:<mới>"`, lần sau `"2:<mới hơn>,1:<mới>"`) và **giữ nguyên `BETTER_AUTH_SECRET` cũ**: thư viện ký bằng khóa mới, dữ liệu mã hóa trước lần xoay đầu không có số phiên bản nên chỉ đọc được bằng `BETTER_AUTH_SECRET`. Có integration test.
 - **Nghi lộ khóa:** bí mật TOTP coi như lộ. Sau khi đổi khóa, chạy `auth:reset-2fa` cho mọi Giám đốc và Kế toán rồi bật lại.
 - Không giải mã được thì báo lỗi rõ ràng, không 500 trắng.
 - Sửa Sự cố 6 trong `docs/ops/production.md`.

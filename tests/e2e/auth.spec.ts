@@ -38,11 +38,11 @@ test.describe("sign-in page", () => {
     page,
   }, testInfo) => {
     test.skip(!runOnlyIn(testInfo, "desktop-1280"), "desktop flow");
-    await signInThroughForm(page, "e2e.ketoan", "sai-mat-khau");
+    await signInThroughForm(page, "e2e.kinhdoanh", "sai-mat-khau");
     await expect(page.locator("form").getByRole("alert")).toHaveText(
       "Tên đăng nhập hoặc mật khẩu không đúng",
     );
-    await expect(page.getByLabel("Tên đăng nhập")).toHaveValue("e2e.ketoan");
+    await expect(page.getByLabel("Tên đăng nhập")).toHaveValue("e2e.kinhdoanh");
     await expect(page).toHaveURL(/\/login$/);
 
     await page.getByLabel("Mật khẩu", { exact: true }).fill(E2E_PASSWORD);
@@ -86,11 +86,11 @@ test.describe("signed in", () => {
     test.skip(!runOnlyIn(testInfo, "desktop-1280"), "desktop header");
     // Own session: signing out must not end the shared director state.
     const page = await signedOutPage(browser);
-    await signInThroughForm(page, "e2e.ketoan", E2E_PASSWORD);
+    await signInThroughForm(page, "e2e.kinhdoanh", E2E_PASSWORD);
     await expect(page).toHaveURL(/\/dashboard$/);
     await waitForHydration(page, DESKTOP_READY);
 
-    const trigger = page.getByRole("button", { name: /Thu Hà/ });
+    const trigger = page.getByRole("button", { name: /Quốc Bảo/ });
     await trigger.focus();
     await page.keyboard.press("Enter");
     await expect(

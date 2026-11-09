@@ -29,6 +29,8 @@ const row = (
   username,
   role,
   contractScope: "ALL",
+  twoFactorEnabled: false,
+  systemAdmin: false,
   status,
   mustChangePassword,
   tempPasswordExpiresAt,
@@ -277,5 +279,49 @@ describe("UsersScreen (D17)", () => {
     expect(
       screen.getAllByRole("menuitem").map((item) => item.textContent),
     ).toEqual(["Đổi vai trò", "Cấp lại mật khẩu tạm", "Khóa tài khoản"]);
+  });
+});
+
+describe("UsersScreen for the system admin", () => {
+  const enrolled = ROWS.map((row, index) =>
+    index === 1 ? { ...row, twoFactorEnabled: true } : row,
+  );
+  const renderAs = (canManageUsers: boolean, canResetTwoFactor: boolean) =>
+    render(
+      <UsersScreen
+        users={enrolled}
+        counts={countUsers(enrolled)}
+        activeRole={null}
+        currentUserId="1"
+        canManageUsers={canManageUsers}
+        canResetTwoFactor={canResetTwoFactor}
+        now={NOW}
+      />,
+    );
+  const openMenu = async () => {
+    const buttons = screen.getAllByRole("button", { name: /Thao tác với/ });
+    await userEvent.click(buttons[0] as HTMLElement);
+  };
+
+  it("gives an admin who is not a director only the reset action", async () => {
+    renderAs(false, true);
+    expect(
+      screen.getAllByRole("button", { name: /Thao tác với/ }),
+    ).toHaveLength(1);
+    await openMenu();
+    expect(
+      screen.getAllByRole("menuitem").map((item) => item.textContent),
+    ).toEqual(["Gỡ xác thực 2 lớp"]);
+    expect(
+      screen.queryByRole("region", { name: "Thêm người dùng" }),
+    ).toBeNull();
+  });
+
+  it("does not offer the reset to a director without the flag", async () => {
+    renderAs(true, false);
+    await openMenu();
+    expect(
+      screen.queryByRole("menuitem", { name: "Gỡ xác thực 2 lớp" }),
+    ).toBeNull();
   });
 });

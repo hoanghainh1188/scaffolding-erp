@@ -1,7 +1,7 @@
 "use client";
 
 import { Ellipsis } from "lucide-react";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 import {
   AlertDialog,
@@ -14,6 +14,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -36,22 +38,29 @@ import { ROLE_LABELS, type Role } from "@/domain/role";
 import { isTempPasswordExpired } from "@/domain/temp-password-expiry";
 import { callApi } from "@/lib/api-client";
 import type { UserRow, WithTempPassword } from "@/lib/users/service";
+import { dict } from "@/locales";
 
 import { ContractScopeRadioGroup } from "./contract-scope-radio-group";
 import { RoleRadioGroup } from "./role-radio-group";
 
-type Pending = "role" | "scope" | "reset" | "lock" | "unlock" | null;
+const TWO_FACTOR = dict.auth.twoFactor;
+
+type Pending =
+  "role" | "scope" | "reset" | "lock" | "unlock" | "twoFactor" | null;
 
 interface UserRowActionsProps {
   user: UserRow;
   now?: Date;
+  /** Off for an admin who is not a director: only the 2FA reset is left. */
+  canManageUsers?: boolean;
+  canResetTwoFactor?: boolean;
   /** `title` heads the temporary-password dialog when one was issued. */
   onDone: (issued?: WithTempPassword, title?: string) => void;
   onError: (message: string) => void;
 }
 
 const CONFIRM: Record<
-  Exclude<Pending, "role" | "scope" | null>,
+  Exclude<Pending, "role" | "scope" | "twoFactor" | null>,
   {
     title: string;
     body: (name: string) => string;
@@ -90,6 +99,8 @@ const CONFIRM: Record<
 export function UserRowActions({
   user,
   now,
+  canManageUsers = true,
+  canResetTwoFactor = false,
   onDone,
   onError,
 }: UserRowActionsProps) {
@@ -97,9 +108,11 @@ export function UserRowActions({
   const [role, setRole] = useState<Role>(user.role);
   const [scope, setScope] = useState<ContractScope>(user.contractScope);
   const [busy, setBusy] = useState(false);
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  const showReset = canResetTwoFactor && user.twoFactorEnabled;
   const expired = isTempPasswordExpired(user, now);
   const confirm =
-    open && open !== "role" && open !== "scope"
+    open && open !== "role" && open !== "scope" && open !== "twoFactor"
       ? open === "reset" && expired
         ? {
             title: "Cấp lại mật khẩu tạm?",
@@ -135,6 +148,32 @@ export function UserRowActions({
     );
   }
 
+  async function resetTwoFactor(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    setDialogError(null);
+    const result = await callApi<{ reset: true }>(
+      `/api/users/${user.id}/two-factor/reset`,
+      {
+        method: "POST",
+        body: {
+          password: String(form.get("password")),
+          code: String(form.get("code")),
+        },
+      },
+    );
+    setBusy(false);
+    if (!result.ok) {
+      setDialogError(result.error);
+      return;
+    }
+    setOpen(null);
+    onDone();
+  }
+
+  if (!canManageUsers && !showReset) return null;
+
   return (
     <>
       <DropdownMenu>
@@ -149,7 +188,15 @@ export function UserRowActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {user.status === "ACTIVE" ? (
+          {showReset ? (
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => setOpen("twoFactor")}
+            >
+              {TWO_FACTOR.resetItem}
+            </DropdownMenuItem>
+          ) : null}
+          {!canManageUsers ? null : user.status === "ACTIVE" ? (
             <>
               <DropdownMenuItem onSelect={() => setOpen("role")}>
                 Đổi vai trò
@@ -176,6 +223,69 @@ export function UserRowActions({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Dialog
+        open={open === "twoFactor"}
+        onOpenChange={(next) => {
+          if (!next) {
+            setOpen(null);
+            setDialogError(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{TWO_FACTOR.resetTitle(user.name)}</DialogTitle>
+            <DialogDescription>
+              {TWO_FACTOR.resetBody(user.name)}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={resetTwoFactor} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`tf-password-${user.id}`}>
+                {TWO_FACTOR.adminPassword}
+              </Label>
+              <Input
+                id={`tf-password-${user.id}`}
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`tf-code-${user.id}`}>
+                {TWO_FACTOR.adminCode}
+              </Label>
+              <Input
+                id={`tf-code-${user.id}`}
+                name="code"
+                required
+                autoComplete="one-time-code"
+              />
+            </div>
+            <div role="alert" className="empty:hidden">
+              {dialogError ? (
+                <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {dialogError}
+                </p>
+              ) : null}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(null)}
+              >
+                {TWO_FACTOR.cancel}
+              </Button>
+              <Button type="submit" variant="destructive" disabled={busy}>
+                {TWO_FACTOR.resetAction}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={open === "role"}

@@ -1,10 +1,10 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase } from "@/db/client";
 import { truncateWithLedger } from "@/test/inventory";
 
-import { user } from "./auth";
+import { twoFactor, user } from "./auth";
 
 const url = process.env.TEST_DATABASE_URL;
 if (!url) {
@@ -43,6 +43,18 @@ async function rejection(promise: Promise<unknown>) {
 }
 
 describe("auth tables", () => {
+  it("allows one second factor per account, and the app role can write it", async () => {
+    await db.insert(user).values(row());
+    const factor = { userId: "u1", secret: "x", backupCodes: "[]" };
+    await db.insert(twoFactor).values({ id: "t1", ...factor });
+    const { code } = await rejection(
+      db.insert(twoFactor).values({ id: "t2", ...factor }),
+    );
+    expect(code).toBe("23505");
+    await db.delete(twoFactor).where(eq(twoFactor.id, "t1"));
+    expect(await db.select().from(twoFactor)).toHaveLength(0);
+  });
+
   it("stores a user with ACTIVE status and a pending password change", async () => {
     await db.insert(user).values(row());
     const [stored] = await db.select().from(user);

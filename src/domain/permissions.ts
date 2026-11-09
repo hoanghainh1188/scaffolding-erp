@@ -26,6 +26,8 @@ export const PERMISSIONS = {
   "catalog.view": OFFICE,
   "settings.view": ["DIRECTOR"],
   "users.manage": ["DIRECTOR"],
+  // Roles that must have a second factor (0.2 số 133) and manage their own.
+  "twoFactor.manage": ["DIRECTOR", "ACCOUNTANT"],
   // master-data design D9: everyone reads the catalog (the phone screens of
   // later changes need it); writes are split by who owns the data.
   "catalog.read": EVERYONE,
@@ -106,6 +108,27 @@ export type Permission = keyof typeof PERMISSIONS;
 
 export function can(role: Role, permission: Permission): boolean {
   return (PERMISSIONS[permission] as readonly Role[]).includes(role);
+}
+
+/** Role plus the account's "Admin hệ thống" flag (0.2 số 138). */
+export interface AccountUser {
+  role: Role;
+  systemAdmin: boolean;
+}
+
+/** Sets up and manages one's own second factor. */
+export function canManageTwoFactor(user: AccountUser): boolean {
+  return user.systemAdmin || can(user.role, "twoFactor.manage");
+}
+
+/** Clears someone else's second factor: the flag decides, not the role. */
+export function canResetOthersTwoFactor(user: AccountUser): boolean {
+  return user.systemAdmin;
+}
+
+/** Opens D17. An admin who is not a director only gets the reset action. */
+export function canOpenUsers(user: AccountUser): boolean {
+  return user.systemAdmin || can(user.role, "users.manage");
 }
 
 /** Which contract types a SALES account works on (0.2 #51). */

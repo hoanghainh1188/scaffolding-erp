@@ -35,6 +35,9 @@ interface UsersScreenProps {
   counts: UserCounts;
   activeRole: Role | null;
   currentUserId: string;
+  /** Director's actions; an admin of another role only resets 2FA. */
+  canManageUsers?: boolean;
+  canResetTwoFactor?: boolean;
   /** Request time (ISO), so "Hôm nay" matches on server and browser. */
   now: string;
 }
@@ -45,6 +48,8 @@ export function UsersScreen({
   counts,
   activeRole,
   currentUserId,
+  canManageUsers = true,
+  canResetTwoFactor = false,
   now,
 }: UsersScreenProps) {
   const router = useRouter();
@@ -65,6 +70,8 @@ export function UsersScreen({
 
   const columns = buildColumns({
     currentUserId,
+    canManageUsers,
+    canResetTwoFactor,
     now: new Date(now),
     onDone: (result, title) => show(result, title ?? "Đã cấp mật khẩu tạm"),
     onError: setError,
@@ -113,7 +120,11 @@ export function UsersScreen({
           />
         </section>
 
-        <AddUserForm onCreated={(result) => show(result, "Đã tạo tài khoản")} />
+        {canManageUsers ? (
+          <AddUserForm
+            onCreated={(result) => show(result, "Đã tạo tài khoản")}
+          />
+        ) : null}
       </div>
 
       <TempPasswordDialog issued={issued} onClose={() => setIssued(null)} />
@@ -164,6 +175,8 @@ function RoleFilter({
 
 interface ColumnOptions {
   currentUserId: string;
+  canManageUsers: boolean;
+  canResetTwoFactor: boolean;
   now: Date;
   onDone: (result?: WithTempPassword, title?: string) => void;
   onError: (message: string) => void;
@@ -171,6 +184,8 @@ interface ColumnOptions {
 
 function buildColumns({
   currentUserId,
+  canManageUsers,
+  canResetTwoFactor,
   now,
   onDone,
   onError,
@@ -244,6 +259,8 @@ function buildColumns({
           <UserRowActions
             user={row.original}
             now={now}
+            canManageUsers={canManageUsers}
+            canResetTwoFactor={canResetTwoFactor}
             onDone={onDone}
             onError={onError}
           />

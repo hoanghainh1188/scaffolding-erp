@@ -1,4 +1,4 @@
-import { KeyRound, LogOut } from "lucide-react";
+import { KeyRound, LogOut, ShieldCheck, UserCog } from "lucide-react";
 import Link from "next/link";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -10,17 +10,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { can, canManageTwoFactor } from "@/domain/permissions";
 import { ROLE_LABELS, type Role } from "@/domain/role";
 import { signOutAction } from "@/lib/auth/actions";
-import { CHANGE_PASSWORD_PATH } from "@/lib/auth/paths";
+import { CHANGE_PASSWORD_PATH, TWO_FACTOR_PATH } from "@/lib/auth/paths";
+import { isDemoMode } from "@/lib/env";
 import { initials } from "@/lib/initials";
+import { dict } from "@/locales";
 
 interface UserMenuProps {
-  user: { name: string; username: string; role: Role };
+  user: { name: string; username: string; role: Role; systemAdmin?: boolean };
 }
 
 /** Header user area: who is signed in, change password, sign out. */
 export function UserMenu({ user }: UserMenuProps) {
+  const account = { role: user.role, systemAdmin: user.systemAdmin ?? false };
+  const showTwoFactor = canManageTwoFactor(account) && !isDemoMode();
+  // A director reaches D17 from the sidebar; an admin of another role cannot.
+  const showAdminLink = account.systemAdmin && !can(user.role, "users.manage");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex min-h-11 min-w-0 items-center gap-3 rounded-md pr-2 pl-1 outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
@@ -54,6 +61,22 @@ export function UserMenu({ user }: UserMenuProps) {
             Đổi mật khẩu
           </Link>
         </DropdownMenuItem>
+        {showTwoFactor ? (
+          <DropdownMenuItem asChild>
+            <Link href={TWO_FACTOR_PATH}>
+              <ShieldCheck aria-hidden />
+              {dict.auth.twoFactor.menu}
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {showAdminLink ? (
+          <DropdownMenuItem asChild>
+            <Link href="/settings/users">
+              <UserCog aria-hidden />
+              {dict.auth.twoFactor.menuAdmin}
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         <form action={signOutAction}>
           <DropdownMenuItem asChild>
             <button type="submit" className="w-full">

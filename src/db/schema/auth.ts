@@ -47,6 +47,11 @@ export const user = pgTable(
     // Which contracts a SALES account works on (contracts design D8, 0.2
     // #51); other roles ignore it.
     contractScope: text("contract_scope").notNull().default("ALL"),
+    // Better Auth's flag: a second factor is on (director-mfa design D1).
+    twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
+    // May clear another account's second factor; set only from the command
+    // line (0.2 số 138, design D12).
+    systemAdmin: boolean("system_admin").notNull().default(false),
     ...timestamps,
   },
   (table) => [
@@ -127,6 +132,27 @@ export const verification = pgTable("verification", {
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  ...timestamps,
+});
+
+/**
+ * One row per account with a second factor (director-mfa design D8). The JS
+ * keys are the field names of Better Auth's twoFactor plugin. `secret` is
+ * encrypted, `backupCodes` holds hashes only.
+ */
+export const twoFactor = pgTable("two_factor", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: "cascade" }),
+  secret: text("secret").notNull(),
+  backupCodes: text("backup_codes").notNull(),
+  verified: boolean("verified").notNull().default(false),
+  failedVerificationCount: integer("failed_verification_count")
+    .notNull()
+    .default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
   ...timestamps,
 });
 

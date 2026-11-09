@@ -23,6 +23,7 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "catalog.view": ["DIRECTOR", "ACCOUNTANT", "SALES"],
   "settings.view": ["DIRECTOR"],
   "users.manage": ["DIRECTOR"],
+  "twoFactor.manage": ["DIRECTOR", "ACCOUNTANT"],
   "catalog.read": ["DIRECTOR", "ACCOUNTANT", "SALES", "WAREHOUSE", "WORKSHOP"],
   "items.manage": ["DIRECTOR", "SALES"],
   "partners.manage": ["DIRECTOR", "SALES", "ACCOUNTANT"],

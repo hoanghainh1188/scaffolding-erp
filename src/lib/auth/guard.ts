@@ -3,19 +3,20 @@
 import { forbidden, redirect } from "next/navigation";
 import { headers } from "next/headers";
 
-import { can, type Permission } from "@/domain/permissions";
+import { can, canOpenUsers, type Permission } from "@/domain/permissions";
 import { actorFromRequest, type ActivityActor } from "@/lib/activity/actor";
 import { fail } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/current-user";
 
 import { getAuth } from "./auth";
-import { CHANGE_PASSWORD_PATH, loginPathFor } from "./paths";
+import { CHANGE_PASSWORD_PATH, loginPathFor, TWO_FACTOR_PATH } from "./paths";
 import { resolveCurrentUser, type CurrentUser } from "./session";
 
 export const GUARD_MESSAGES = {
   signedOut: "Bạn cần đăng nhập",
   forbidden: "Bạn không có quyền thực hiện thao tác này",
   mustChangePassword: "Cần đổi mật khẩu trước khi tiếp tục",
+  mustEnrollTwoFactor: "Cần bật xác thực 2 lớp trước khi tiếp tục",
   badOrigin: "Yêu cầu không hợp lệ",
 } as const;
 
@@ -25,6 +26,8 @@ export const PATH_HEADER = "x-erp-path";
 interface RequireUserOptions {
   /** Only the change-password page may be shown before the change. */
   allowPendingPasswordChange?: boolean;
+  /** Only /two-factor may be shown before the second factor is on. */
+  allowPendingTwoFactor?: boolean;
 }
 
 /** For pages: the signed-in user, or a redirect to /login. */
@@ -38,21 +41,32 @@ export async function requireUser(
   if (user.mustChangePassword && !options.allowPendingPasswordChange) {
     redirect(CHANGE_PASSWORD_PATH);
   }
+  if (
+    user.mustEnrollTwoFactor &&
+    !user.mustChangePassword &&
+    !options.allowPendingTwoFactor
+  ) {
+    redirect(TWO_FACTOR_PATH);
+  }
   return user;
 }
 
 /** For pages: the signed-in user if their role has `permission`, else 403. */
 export async function requirePermission(
   permission: Permission,
+  options: { orSystemAdmin?: boolean } = {},
 ): Promise<CurrentUser> {
   const user = await requireUser();
-  if (!can(user.role, permission)) forbidden();
+  const allowed =
+    can(user.role, permission) || (options.orSystemAdmin && canOpenUsers(user));
+  if (!allowed) forbidden();
   return user;
 }
 
 export interface GuardOptions {
   permission?: Permission;
   allowPendingPasswordChange?: boolean;
+  allowPendingTwoFactor?: boolean;
 }
 
 export interface GuardedContext<P> {
@@ -89,6 +103,13 @@ export function withAuth<P = Record<string, never>>(
     if (!user) return fail(GUARD_MESSAGES.signedOut, 401);
     if (user.mustChangePassword && !options.allowPendingPasswordChange) {
       return fail(GUARD_MESSAGES.mustChangePassword, 403);
+    }
+    if (
+      user.mustEnrollTwoFactor &&
+      !user.mustChangePassword &&
+      !options.allowPendingTwoFactor
+    ) {
+      return fail(GUARD_MESSAGES.mustEnrollTwoFactor, 403);
     }
     if (options.permission && !can(user.role, options.permission)) {
       return fail(GUARD_MESSAGES.forbidden, 403);
