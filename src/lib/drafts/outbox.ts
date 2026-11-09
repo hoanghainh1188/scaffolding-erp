@@ -136,6 +136,21 @@ export function repairSender(fetcher: typeof fetch = fetch): Sender {
   };
 }
 
+/** M10 "Báo làm xong" / "Đếm xong": each press is its own draft id. */
+export function productionSender(fetcher: typeof fetch = fetch): Sender {
+  return (record) => {
+    const payload = record.payload as {
+      step?: "report" | "count";
+      body?: object;
+    } | null;
+    return postJson(
+      fetcher,
+      `/api/m/production/${encodeURIComponent(record.documentRef)}/${payload?.step ?? "report"}`,
+      { ...payload?.body, draftId: record.draftId },
+    );
+  };
+}
+
 /** A photo kept in a return draft until the note is posted (design D13). */
 export interface DraftPhoto {
   clientPhotoId: string;
@@ -292,6 +307,7 @@ export function draftSender(
   const delivery = deliverySender(fetcher);
   const transfer = transferSender(fetcher);
   const repair = repairSender(fetcher);
+  const production = productionSender(fetcher);
   const returned = store ? returnSender(store, fetcher) : null;
   return (record) =>
     record.kind === "STOCKTAKE"
@@ -302,9 +318,11 @@ export function draftSender(
           ? transfer(record)
           : record.kind === "REPAIR"
             ? repair(record)
-            : record.kind === "RETURN" && returned
-              ? returned(record)
-              : receipt(record);
+            : record.kind === "PRODUCTION"
+              ? production(record)
+              : record.kind === "RETURN" && returned
+                ? returned(record)
+                : receipt(record);
 }
 
 /** Drafts this tab is sending now. */

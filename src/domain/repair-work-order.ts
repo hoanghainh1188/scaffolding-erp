@@ -5,9 +5,7 @@
 // the rest of the figures (B, scrap, damage, Good price) come from the
 // simple-repair rules in ./repair-order. Pure functions, shared by D12, M8
 // and the server.
-import { lineAmount } from "./average-cost";
 import { DomainValueError } from "./errors";
-import { toMoney, type Money } from "./money";
 import type { MovementDraft } from "./movement";
 import {
   formatQuantity,
@@ -20,6 +18,16 @@ import {
   RepairFieldError,
   type RepairLineCost,
 } from "./repair-order";
+import {
+  issueAmount,
+  laborAmount,
+  splitMaterialIssue as splitIssue,
+  type MaterialIssue,
+  type MaterialStock,
+} from "./work-order-common";
+
+export { issueAmount, laborAmount };
+export type { MaterialIssue, MaterialStock };
 
 const K = 1000;
 
@@ -166,14 +174,6 @@ export function transition(
   return rule.to;
 }
 
-/** Labour of a line: repaired pieces × the rate taken on assignment. */
-export function laborAmount(goodMilli: number, rate: Money): Money {
-  if (!Number.isInteger(goodMilli) || goodMilli < 0 || goodMilli % K !== 0) {
-    throw new RangeError("goodMilli must be whole pieces");
-  }
-  return toMoney((goodMilli / K) * rate);
-}
-
 export type ItemCategory = "EQUIPMENT" | "MATERIAL";
 
 export interface ReportMaterial {
@@ -301,44 +301,19 @@ export function checkReason(
   return reason;
 }
 
-export interface MaterialStock {
-  /** New and Good stock of the supply at the workshop, thousandths. */
-  readonly newMilli: number;
-  readonly goodMilli: number;
-}
-
-export interface MaterialIssue {
-  readonly newMilli: number;
-  readonly goodMilli: number;
-}
-
 /** New first, then Good (0.2 số 127); short stock names what is left. */
 export function splitMaterialIssue(
   needMilli: number,
   stock: MaterialStock,
   context: { itemCode: string; unit: QuantityUnit; locationCode: string },
 ): MaterialIssue {
-  const have = stock.newMilli + stock.goodMilli;
-  if (needMilli > have) {
-    throw new DomainValueError(
-      WORK_ORDER_MESSAGES.materialShort(
-        context.itemCode,
-        context.locationCode,
-        `${formatQuantity({ unit: context.unit, milli: Math.max(have, 0) })} ${QUANTITY_UNIT_LABELS[context.unit]}`,
-      ),
-    );
-  }
-  const fromNew = Math.min(needMilli, stock.newMilli);
-  return { newMilli: fromNew, goodMilli: needMilli - fromNew };
-}
-
-/**
- * Value of one supply issue at the average cost, positive: the same
- * rounding as the outflow line postMovements writes, so the Good amount and
- * the ledger agree to the đồng.
- */
-export function issueAmount(quantityMilli: number, avgCost: Money): Money {
-  return toMoney(-lineAmount(-quantityMilli, avgCost));
+  return splitIssue(needMilli, stock, (have) =>
+    WORK_ORDER_MESSAGES.materialShort(
+      context.itemCode,
+      context.locationCode,
+      `${formatQuantity({ unit: context.unit, milli: have })} ${QUANTITY_UNIT_LABELS[context.unit]}`,
+    ),
+  );
 }
 
 export interface IssuedMaterial {

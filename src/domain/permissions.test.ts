@@ -37,6 +37,11 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "repairs.manage": ["DIRECTOR", "ACCOUNTANT"],
   "repairs.work": ["DIRECTOR", "WORKSHOP"],
   "repairs.count": ["DIRECTOR", "WAREHOUSE"],
+  "production.view": ["DIRECTOR", "ACCOUNTANT", "SALES"],
+  "production.manage": ["DIRECTOR", "ACCOUNTANT"],
+  "production.approve": ["DIRECTOR"],
+  "production.work": ["DIRECTOR", "WORKSHOP"],
+  "production.count": ["DIRECTOR", "WAREHOUSE"],
   "stocktake.count": ["DIRECTOR", "WAREHOUSE"],
   "activity.view": ["DIRECTOR"],
   "company.read": ["DIRECTOR", "ACCOUNTANT", "SALES", "WAREHOUSE", "WORKSHOP"],
@@ -93,9 +98,12 @@ describe("can", () => {
           permission === "stocktake.count" ||
           permission === "deliveries.pick" ||
           permission === "returns.receive" ||
-          permission === "repairs.count",
+          permission === "repairs.count" ||
+          permission === "production.count",
       );
-      expect(can("WORKSHOP", permission)).toBe(permission === "repairs.work");
+      expect(can("WORKSHOP", permission)).toBe(
+        permission === "repairs.work" || permission === "production.work",
+      );
     }
   });
 });

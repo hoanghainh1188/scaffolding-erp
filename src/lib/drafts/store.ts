@@ -9,6 +9,7 @@ export const DRAFT_KINDS = [
   "RETURN",
   "TRANSFER",
   "REPAIR",
+  "PRODUCTION",
 ] as const;
 export type DraftKind = (typeof DRAFT_KINDS)[number];
 

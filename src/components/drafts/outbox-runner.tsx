@@ -60,7 +60,7 @@ export function OutboxRunner({ userId }: { userId: string }) {
             ? `Đã xuất ${notice.code}`
             : notice.kind === "TRANSFER"
               ? `Đã chuyển ${notice.code}`
-              : notice.kind === "REPAIR"
+              : notice.kind === "REPAIR" || notice.kind === "PRODUCTION"
                 ? `Đã gửi ${notice.code} về văn phòng`
                 : `Đã nhập kho ${notice.code} · ${notice.title}`}
       </span>

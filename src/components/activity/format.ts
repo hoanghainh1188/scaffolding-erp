@@ -72,6 +72,10 @@ export function documentHref(
       return `/purchasing/orders/${path}`;
     case "REPAIR_ORDER":
       return `/repairs/${path}`;
+    case "PRODUCTION_ORDER":
+      return `/production/${path}`;
+    case "PRODUCTION_BOM":
+      return `/production/boms?item=${path}`;
     case "STOCKTAKE":
       return `/inventory/stocktakes/${path}`;
     case "ITEM":

@@ -14,6 +14,8 @@ export const MOVEMENTS = [
   "PURCHASE_IN",
   "REPAIR_OUT",
   "REPAIR_IN",
+  "PRODUCTION_OUT",
+  "PRODUCTION_IN",
   "DELIVERY_OUT",
   "DELIVERY_IN",
   "RETURN_OUT",
@@ -36,6 +38,7 @@ const COST_CHANGING: ReadonlySet<Movement> = new Set([
   "OPENING",
   "PURCHASE_IN",
   "REPAIR_IN",
+  "PRODUCTION_IN",
   "REVALUE",
 ]);
 
@@ -57,7 +60,7 @@ export const MOVEMENT_MESSAGES = {
     `${code} tính theo ${unit}, số lượng phải là số nguyên`,
   amountMissing: "Dòng làm đổi giá vốn phải có giá trị",
   amountNotAllowed:
-    "Chỉ tồn đầu kỳ, nhập mua, nhập sau sửa, điều chỉnh giá mới có giá trị",
+    "Chỉ tồn đầu kỳ, nhập mua, nhập sau sửa, nhập sản xuất, điều chỉnh giá mới có giá trị",
   backdated: (code: string, condition: Condition, last: BusinessDate) =>
     `${code} ${CONDITION_LABELS[condition]} đã có biến động ngày ${formatBusinessDate(last)}, không ghi lùi ngày được`,
   future: "Ngày ghi sổ không được sau hôm nay",

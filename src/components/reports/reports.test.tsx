@@ -114,6 +114,7 @@ function makeReport(today = OCT_TODAY, value = "2026-10"): Report {
       },
     ],
     new Set(["2026-10"]),
+    [{ month: "2026-10", laborCost: 5_100_000 }],
   );
   const months = dailyFleet(
     ITEMS.flatMap((item, index) => [
@@ -227,6 +228,9 @@ describe("ProfitTable", () => {
     expect(costs).toHaveTextContent("− 127.940.000 ₫");
     // This month and the year hold the open October; September is closed.
     expect(within(table).getAllByText("tạm tính")).toHaveLength(2);
+    expect(
+      screen.getByText(/Công sản xuất đã chi trong kỳ: 5\.100\.000 ₫/),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/Chi phí sửa đã chi trong kỳ: 14\.300\.000 ₫/),
     ).toBeInTheDocument();

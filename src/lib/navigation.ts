@@ -8,6 +8,7 @@ export type NavIcon =
   | "shopping-cart"
   | "warehouse"
   | "wrench"
+  | "factory"
   | "file-signature"
   | "wallet"
   | "chart-column"
@@ -51,6 +52,12 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: dict.navigation.desktop.repairs,
     icon: "wrench",
     permission: "repairs.view",
+  },
+  {
+    href: "/production",
+    label: dict.navigation.desktop.production,
+    icon: "factory",
+    permission: "production.view",
   },
   {
     href: "/sales",

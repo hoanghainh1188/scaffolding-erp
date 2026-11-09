@@ -107,6 +107,16 @@ export interface RepairSum {
   lossAmount: number;
 }
 
+/**
+ * Piece-rate labour of the production orders posted in one month
+ * (production-orders design D3): the one part of a posting not in the
+ * ledger. Materials and offcuts are ledger lines already.
+ */
+export interface ProductionSum {
+  month: string;
+  laborCost: number;
+}
+
 export type RevenueParts = Readonly<Record<RevenuePart, number>>;
 export type CostParts = Readonly<Record<CostCategory, number>>;
 
@@ -116,6 +126,8 @@ export interface MonthProfit {
   costs: CostParts;
   /** Repair cost spent: shown under the table, not taken (0.2 số 111). */
   repairSpent: number;
+  /** Production labour spent: shown under the table, inside the goods' price. */
+  productionSpent: number;
   /** Some rental period of the month is not closed. */
   provisional: boolean;
 }
@@ -143,6 +155,7 @@ export function monthlyProfit(
   ledger: readonly LedgerSum[],
   repairs: readonly RepairSum[],
   openMonths: ReadonlySet<string>,
+  productions: readonly ProductionSum[] = [],
 ): MonthProfit[] {
   return months.map((month) => {
     const costs = zeroCosts();
@@ -162,6 +175,9 @@ export function monthlyProfit(
       revenue: { ...zeroRevenue(), ...revenue.get(month) },
       costs,
       repairSpent,
+      productionSpent: productions
+        .filter((row) => row.month === month)
+        .reduce((sum, row) => sum + row.laborCost, 0),
       provisional: openMonths.has(month),
     };
   });
@@ -174,6 +190,7 @@ export interface ProfitTotals {
   costTotal: number;
   profit: number;
   repairSpent: number;
+  productionSpent: number;
   provisional: boolean;
 }
 
@@ -189,6 +206,7 @@ export function sumMonths(
   const revenue = zeroRevenue();
   const costs = zeroCosts();
   let repairSpent = 0;
+  let productionSpent = 0;
   let provisional = false;
   for (const row of rows) {
     if (!wanted.has(row.month)) continue;
@@ -197,6 +215,7 @@ export function sumMonths(
       costs[category] += row.costs[category];
     }
     repairSpent += row.repairSpent;
+    productionSpent += row.productionSpent;
     provisional ||= row.provisional;
   }
   const revenueTotal = sumOf(revenue);
@@ -208,6 +227,7 @@ export function sumMonths(
     costTotal,
     profit: revenueTotal - costTotal,
     repairSpent,
+    productionSpent,
     provisional,
   };
 }
@@ -215,12 +235,14 @@ export function sumMonths(
 /**
  * The check of design D1: cost and losses = − the ledger value of every
  * line but stock coming in, + the repair cost that did not go through the
- * ledger (typed cost of simple slips, labour of work orders; supplies are
- * already ledger lines, repair-work-orders design D3).
+ * ledger (typed cost of simple slips, labour of work orders and production
+ * orders; supplies, materials and offcuts are already ledger lines,
+ * repair-work-orders design D3, production-orders design D3).
  */
 export function ledgerCostCheck(
   ledger: readonly LedgerSum[],
   repairs: readonly RepairSum[],
+  productions: readonly ProductionSum[] = [],
 ): number {
   const ledgerValue = ledger
     .filter((row) => !ACQUISITIONS.has(row.movement))
@@ -229,7 +251,8 @@ export function ledgerCostCheck(
     (sum, row) => sum + row.repairCost - row.materialCost,
     0,
   );
-  return -ledgerValue + spent;
+  const labor = productions.reduce((sum, row) => sum + row.laborCost, 0);
+  return -ledgerValue + spent + labor;
 }
 
 /** Tenths of a percent, halves away from zero; null when base ≤ 0. */

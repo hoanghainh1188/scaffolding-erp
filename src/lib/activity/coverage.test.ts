@@ -14,7 +14,7 @@ const LIB = join(process.cwd(), "src/lib");
  * order (repair-work-orders task 4.7), named after what they do.
  */
 const WRITE_NAME =
-  /^(create|update|delete|place|cancel|close|post|set|submit|approve|return|request|start|reset|unlock|lock|change|sign)[A-Z]|^(assign|recall|receive|report|count)WorkOrder$/;
+  /^(create|update|delete|place|cancel|close|post|set|submit|approve|return|request|start|reset|unlock|lock|change|sign)[A-Z]|^(assign|recall|receive|report|count)WorkOrder$|^(assign|recall|receive|report|count|approve)ProductionOrder$/;
 
 /** Files that never act for a signed-in user, so never log. */
 const SKIPPED_FILE =
@@ -36,6 +36,8 @@ export const NOT_LOGGED: Readonly<Record<string, string>> = {
     "row lock shared with trip-adjustments.ts; the command logs",
   "repairs/orders.ts#lockSlip":
     "row lock shared by the repair commands; the command logs",
+  "production/common.ts#lockProductionOrder":
+    "row lock shared by the production commands; the command logs",
   "repairs/work-orders.ts#lockWorkOrder":
     "row lock shared by the work-order commands; the command logs",
   "inventory/post.ts#lockForPosting":

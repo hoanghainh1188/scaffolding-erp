@@ -76,9 +76,13 @@ export function ProfitTable({ report }: { report: Report }) {
           {report.previousLabel.toLowerCase()}:{" "}
           {money(report.previous.repairSpent)}; lũy kế năm:{" "}
           {money(report.yearToDate.repairSpent)}), đã cộng vào giá hàng Tốt, vào
-          lợi nhuận khi hàng đó rời kho. Hàng cho thuê không trừ khấu hao. Chưa
-          gồm chi phí ngoài sổ kho (xe, nhân công…). Hàng mất tính theo ngày
-          trả, đền bù theo ngày duyệt.
+          lợi nhuận khi hàng đó rời kho. Công sản xuất đã chi trong kỳ:{" "}
+          {money(report.current.productionSpent)} (
+          {report.previousLabel.toLowerCase()}:{" "}
+          {money(report.previous.productionSpent)}; lũy kế năm:{" "}
+          {money(report.yearToDate.productionSpent)}), đã cộng vào giá thành
+          phẩm. Hàng cho thuê không trừ khấu hao. Chưa gồm chi phí ngoài sổ kho
+          (xe, nhân công…). Hàng mất tính theo ngày trả, đền bù theo ngày duyệt.
         </>
       }
     >

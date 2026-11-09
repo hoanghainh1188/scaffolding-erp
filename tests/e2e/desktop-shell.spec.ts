@@ -33,13 +33,14 @@ test.describe("desktop shell", () => {
     ).toHaveAttribute("aria-current", "page");
   });
 
-  test("shows all nine items to the director", async ({ page }) => {
+  test("shows all ten items to the director", async ({ page }) => {
     await page.goto("/dashboard");
     for (const label of [
       "Tổng quan",
       "Mua hàng",
       "Kho",
       "Sửa chữa",
+      "Sản xuất",
       "Cho thuê & Bán",
       "Công nợ",
       "Báo cáo",

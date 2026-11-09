@@ -15,6 +15,7 @@ import {
   sumMonths,
   type LedgerSum,
   type MonthProfit,
+  type ProductionSum,
   type RepairSum,
   type RevenueParts,
 } from "./gross-profit";
@@ -161,6 +162,7 @@ describe("periods add up their months (spec: quý bằng tổng 3 tháng)", () =
       countAdjust: 0,
     },
     repairSpent: 1_000,
+    productionSpent: 500,
     provisional: month === "2026-09",
   }));
 
@@ -168,6 +170,7 @@ describe("periods add up their months (spec: quý bằng tổng 3 tháng)", () =
     const quarter = sumMonths(rows, months);
     expect(quarter.profit).toBe(1_092_180_000);
     expect(quarter.repairSpent).toBe(3_000);
+    expect(quarter.productionSpent).toBe(1_500);
     expect(quarter.provisional).toBe(true);
   });
 
@@ -324,5 +327,43 @@ describe("percent texts", () => {
     expect(changeText(4_486_500_000, 4_100_000_000)).toBe("+ 9,4 %");
     expect(changeText(90, 100)).toBe("− 10,0 %");
     expect(changeText(100, 0)).toBeNull();
+  });
+});
+
+describe("production orders (production-orders design D3)", () => {
+  const PRODUCTION = "PRODUCTION";
+  const month = "2026-11";
+  // LSX-2026-004 of D20.
+  const ledger = [
+    line(month, PRODUCTION, "PRODUCTION_OUT", -41_119_500),
+    line(month, PRODUCTION, "PRODUCTION_IN", 46_219_500),
+  ];
+  const productions: ProductionSum[] = [{ month, laborCost: 5_100_000 }];
+
+  it("leaves production out of every cost line", () => {
+    expect(classifyLedger(PRODUCTION, "PRODUCTION_IN")).toBeNull();
+    expect(classifyLedger(PRODUCTION, "PRODUCTION_OUT")).toBeNull();
+  });
+
+  it("checks to 0 on a month with only that order", () => {
+    expect(ledgerCostCheck(ledger, [], productions)).toBe(0);
+  });
+
+  it("would be off by the materials if they were added back", () => {
+    const wrong: ProductionSum[] = [
+      { month, laborCost: 5_100_000 + 41_119_500 },
+    ];
+    expect(ledgerCostCheck(ledger, [], wrong)).toBe(41_119_500);
+  });
+
+  it("shows the labour under the table and costs nothing", () => {
+    const rows = monthlyProfit([month], noRevenue, ledger, [], new Set(), [
+      ...productions,
+      { month: "2026-10", laborCost: 7 },
+    ]);
+    expect(rows[0]?.productionSpent).toBe(5_100_000);
+    const total = sumMonths(rows, [month]);
+    expect(total.productionSpent).toBe(5_100_000);
+    expect(total.costTotal).toBe(0);
   });
 });

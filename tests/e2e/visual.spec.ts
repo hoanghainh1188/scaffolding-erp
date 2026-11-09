@@ -181,7 +181,7 @@ test.describe("visual baselines @visual", () => {
           mask: [
             page.locator("[data-clock]"),
             page.locator("[data-mask]"),
-            page.getByRole("row").filter({ hasText: "E2E-KHO" }),
+            page.getByRole("row").filter({ hasText: /E2E-(KHO|SX|VT)/ }),
           ],
           animations: "disabled",
           caret: "hide",
@@ -586,6 +586,78 @@ test.describe("repair work order baselines @visual", () => {
       await expect(page.getByText("Lệnh sửa chữa").first()).toBeVisible();
       await waitForHydration(page, MOBILE_READY);
       await shoot(page, `m8-repair-${width}`);
+    });
+  }
+});
+
+// production-orders task 5.4: the seed's sample order and BOM. Money is
+// masked (averages move with other tests); M10 has no money.
+test.describe("production baselines @visual", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "sets its own viewport");
+  });
+
+  async function shoot(page: Page, name: string) {
+    await zeroMaskedDigits(page);
+    await page.addStyleTag({
+      content: "nextjs-portal { display: none !important; }",
+    });
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page).toHaveScreenshot(`${name}.png`, {
+      fullPage: true,
+      mask: [page.locator("[data-clock]"), page.locator("[data-mask]")],
+      animations: "disabled",
+      caret: "hide",
+    });
+  }
+
+  /** The list rows E2E orders of other runs may add never reach the image. */
+  async function openSample(page: Page) {
+    await page.goto("/production?status=awaiting_approval");
+    await waitForHydration(page, DESKTOP_READY);
+    await page
+      .getByRole("row")
+      .filter({ hasText: "tổ anh Lực" })
+      .getByRole("link", { name: /^LSX-\d{4}-\d{3,}$/ })
+      .first()
+      .click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: /^Lệnh sản xuất LSX/ }),
+    ).toBeVisible();
+    await waitForHydration(page, DESKTOP_READY);
+  }
+
+  for (const width of WIDTHS) {
+    test(`d19-bom at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/production/boms?item=GG-K17");
+      await waitForHydration(page, DESKTOP_READY);
+      await page
+        .getByRole("listitem")
+        .filter({ hasText: "E2E-SX" })
+        .evaluateAll((rows) => rows.forEach((row) => row.remove()));
+      await shoot(page, `d19-bom-${width}`);
+    });
+
+    test(`d20-production at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openSample(page);
+      await shoot(page, `d20-production-${width}`);
+    });
+
+    test(`m10-production at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/m/production");
+      await waitForHydration(page, MOBILE_READY);
+      await page
+        .getByRole("article")
+        .filter({ hasText: "tổ anh Lực" })
+        .getByRole("link", { name: "Tiếp tục" })
+        .first()
+        .click();
+      await expect(page.getByText("Đang làm").first()).toBeVisible();
+      await waitForHydration(page, MOBILE_READY);
+      await shoot(page, `m10-production-${width}`);
     });
   }
 });

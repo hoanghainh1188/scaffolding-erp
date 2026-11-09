@@ -139,6 +139,8 @@ export const DOCUMENT_TYPES = [
   "RENTAL_HOLIDAY",
   "RECEIPT",
   "SUPPLIER_PAYMENT",
+  "PRODUCTION_ORDER",
+  "PRODUCTION_BOM",
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
@@ -171,6 +173,8 @@ export const DOCUMENT_TYPE_LABELS: Readonly<Record<DocumentType, string>> = {
   RENTAL_HOLIDAY: "Ngày nghỉ",
   RECEIPT: "Phiếu thu",
   SUPPLIER_PAYMENT: "Phiếu chi",
+  PRODUCTION_ORDER: "Lệnh sản xuất",
+  PRODUCTION_BOM: "Định mức sản xuất",
 };
 
 /** The label of an action on a document: submitting an order places it. */
@@ -180,6 +184,11 @@ export function actionLabel(
 ): string {
   if (action === "SUBMIT" && type === "PURCHASE_ORDER") return "Đặt đơn";
   if (action === "RETURN" && type === "REPAIR_ORDER") return "Trả lại xưởng";
+  if (type === "PRODUCTION_ORDER") {
+    if (action === "REPORT") return "Báo làm xong";
+    if (action === "RETURN") return "Trả lại xưởng";
+    if (action === "APPROVE") return "Duyệt vượt định mức";
+  }
   return ACTION_LABELS[action];
 }
 

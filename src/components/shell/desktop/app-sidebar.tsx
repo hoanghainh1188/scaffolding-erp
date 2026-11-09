@@ -12,6 +12,7 @@ import {
   Wallet,
   Warehouse,
   Wrench,
+  Factory,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -37,6 +38,7 @@ const ICONS: Readonly<Record<NavIcon, LucideIcon>> = {
   "shopping-cart": ShoppingCart,
   warehouse: Warehouse,
   wrench: Wrench,
+  factory: Factory,
   "file-signature": FileSignature,
   wallet: Wallet,
   "chart-column": ChartColumn,

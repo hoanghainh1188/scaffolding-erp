@@ -55,6 +55,13 @@ export const PERMISSIONS = {
   // order on the phone; the storekeeper counts it. Neither sees any price.
   "repairs.work": ["DIRECTOR", "WORKSHOP"],
   "repairs.count": ["DIRECTOR", "WAREHOUSE"],
+  // production-orders design D6: its own permissions, even though the roles
+  // match repairs today (the owner may split repairing from making goods).
+  "production.view": OFFICE,
+  "production.manage": ["DIRECTOR", "ACCOUNTANT"],
+  "production.approve": ["DIRECTOR"],
+  "production.work": ["DIRECTOR", "WORKSHOP"],
+  "production.count": ["DIRECTOR", "WAREHOUSE"],
   // stocktake design D11: the storekeeper counts yards and the workshop on
   // the phone; the director may stand in. Office roles read results through
   // inventory.view; approving uses inventory.approve.

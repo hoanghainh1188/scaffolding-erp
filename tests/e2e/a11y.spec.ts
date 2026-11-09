@@ -63,6 +63,9 @@ test.describe("accessibility", () => {
     for (const path of [
       "/repairs",
       "/repairs/new",
+      "/production",
+      "/production/new",
+      "/production/boms",
       `/repairs/PSC-${new Date().getFullYear()}-022`,
     ]) {
       await page.goto(path);

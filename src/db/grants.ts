@@ -15,6 +15,7 @@ export const APPEND_ONLY_TABLES = [
   "goods_receipt_cost",
   "goods_receipt_line",
   "inventory_ledger",
+  "production_order_submission",
   "receipt",
   "receipt_allocation",
   "receipt_cancellation",
