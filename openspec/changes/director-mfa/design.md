@@ -13,19 +13,19 @@
 
 ## Goals / Non-Goals
 
-**Goals:** trả lời 7 điểm cần chốt của issue #97; kẻ gian có mật khẩu không vào được; Giám đốc không bị khóa ngoài vĩnh viễn; không có phiên nào trước khi qua lớp hai.
+**Goals:** trả lời 7 điểm cần chốt của issue #97; kẻ gian có mật khẩu không vào được; người dùng không bị khóa ngoài vĩnh viễn; không có phiên nào trước khi qua lớp hai.
 
 **Non-Goals:** xem `proposal.md` mục Ngoài phạm vi.
 
 ## Decisions
 
-### D1. Bắt buộc cho `DIRECTOR`, không áp dụng khi `DEMO_MODE` (điểm 1)
+### D1. Bắt buộc cho `DIRECTOR`, `ACCOUNTANT`, không áp dụng khi `DEMO_MODE` (điểm 1, đã chốt 0.2 #133)
 
 - **Chọn:** hàm thuần `isTwoFactorRequired(role, demoMode)` trong `src/domain/two-factor.ts`. `CurrentUser` thêm `mustEnrollTwoFactor`, đọc mỗi yêu cầu trong `resolveCurrentUser`. `requireUser` và `withAuth` chặn như `mustChangePassword`, với tùy chọn `allowPendingTwoFactor` cho `/two-factor` và API của nó. Thứ tự: đổi mật khẩu tạm → bật 2 lớp.
-- **Lý do:** Giám đốc là tài khoản rủi ro cao nhất, tùy chọn thì sẽ không ai bật. Dùng lại đúng mẫu cổng đã có.
+- **Lý do:** Giám đốc có quyền cao nhất, Kế toán giữ công nợ, phiếu thu, phiếu chi; tùy chọn thì sẽ không ai bật. Danh sách vai trò chỉ đặt một chỗ trong `isTwoFactorRequired`. Dùng lại đúng mẫu cổng đã có.
 - **Demo:** 5 tài khoản demo dùng chung; một khách bật 2 lớp cho `giamdoc` sẽ khóa mọi người khác.
-- **Người từng là Giám đốc bị đổi vai trò:** vẫn bị hỏi mã vì `twoFactorEnabled` còn bật. Muốn gỡ thì dùng lệnh cứu hộ (D5). Trường hợp hiếm, không thêm màn hình.
-- **Đã cân nhắc:** tùy chọn mọi vai trò (Thủ kho, Xưởng dùng điện thoại chung, thêm việc hỗ trợ, rủi ro thấp hơn); bắt buộc mọi vai trò (quá nặng cho công ty 5 vai trò); cờ môi trường riêng để tắt (thêm một lối tắt có thể lỡ bật ở production).
+- **Người rời vai trò bắt buộc:** vẫn bị hỏi mã vì `twoFactorEnabled` còn bật. Muốn gỡ thì dùng lệnh cứu hộ (D5). Trường hợp hiếm, không thêm màn hình.
+- **Đã cân nhắc:** chỉ Giám đốc (bỏ ngỏ người giữ công nợ); tùy chọn mọi vai trò (Thủ kho, Xưởng dùng điện thoại chung, thêm việc hỗ trợ, rủi ro thấp hơn); bắt buộc mọi vai trò (quá nặng cho công ty 5 vai trò); cờ môi trường riêng để tắt (thêm một lối tắt có thể lỡ bật ở production).
 
 ### D2. Code riêng gọi `auth.api`, đóng mọi route `/two-factor/*` (điểm 2)
 
@@ -66,7 +66,8 @@
 - `auth:unlock` thêm: đưa `failed_verification_count` về 0, xóa `locked_until` (`--username` và `--all`).
 - **Tự đổi điện thoại** (còn thiết bị cũ hoặc còn mã dự phòng): kiểm mã rồi gọi `disableTwoFactor`, sau đó cổng D1 đưa về bước bật.
 - **Runbook** (`docs/ops/production.md`): xác minh người yêu cầu bằng gặp mặt hoặc gọi số đã biết, không qua tin nhắn; chạy lệnh; bật lại ngay; kiểm tra D18.
-- **Đã cân nhắc:** Giám đốc khác gỡ trên D17 (một Giám đốc bị chiếm tài khoản gỡ được lớp bảo vệ của người còn lại); gỡ qua email (hệ thống không có email thật).
+- **Kế toán mất điện thoại** cũng đi qua lệnh này, không có nút trên giao diện.
+- **Đã cân nhắc:** Giám đốc gỡ cho người khác trên D17 (một Giám đốc bị chiếm tài khoản gỡ được lớp bảo vệ của người còn lại); gỡ qua email (hệ thống không có email thật).
 
 ### D6. Hiện QR: thêm `uqr`, luôn có chuỗi gõ tay (điểm 6, đã chốt 0.2 #132)
 
@@ -103,14 +104,15 @@ Validate bằng schema. `confirm`, `replace` thêm giới hạn 5 lần/phút th
 ### D9. Dev và E2E
 
 - **Dev:** chạy local với `DEMO_MODE=true` thì không bị cổng. Không thêm cờ riêng. Muốn thử thật thì tắt `DEMO_MODE`.
-- **E2E:** `global-setup` bật 2 lớp thật cho tài khoản `e2e.*` Giám đốc qua service, giữ bí mật test; `auth.setup.ts` nhập mã tính bằng helper TOTP thuần trong `tests/e2e/`. Đúng tinh thần "không có người dùng giả lập" của CLAUDE.md.
+- **Integration test:** helper `src/test/auth.ts` đăng nhập xong mới đặt `two_factor_enabled = true` cho vai trò bắt buộc, để phiên qua được cổng D1 mà không phải nhập mã trong mọi test route.
+- **E2E:** `global-setup` bật 2 lớp thật cho tài khoản `e2e.*` Giám đốc và Kế toán qua service, giữ bí mật test; `auth.setup.ts` nhập mã tính bằng helper TOTP thuần trong `tests/e2e/`. Đúng tinh thần "không có người dùng giả lập" của CLAUDE.md.
 
 ### D10. Đổi `BETTER_AUTH_SECRET`
 
-Bí mật TOTP mã hóa bằng khóa này, nên quy trình đổi khóa hiện tại sẽ làm Giám đốc không đăng nhập được.
+Bí mật TOTP mã hóa bằng khóa này, nên quy trình đổi khóa hiện tại sẽ làm Giám đốc và Kế toán không đăng nhập được.
 
 - **Xoay định kỳ:** dùng `BETTER_AUTH_SECRETS` (`"2:<mới>,1:<cũ>"`), thư viện có sẵn, vẫn giải mã được dữ liệu cũ. Có integration test.
-- **Nghi lộ khóa:** bí mật TOTP coi như lộ. Sau khi đổi khóa, chạy `auth:reset-2fa` cho mọi Giám đốc rồi bật lại.
+- **Nghi lộ khóa:** bí mật TOTP coi như lộ. Sau khi đổi khóa, chạy `auth:reset-2fa` cho mọi Giám đốc và Kế toán rồi bật lại.
 - Không giải mã được thì báo lỗi rõ ràng, không 500 trắng.
 - Sửa Sự cố 6 trong `docs/ops/production.md`.
 
@@ -120,12 +122,12 @@ Bí mật TOTP mã hóa bằng khóa này, nên quy trình đổi khóa hiện t
 - [Nâng cấp `better-auth` đổi hành vi hook hay `storeBackupCodes`] → integration test luồng 2 bước, test băm, test chống lệch route; repo ghim phiên bản.
 - [Giờ điện thoại lệch quá 30 giây] → màn nhập mã có dòng nhắc bật giờ tự động trên điện thoại.
 - [Mã mới trùng ngẫu nhiên với mã vừa dùng trong 120 giây] → xác suất khoảng 1/1.000.000, chỉ phải đợi mã kế tiếp.
-- [Lúc deploy, Giám đốc đang đăng nhập bị chuyển ngay tới `/two-factor`] → đúng chủ đích; báo trước.
+- [Lúc deploy, Giám đốc và Kế toán đang đăng nhập bị chuyển ngay tới `/two-factor`] → đúng chủ đích; báo trước.
 - [Ghi nhật ký lỗi sau khi plugin đã ghi DB] → hoàn tác như D7, có integration test.
 
 ## Migration Plan
 
 1. Migration chỉ thêm bảng và cột có mặc định, app cũ vẫn chạy được.
-2. Deploy; báo trước cho Giám đốc chuẩn bị điện thoại.
-3. Giám đốc bật ngay ở lần tải trang đầu; lưu mã dự phòng.
+2. Deploy; báo trước cho Giám đốc và Kế toán chuẩn bị điện thoại.
+3. Mỗi người bật ngay ở lần tải trang đầu; lưu mã dự phòng.
 4. **Rollback:** deploy lại bản trước. Bản cũ không có plugin nên chỉ hỏi mật khẩu; bảng `two_factor` để nguyên, không mất dữ liệu.

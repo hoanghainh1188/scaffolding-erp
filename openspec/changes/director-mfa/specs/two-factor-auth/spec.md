@@ -1,11 +1,11 @@
 ## Purpose
 
-Bảo vệ tài khoản Giám đốc bằng lớp thứ hai ngoài mật khẩu: mã 6 số từ ứng dụng trên điện thoại, mã dự phòng và quy trình khi mất điện thoại.
+Bảo vệ tài khoản Giám đốc và Kế toán bằng lớp thứ hai ngoài mật khẩu: mã 6 số từ ứng dụng trên điện thoại, mã dự phòng và quy trình khi mất điện thoại.
 
 ## ADDED Requirements
 
-### Requirement: Giám đốc bắt buộc bật xác thực 2 lớp
-Tài khoản vai trò `DIRECTOR` chưa bật xác thực 2 lớp SHALL chỉ mở được `/two-factor`: mọi trang khác SHALL chuyển về `/two-factor`, mọi API (trừ API của chính bước bật và đăng xuất) SHALL trả 403 với "Cần bật xác thực 2 lớp trước khi tiếp tục". Điều kiện SHALL đọc từ dữ liệu hiện tại ở mỗi yêu cầu. Khi còn phải đổi mật khẩu tạm, việc đổi mật khẩu SHALL làm trước. Vai trò khác SHALL không bị yêu cầu.
+### Requirement: Giám đốc và Kế toán bắt buộc bật xác thực 2 lớp
+Tài khoản vai trò `DIRECTOR` hoặc `ACCOUNTANT` chưa bật xác thực 2 lớp SHALL chỉ mở được `/two-factor`: mọi trang khác SHALL chuyển về `/two-factor`, mọi API (trừ API của chính bước bật và đăng xuất) SHALL trả 403 với "Cần bật xác thực 2 lớp trước khi tiếp tục". Điều kiện SHALL đọc từ dữ liệu hiện tại ở mỗi yêu cầu. Khi còn phải đổi mật khẩu tạm, việc đổi mật khẩu SHALL làm trước. Vai trò khác SHALL không bị yêu cầu.
 
 #### Scenario: Giám đốc chưa bật mở Tổng quan
 - **WHEN** `minhanh` (`DIRECTOR`, đã đổi mật khẩu, chưa bật 2 lớp) mở `/dashboard`
@@ -19,8 +19,12 @@ Tài khoản vai trò `DIRECTOR` chưa bật xác thực 2 lớp SHALL chỉ m�
 - **WHEN** `minhanh` vừa được tạo bằng lệnh, đăng nhập bằng mật khẩu tạm và mở `/two-factor`
 - **THEN** hệ thống chuyển tới `/change-password`; đổi xong mới vào `/two-factor`
 
-#### Scenario: Kế toán không bị hỏi
-- **WHEN** `thuha` (`ACCOUNTANT`, chưa bật 2 lớp) đăng nhập đúng mật khẩu
+#### Scenario: Kế toán chưa bật mở Công nợ
+- **WHEN** `thuha` (`ACCOUNTANT`, đã đổi mật khẩu, chưa bật 2 lớp) mở trang Công nợ
+- **THEN** hệ thống chuyển tới `/two-factor`
+
+#### Scenario: Kinh doanh không bị hỏi
+- **WHEN** `quocbao` (`SALES`, chưa bật 2 lớp) đăng nhập đúng mật khẩu
 - **THEN** hệ thống chuyển tới `/dashboard`, không hỏi mã
 
 #### Scenario: Được đổi sang vai trò Giám đốc
@@ -28,7 +32,7 @@ Tài khoản vai trò `DIRECTOR` chưa bật xác thực 2 lớp SHALL chỉ m�
 - **THEN** ở lần tải trang kế tiếp `lanphuong` bị chuyển tới `/two-factor`
 
 ### Requirement: Bản demo không dùng xác thực 2 lớp
-Khi `DEMO_MODE=true`, hệ thống SHALL không yêu cầu Giám đốc bật xác thực 2 lớp và SHALL từ chối yêu cầu bật với "Bản demo không dùng xác thực 2 lớp".
+Khi `DEMO_MODE=true`, hệ thống SHALL không yêu cầu bật xác thực 2 lớp và SHALL từ chối yêu cầu bật với "Bản demo không dùng xác thực 2 lớp".
 
 #### Scenario: Bản demo
 - **GIVEN** hệ thống chạy với `DEMO_MODE=true`
@@ -36,7 +40,7 @@ Khi `DEMO_MODE=true`, hệ thống SHALL không yêu cầu Giám đốc bật x�
 - **THEN** `giamdoc` vào `/dashboard` không cần mã **AND** yêu cầu bật trả 400 với "Bản demo không dùng xác thực 2 lớp"
 
 ### Requirement: Bật xác thực 2 lớp
-Giám đốc SHALL bật xác thực 2 lớp qua ba bước: nhập lại mật khẩu; thêm tài khoản vào ứng dụng tạo mã bằng mã QR hoặc chuỗi bí mật gõ tay; nhập đúng một mã 6 số. Hệ thống SHALL chỉ coi là đã bật sau khi mã đúng. Bỏ dở SHALL giữ nguyên trạng thái chưa bật. Bật xong, mọi phiên khác của tài khoản SHALL kết thúc và phiên đang dùng SHALL còn hiệu lực.
+Người dùng thuộc vai trò bắt buộc SHALL bật xác thực 2 lớp qua ba bước: nhập lại mật khẩu; thêm tài khoản vào ứng dụng tạo mã bằng mã QR hoặc chuỗi bí mật gõ tay; nhập đúng một mã 6 số. Hệ thống SHALL chỉ coi là đã bật sau khi mã đúng. Bỏ dở SHALL giữ nguyên trạng thái chưa bật. Bật xong, mọi phiên khác của tài khoản SHALL kết thúc và phiên đang dùng SHALL còn hiệu lực.
 
 #### Scenario: Bật thành công
 - **WHEN** `minhanh` nhập đúng mật khẩu, quét mã QR và nhập đúng mã `492817`
@@ -104,7 +108,7 @@ Một mã 6 số đã được gửi để đăng nhập cho một tài khoản 
 - **THEN** lần gửi lại nhận "Mã xác thực không đúng" và không tạo phiên
 
 ### Requirement: Mã dự phòng
-Khi bật xác thực 2 lớp, hệ thống SHALL tạo 10 mã dự phòng dạng `XXXX-XXXX-XXXX-XXXX` và hiện đúng một lần. Hệ thống SHALL chỉ lưu dạng băm, SHALL không có cách xem lại. Khi gõ, mã SHALL không phân biệt hoa thường và bỏ qua dấu gạch, khoảng trắng. Mỗi mã SHALL dùng được đúng một lần, kể cả khi hai yêu cầu gửi cùng lúc. Giám đốc SHALL tạo lại được bộ mã mới sau khi nhập mật khẩu; bộ cũ SHALL mất hiệu lực ngay. `/two-factor` SHALL hiện số mã còn lại.
+Khi bật xác thực 2 lớp, hệ thống SHALL tạo 10 mã dự phòng dạng `XXXX-XXXX-XXXX-XXXX` và hiện đúng một lần. Hệ thống SHALL chỉ lưu dạng băm, SHALL không có cách xem lại. Khi gõ, mã SHALL không phân biệt hoa thường và bỏ qua dấu gạch, khoảng trắng. Mỗi mã SHALL dùng được đúng một lần, kể cả khi hai yêu cầu gửi cùng lúc. Người dùng SHALL tạo lại được bộ mã mới sau khi nhập mật khẩu; bộ cũ SHALL mất hiệu lực ngay. `/two-factor` SHALL hiện số mã còn lại.
 
 #### Scenario: Hiện một lần
 - **WHEN** `minhanh` bật 2 lớp xong, xem 10 mã, rồi tải lại `/two-factor`
@@ -127,7 +131,7 @@ Khi bật xác thực 2 lớp, hệ thống SHALL tạo 10 mã dự phòng dạn
 - **THEN** màn hình hiện 10 mã mới một lần **AND** 4 mã cũ không dùng được nữa
 
 ### Requirement: Đổi điện thoại
-Giám đốc đã bật xác thực 2 lớp SHALL đổi được thiết bị tại `/two-factor` sau khi nhập mật khẩu và một mã 6 số hoặc mã dự phòng còn hiệu lực. Đổi xong, bí mật cũ và toàn bộ mã dự phòng cũ SHALL mất hiệu lực, mọi phiên khác SHALL kết thúc và Giám đốc SHALL phải bật lại trước khi làm việc tiếp.
+Người dùng đã bật xác thực 2 lớp SHALL đổi được thiết bị tại `/two-factor` sau khi nhập mật khẩu và một mã 6 số hoặc mã dự phòng còn hiệu lực. Đổi xong, bí mật cũ và toàn bộ mã dự phòng cũ SHALL mất hiệu lực, mọi phiên khác SHALL kết thúc và người dùng SHALL phải bật lại trước khi làm việc tiếp.
 
 #### Scenario: Đổi sang điện thoại mới
 - **WHEN** `minhanh` nhập đúng mật khẩu và mã hiện tại rồi bấm "Đổi điện thoại"
@@ -138,7 +142,7 @@ Giám đốc đã bật xác thực 2 lớp SHALL đổi được thiết bị t
 - **THEN** hệ thống báo "Mã xác thực không đúng" và 2 lớp giữ nguyên
 
 ### Requirement: Cứu hộ khi mất điện thoại bằng lệnh
-Hệ thống SHALL có lệnh dòng lệnh chạy trên máy có quyền vào cơ sở dữ liệu để tắt xác thực 2 lớp của một tài khoản theo tên đăng nhập. Lệnh SHALL xóa bí mật và mã dự phòng, kết thúc mọi phiên của tài khoản, gỡ tạm khóa và ghi nhật ký trong cùng một giao dịch. Lần đăng nhập sau, Giám đốc SHALL phải bật lại. Tên không tồn tại hoặc tài khoản chưa bật SHALL được báo rõ và không đổi gì. Quy trình xác minh người yêu cầu SHALL nằm trong tài liệu vận hành.
+Hệ thống SHALL có lệnh dòng lệnh chạy trên máy có quyền vào cơ sở dữ liệu để tắt xác thực 2 lớp của một tài khoản theo tên đăng nhập. Lệnh SHALL xóa bí mật và mã dự phòng, kết thúc mọi phiên của tài khoản, gỡ tạm khóa và ghi nhật ký trong cùng một giao dịch. Lần đăng nhập sau, người đó SHALL phải bật lại nếu vai trò bắt buộc. Tên không tồn tại hoặc tài khoản chưa bật SHALL được báo rõ và không đổi gì. Quy trình xác minh người yêu cầu SHALL nằm trong tài liệu vận hành.
 
 #### Scenario: Giám đốc mất điện thoại và mã dự phòng
 - **WHEN** quản trị chạy `npm run auth:reset-2fa -- --username minhanh`
