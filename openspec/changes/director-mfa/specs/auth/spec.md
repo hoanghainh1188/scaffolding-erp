@@ -69,7 +69,7 @@ Sau 5 lần đăng nhập sai liên tiếp với cùng một tên đăng nhập 
 ## ADDED Requirements
 
 ### Requirement: Quyền xác thực 2 lớp theo vai trò
-Bảng quyền SHALL có `twoFactor.manage` (bật, tạo lại mã dự phòng, đổi điện thoại) cho `DIRECTOR`, `ACCOUNTANT`. Mỗi người chỉ thao tác trên chính tài khoản của mình. Không khai báo vai trò cho xác thực 2 lớp ở chỗ khác.
+Bảng quyền SHALL có `twoFactor.manage` (bật, tạo lại mã dự phòng, đổi điện thoại) cho `DIRECTOR`, `ACCOUNTANT`. Mỗi người chỉ thao tác trên chính tài khoản của mình; tài khoản có cờ Admin hệ thống cũng được dùng các thao tác này. Không khai báo vai trò cho xác thực 2 lớp ở chỗ khác.
 
 #### Scenario: Đọc bảng quyền
 - **WHEN** đọc bảng quyền cho xác thực 2 lớp

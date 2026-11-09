@@ -206,6 +206,44 @@ Hệ thống SHALL có lệnh dòng lệnh chạy trên máy có quyền vào c�
 - **WHEN** `minhanh` nhập sai mã 10 lần liên tiếp và quản trị chạy `npm run auth:unlock -- --username minhanh`
 - **THEN** `minhanh` nhập đúng mã thì đăng nhập được ngay, không phải chờ 15 phút
 
+### Requirement: Cờ Admin hệ thống
+Mỗi tài khoản SHALL có cờ Admin hệ thống, mặc định tắt, không đổi vai trò của tài khoản. Cờ SHALL chỉ đặt và gỡ được bằng lệnh dòng lệnh, có ghi nhật ký. Tài khoản có cờ SHALL bắt buộc bật xác thực 2 lớp như Giám đốc, kể cả khi vai trò không bắt buộc, và SHALL mở được `/two-factor`. Cờ SHALL đọc từ dữ liệu hiện tại ở mỗi yêu cầu.
+
+#### Scenario: Đặt cờ bằng lệnh
+- **WHEN** quản trị chạy `npm run auth:set-admin -- --username quocbao`
+- **THEN** `quocbao` có cờ, vai trò vẫn `SALES` **AND** lần tải trang kế tiếp `quocbao` bị chuyển tới `/two-factor` nếu chưa bật
+
+#### Scenario: Gỡ cờ
+- **WHEN** quản trị chạy `npm run auth:set-admin -- --username quocbao --off`
+- **THEN** `quocbao` không còn thấy mục "Gỡ xác thực 2 lớp" ở lần tải kế tiếp
+
+#### Scenario: Không tự đặt được trên giao diện
+- **WHEN** `minhanh` (Giám đốc, không có cờ) mở D17
+- **THEN** D17 không có chỗ nào đặt cờ Admin hệ thống
+
+### Requirement: Admin gỡ xác thực 2 lớp cho người khác
+Tài khoản có cờ Admin hệ thống SHALL gỡ được xác thực 2 lớp của tài khoản khác trên D17, sau khi nhập lại mật khẩu và một mã của chính mình. Kết quả SHALL giống lệnh cứu hộ: xóa bí mật, mã dự phòng và thiết bị đã tin, kết thúc mọi phiên, gỡ tạm khóa, ghi nhật ký. Tài khoản không có cờ SHALL nhận 403, kể cả Giám đốc. Admin SHALL không gỡ được cho chính mình.
+
+#### Scenario: Admin gỡ cho Kế toán mất điện thoại
+- **WHEN** `quocbao` (có cờ) mở D17, chọn "Gỡ xác thực 2 lớp" ở dòng `thuha`, nhập đúng mật khẩu và mã của mình
+- **THEN** 2 lớp của `thuha` tắt **AND** mọi máy của `thuha` phải đăng nhập lại **AND** lần đăng nhập sau `thuha` phải bật lại
+
+#### Scenario: Giám đốc không có cờ
+- **WHEN** `minhanh` (Giám đốc, không có cờ) gửi `POST /api/users/<id của thuha>/two-factor/reset`
+- **THEN** API trả 403 với "Bạn không có quyền thực hiện thao tác này" và 2 lớp của `thuha` giữ nguyên
+
+#### Scenario: Sai mã của admin
+- **WHEN** `quocbao` nhập đúng mật khẩu nhưng sai mã `000000`
+- **THEN** hệ thống báo "Mã xác thực không đúng" và 2 lớp của `thuha` giữ nguyên
+
+#### Scenario: Gỡ cho chính mình
+- **WHEN** `quocbao` gửi yêu cầu gỡ cho chính tài khoản `quocbao`
+- **THEN** API trả 400 với "Không gỡ được cho chính bạn. Dùng Đổi điện thoại"
+
+#### Scenario: Tài khoản chưa bật
+- **WHEN** `quocbao` gửi yêu cầu gỡ cho `vantung` chưa bật 2 lớp
+- **THEN** API trả 409 với "Tài khoản này chưa bật xác thực 2 lớp"
+
 ### Requirement: Không mở thao tác 2 lớp ngoài các lối của hệ thống
 Các đường dẫn xác thực 2 lớp của thư viện đăng nhập dưới `/api/auth/` SHALL không gọi được từ trình duyệt. Mọi thao tác 2 lớp SHALL đi qua màn hình và API của hệ thống để luôn áp dụng giới hạn nhập sai, kiểm tra quyền và ghi nhật ký.
 

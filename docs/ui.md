@@ -178,7 +178,7 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | M4 Nhập thu hồi | `M4-ReturnNote.dc.html` | `returns-and-compensation` | Đã chốt phong cách |
 | Đăng nhập | `Login.dc.html` | `auth-and-roles` | Đã duyệt |
 | Đăng nhập, bước nhập mã | `Login-TwoFactor.dc.html` | `director-mfa` | Đã duyệt 09/11/2026 (vẽ trong repo, chưa có trên canvas) |
-| Xác thực 2 lớp (`/two-factor`) | `TwoFactor.dc.html` | `director-mfa` | Đã duyệt 09/11/2026 (vẽ trong repo, chưa có trên canvas) |
+| Xác thực 2 lớp (`/two-factor`) | `TwoFactor.dc.html` | `director-mfa` | Đã duyệt 09/11/2026, trừ khung gỡ 2 lớp trên D17 chờ duyệt (vẽ trong repo, chưa có trên canvas) |
 | D17 Người dùng | `D17-Users.dc.html` | `auth-and-roles` | Đã duyệt |
 | D18 Nhật ký thao tác | `D18-ActivityLog.dc.html` | `activity-log` | Đã duyệt |
 | D9 Danh mục vật tư | `D9-Items.dc.html` | `master-data` | Đã duyệt |

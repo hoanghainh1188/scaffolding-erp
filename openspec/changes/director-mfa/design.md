@@ -63,13 +63,13 @@
 
 ### D5. Mất điện thoại: lệnh CLI, cộng tự đổi điện thoại (điểm 5)
 
-- **Chọn:** `scripts/reset-two-factor.mts`, `npm run auth:reset-2fa -- --username <tên>`, chạy bằng role `erp_app` như `auth:unlock`. Gọi `resetTwoFactorByCli` trong một transaction: xóa `two_factor`, `user.two_factor_enabled = false`, xóa mọi `session`, xóa `login_throttle` của tên đó, `logActivity` với `systemActor` của chính tài khoản đó. Không có lối tắt trên giao diện.
+- **Chọn:** `scripts/reset-two-factor.mts`, `npm run auth:reset-2fa -- --username <tên>`, chạy bằng role `erp_app` như `auth:unlock`. Gọi `resetTwoFactorByCli` trong một transaction: xóa `two_factor`, `user.two_factor_enabled = false`, xóa mọi `session`, xóa `login_throttle` của tên đó, `logActivity` với `systemActor` của chính tài khoản đó.
 - `auth:unlock` thêm: đưa `failed_verification_count` về 0, xóa `locked_until` (`--username` và `--all`).
 - **Tự đổi điện thoại** (còn thiết bị cũ hoặc còn mã dự phòng): kiểm mã rồi gọi `disableTwoFactor`, sau đó cổng D1 đưa về bước bật.
 - **Người chạy lệnh:** admin hệ thống, tức người giữ quyền vào DB production (0.2 #137). Đây là người vận hành, không thêm vai trò mới trong app.
 - **Runbook** (`docs/ops/production.md`): xác minh người yêu cầu bằng gặp mặt hoặc gọi số đã biết, không qua tin nhắn; chạy lệnh; bật lại ngay; kiểm tra D18.
-- **Kế toán mất điện thoại** cũng đi qua lệnh này, không có nút trên giao diện.
-- **Đã cân nhắc:** Giám đốc gỡ cho người khác trên D17 (một Giám đốc bị chiếm tài khoản gỡ được lớp bảo vệ của người còn lại); gỡ qua email (hệ thống không có email thật).
+- **Thường dùng nút trên D17 (D12).** Lệnh này giữ cho khi admin cũng mất điện thoại, hoặc chưa có admin nào.
+- **Đã cân nhắc:** Mọi Giám đốc gỡ được trên D17 (một Giám đốc bị chiếm tài khoản gỡ được lớp bảo vệ của người còn lại); gỡ qua email (hệ thống không có email thật).
 
 ### D6. Hiện QR: thêm `uqr`, luôn có chuỗi gõ tay (điểm 6, đã chốt 0.2 #132)
 
@@ -88,6 +88,7 @@
 **Migration:**
 
 - `user.two_factor_enabled boolean not null default false`.
+- `user.system_admin boolean not null default false` (D12).
 - Bảng `two_factor`: `id text pk`, `user_id text not null unique references user on delete cascade`, `secret text not null`, `backup_codes text not null`, `verified boolean not null default false`, `failed_verification_count integer not null default 0`, `locked_until timestamptz`, `created_at`, `updated_at`. Tên JS theo field của plugin. Thêm `twoFactor` vào schema adapter. Quyền CRUD mặc định, không phải bảng chỉ ghi thêm.
 
 **API** (bọc `withAuth`, `permission: "twoFactor.manage"`, `allowPendingTwoFactor`, `Cache-Control: no-store`):
@@ -99,6 +100,7 @@
 | `POST /api/me/two-factor/backup-codes` | `{ password }` | `{ backupCodes[] }` |
 | `POST /api/me/two-factor/replace` | `{ password, code }` | `{ enabled: false }` |
 | `POST /api/me/two-factor/forget-devices` | (không) | `{ forgotten: number }` |
+| `POST /api/users/[id]/two-factor/reset` (D12) | `{ password, code }` | `{ reset: true }` |
 
 Validate bằng schema. `confirm`, `replace` thêm giới hạn 5 lần/phút theo người dùng. Các route trả Set-Cookie của plugin vì plugin đổi token phiên khi bật, tắt.
 
@@ -129,8 +131,22 @@ Bí mật TOTP mã hóa bằng khóa này, nên quy trình đổi khóa hiện t
 - Plugin xóa cookie `dont_remember` khi tin thiết bị. "Giữ đăng nhập" vẫn đúng vì server áp `persistent = false` và hạn 12 giờ theo lựa chọn lưu ở server (D2).
 - **Đã cân nhắc:** không có tin thiết bị (an toàn nhất, người dùng đã chọn có); hạn cứng 30 ngày không gia hạn (plugin luôn gia hạn, muốn khác phải sửa code nội bộ thư viện).
 
+### D12. Cờ Admin hệ thống (đã chốt 0.2 #138)
+
+- **Chọn:** cột `user.system_admin boolean not null default false`, đọc mỗi yêu cầu vào `CurrentUser.systemAdmin`. Không thêm vai trò, cùng kiểu với `contract_scope` (0.2 #51).
+- **Đặt cờ:** chỉ bằng `scripts/set-system-admin.mts`, `npm run auth:set-admin -- --username <tên> [--off]`, ghi nhật ký. Giao diện và API không có đường đặt cờ, nên chiếm được một tài khoản không tự nâng quyền được.
+- **Quyền một chỗ** (`src/domain/permissions.ts`, cùng kiểu `canContract`): `canManageTwoFactor(user)` = quyền vai trò hoặc có cờ; `canResetOthersTwoFactor(user)` = có cờ; `canOpenUsers(user)` = `users.manage` hoặc có cờ. `isTwoFactorRequired` thêm tham số cờ.
+- **D17:** `requirePermission("users.manage", { orSystemAdmin: true })` để test route-guards vẫn bắt được. Admin không phải Giám đốc mở qua mục trong menu người dùng; `listUsers` đọc thẳng ở server nên `GET /api/users` vẫn chỉ cho `DIRECTOR`. `listUsers` trả thêm `twoFactorEnabled`, `systemAdmin`.
+- **API:** `POST /api/users/[id]/two-factor/reset`, `{ password, code }`, `{ reset: true }`, bọc `withAuth`, kiểm `canResetOthersTwoFactor` trong handler, giới hạn 5 lần/phút, `no-store`.
+- **Dùng chung lõi:** `clearTwoFactor(tx, targetId)` cho `resetTwoFactorByAdmin` và `resetTwoFactorByCli`, trong một transaction cùng `forgetTrustedDevices`, xóa `session`, `login_throttle`, `logActivity`. Khóa `user` của người bị gỡ `FOR UPDATE`.
+- **Vì sao bắt nhập lại mật khẩu và mã:** phiên bị bỏ quên không gỡ được 2 lớp của người khác.
+- **Vì sao không gỡ cho chính mình:** kẻ chiếm được admin không tự bỏ được lớp bảo vệ. Admin tự đổi máy qua Đổi điện thoại.
+- **Đã cân nhắc:** vai trò `ADMIN` riêng (tách quyền rõ nhất nhưng đụng bảng quyền, D17, quy tắc Giám đốc cuối cùng; làm change riêng nếu cần); chỉ ghi tên ở lệnh (tên tự khai, không có nút); đặt cờ trên D17 (Giám đốc bị chiếm tự nâng quyền được).
+
 ## Risks / Trade-offs
 
+- [Admin bị chiếm tài khoản thì gỡ được 2 lớp của người khác] → admin bắt buộc bật 2 lớp, phải nhập lại mật khẩu và mã, D18 có cờ; gỡ xong kẻ gian vẫn cần mật khẩu của người bị gỡ.
+- [Không ai có cờ] → lệnh `auth:reset-2fa` vẫn dùng được; runbook nhắc đặt cờ cho ít nhất một người khi lên production.
 - [Máy dùng đều không bao giờ bị hỏi mã lại; kẻ có cả máy đã tin lẫn mật khẩu vào được] → ô mặc định không chọn, có nút thu hồi từ máy khác, D18 có cờ khi tin máy, đổi mật khẩu tự thu hồi.
 - [Tin thiết bị trên máy dùng chung] → dòng nhắc cạnh ô tick: chỉ chọn trên máy riêng.
 - [Nâng cấp thư viện đổi tên `trust-device-*`] → integration test thu hồi đỏ ngay.

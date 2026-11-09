@@ -15,7 +15,8 @@
 - **Một mã đã đăng nhập thành công không dùng lại được** trong thời gian mã còn hiệu lực.
 - **10 mã dự phòng** hiện đúng một lần, lưu dạng băm, mỗi mã dùng một lần. Tạo lại thì bộ cũ mất hiệu lực.
 - **Đổi điện thoại** tự làm được trên `/two-factor` (cần mật khẩu và mã hiện tại hoặc mã dự phòng).
-- **Mất cả điện thoại lẫn mã dự phòng:** lệnh mới `npm run auth:reset-2fa -- --username <tên>` theo runbook, ghi nhật ký, đăng xuất mọi máy.
+- **Cờ Admin hệ thống** trên từng tài khoản (0.2 #138), chỉ đặt bằng lệnh `npm run auth:set-admin`. Người có cờ bắt buộc bật 2 lớp và gỡ được 2 lớp cho người khác trên D17, phải nhập lại mật khẩu và mã của mình. Không thêm vai trò mới.
+- **Mất cả điện thoại lẫn mã dự phòng, không còn admin nào gỡ được:** lệnh mới `npm run auth:reset-2fa -- --username <tên>` theo runbook, ghi nhật ký, đăng xuất mọi máy.
 - `npm run auth:unlock` gỡ cả khóa do nhập sai mã.
 - **Nhật ký** ghi khi bật, tắt, đổi điện thoại, tạo lại mã dự phòng, đăng nhập bằng mã dự phòng. Không bao giờ ghi bí mật hay mã.
 - **Mọi route của thư viện cho xác thực 2 lớp đều đóng ở HTTP.** Thao tác đi qua code riêng trong `src/lib/auth/`, như đăng nhập hiện nay.
@@ -29,27 +30,28 @@
 ### Modified Capabilities
 
 - `auth`: quy tắc tạm khóa tính cả mã sai; thêm quyền `twoFactor.manage`.
+- `user-management`: admin hệ thống mở được D17 để gỡ 2 lớp.
 - `activity-log`: thêm các dòng nhật ký xác thực 2 lớp.
 
 ## Màn hình
 
 - **Đăng nhập, bước nhập mã:** `Login-TwoFactor.dc.html` (mới).
 - **`/two-factor`** (mới, `TwoFactor.dc.html`): trang đứng riêng như `/change-password`, không nằm trong D1–D18.
-- **D17, D18** không đổi bố cục. D18 hiện thêm các dòng nhật ký mới.
-- Hai màn trên đã vẽ trong `docs/design/screens/` (0.2 #136), đã duyệt 09/11/2026.
+- **D17:** thêm mục "Gỡ xác thực 2 lớp" trong menu của dòng, chỉ admin hệ thống thấy; admin không phải Giám đốc chỉ có mục này. **D18** hiện thêm các dòng nhật ký mới.
+- Hai màn trên đã vẽ trong `docs/design/screens/` (0.2 #136), đã duyệt 09/11/2026. Riêng hộp thoại gỡ 2 lớp trên D17 vẽ thêm sau, **chờ duyệt**.
 
 ## Ngoài phạm vi
 
 - Xác thực 2 lớp cho Kinh doanh, Thủ kho, Xưởng.
 - Mã gửi qua SMS, email; khóa bảo mật phần cứng, passkey.
-- Gỡ xác thực 2 lớp cho người khác trên giao diện (kể cả Giám đốc gỡ cho Kế toán).
+- Vai trò `ADMIN` riêng trong bảng 5 vai trò.
 - Xem và đăng xuất thiết bị từ xa (K14 `session-management`).
 - Sổ kho, giá vốn, tiền thuê: không đổi, không ảnh hưởng số liệu đã có.
 
 ## Impact
 
-- **DB:** bảng mới `two_factor`, cột `user.two_factor_enabled`.
-- **Code:** `src/lib/auth/` (cấu hình plugin, `sign-in.ts`, `guard.ts`, `session.ts`), `src/domain/two-factor.ts` (mới), `src/domain/permissions.ts`, `src/app/login/`, `src/app/two-factor/` (mới), `src/app/api/me/two-factor/` (mới), `scripts/`, `src/components/shell/user-menu.tsx`, `src/locales/`, `src/lib/auth/change-password.ts`, `src/lib/users/service.ts` (thu hồi thiết bị đã tin).
+- **DB:** bảng mới `two_factor`, cột `user.two_factor_enabled`, `user.system_admin`.
+- **Code:** `src/lib/auth/` (cấu hình plugin, `sign-in.ts`, `guard.ts`, `session.ts`), `src/domain/two-factor.ts` (mới), `src/domain/permissions.ts`, `src/app/login/`, `src/app/two-factor/` (mới), `src/app/api/me/two-factor/` (mới), `scripts/`, `src/components/shell/user-menu.tsx`, `src/locales/`, `src/lib/auth/change-password.ts`, `src/lib/users/service.ts`, `src/components/users/`, `src/app/api/users/[id]/two-factor/` (mới).
 - **Phụ thuộc:** không thêm gói nào cho TOTP (plugin nằm sẵn trong `better-auth`). Hiện mã QR thêm gói `uqr` (0.2 #132, design D6).
 - **Vận hành:** `docs/ops/production.md` thêm quy trình mất điện thoại và sửa quy trình đổi `BETTER_AUTH_SECRET` (bí mật TOTP được mã hóa bằng khóa này).
 - **Dev và E2E:** chạy local với `DEMO_MODE=true` để bỏ qua bước này; E2E bật 2 lớp thật cho tài khoản `e2e.*` Giám đốc và Kế toán (design D9).

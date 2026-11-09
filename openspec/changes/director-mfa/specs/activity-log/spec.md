@@ -33,3 +33,14 @@ Lần đăng nhập có chọn tin thiết bị SHALL ghi một dòng "Đăng nh
 #### Scenario: Đăng nhập trên máy đã tin
 - **WHEN** `thuha` đăng nhập trên máy đã tin lúc 08:05
 - **THEN** có đúng một dòng "Đăng nhập thành công", không có cờ Dữ liệu nhạy cảm
+
+### Requirement: Thao tác của admin hệ thống được ghi
+Hệ thống SHALL ghi một dòng nhật ký có cờ Dữ liệu nhạy cảm khi admin gỡ xác thực 2 lớp cho người khác và khi cờ Admin hệ thống được đặt hoặc gỡ.
+
+#### Scenario: Admin gỡ cho người khác
+- **WHEN** `quocbao` (có cờ) gỡ 2 lớp của `thuha` lúc 14:30
+- **THEN** có một dòng "Gỡ xác thực 2 lớp của thuha" do `quocbao` làm lúc 14:30, có cờ Dữ liệu nhạy cảm
+
+#### Scenario: Đặt cờ Admin hệ thống
+- **WHEN** quản trị chạy lệnh đặt cờ cho `quocbao` lúc 16:00
+- **THEN** có một dòng "Đặt cờ Admin hệ thống" gắn với tài khoản `quocbao` lúc 16:00, có cờ Dữ liệu nhạy cảm
