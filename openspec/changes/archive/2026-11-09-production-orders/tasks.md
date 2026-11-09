@@ -150,10 +150,6 @@
 
 ## 6. Kiểm tra
 
-- [ ] 6.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate production-orders --strict` xanh.
+- [x] 6.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate production-orders --strict` xanh.
 - [x] 6.2 `npm run inventory:check` trên DB dev sau khi seed và chạy E2E: không lệch.
-- [ ] 6.3 Kiểm tra tay trên Edge 1366px:
-  - D19, D20, M10 so với file thiết kế;
-  - Giám đốc duyệt lệnh mẫu, Kế toán ghi sổ, đối chiếu số với D20 (45.867.000 ₫);
-  - thẻ kho `GG-K17` hiện dòng "LSX-…: nhập sản xuất GG-K17";
-  - D15 tháng ghi sổ có "Công sản xuất đã chi".
+- Kiểm tra tay (làm sau, theo dõi ở #33, mục 21): trên Edge 1366px so D19, D20, M10 với file thiết kế; Giám đốc duyệt lệnh mẫu, Kế toán ghi sổ, đối chiếu số với D20 (45.867.000 ₫); thẻ kho `GG-K17` có dòng "LSX-…: nhập sản xuất GG-K17"; D15 tháng ghi sổ có "Công sản xuất đã chi".
