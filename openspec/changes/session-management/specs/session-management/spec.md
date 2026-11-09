@@ -59,6 +59,10 @@ Người dùng SHALL đăng xuất được từng máy khác của chính mình
 - **WHEN** `thuha` mở `/sessions` ở hai tab, đăng xuất điện thoại ở tab 1, rồi bấm lại ở tab 2
 - **THEN** tab 2 báo "Thiết bị này đã đăng xuất" và danh sách cập nhật
 
+#### Scenario: Một máy khác không làm mất máy đã tin
+- **WHEN** `thuha` (đã bật 2 lớp) có 2 máy đã tin và đăng xuất một máy khác
+- **THEN** vẫn còn 2 máy đã tin **AND** trang nhắc kèm liên kết tới `/two-factor`
+
 ### Requirement: Đăng xuất mọi máy khác
 Người dùng SHALL đăng xuất được mọi máy khác của chính mình bằng một thao tác sau bước xác nhận, máy đang dùng vẫn đăng nhập. Không có máy khác thì nút SHALL bị tắt.
 
@@ -72,7 +76,30 @@ Người dùng SHALL đăng xuất được mọi máy khác của chính mình 
 
 #### Scenario: Gọi API khi không còn máy khác
 - **WHEN** `vantung` gửi `POST /api/me/sessions/sign-out-others` khi chỉ có một máy
-- **THEN** API trả thành công với số máy 0 **AND** nhật ký không có dòng mới
+- **THEN** API trả thành công với số máy 0 **AND** không quên máy đã tin nào **AND** nhật ký không có dòng mới
+
+### Requirement: Đăng xuất hàng loạt quên máy đã tin
+"Đăng xuất mọi máy khác" và "Đăng xuất mọi máy" của Giám đốc SHALL quên mọi máy đã tin của xác thực 2 lớp của chủ tài khoản, trong cùng giao dịch với việc kết thúc phiên. Số máy đã quên chỉ tính máy còn hạn. Hộp thoại xác nhận của người có 2 lớp SHALL ghi rõ các máy đã tin cũng bị quên. Máy đã tin của người khác SHALL không bị đụng tới.
+
+#### Scenario: Đăng nhập lại phải nhập mã
+- **WHEN** `thuha` (đã bật 2 lớp) có 2 máy đã tin, đăng xuất mọi máy khác, rồi đăng nhập lại trên máy kia với đúng mật khẩu
+- **THEN** hệ thống báo "Đã đăng xuất 1 máy. Đã quên 2 máy đã tin." **AND** lần đăng nhập lại phải nhập mã 6 số
+
+#### Scenario: Máy đã tin của người khác còn nguyên
+- **WHEN** `thuha` và `minhanh` đều có máy đã tin, `thuha` đăng xuất mọi máy khác
+- **THEN** các máy đã tin của `minhanh` vẫn còn
+
+#### Scenario: Hộp thoại nói rõ
+- **WHEN** `thuha` (đã bật 2 lớp) bấm "Đăng xuất mọi máy khác"
+- **THEN** hộp thoại ghi "Các máy đã tin cũng bị quên, lần sau phải nhập mã"
+
+#### Scenario: Giám đốc đăng xuất, có cả phiên và máy đã tin
+- **WHEN** `thuha` có 2 máy đang đăng nhập và 1 máy đã tin, Giám đốc đăng xuất mọi máy của `thuha`
+- **THEN** hệ thống báo "Đã đăng xuất 2 máy của thuha. Đã quên 1 máy đã tin."
+
+#### Scenario: Phiên đã hết hạn nhưng máy đã tin còn
+- **WHEN** `thuha` không còn phiên nào nhưng còn 1 máy đã tin, Giám đốc đăng xuất mọi máy của `thuha`
+- **THEN** hệ thống báo "Đã quên 1 máy đã tin của thuha" **AND** lần đăng nhập kế tiếp trên máy đó phải nhập mã 6 số
 
 ### Requirement: Lối vào trang Thiết bị đăng nhập
 Menu người dùng trên Desktop và tab Cá nhân trên Mobile SHALL có mục "Thiết bị đăng nhập" dẫn tới `/sessions`, cho mọi vai trò. Trên điện thoại, mỗi nút của trang `/sessions` SHALL cao tối thiểu 48px.
@@ -82,7 +109,11 @@ Menu người dùng trên Desktop và tab Cá nhân trên Mobile SHALL có mục
 - **THEN** hệ thống mở `/sessions`
 
 ### Requirement: Giám đốc đăng xuất mọi máy của một nhân viên
-Giám đốc SHALL đăng xuất được mọi máy của một tài khoản khác từ menu dòng trên D17 sau một bước xác nhận. Tài khoản đó SHALL vẫn Đang dùng và đăng nhập lại được. Quyền là `users.manage`; tài khoản chỉ có cờ Admin hệ thống SHALL không dùng được. Giám đốc SHALL không dùng thao tác này trên chính mình.
+Giám đốc SHALL đăng xuất được mọi máy của một tài khoản khác từ menu dòng trên D17 sau một bước xác nhận. Tài khoản đó SHALL vẫn Đang dùng và đăng nhập lại được. Quyền là `users.manage`; tài khoản chỉ có cờ Admin hệ thống SHALL không dùng được. Giám đốc SHALL không dùng thao tác này trên chính mình. Hộp thoại xác nhận SHALL ghi: "Nếu mật khẩu có thể đã lộ (lưu sẵn trên máy bị mất), dùng Đặt lại mật khẩu."
+
+#### Scenario: Hộp thoại nhắc đặt lại mật khẩu
+- **WHEN** Giám đốc bấm "Đăng xuất mọi máy" ở dòng `vantung`
+- **THEN** hộp thoại có câu nhắc dùng Đặt lại mật khẩu nếu mật khẩu có thể đã lộ
 
 #### Scenario: Nhân viên mất điện thoại
 - **WHEN** `vantung` đang đăng nhập trên 2 máy, Giám đốc bấm "Đăng xuất mọi máy" ở dòng `vantung` rồi xác nhận
@@ -105,7 +136,7 @@ Giám đốc SHALL đăng xuất được mọi máy của một tài khoản kh
 - **THEN** API trả 409 và mọi phiên của `minhanh` vẫn còn
 
 #### Scenario: Nhân viên không có máy nào đang đăng nhập
-- **WHEN** Giám đốc đăng xuất mọi máy của `ngoclam` khi `ngoclam` không có phiên nào
+- **WHEN** Giám đốc đăng xuất mọi máy của `ngoclam` khi `ngoclam` không có phiên nào và không có máy đã tin nào
 - **THEN** hệ thống báo "Không có máy nào đang đăng nhập" **AND** nhật ký không có dòng mới
 
 ### Requirement: Bảo vệ tài khoản demo khi đăng xuất từ xa

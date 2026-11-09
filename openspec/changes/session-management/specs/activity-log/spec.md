@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Đăng xuất từ xa được ghi
-Hệ thống SHALL ghi một dòng nhật ký, có cờ Dữ liệu nhạy cảm, cho mỗi lần đăng xuất một máy khác, đăng xuất mọi máy khác, và Giám đốc đăng xuất mọi máy của nhân viên, trong cùng giao dịch với thao tác. Lần không kết thúc phiên nào SHALL không ghi. Nhật ký SHALL không chứa token, địa chỉ IP hay chuỗi User-Agent gốc.
+Hệ thống SHALL ghi một dòng nhật ký, có cờ Dữ liệu nhạy cảm, cho mỗi lần đăng xuất một máy khác, đăng xuất mọi máy khác, và Giám đốc đăng xuất mọi máy của nhân viên, trong cùng giao dịch với thao tác. Lần không kết thúc phiên nào và không quên máy đã tin nào SHALL không ghi. Có quên máy đã tin thì vẫn một dòng, thêm đuôi ", quên k máy đã tin". Nhật ký SHALL không chứa token, địa chỉ IP hay chuỗi User-Agent gốc.
 
 #### Scenario: Đăng xuất một máy khác
 - **WHEN** `thuha` đăng xuất máy "Điện thoại · Chrome" của mình lúc 10:20
@@ -17,9 +17,25 @@ Hệ thống SHALL ghi một dòng nhật ký, có cờ Dữ liệu nhạy cảm
 - **WHEN** `minhanh` (Giám đốc) đăng xuất 2 máy của `vantung` lúc 14:30
 - **THEN** có một dòng "Đăng xuất mọi máy của vantung (2 máy)" do `minhanh` làm lúc 14:30, gắn với tài khoản `vantung`, có cờ Dữ liệu nhạy cảm
 
+#### Scenario: Có quên máy đã tin
+- **WHEN** `minhanh` đăng xuất 3 máy khác và có 2 máy đã tin, lúc 11:00
+- **THEN** có đúng một dòng "Đăng xuất 3 máy khác, quên 2 máy đã tin"
+
+#### Scenario: Giám đốc đăng xuất và quên máy đã tin
+- **WHEN** `minhanh` (Giám đốc) đăng xuất 2 máy của `vantung` có 1 máy đã tin
+- **THEN** có đúng một dòng "Đăng xuất mọi máy của vantung (2 máy), quên 1 máy đã tin"
+
+#### Scenario: Không còn phiên nhưng còn máy đã tin
+- **WHEN** Giám đốc đăng xuất mọi máy của `thuha` khi `thuha` không có phiên nào và có 1 máy đã tin
+- **THEN** có đúng một dòng "Đăng xuất mọi máy của thuha (0 máy), quên 1 máy đã tin"
+
 #### Scenario: Không có máy nào bị đăng xuất
-- **WHEN** `vantung` đăng xuất mọi máy khác khi chỉ có một máy
+- **WHEN** Giám đốc đăng xuất mọi máy của `ngoclam` khi `ngoclam` không có phiên nào và không có máy đã tin nào
 - **THEN** nhật ký không có dòng mới
+
+#### Scenario: Tự đăng xuất khi không còn máy khác
+- **WHEN** `thuha` đăng xuất mọi máy khác khi chỉ có một máy và còn 1 máy đã tin
+- **THEN** máy đã tin vẫn còn **AND** nhật ký không có dòng mới
 
 ## MODIFIED Requirements
 

@@ -73,7 +73,8 @@ Lý do làm: xem `proposal.md`. Hiện trạng trong code:
 | Mọi máy khác | `Đăng xuất <n> máy khác` |
 | Giám đốc | `Đăng xuất mọi máy của <username> (<n> máy)` |
 
-- `n = 0` thì không ghi, theo quy tắc "không đổi gì thì không ghi".
+- `n` là số phiên bị xóa, `k` là số máy đã tin bị quên. `k > 0` thì thêm đuôi `, quên <k> máy đã tin`, vẫn **một dòng**. Ví dụ: `Đăng xuất 3 máy khác, quên 2 máy đã tin`, `Đăng xuất mọi máy của vantung (2 máy), quên 1 máy đã tin`.
+- `n = 0` **và** `k = 0` thì không ghi, theo quy tắc "không đổi gì thì không ghi". Hàm thuần nhận cả hai số (D6).
 - Đặt tên hàm `signOutDevice`, `signOutOtherDevices`, `signOutAllDevices` để khớp `WRITE_NAME`; nhờ vậy `coverage.test.ts` bắt được nếu quên ghi nhật ký. Không đặt tên `revoke...`.
 - **Đã cân nhắc:** thêm action mới `SIGN_OUT` cùng nhóm lọc trên D18: phải sửa `activity.ts`, nhãn và bộ lọc, trong khi đây là thao tác hiếm. `UPDATE` + `USER` giống "Khóa tài khoản", "Quên mọi thiết bị đã tin".
 
@@ -86,6 +87,7 @@ Không đổi bảng. Không có migration.
 - `DEVICE_SESSION_LIST_LIMIT = 50`.
 - `isLiveDeviceSession(row, now)`: `expiresAt > now`, và nếu `persistent = false` thì chưa quá `SHORT_SESSION_MS`. Hằng số này chuyển từ `src/lib/auth/sign-in.ts` sang đây để `domain` không phụ thuộc `lib`, `sign-in.ts` và `session.ts` import lại.
 - `toDeviceSessionRows(rows, currentId, now)`: lọc, đặt máy đang dùng lên đầu, còn lại theo `updatedAt` giảm dần, cắt 50 dòng, gắn `deviceName`, `isCurrent`. Không bao giờ nhận hay trả token.
+- `signOutOutcome({ sessions, trusted })`: trả có ghi nhật ký không và đuôi `, quên <k> máy đã tin`; chữ thông báo trên giao diện dùng cùng hai số này.
 
 ### D7. "Hoạt động gần nhất"
 
@@ -102,13 +104,14 @@ Mọi route bọc `withAuth`, nên có kiểm Origin, 401, chặn đổi mật k
 | Route | Quyền | Input | Output |
 |---|---|---|---|
 | `POST /api/me/sessions/[id]/sign-out` | đã đăng nhập | id trên URL | `{ ok }`; 400 phiên đang dùng; 404; 409 demo |
-| `POST /api/me/sessions/sign-out-others` | đã đăng nhập | không | `{ count }`; 409 demo |
-| `POST /api/users/[id]/sign-out-all` | `users.manage` | id trên URL | `{ count }`; 404; 409 chính mình; 409 demo |
+| `POST /api/me/sessions/sign-out-others` | đã đăng nhập | không | `{ count, forgotten }`; 409 demo |
+| `POST /api/users/[id]/sign-out-all` | `users.manage` | id trên URL | `{ count, forgotten }`; 404; 409 chính mình; 409 demo |
 
 Thực thi:
 
-- Của chính mình: một transaction, `DELETE ... WHERE id = ? AND user_id = ? RETURNING user_agent`, rồi `logActivity`. Một câu lệnh nên không cần khóa thêm.
-- Giám đốc: đặt trong `src/lib/users/service.ts` cạnh `lockUser`, dùng `lockRow` (`FOR UPDATE` dòng người dùng) rồi xóa theo `user_id`, cùng thứ tự khóa với `lockUser`.
+- Một máy khác: một transaction, `DELETE ... WHERE id = ? AND user_id = ? RETURNING user_agent`, rồi `logActivity`. Một câu lệnh nên không cần khóa thêm.
+- Mọi máy khác: xóa phiên; **`n = 0` thì dừng ở đây**, không quên, không ghi (tránh mất máy đã tin vì bấm nhầm). `n > 0` thì quên máy đã tin (D10), rồi ghi nhật ký.
+- Giám đốc: đặt trong `src/lib/users/service.ts` cạnh `lockUser`, dùng `lockRow` (`FOR UPDATE` dòng người dùng) rồi xóa theo `user_id`, cùng thứ tự khóa với `lockUser`. **Luôn** quên máy đã tin, kể cả `n = 0`: điện thoại mất mấy hôm thì phiên ngắn đã hết mà máy đã tin còn hạn 30 ngày.
 - Demo: `isDemoMode() && isDemoAccount(username)`, như các thao tác D17.
 
 ### D9. Giao diện
@@ -116,16 +119,23 @@ Thực thi:
 - **Trang `/sessions` nằm ngoài nhóm `(desktop)` và `(mobile)`**, cạnh `/change-password` và `/two-factor`, gọi `requireUser()`. Lý do: phải mở được từ cả hai giao diện và cho mọi vai trò, trong khi `route-guards.test.ts` bắt trang `(desktop)` phải có `requirePermission`. Thêm một ca kiểm vào test đó.
 - Một trang responsive dạng danh sách thẻ, nút cao 48px trên điện thoại, xác nhận bằng `AlertDialog`. Có đường về trang trước: `homePathFor(role)`, và `/m/profile` khi vào từ Mobile.
 - Sau khi thành công gọi `router.refresh()`. Chữ để ở `src/locales/vi/auth.ts`.
-- Chưa có thiết kế: vẽ `docs/design/screens/Sessions.dc.html` trước khi code giao diện, như `TwoFactor.dc.html` của K13 (xem câu hỏi trong PR).
+- Làm theo `docs/design/screens/Sessions.dc.html` (đã duyệt, 0.2 số 147), đổi hex sang token.
+- Hộp thoại D17 có câu nhắc: "Nếu mật khẩu có thể đã lộ (lưu sẵn trên máy bị mất), dùng Đặt lại mật khẩu."
 
-### D10. Thiết bị đã tin của xác thực 2 lớp
+### D10. Thiết bị đã tin của xác thực 2 lớp (0.2 số 148)
 
-- **Chọn:** đăng xuất từ xa **không** tự xóa danh sách máy đã tin. Sau khi đăng xuất, người có 2 lớp thấy lời nhắc kèm liên kết tới `/two-factor` ("Quên mọi thiết bị đã tin").
-- **Lý do:** Better Auth lưu máy đã tin ở bảng `verification`, không nối với `session`, nên không xóa riêng được một máy. Xóa hết thì đổi danh sách đã chốt ở 0.2 #135, và mọi máy khác phải nhập mã lại. Máy bị mất vẫn phải qua mật khẩu.
-- **Đã cân nhắc:** tự quên mọi máy đã tin mỗi lần đăng xuất từ xa: an toàn hơn cho trường hợp lộ cả mật khẩu. Đưa vào câu hỏi trong PR để bạn chốt.
+- **Chọn:**
+  - "Đăng xuất mọi máy khác" (khi `n > 0`) và "Đăng xuất mọi máy" của Giám đốc **tự quên mọi máy đã tin** của người đó, trong cùng transaction, sau khi xóa phiên.
+  - "Đăng xuất một máy khác" **không** quên, chỉ nhắc kèm liên kết tới `/two-factor`.
+- **Lý do:** điện thoại bị mất thường còn lưu sẵn mật khẩu trong trình duyệt, nên kẻ nhặt được đăng nhập lại và bỏ qua bước nhập mã. Cái giá thấp: các máy đó vừa bị đăng xuất, đằng nào cũng phải đăng nhập lại. Một máy khác thì không quên được riêng, vì Better Auth lưu máy đã tin ở bảng `verification`, không nối với `session`.
+- `k` chỉ đếm máy **còn hạn**: `forgetTrustedDevices` trả về cả hàng đã hết hạn, nên trong transaction gọi `countTrustedDevices(tx, userId, now)` trước, rồi mới xóa. Đổi tham số của `countTrustedDevices` từ `Database` sang `Executor`. Nhờ vậy thông báo không báo quên một máy vốn đã hết tin.
+- **Đã cân nhắc:**
+  - Không quên, chỉ nhắc (đề xuất ban đầu): không chặn được trường hợp mật khẩu lưu sẵn trên máy bị mất.
+  - Quên cả khi đăng xuất một máy: làm mất tin của mọi máy còn lại chỉ vì dọn một máy cũ.
 
 ## Risks / Trade-offs
 
+- [Kẻ nhặt được máy biết mật khẩu vẫn đăng nhập lại được với tài khoản không có 2 lớp] → Hộp thoại D17 nhắc dùng Đặt lại mật khẩu; đăng xuất từ xa không thay được đổi mật khẩu.
 - [Đăng nhập chen ngay sau lúc xóa phiên thì phiên mới vẫn sống] → Chấp nhận. Muốn chặn hẳn thì đã có Khóa tài khoản.
 - [Hai máy cùng trình duyệt hiện cùng tên] → Có giờ đăng nhập để phân biệt.
 - [Cùng máy đăng nhập nhiều lần tạo nhiều dòng] → Phiên cũ hết hạn theo 30 ngày; đăng xuất mọi máy khác dọn được một lần.
