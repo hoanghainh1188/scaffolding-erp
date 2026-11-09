@@ -36,7 +36,7 @@
 - **Đăng nhập, bước nhập mã:** `Login-TwoFactor.dc.html` (mới).
 - **`/two-factor`** (mới, `TwoFactor.dc.html`): trang đứng riêng như `/change-password`, không nằm trong D1–D18.
 - **D17, D18** không đổi bố cục. D18 hiện thêm các dòng nhật ký mới.
-- Hai màn trên đã vẽ trong `docs/design/screens/` (0.2 #136), **chờ người dùng duyệt** trước khi apply.
+- Hai màn trên đã vẽ trong `docs/design/screens/` (0.2 #136), đã duyệt 09/11/2026.
 
 ## Ngoài phạm vi
 
