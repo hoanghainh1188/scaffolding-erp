@@ -31,6 +31,8 @@ const PAGES = [
   { path: "/catalog/items?item=GG-K17", ready: DESKTOP_READY },
   { path: "/catalog/partners?tab=customers", ready: DESKTOP_READY },
   { path: "/change-password", ready: null },
+  { path: "/sessions", ready: null },
+  { path: "/sessions?from=m", ready: null },
   { path: "/m", ready: MOBILE_READY },
   { path: "/m/history", ready: MOBILE_READY },
   { path: "/dev/components", ready: null },

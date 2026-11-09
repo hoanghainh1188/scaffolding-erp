@@ -20,7 +20,8 @@ import {
 } from "@/test/auth";
 import { cookiesOf, enroll, plainSession, totpCode } from "@/test/two-factor";
 
-import { SIGN_IN_MESSAGES, signIn, SHORT_SESSION_MS } from "./sign-in";
+import { SHORT_SESSION_MS } from "@/domain/device-session";
+import { SIGN_IN_MESSAGES, signIn } from "./sign-in";
 import {
   completeTwoFactorSignIn,
   TWO_FACTOR_MESSAGES,

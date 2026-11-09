@@ -39,6 +39,17 @@ describe("UserMenu", () => {
     expect(item("Gỡ xác thực 2 lớp cho người khác")).toBeInTheDocument();
   });
 
+  it.each([
+    "DIRECTOR",
+    "ACCOUNTANT",
+    "SALES",
+    "WAREHOUSE",
+    "WORKSHOP",
+  ] as const)("links %s to the signed-in devices", async (role) => {
+    await open(role);
+    expect(item("Thiết bị đăng nhập")).toHaveAttribute("href", "/sessions");
+  });
+
   it("hides 2FA in demo mode", async () => {
     vi.stubEnv("DEMO_MODE", "true");
     await open("DIRECTOR");

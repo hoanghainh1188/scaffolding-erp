@@ -44,9 +44,17 @@ import { ContractScopeRadioGroup } from "./contract-scope-radio-group";
 import { RoleRadioGroup } from "./role-radio-group";
 
 const TWO_FACTOR = dict.auth.twoFactor;
+const SESSIONS = dict.auth.sessions;
 
 type Pending =
-  "role" | "scope" | "reset" | "lock" | "unlock" | "twoFactor" | null;
+  | "role"
+  | "scope"
+  | "reset"
+  | "lock"
+  | "unlock"
+  | "twoFactor"
+  | "signOutAll"
+  | null;
 
 interface UserRowActionsProps {
   user: UserRow;
@@ -57,10 +65,11 @@ interface UserRowActionsProps {
   /** `title` heads the temporary-password dialog when one was issued. */
   onDone: (issued?: WithTempPassword, title?: string) => void;
   onError: (message: string) => void;
+  onNotice?: (message: string) => void;
 }
 
 const CONFIRM: Record<
-  Exclude<Pending, "role" | "scope" | "twoFactor" | null>,
+  Exclude<Pending, "role" | "scope" | "twoFactor" | "signOutAll" | null>,
   {
     title: string;
     body: (name: string) => string;
@@ -103,6 +112,7 @@ export function UserRowActions({
   canResetTwoFactor = false,
   onDone,
   onError,
+  onNotice,
 }: UserRowActionsProps) {
   const [open, setOpen] = useState<Pending>(null);
   const [role, setRole] = useState<Role>(user.role);
@@ -112,7 +122,11 @@ export function UserRowActions({
   const showReset = canResetTwoFactor && user.twoFactorEnabled;
   const expired = isTempPasswordExpired(user, now);
   const confirm =
-    open && open !== "role" && open !== "scope" && open !== "twoFactor"
+    open &&
+    open !== "role" &&
+    open !== "scope" &&
+    open !== "twoFactor" &&
+    open !== "signOutAll"
       ? open === "reset" && expired
         ? {
             title: "Cấp lại mật khẩu tạm?",
@@ -145,6 +159,27 @@ export function UserRowActions({
     onDone(
       tempPassword ? { user: result.data.user, tempPassword } : undefined,
       issuedTitle,
+    );
+  }
+
+  async function signOutAll() {
+    setBusy(true);
+    const result = await callApi<{ count: number; forgotten: number }>(
+      `/api/users/${user.id}/sign-out-all`,
+      { method: "POST" },
+    );
+    setBusy(false);
+    setOpen(null);
+    if (!result.ok) {
+      onError(result.error);
+      return;
+    }
+    onNotice?.(
+      SESSIONS.allResult(
+        user.username,
+        result.data.count,
+        result.data.forgotten,
+      ),
     );
   }
 
@@ -208,6 +243,9 @@ export function UserRowActions({
               ) : null}
               <DropdownMenuItem onSelect={() => setOpen("reset")}>
                 {expired ? "Cấp lại mật khẩu tạm" : "Đặt lại mật khẩu"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setOpen("signOutAll")}>
+                {SESSIONS.allItem}
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
@@ -356,6 +394,46 @@ export function UserRowActions({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={open === "signOutAll"}
+        onOpenChange={(next) => {
+          if (!next) setOpen(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{SESSIONS.allTitle(user.name)}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {SESSIONS.allBody(user.name)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {SESSIONS.allLeakedBefore}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => setOpen("reset")}
+            >
+              {SESSIONS.allLeakedLink}
+            </button>
+            {SESSIONS.allLeakedAfter}
+          </p>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{SESSIONS.cancel}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy}
+              variant="destructive"
+              onClick={(event) => {
+                event.preventDefault();
+                void signOutAll();
+              }}
+            >
+              {SESSIONS.allItem}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={confirm !== null}

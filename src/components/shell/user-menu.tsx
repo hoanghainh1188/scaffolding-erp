@@ -1,4 +1,10 @@
-import { KeyRound, LogOut, ShieldCheck, UserCog } from "lucide-react";
+import {
+  KeyRound,
+  LogOut,
+  MonitorSmartphone,
+  ShieldCheck,
+  UserCog,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -13,7 +19,11 @@ import {
 import { can, canManageTwoFactor } from "@/domain/permissions";
 import { ROLE_LABELS, type Role } from "@/domain/role";
 import { signOutAction } from "@/lib/auth/actions";
-import { CHANGE_PASSWORD_PATH, TWO_FACTOR_PATH } from "@/lib/auth/paths";
+import {
+  CHANGE_PASSWORD_PATH,
+  SESSIONS_PATH,
+  TWO_FACTOR_PATH,
+} from "@/lib/auth/paths";
 import { isDemoMode } from "@/lib/env";
 import { initials } from "@/lib/initials";
 import { dict } from "@/locales";
@@ -69,6 +79,12 @@ export function UserMenu({ user }: UserMenuProps) {
             </Link>
           </DropdownMenuItem>
         ) : null}
+        <DropdownMenuItem asChild>
+          <Link href={SESSIONS_PATH}>
+            <MonitorSmartphone aria-hidden />
+            {dict.auth.sessions.menu}
+          </Link>
+        </DropdownMenuItem>
         {showAdminLink ? (
           <DropdownMenuItem asChild>
             <Link href="/settings/users">

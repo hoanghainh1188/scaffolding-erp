@@ -10,7 +10,7 @@ import {
 } from "@/test/auth";
 
 import { resolveCurrentUser } from "./session";
-import { SHORT_SESSION_MS } from "./sign-in";
+import { SHORT_SESSION_MS } from "@/domain/device-session";
 
 const ctx = createTestContext();
 

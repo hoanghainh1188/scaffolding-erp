@@ -63,6 +63,12 @@ describe("route guards", () => {
     );
   });
 
+  it("sessions requires a signed-in user", () => {
+    expect(readFileSync(join(APP, "sessions/page.tsx"), "utf8")).toMatch(
+      /await requireUser\(/,
+    );
+  });
+
   it.each(routes.map((file) => [label(file), file]))(
     "%s wraps every handler in withAuth",
     (_name, file) => {

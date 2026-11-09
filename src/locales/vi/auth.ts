@@ -90,6 +90,60 @@ export const auth = {
     adminCode: "Mã 6 số của bạn",
     resetAction: "Gỡ 2 lớp",
   },
+  sessions: {
+    title: "Thiết bị đăng nhập",
+    panel: "Máy nào đang dùng tài khoản của bạn.",
+    backDashboard: "Về Tổng quan",
+    backHome: "Về trang chính",
+    demoOff:
+      "Bản demo: tài khoản này nhiều người dùng chung nên không xem và đăng xuất máy được. Tạo tài khoản riêng ở Người dùng để thử tính năng.",
+    summary: (count: number) =>
+      `Bạn đang đăng nhập ở ${count} thiết bị. Thấy máy lạ thì đăng xuất máy đó rồi đổi mật khẩu.`,
+    thisDevice: "Máy này",
+    inUse: "Đang dùng",
+    signedIn: (when: string) => `Đăng nhập: ${when}`,
+    lastActive: (when: string) => `Hoạt động gần nhất: ${when}`,
+    note: "Hoạt động gần nhất cập nhật khoảng một lần mỗi ngày. Không hiện địa chỉ IP.",
+    signOutOne: "Đăng xuất máy này",
+    signOutOthers: "Đăng xuất mọi máy khác",
+    noOthers: "Không có máy nào khác.",
+    cancel: "Hủy",
+    confirmOneTitle: (device: string) => `Đăng xuất ${device}?`,
+    confirmOneBody:
+      "Máy đó sẽ phải đăng nhập lại ở thao tác kế tiếp. Máy này vẫn đăng nhập.",
+    confirmOneAction: "Đăng xuất",
+    lostBefore: "Nếu máy bị mất: sau khi đăng xuất, vào ",
+    lostLink: "Xác thực 2 lớp",
+    lostAfter:
+      ' → "Quên mọi thiết bị đã tin". Nghi lộ mật khẩu thì đổi mật khẩu.',
+    confirmOthersTitle: (count: number) => `Đăng xuất ${count} máy khác?`,
+    confirmOthersBody: (count: number) =>
+      `Máy này vẫn đăng nhập. ${count} máy còn lại phải đăng nhập lại ở thao tác kế tiếp.`,
+    confirmOthersTrusted:
+      "Các máy đã tin cũng bị quên, lần sau phải nhập mã 6 số, kể cả trên máy này.",
+    confirmOthersAction: (count: number) => `Đăng xuất ${count} máy`,
+    signedOutOne: (device: string) => `Đã đăng xuất ${device}.`,
+    signedOutOthers: (count: number, forgotten: number) =>
+      `Đã đăng xuất ${count} máy.${forgotten > 0 ? ` Đã quên ${forgotten} máy đã tin.` : ""}`,
+    menu: "Thiết bị đăng nhập",
+    allItem: "Đăng xuất mọi máy",
+    allTitle: (name: string) => `Đăng xuất mọi máy của ${name}?`,
+    allBody: (name: string) =>
+      `${name} phải đăng nhập lại trên mọi máy. Tài khoản vẫn Đang dùng. Máy đã tin của xác thực 2 lớp (nếu có) cũng bị quên.`,
+    allLeakedBefore:
+      "Nếu mật khẩu có thể đã lộ (lưu sẵn trên máy bị mất), dùng ",
+    allLeakedLink: "Đặt lại mật khẩu",
+    allLeakedAfter: ".",
+    allResult: (username: string, count: number, forgotten: number) => {
+      if (count > 0 && forgotten > 0) {
+        return `Đã đăng xuất ${count} máy của ${username}. Đã quên ${forgotten} máy đã tin.`;
+      }
+      if (count > 0) return `Đã đăng xuất ${count} máy của ${username}`;
+      if (forgotten > 0)
+        return `Đã quên ${forgotten} máy đã tin của ${username}`;
+      return "Không có máy nào đang đăng nhập";
+    },
+  },
   changePassword: {
     currentPassword: "Mật khẩu hiện tại",
     newPassword: "Mật khẩu mới",
