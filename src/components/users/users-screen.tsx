@@ -55,9 +55,11 @@ export function UsersScreen({
   const router = useRouter();
   const [issued, setIssued] = useState<IssuedPassword | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   function show(result: WithTempPassword | undefined, title: string) {
     setError(null);
+    setNotice(null);
     if (result) {
       setIssued({
         name: result.user.name,
@@ -74,7 +76,15 @@ export function UsersScreen({
     canResetTwoFactor,
     now: new Date(now),
     onDone: (result, title) => show(result, title ?? "Đã cấp mật khẩu tạm"),
-    onError: setError,
+    onError: (message) => {
+      setNotice(null);
+      setError(message);
+    },
+    onNotice: (message) => {
+      setError(null);
+      setNotice(message);
+      router.refresh();
+    },
   });
 
   return (
@@ -106,6 +116,13 @@ export function UsersScreen({
             {error ? (
               <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {error}
+              </p>
+            ) : null}
+          </div>
+          <div role="status" className="empty:hidden">
+            {notice ? (
+              <p className="rounded-lg border bg-accent px-3 py-2 text-sm text-accent-foreground">
+                {notice}
               </p>
             ) : null}
           </div>
@@ -180,6 +197,7 @@ interface ColumnOptions {
   now: Date;
   onDone: (result?: WithTempPassword, title?: string) => void;
   onError: (message: string) => void;
+  onNotice: (message: string) => void;
 }
 
 function buildColumns({
@@ -189,6 +207,7 @@ function buildColumns({
   now,
   onDone,
   onError,
+  onNotice,
 }: ColumnOptions): DataTableColumn<UserRow>[] {
   return [
     {
@@ -263,6 +282,7 @@ function buildColumns({
             canResetTwoFactor={canResetTwoFactor}
             onDone={onDone}
             onError={onError}
+            onNotice={onNotice}
           />
         ),
     },

@@ -39,10 +39,15 @@ test.describe("accessibility", () => {
       "/inventory/items/GG-K17?from=2026-10-01&to=2026-10-31",
       "/inventory/adjustments",
       "/change-password",
+      "/sessions",
       "/dev/components",
     ]) {
       await page.goto(path);
-      if (path !== "/change-password" && path !== "/dev/components") {
+      if (
+        path !== "/change-password" &&
+        path !== "/sessions" &&
+        path !== "/dev/components"
+      ) {
         await waitForHydration(page, DESKTOP_READY);
       }
       await page.evaluate(() => document.fonts.ready);
@@ -89,7 +94,12 @@ test.describe("accessibility", () => {
     page,
   }, testInfo) => {
     test.skip(!runOnlyIn(testInfo, "mobile-375"), "phone pages");
-    for (const path of ["/m", "/m/profile", "/dev/components"]) {
+    for (const path of [
+      "/m",
+      "/m/profile",
+      "/sessions?from=m",
+      "/dev/components",
+    ]) {
       await page.goto(path);
       if (path === "/m") await waitForHydration(page, MOBILE_READY);
       expect(await seriousViolations(page), path).toEqual([]);

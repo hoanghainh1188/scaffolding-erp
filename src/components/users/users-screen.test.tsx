@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Role } from "@/domain/role";
 import { countUsers, sortUsers, type UserRow } from "@/lib/users/service";
@@ -195,7 +195,12 @@ describe("UsersScreen (D17)", () => {
     );
     expect(
       screen.getAllByRole("menuitem").map((item) => item.textContent),
-    ).toEqual(["Đổi vai trò", "Đặt lại mật khẩu", "Khóa tài khoản"]);
+    ).toEqual([
+      "Đổi vai trò",
+      "Đặt lại mật khẩu",
+      "Đăng xuất mọi máy",
+      "Khóa tài khoản",
+    ]);
   });
 
   it("shows the contract scope next to Kinh doanh only", () => {
@@ -278,7 +283,91 @@ describe("UsersScreen (D17)", () => {
     );
     expect(
       screen.getAllByRole("menuitem").map((item) => item.textContent),
-    ).toEqual(["Đổi vai trò", "Cấp lại mật khẩu tạm", "Khóa tài khoản"]);
+    ).toEqual([
+      "Đổi vai trò",
+      "Cấp lại mật khẩu tạm",
+      "Đăng xuất mọi máy",
+      "Khóa tài khoản",
+    ]);
+  });
+});
+
+describe("Đăng xuất mọi máy", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const openDialog = async () => {
+    await userEvent.click(
+      screen.getByRole("button", { name: "Thao tác với Thu Hà" }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Đăng xuất mọi máy" }),
+    );
+  };
+
+  const answer = (data: { count: number; forgotten: number }) =>
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ success: true, data }), {
+            status: 200,
+          }),
+      ),
+    );
+
+  it("reminds the director about a leaked password", async () => {
+    renderScreen();
+    await openDialog();
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog).toHaveTextContent(
+      "Nếu mật khẩu có thể đã lộ (lưu sẵn trên máy bị mất), dùng Đặt lại mật khẩu.",
+    );
+    expect(dialog).toHaveTextContent("Tài khoản vẫn Đang dùng");
+  });
+
+  it("switches to the reset dialog from the reminder", async () => {
+    renderScreen();
+    await openDialog();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Đặt lại mật khẩu" }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Đặt lại mật khẩu?" }),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    [{ count: 2, forgotten: 0 }, "Đã đăng xuất 2 máy của thuha"],
+    [{ count: 0, forgotten: 1 }, "Đã quên 1 máy đã tin của thuha"],
+    [
+      { count: 2, forgotten: 1 },
+      "Đã đăng xuất 2 máy của thuha. Đã quên 1 máy đã tin.",
+    ],
+    [{ count: 0, forgotten: 0 }, "Không có máy nào đang đăng nhập"],
+  ])("reports %o", async (data, message) => {
+    answer(data);
+    renderScreen();
+    await openDialog();
+    await userEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "Đăng xuất mọi máy",
+      }),
+    );
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/users/2/sign-out-all",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("is not on a locked row", async () => {
+    renderScreen();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Thao tác với Ngọc Lâm" }),
+    );
+    expect(
+      screen.queryByRole("menuitem", { name: "Đăng xuất mọi máy" }),
+    ).toBeNull();
   });
 });
 

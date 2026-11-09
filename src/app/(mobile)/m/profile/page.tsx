@@ -1,4 +1,4 @@
-import { KeyRound, LogOut } from "lucide-react";
+import { KeyRound, LogOut, MonitorSmartphone } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ROLE_LABELS } from "@/domain/role";
 import { signOutAction } from "@/lib/auth/actions";
 import { requireUser } from "@/lib/auth/guard";
-import { CHANGE_PASSWORD_PATH } from "@/lib/auth/paths";
+import { CHANGE_PASSWORD_PATH, SESSIONS_PATH } from "@/lib/auth/paths";
 import { initials } from "@/lib/initials";
 
 export const metadata: Metadata = { title: "Cá nhân" };
@@ -46,6 +46,17 @@ export default async function Page() {
           <Link href={CHANGE_PASSWORD_PATH}>
             <KeyRound aria-hidden />
             Đổi mật khẩu
+          </Link>
+        </Button>
+        <Button
+          asChild
+          variant="outline"
+          size="lg"
+          className="h-12 justify-start"
+        >
+          <Link href={`${SESSIONS_PATH}?from=m`}>
+            <MonitorSmartphone aria-hidden />
+            Thiết bị đăng nhập
           </Link>
         </Button>
         <form action={signOutAction}>

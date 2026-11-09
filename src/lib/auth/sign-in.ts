@@ -4,6 +4,7 @@ import { isAPIError } from "better-auth/api";
 
 import type { Database } from "@/db/client";
 import { loginThrottle, session, user } from "@/db/schema";
+import { SHORT_SESSION_MS } from "@/domain/device-session";
 import {
   evaluateLoginThrottle,
   recordFailure,
@@ -17,9 +18,6 @@ import { logActivity } from "@/lib/activity/log";
 import type { Auth } from "./auth";
 import { clientIp, consumeSignInAttempt } from "./rate-limit";
 import { saveChallenge } from "./two-factor-challenge";
-
-/** "Giữ đăng nhập" not ticked: the session ends 12 h after sign-in. */
-export const SHORT_SESSION_MS = 12 * 60 * 60 * 1000;
 
 export const SIGN_IN_MESSAGES = {
   invalid: "Tên đăng nhập hoặc mật khẩu không đúng",

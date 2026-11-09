@@ -4,6 +4,7 @@ import { defaultSurfaceForRole, type Role } from "@/domain/role";
 export const LOGIN_PATH = "/login";
 export const CHANGE_PASSWORD_PATH = "/change-password";
 export const TWO_FACTOR_PATH = "/two-factor";
+export const SESSIONS_PATH = "/sessions";
 
 const PUBLIC_EXACT = new Set([
   LOGIN_PATH,

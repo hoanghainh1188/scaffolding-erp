@@ -1,16 +1,22 @@
 import type { ReactNode } from "react";
 
+import { cn } from "@/lib/utils";
+
 interface BrandPanelProps {
   headline: string;
   children?: ReactNode;
+  className?: string;
 }
 
 /** The left half of /two-factor, the same block as the sign-in page. */
-export function BrandPanel({ headline, children }: BrandPanelProps) {
+export function BrandPanel({ headline, children, className }: BrandPanelProps) {
   return (
     <section
       aria-label="Giới thiệu"
-      className="relative flex flex-[0_1_520px] flex-col justify-between gap-10 overflow-hidden bg-primary p-6 text-primary-foreground max-lg:flex-[1_1_100%] lg:min-h-dvh lg:p-12 print:hidden"
+      className={cn(
+        "relative flex flex-[0_1_520px] flex-col justify-between gap-10 overflow-hidden bg-primary p-6 text-primary-foreground max-lg:flex-[1_1_100%] lg:min-h-dvh lg:p-12 print:hidden",
+        className,
+      )}
     >
       <div
         aria-hidden

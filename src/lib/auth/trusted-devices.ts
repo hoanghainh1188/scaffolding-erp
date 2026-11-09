@@ -3,7 +3,6 @@
 // is the user id; its own disable only forgets the device making the call.
 import { and, count, eq, gt, like } from "drizzle-orm";
 
-import type { Database } from "@/db/client";
 import { verification } from "@/db/schema";
 
 import type { Executor } from "./credentials";
@@ -22,8 +21,22 @@ export async function forgetTrustedDevices(
   return removed.length;
 }
 
+/**
+ * Forgets every trusted device of this user. Returns how many were still
+ * valid: an expired row is removed but was not trusted any more.
+ */
+export async function forgetCountingLive(
+  tx: Executor,
+  userId: string,
+  now: Date,
+): Promise<number> {
+  const live = await countTrustedDevices(tx, userId, now);
+  await forgetTrustedDevices(tx, userId);
+  return live;
+}
+
 export async function countTrustedDevices(
-  db: Database,
+  db: Executor,
   userId: string,
   now: Date,
 ): Promise<number> {

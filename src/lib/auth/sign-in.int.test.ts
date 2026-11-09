@@ -9,7 +9,8 @@ import {
   type TestUser,
 } from "@/test/auth";
 
-import { SHORT_SESSION_MS, SIGN_IN_MESSAGES, signIn } from "./sign-in";
+import { SHORT_SESSION_MS } from "@/domain/device-session";
+import { SIGN_IN_MESSAGES, signIn } from "./sign-in";
 
 const ctx = createTestContext();
 

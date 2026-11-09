@@ -6,6 +6,11 @@ import { z } from "zod";
 import type { Database } from "@/db/client";
 import { account, loginThrottle, session, user } from "@/db/schema";
 import { isDevice, type Device } from "@/domain/device";
+import {
+  allDevicesSummary,
+  isLiveDeviceSession,
+  signOutOutcome,
+} from "@/domain/device-session";
 import { joinParts } from "@/domain/activity-summary";
 import {
   CONTRACT_SCOPE_LABELS,
@@ -16,7 +21,10 @@ import {
 import { ROLE_LABELS, ROLES, type Role } from "@/domain/role";
 import { generateTempPassword } from "@/domain/temp-password";
 import { isValidUsername, normalizeUsername } from "@/domain/username";
-import { forgetTrustedDevices } from "@/lib/auth/trusted-devices";
+import {
+  forgetCountingLive,
+  forgetTrustedDevices,
+} from "@/lib/auth/trusted-devices";
 import type { ActivityActor } from "@/lib/activity/actor";
 import { logActivity } from "@/lib/activity/log";
 import type { Auth } from "@/lib/auth/auth";
@@ -43,6 +51,8 @@ export const USER_MESSAGES = {
   demoResetBlocked: "Tài khoản demo dùng chung không thể đặt lại mật khẩu",
   demoLockBlocked: "Tài khoản demo dùng chung không thể khóa",
   demoRoleBlocked: "Tài khoản demo dùng chung không thể đổi vai trò",
+  demoSignOutBlocked: "Tài khoản demo dùng chung không thể đăng xuất từ xa",
+  selfSignOutAll: "Máy của bạn quản lý ở mục Thiết bị đăng nhập",
   scopeNotSales: "Phạm vi hợp đồng chỉ đặt cho tài khoản Kinh doanh.",
 } as const;
 
@@ -385,6 +395,47 @@ export async function lockUser(
       ok: true as const,
       data: { user: { ...toUserRow(target), status: "LOCKED" as const } },
     };
+  });
+}
+
+/**
+ * Signs an employee out of every device and forgets their trusted ones, even
+ * with no session left: a lost phone's short session may be long over while
+ * its trust still runs (0.2 số 148). The account stays usable.
+ */
+export async function signOutAllDevices(
+  { db }: Pick<UserServiceDeps, "db">,
+  actor: Actor,
+  targetId: string,
+  now: Date = new Date(),
+): Promise<ServiceResult<{ count: number; forgotten: number }>> {
+  if (targetId === actor.id) return conflict(USER_MESSAGES.selfSignOutAll);
+  return db.transaction(async (tx) => {
+    const target = await lockRow(tx, targetId);
+    if (!target) return notFound();
+    if (isDemoMode() && isDemoAccount(target.username)) {
+      return conflict(USER_MESSAGES.demoSignOutBlocked);
+    }
+    const removed = await tx
+      .delete(session)
+      .where(eq(session.userId, targetId))
+      .returning({
+        createdAt: session.createdAt,
+        expiresAt: session.expiresAt,
+        persistent: session.persistent,
+      });
+    const count = removed.filter((row) => isLiveDeviceSession(row, now)).length;
+    const forgotten = await forgetCountingLive(tx, targetId, now);
+    const counts = { sessions: count, trusted: forgotten };
+    if (signOutOutcome(counts).log) {
+      await logActivity(tx, actor, {
+        action: "UPDATE",
+        document: userDocument(target),
+        summary: allDevicesSummary(target.username, counts),
+        sensitive: true,
+      });
+    }
+    return { ok: true as const, data: { count, forgotten } };
   });
 }
 

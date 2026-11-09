@@ -1,11 +1,11 @@
 // Who is signed in, read fresh from the database on every request (D5).
+import { SHORT_SESSION_MS } from "@/domain/device-session";
 import { parseContractScope, type ContractScope } from "@/domain/permissions";
 import type { Role } from "@/domain/role";
 import { isTwoFactorRequired } from "@/domain/two-factor";
 import { isDemoMode } from "@/lib/env";
 
 import type { Auth } from "./auth";
-import { SHORT_SESSION_MS } from "./sign-in";
 
 export interface CurrentUser {
   id: string;
