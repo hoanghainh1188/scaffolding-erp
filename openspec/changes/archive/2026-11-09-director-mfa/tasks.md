@@ -56,7 +56,7 @@
 - [x] 6.2 E2E `two-factor.spec.ts`: đúng mật khẩu thì hiện ô mã; đúng mã vào `/dashboard`; sai mã báo lỗi; Giám đốc và Kế toán chưa bật bị chuyển `/two-factor`; admin gỡ 2 lớp trên D17; bật từ đầu tới cuối; tick tin thiết bị thì lần sau không hỏi mã.
 - [x] 6.3 `docs/ops/production.md`: quy trình mất điện thoại (admin hệ thống gỡ trên D17, lệnh khi admin cũng mất máy, xác minh người yêu cầu, đặt cờ cho ít nhất một người khi lên production), sửa Sự cố 6 đổi khóa, thêm `auth:reset-2fa`. `CLAUDE.md`: lệnh mới, ghi chú dev dùng `DEMO_MODE=true`, ghi chú E2E, quy ước module. Xem lại bằng mắt.
 - [x] 6.4 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate director-mfa --strict` đều xanh. Gắn nhãn `update-snapshots` nếu ảnh mốc đổi.
-- [ ] 6.5 Kiểm tra tay trên điện thoại thật: bật 2 lớp cho Giám đốc và Kế toán; đăng nhập cần mã; mã sai bị đếm như sai mật khẩu; một mã dự phòng dùng được đúng một lần; tin thiết bị rồi bấm quên từ máy khác thì bị hỏi lại mã; `auth:unlock` và `auth:reset-2fa` theo runbook. Chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33.
+- [ ] 6.5 Kiểm tra tay trên điện thoại thật: bật 2 lớp cho Giám đốc và Kế toán; đăng nhập cần mã; mã sai bị đếm như sai mật khẩu; một mã dự phòng dùng được đúng một lần; tin thiết bị rồi bấm quên từ máy khác thì bị hỏi lại mã; `auth:unlock` và `auth:reset-2fa` theo runbook. Làm sau, theo dõi ở #33 (mục 19).
 
 ## Workflow follow-up
 
