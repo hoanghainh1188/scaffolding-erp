@@ -28,7 +28,7 @@ Hệ thống có 2 Layout riêng biệt phục vụ 2 nhóm người dùng:
 ### A. Desktop Layout (Văn phòng: Giám đốc, Kế toán, Kinh doanh)
 
 - **Sidebar (Cố định bên trái):** Logo và Menu điều hướng chính. Có thể thu gọn (Collapse). Nền sáng (`card`), viền `border`; mục đang chọn nền `accent`.
-    - Menu: Tổng quan, Mua hàng, Kho, Sửa chữa, Cho thuê & Bán, Công nợ, Báo cáo, Danh mục, Cài đặt.
+    - Menu: Tổng quan, Mua hàng, Kho, Sửa chữa, Sản xuất, Cho thuê & Bán, Công nợ, Báo cáo, Danh mục, Cài đặt (Sản xuất: 0.2 #153).
     - Menu hiển thị theo vai trò (VD: Kinh doanh không thấy Công nợ phải trả).
 - **Top Header:** Tìm kiếm toàn cục, Nút tạo mới nhanh (+ Tạo Hợp đồng, + Tạo Đơn mua hàng), Notification (có mục "Chờ duyệt" cho Giám đốc), Profile User.
 - **Main Content Area:** Bảng dữ liệu (Table), biểu đồ (Chart), hoặc Form chi tiết. Nền trang `background`, nội dung nằm trong thẻ `card` (viền `border`, bo `radius-lg`).

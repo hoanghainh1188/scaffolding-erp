@@ -170,6 +170,10 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 149 | Giám đốc đăng xuất máy của nhân viên | Trên D17 chỉ có **"Đăng xuất mọi máy"**, không xem hay chọn từng máy của nhân viên (chốt 09/11/2026 khi review PR #165, change `session-management`) |
 | 150 | Thiết bị đăng nhập ở bản demo | 5 tài khoản demo dùng chung **không dùng** tính năng xem và đăng xuất máy, để khách thử không đá nhau ra (chốt 09/11/2026 khi review PR #165, change `session-management`) |
 | 151 | Giới hạn trang Thiết bị đăng nhập | Hiện **tối đa 50 máy**, **không hiện địa chỉ IP** (chốt 09/11/2026 khi review PR #165, change `session-management`) |
+| 152 | Mã nhận đầu thừa sản xuất | Đầu thừa của mọi lệnh sản xuất nhập **Phế liệu của một mã chung "Sắt vụn"** (mã kg, nhóm Vật tư), Giám đốc chọn một lần ở trang **Giá sắt vụn**. Không chọn mã riêng theo định mức, không nhập vào mã nguyên liệu (chốt 09/11/2026 khi propose, change `production-orders`) |
+| 153 | Menu Sản xuất | Thêm mục **Sản xuất** riêng trên sidebar Desktop (sau Sửa chữa, sidebar thành 10 mục), gồm lệnh sản xuất (D20) và định mức (D19) (chốt 09/11/2026 khi propose, change `production-orders`) |
+| 154 | Phiếu giao việc xưởng in A5 | **Chưa làm** trong `production-orders`: xưởng dùng M10 trên điện thoại. Cần thì làm change nhỏ sau (chốt 09/11/2026 khi propose, change `production-orders`) |
+| 155 | Dòng thành phẩm làm xong 0 cái | **Không ghi sổ được**: dòng làm xong 0 phải bỏ nguyên liệu. Nguyên liệu hỏng cả mẻ thì Thủ kho lập phiếu điều chỉnh (Giám đốc duyệt); không có khoản "lỗ sản xuất" trên D15 (chốt 09/11/2026 khi propose, change `production-orders`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 
