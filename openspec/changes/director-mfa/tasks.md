@@ -47,7 +47,7 @@
 
 - [ ] 6.1 Helper TOTP thuần trong `tests/e2e/`; `global-setup` bật 2 lớp cho tài khoản `e2e.*` Giám đốc và Kế toán; `auth.setup.ts` nhập mã. Toàn bộ E2E hiện có xanh với hai vai trò này đã bật 2 lớp.
 - [ ] 6.2 E2E `two-factor.spec.ts`: đúng mật khẩu thì hiện ô mã; đúng mã vào `/dashboard`; sai mã báo lỗi; Giám đốc và Kế toán chưa bật bị chuyển `/two-factor`; bật từ đầu tới cuối; tick tin thiết bị thì lần sau không hỏi mã.
-- [ ] 6.3 `docs/ops/production.md`: quy trình mất điện thoại (xác minh người yêu cầu), sửa Sự cố 6 đổi khóa, thêm `auth:reset-2fa`. `CLAUDE.md`: lệnh mới, ghi chú dev dùng `DEMO_MODE=true`, ghi chú E2E, quy ước module. Xem lại bằng mắt.
+- [ ] 6.3 `docs/ops/production.md`: quy trình mất điện thoại (admin hệ thống chạy lệnh, xác minh người yêu cầu), sửa Sự cố 6 đổi khóa, thêm `auth:reset-2fa`. `CLAUDE.md`: lệnh mới, ghi chú dev dùng `DEMO_MODE=true`, ghi chú E2E, quy ước module. Xem lại bằng mắt.
 - [ ] 6.4 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate director-mfa --strict` đều xanh. Gắn nhãn `update-snapshots` nếu ảnh mốc đổi.
 - [ ] 6.5 Kiểm tra tay trên điện thoại thật: bật 2 lớp cho Giám đốc và Kế toán; đăng nhập cần mã; mã sai bị đếm như sai mật khẩu; một mã dự phòng dùng được đúng một lần; tin thiết bị rồi bấm quên từ máy khác thì bị hỏi lại mã; `auth:unlock` và `auth:reset-2fa` theo runbook. Chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33.
 

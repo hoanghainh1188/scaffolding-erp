@@ -155,6 +155,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 134 | Mã dự phòng xác thực 2 lớp | Mỗi người **10 mã**, mỗi mã **16 ký tự** dạng `XXXX-XXXX-XXXX-XXXX`, không phân biệt hoa thường. Hiện đúng một lần, chỉ lưu dạng băm, mỗi mã dùng một lần (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
 | 135 | Tin thiết bị khi xác thực 2 lớp | Ở bước nhập mã có ô **"Tin thiết bị này 30 ngày"**, mặc định không chọn. Máy đã tin chỉ cần mật khẩu; hạn 30 ngày tính lại sau mỗi lần đăng nhập trên máy đó. Mã dự phòng không tin được máy. Đổi mật khẩu, đặt lại mật khẩu, đổi điện thoại, lệnh cứu hộ, hoặc bấm "Quên mọi thiết bị đã tin" thì mọi máy đều mất tin (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
 | 136 | Màn xác thực 2 lớp | **Vẽ trước khi apply**: bước nhập mã ở đăng nhập và trang `/two-factor` (`docs/design/screens/`, `docs/ui.md` mục 3.4). Chỉ apply sau khi người dùng duyệt bản vẽ (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
+| 137 | Ai chạy lệnh cứu hộ xác thực 2 lớp | **Admin hệ thống** (người giữ quyền vào DB production) chạy `auth:reset-2fa`, sau khi xác minh người yêu cầu bằng gặp mặt hoặc gọi số đã biết. Admin là người vận hành, **không phải vai trò mới** trong app: vẫn 5 vai trò như cũ (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 

@@ -66,6 +66,7 @@
 - **Chọn:** `scripts/reset-two-factor.mts`, `npm run auth:reset-2fa -- --username <tên>`, chạy bằng role `erp_app` như `auth:unlock`. Gọi `resetTwoFactorByCli` trong một transaction: xóa `two_factor`, `user.two_factor_enabled = false`, xóa mọi `session`, xóa `login_throttle` của tên đó, `logActivity` với `systemActor` của chính tài khoản đó. Không có lối tắt trên giao diện.
 - `auth:unlock` thêm: đưa `failed_verification_count` về 0, xóa `locked_until` (`--username` và `--all`).
 - **Tự đổi điện thoại** (còn thiết bị cũ hoặc còn mã dự phòng): kiểm mã rồi gọi `disableTwoFactor`, sau đó cổng D1 đưa về bước bật.
+- **Người chạy lệnh:** admin hệ thống, tức người giữ quyền vào DB production (0.2 #137). Đây là người vận hành, không thêm vai trò mới trong app.
 - **Runbook** (`docs/ops/production.md`): xác minh người yêu cầu bằng gặp mặt hoặc gọi số đã biết, không qua tin nhắn; chạy lệnh; bật lại ngay; kiểm tra D18.
 - **Kế toán mất điện thoại** cũng đi qua lệnh này, không có nút trên giao diện.
 - **Đã cân nhắc:** Giám đốc gỡ cho người khác trên D17 (một Giám đốc bị chiếm tài khoản gỡ được lớp bảo vệ của người còn lại); gỡ qua email (hệ thống không có email thật).
@@ -133,7 +134,7 @@ Bí mật TOTP mã hóa bằng khóa này, nên quy trình đổi khóa hiện t
 - [Máy dùng đều không bao giờ bị hỏi mã lại; kẻ có cả máy đã tin lẫn mật khẩu vào được] → ô mặc định không chọn, có nút thu hồi từ máy khác, D18 có cờ khi tin máy, đổi mật khẩu tự thu hồi.
 - [Tin thiết bị trên máy dùng chung] → dòng nhắc cạnh ô tick: chỉ chọn trên máy riêng.
 - [Nâng cấp thư viện đổi tên `trust-device-*`] → integration test thu hồi đỏ ngay.
-- [Giám đốc duy nhất mất cả điện thoại lẫn mã dự phòng khi không ai có quyền chạy lệnh] → runbook ghi rõ người giữ quyền DB; màn bật nhắc in mã dự phòng cất nơi khác.
+- [Giám đốc duy nhất mất cả điện thoại lẫn mã dự phòng khi không ai có quyền chạy lệnh] → runbook ghi admin hệ thống là người chạy lệnh và cách liên hệ; màn bật nhắc in mã dự phòng cất nơi khác.
 - [Nâng cấp `better-auth` đổi hành vi hook hay `storeBackupCodes`] → integration test luồng 2 bước, test băm, test chống lệch route; repo ghim phiên bản.
 - [Giờ điện thoại lệch quá 30 giây] → màn nhập mã có dòng nhắc bật giờ tự động trên điện thoại.
 - [Mã mới trùng ngẫu nhiên với mã vừa dùng trong 120 giây] → xác suất khoảng 1/1.000.000, chỉ phải đợi mã kế tiếp.
