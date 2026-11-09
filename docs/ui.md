@@ -100,6 +100,8 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 
 #### Sửa chữa
 
+- **D19. Định mức sản xuất** **[MVP]** (`D19-ProductionBom.dc.html`): danh sách thành phẩm; định mức nguyên liệu / 1 cái (mã nhóm Vật tư), đơn giá công sản xuất / cái, giá thành dự tính theo giá BQ hôm nay. Chỉ Giám đốc, Kế toán sửa.
+- **D20. Lệnh sản xuất** **[MVP]** (`D20-ProductionOrder.dc.html`): tiến trình Nháp → Giao xưởng → Xưởng nhận → Báo làm xong → Thủ kho đếm → (Giám đốc duyệt vượt định mức) → Ghi sổ; mỗi dòng thành phẩm: định mức, thực dùng, chênh lệch (vượt > 5 % tô cam), công, đầu thừa, giá vốn / cái; tổng lệnh; duyệt vượt định mức, trả lại xưởng.
 - **D12. Sửa chữa**:
     - **[MVP] Phiếu sửa chữa đơn giản:** chọn mã hàng và số lượng từ Chờ sửa → chuyển sang Tốt (hoặc Phế liệu). Nhập tổng chi phí. Hiện Cost Breakdown: giá vốn cũ + chi phí sửa = giá vốn mới.
     - **[Bản 2] Lệnh sửa chữa đầy đủ** (`D12-RepairOrder.dc.html`, 0.2 #117–#120): tiến trình Nháp → Giao xưởng → Xưởng nhận → Báo sửa xong → Thủ kho đếm → Ghi sổ; bảng hàng sửa với công khoán và vật tư phụ theo từng mã; giá vốn khi vào Tốt; ghi sổ hoặc trả lại xưởng; tồn vật tư ở xưởng.
@@ -157,12 +159,13 @@ Các "viên gạch" cần thiết lập trước để tái sử dụng toàn d�
 - **M7. Lịch sử** **[MVP]**: Phiếu đã làm, lọc theo loại và ngày. Phiếu nháp chưa gửi hiện ở đầu danh sách.
 - **M9. Xác nhận chuyển công trình** **[MVP]**: Người đi xe xem lộ trình, sửa số thực chở bằng stepper, nhập biển số, bấm xác nhận khi hàng đã hạ ở công trình nhận. Không hiện giá (0.2 #66).
 - **M8. Sửa chữa tại Xưởng** **[Bản 2]** (`M8-Repair.dc.html`): nhận lệnh; mỗi mã có stepper Sửa xong, Hỏng → Phế và vật tư đã dùng; không hiện giá; nháp lưu trên máy; Báo sửa xong. Thủ kho dùng cùng màn để đếm lại khi nghiệm thu.
+- **M10. Sản xuất tại Xưởng** **[MVP]** (`M10-Production.dc.html`, 0.2 #139–#146): mỗi dòng thành phẩm có stepper Làm xong, nguyên liệu thực dùng (điền sẵn theo định mức), đầu thừa (kg); báo vượt định mức; không hiện giá; nháp lưu trên máy; Báo làm xong. Thủ kho dùng cùng màn để đếm.
 
 ### 3.3. Tổng hợp theo giai đoạn
 
 | Giai đoạn | Desktop | Mobile |
 |---|---|---|
-| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D5a, D5b, D6, D6b, D6c, D6d, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D14b, D16, D17, D18 | M1, M2, M3, M4, M5, M6a, M6, M7, M9 |
+| **MVP** | D1 (rút gọn), D2, D3, D4, D5, D5a, D5b, D6, D6b, D6c, D6d, D7, D8, D9, D10, D11, D12 (đơn giản), D13, D14 (phải thu), D14b, D16, D17, D18, D19, D20 | M1, M2, M3, M4, M5, M6a, M6, M7, M9, M10 |
 | **Bản 2** | D1 (đầy đủ), D12 (đầy đủ), D14c (phải trả), D15 | M8 |
 
 ### 3.4. Thiết kế đã vẽ (Claude Design)
@@ -205,6 +208,9 @@ Bản chép trong repo: **`docs/design/screens/`** (cùng tên file với cột 
 | D12 Sửa chữa đơn giản | `D12-Repair.dc.html` | `simple-repair` | Đã duyệt |
 | D12 Lệnh sửa chữa đầy đủ | `D12-RepairOrder.dc.html` | `repair-work-orders` | Đã duyệt |
 | M8 Sửa chữa tại xưởng | `M8-Repair.dc.html` | `repair-work-orders` | Đã duyệt |
+| D19 Định mức sản xuất | `D19-ProductionBom.dc.html` | `production-orders` | Đã duyệt |
+| D20 Lệnh sản xuất | `D20-ProductionOrder.dc.html` | `production-orders` | Đã duyệt |
+| M10 Sản xuất tại xưởng | `M10-Production.dc.html` | `production-orders` | Đã duyệt |
 | D7 Tính tiền thuê | `D7-RentalBilling.dc.html` | `rental-billing` | Đã duyệt |
 | D14 Công nợ phải thu | `D14-Receivables.dc.html` | `receivables` | Đã duyệt (vẽ lại 05/11/2026) |
 | D14b Thanh lý hợp đồng | `D14b-ContractClose.dc.html` | `receivables` | Đã duyệt |
