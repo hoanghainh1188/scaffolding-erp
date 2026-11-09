@@ -7,7 +7,7 @@ Cho Giám đốc quản lý tài khoản ở màn D17 (Cài đặt › Người 
 ## Requirements
 
 ### Requirement: Chỉ Giám đốc quản lý người dùng
-Màn `/settings/users` và mọi API quản lý người dùng SHALL chỉ dành cho vai trò `DIRECTOR`. Vai trò khác nhận 403 (theo bảng quyền của capability `auth`).
+Màn `/settings/users` và mọi API quản lý người dùng SHALL chỉ dành cho vai trò `DIRECTOR`. Vai trò khác nhận 403 (theo bảng quyền của capability `auth`). Ngoại lệ: tài khoản có cờ Admin hệ thống SHALL mở được `/settings/users` và gọi được API gỡ xác thực 2 lớp; nếu không phải `DIRECTOR`, tài khoản đó SHALL chỉ thấy danh sách và mục "Gỡ xác thực 2 lớp", không có thao tác quản lý nào khác.
 
 #### Scenario: Giám đốc mở D17
 - **WHEN** `minhanh` (Giám đốc) bấm Cài đặt › Người dùng
@@ -16,6 +16,14 @@ Màn `/settings/users` và mọi API quản lý người dùng SHALL chỉ dành
 #### Scenario: Kế toán gọi API danh sách
 - **WHEN** `thuha` (Kế toán) gọi `GET /api/users`
 - **THEN** API trả 403, không trả danh sách
+
+#### Scenario: Admin không phải Giám đốc mở D17
+- **WHEN** `quocbao` (Kinh doanh, có cờ Admin hệ thống) mở `/settings/users`
+- **THEN** trang hiện danh sách **AND** menu của dòng chỉ có "Gỡ xác thực 2 lớp"
+
+#### Scenario: Admin không phải Giám đốc khóa tài khoản
+- **WHEN** `quocbao` (Kinh doanh, có cờ) gửi `POST /api/users/<id>/lock`
+- **THEN** API trả 403 và tài khoản không đổi
 
 ### Requirement: Danh sách người dùng
 D17 SHALL hiện bảng người dùng gồm: Họ tên (kèm chữ viết tắt và tên đăng nhập), Vai trò, Dùng trên, Đăng nhập gần nhất, Trạng thái (Đang dùng / Đã khóa / Hết hạn mật khẩu tạm). Khi một tài khoản Đang dùng có mật khẩu tạm đã hết hạn sau 48 giờ chưa đăng nhập, cột Trạng thái SHALL hiện huy hiệu "Hết hạn mật khẩu tạm". Đầu trang SHALL hiện số người đang dùng và số tài khoản đã khóa. Tài khoản Đang dùng xếp trước Đã khóa; cùng trạng thái xếp theo họ tên. Danh sách SHALL không bao giờ trả về mật khẩu hay mã băm.
