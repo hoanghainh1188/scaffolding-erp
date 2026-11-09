@@ -39,8 +39,8 @@
 
 - [ ] 5.1 Năm route `/api/me/two-factor/*` (design D8), validate bằng schema, `no-store`, chuyển Set-Cookie, giới hạn 5 lần/phút. Integration test từng route; `quocbao` (Kinh doanh) nhận 403; `route-guards.test.ts` xanh.
 - [ ] 5.2 Thêm `uqr` ghim đúng `0.1.3` (0.2 #132), lockfile đúng để `npm ci` trên CI xanh. Component `QrCode` (design D6): component test vẽ `<svg>`, không dùng `dangerouslySetInnerHTML`; `check-colors` xanh.
-- [ ] 5.3 Trang `/two-factor`: các bước bật, màn mã dự phòng (Sao chép, In, ô đã lưu), trạng thái còn N mã, số thiết bị đang tin, nút quên, tạo lại, đổi điện thoại. Component test; trang trả 403 với vai trò khác; mobile 320px không tràn.
-- [ ] 5.4 `/login` bước nhập mã: `verifyTwoFactorAction`, `inputMode="numeric"`, `autoComplete="one-time-code"`, ô "Tin thiết bị này 30 ngày" (mặc định không chọn, ẩn ở ô mã dự phòng, có dòng nhắc chỉ chọn trên máy riêng), chuyển sang ô mã dự phòng, lỗi trong `role="alert"`. Component test đủ trạng thái; `clearSessionCookies` xóa cả cookie `two_factor`.
+- [ ] 5.3 Trang `/two-factor` theo `TwoFactor.dc.html`: các bước bật, màn mã dự phòng (Sao chép, In, ô đã lưu), trạng thái còn N mã, số thiết bị đang tin, nút quên, tạo lại, đổi điện thoại. Component test; trang trả 403 với vai trò khác; mobile 320px không tràn.
+- [ ] 5.4 `/login` bước nhập mã theo `Login-TwoFactor.dc.html`: `verifyTwoFactorAction`, `inputMode="numeric"`, `autoComplete="one-time-code"`, ô "Tin thiết bị này 30 ngày" (mặc định không chọn, ẩn ở ô mã dự phòng, có dòng nhắc chỉ chọn trên máy riêng), chuyển sang ô mã dự phòng, lỗi trong `role="alert"`. Component test đủ trạng thái; `clearSessionCookies` xóa cả cookie `two_factor`.
 - [ ] 5.5 Mục "Xác thực 2 lớp" trong `user-menu.tsx` theo quyền; chữ trong `src/locales/`. Component test: hiện với Giám đốc, Kế toán; ẩn với Kinh doanh.
 
 ## 6. E2E và tài liệu

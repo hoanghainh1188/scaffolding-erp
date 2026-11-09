@@ -101,7 +101,7 @@
 
 Validate bằng schema. `confirm`, `replace` thêm giới hạn 5 lần/phút theo người dùng. Các route trả Set-Cookie của plugin vì plugin đổi token phiên khi bật, tắt.
 
-**Giao diện:** `/login` thêm bước mã trong `LoginForm`; `/two-factor` (`requireUser` với `allowPendingTwoFactor` rồi kiểm `can`), thẻ giống `/change-password`; mục "Xác thực 2 lớp" trong `user-menu.tsx` theo quyền. Chữ trong `src/locales/`.
+**Giao diện** (bản vẽ: `Login-TwoFactor.dc.html`, `TwoFactor.dc.html`): `/login` thêm bước mã trong `LoginForm`; `/two-factor` (`requireUser` với `allowPendingTwoFactor` rồi kiểm `can`), bố cục hai cột như màn đăng nhập; mục "Xác thực 2 lớp" trong `user-menu.tsx` theo quyền. Chữ trong `src/locales/`.
 
 ### D9. Dev và E2E
 

@@ -33,10 +33,10 @@
 
 ## Màn hình
 
-- **Đăng nhập** (`Login.dc.html`): thêm bước nhập mã.
-- **`/two-factor`** (mới): trang đứng riêng như `/change-password`, không nằm trong D1–D18.
+- **Đăng nhập, bước nhập mã:** `Login-TwoFactor.dc.html` (mới).
+- **`/two-factor`** (mới, `TwoFactor.dc.html`): trang đứng riêng như `/change-password`, không nằm trong D1–D18.
 - **D17, D18** không đổi bố cục. D18 hiện thêm các dòng nhật ký mới.
-- Chưa có màn vẽ sẵn. Đề xuất dùng lại khung thẻ của `/change-password` và không vẽ riêng (hỏi trong PR).
+- Hai màn trên đã vẽ trong `docs/design/screens/` (0.2 #136), **chờ người dùng duyệt** trước khi apply.
 
 ## Ngoài phạm vi
 
