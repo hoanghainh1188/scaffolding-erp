@@ -68,9 +68,9 @@
 - **Runbook** (`docs/ops/production.md`): xác minh người yêu cầu bằng gặp mặt hoặc gọi số đã biết, không qua tin nhắn; chạy lệnh; bật lại ngay; kiểm tra D18.
 - **Đã cân nhắc:** Giám đốc khác gỡ trên D17 (một Giám đốc bị chiếm tài khoản gỡ được lớp bảo vệ của người còn lại); gỡ qua email (hệ thống không có email thật).
 
-### D6. Hiện QR: đề xuất `uqr`, luôn có chuỗi gõ tay (điểm 6, **chờ người dùng đồng ý**)
+### D6. Hiện QR: thêm `uqr`, luôn có chuỗi gõ tay (điểm 6, đã chốt 0.2 #132)
 
-- **Đề xuất:** thêm `uqr@0.1.3` (MIT, không phụ thuộc gói nào). `encode()` trả ma trận, component `QrCode` vẽ thành `<svg>` bằng JSX, không `dangerouslySetInnerHTML`, không `<img data:>`, không phải nới CSP. Luôn hiện cả chuỗi bí mật chia nhóm 4 ký tự để gõ tay. K5 #40 (in nhãn QR) dùng lại được.
+- **Chọn:** thêm `uqr@0.1.3` (MIT, không phụ thuộc gói nào). `encode()` trả ma trận, component `QrCode` vẽ thành `<svg>` bằng JSX, không `dangerouslySetInnerHTML`, không `<img data:>`, không phải nới CSP. Luôn hiện cả chuỗi bí mật chia nhóm 4 ký tự để gõ tay. K5 #40 (in nhãn QR) dùng lại được.
 - **Đã cân nhắc:** `qrcode` (kéo theo `yargs`, `pngjs`, `dijkstrajs`); `qrcode-generator` (không phụ thuộc, API cũ, phải tự dựng SVG từ chuỗi HTML); chỉ gõ tay (không thêm gói, nhưng chuỗi base32 dài 52 ký tự, Giám đốc gõ trên điện thoại rất dễ sai).
 - Nhãn trong app: service đổi nhãn của URI thành `<tên công ty>:<username>` thay vì email giả. Tên công ty lấy `short_name` ở Cài đặt, trống thì dùng `appName` (giữ đường lui SaaS số 4).
 

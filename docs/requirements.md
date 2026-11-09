@@ -150,6 +150,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 129 | Khi nào số của xưởng lên server | Số sửa xong, phế, vật tư của xưởng **chỉ lên server khi bấm "Báo sửa xong"**; trước đó nằm trong nháp trên máy, D12 hiện "Xưởng đang sửa" (chốt 07/11/2026 khi review PR #158, change `repair-work-orders`) |
 | 130 | Nơi nhập hàng sau sửa | Khi ghi sổ lệnh, **hàng Tốt và Phế liệu nhập về bãi gốc** (bãi đã lấy hàng), không ở lại xưởng: phiếu xuất chỉ lấy hàng từ một bãi. Chờ sửa xuất ở xưởng, vật tư trừ ở xưởng. Lệnh lấy hàng tại chính xưởng thì nhập ở xưởng. Thủ kho đếm khi hàng về bãi (chốt 07/11/2026 khi review PR #158, change `repair-work-orders`) |
 | 131 | Phiếu nhập vật tư vào xưởng | Phiếu nhập **được nhập thẳng vào xưởng** khi **mọi dòng là mã nhóm Vật tư**; có mã Thiết bị thì vẫn chỉ nhập vào bãi. Server kiểm, M3 chỉ hiện xưởng khi đơn chỉ có vật tư (chốt 07/11/2026 khi review PR #158, change `repair-work-orders`) |
+| 132 | Thư viện vẽ mã QR | Thêm **`uqr`** (MIT, không phụ thuộc gói nào) để vẽ mã QR khi bật xác thực 2 lớp, vẽ thành `<svg>`. Màn bật **luôn hiện cả chuỗi bí mật** để gõ tay. K5 #40 (in nhãn QR) dùng lại được thư viện này (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 

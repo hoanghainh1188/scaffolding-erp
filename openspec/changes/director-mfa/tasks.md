@@ -35,7 +35,7 @@
 ## 5. API và giao diện
 
 - [ ] 5.1 Bốn route `/api/me/two-factor/*` (design D8), validate bằng schema, `no-store`, chuyển Set-Cookie, giới hạn 5 lần/phút. Integration test từng route; `thuha` nhận 403; `route-guards.test.ts` xanh.
-- [ ] 5.2 Component `QrCode` (chỉ làm khi người dùng đã đồng ý thư viện ở PR, design D6): component test vẽ `<svg>`, không dùng `dangerouslySetInnerHTML`; `check-colors` xanh.
+- [ ] 5.2 Thêm `uqr` ghim đúng `0.1.3` (0.2 #132), lockfile đúng để `npm ci` trên CI xanh. Component `QrCode` (design D6): component test vẽ `<svg>`, không dùng `dangerouslySetInnerHTML`; `check-colors` xanh.
 - [ ] 5.3 Trang `/two-factor`: các bước bật, màn mã dự phòng (Sao chép, In, ô đã lưu), trạng thái còn N mã, tạo lại, đổi điện thoại. Component test; trang trả 403 với vai trò khác; mobile 320px không tràn.
 - [ ] 5.4 `/login` bước nhập mã: `verifyTwoFactorAction`, `inputMode="numeric"`, `autoComplete="one-time-code"`, chuyển sang ô mã dự phòng, lỗi trong `role="alert"`. Component test đủ trạng thái; `clearSessionCookies` xóa cả cookie `two_factor`.
 - [ ] 5.5 Mục "Xác thực 2 lớp" trong `user-menu.tsx` theo quyền; chữ trong `src/locales/`. Component test ẩn với Kế toán.

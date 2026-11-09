@@ -50,6 +50,6 @@
 
 - **DB:** bảng mới `two_factor`, cột `user.two_factor_enabled`.
 - **Code:** `src/lib/auth/` (cấu hình plugin, `sign-in.ts`, `guard.ts`, `session.ts`), `src/domain/two-factor.ts` (mới), `src/domain/permissions.ts`, `src/app/login/`, `src/app/two-factor/` (mới), `src/app/api/me/two-factor/` (mới), `scripts/`, `src/components/shell/user-menu.tsx`, `src/locales/`.
-- **Phụ thuộc:** không thêm gói nào cho TOTP (plugin nằm sẵn trong `better-auth`). Hiện mã QR cần một thư viện nhỏ: **chờ người dùng đồng ý** (design D6).
+- **Phụ thuộc:** không thêm gói nào cho TOTP (plugin nằm sẵn trong `better-auth`). Hiện mã QR thêm gói `uqr` (0.2 #132, design D6).
 - **Vận hành:** `docs/ops/production.md` thêm quy trình mất điện thoại và sửa quy trình đổi `BETTER_AUTH_SECRET` (bí mật TOTP được mã hóa bằng khóa này).
 - **Dev và E2E:** chạy local với `DEMO_MODE=true` để bỏ qua bước này; E2E bật 2 lớp thật cho tài khoản `e2e.*` Giám đốc (design D9).
