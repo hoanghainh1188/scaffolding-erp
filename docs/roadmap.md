@@ -55,7 +55,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | K10 | `company-settings` | #77 | Cài đặt thông tin công ty cho phiếu in ✅ | – |
 | K11 | `error-monitoring` | #79 | Theo dõi lỗi production, che dữ liệu cá nhân ✅ | – |
 | K12 | `db-least-privilege` | #96 | Tách role DB: app không sửa/xóa được sổ kho và nhật ký ✅ | – |
-| K13 | `director-mfa` | #97 | Xác thực 2 lớp (TOTP) cho Giám đốc | 02 |
+| K13 | `director-mfa` | #97 | Xác thực 2 lớp (TOTP) cho Giám đốc và Kế toán | 02 |
 | K14 | `session-management` | #98 | Xem và đăng xuất thiết bị từ xa (không chặn production) | K13 |
 | K15 | `personal-data-protection` | #99 | Mã hóa CCCD/STK trong DB, lưu giữ và xóa | #78; trước 18 |
 | K16 | `natural-ui-copy` | #118 | Viết lại chữ giao diện cho tự nhiên (Mua hàng, Cho thuê & Bán) ✅ | – |
