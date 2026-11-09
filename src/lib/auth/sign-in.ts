@@ -16,6 +16,7 @@ import { logActivity } from "@/lib/activity/log";
 
 import type { Auth } from "./auth";
 import { clientIp, consumeSignInAttempt } from "./rate-limit";
+import { saveChallenge } from "./two-factor-challenge";
 
 /** "Giữ đăng nhập" not ticked: the session ends 12 h after sign-in. */
 export const SHORT_SESSION_MS = 12 * 60 * 60 * 1000;
@@ -46,7 +47,15 @@ export interface SignedInUser {
 
 export type SignInResult =
   | { ok: true; user: SignedInUser; setCookies: string[] }
+  /** Right password; the code step comes next and no session exists yet. */
+  | { ok: true; twoFactorRequired: true; setCookies: string[] }
   | { ok: false; status: 401 | 403 | 429; error: string };
+
+/** How a sign-in reads in the activity log, when not the plain row. */
+export interface SignInLogEntry {
+  summary: string;
+  sensitive?: boolean;
+}
 
 export interface SignInDeps {
   db: Database;
@@ -83,16 +92,17 @@ export async function signIn(
 
   const [account] = await db
     .select({
+      id: user.id,
       role: user.role,
       status: user.status,
       mustChange: user.mustChangePassword,
       tempPasswordExpiresAt: user.tempPasswordExpiresAt,
     })
     .from(user)
-    .where(eq(user.id, attempt.userId));
+    .where(eq(user.username, usernameKey));
   // Right password, locked account: say so, and drop the session just made.
   if (!account || account.status !== "ACTIVE") {
-    await db.delete(session).where(eq(session.token, attempt.token));
+    await dropSession(db, attempt);
     return { ok: false, status: 403, error: SIGN_IN_MESSAGES.locked };
   }
 
@@ -101,7 +111,7 @@ export async function signIn(
     account.tempPasswordExpiresAt &&
     now.getTime() >= account.tempPasswordExpiresAt.getTime()
   ) {
-    await db.delete(session).where(eq(session.token, attempt.token));
+    await dropSession(db, attempt);
     return {
       ok: false,
       status: 401,
@@ -109,37 +119,34 @@ export async function signIn(
     };
   }
 
-  await db
-    .delete(loginThrottle)
-    .where(
-      and(eq(loginThrottle.usernameKey, usernameKey), eq(loginThrottle.ip, ip)),
-    );
-  if (!input.remember) {
-    await db
-      .update(session)
-      .set({
-        persistent: false,
-        expiresAt: new Date(now.getTime() + SHORT_SESSION_MS),
-      })
-      .where(eq(session.token, attempt.token));
+  if (attempt.kind === "challenge") {
+    // The counter stays: only a right code clears it (design D3).
+    await saveChallenge(db, auth, attempt.setCookies, {
+      userId: account.id,
+      usernameKey,
+      remember: input.remember,
+    });
+    return {
+      ok: true,
+      twoFactorRequired: true,
+      setCookies: attempt.setCookies,
+    };
   }
-  try {
-    await recordSignIn(
-      db,
-      { id: attempt.userId, role: account.role as Role },
-      input.headers,
-      now,
-    );
-  } catch (error: unknown) {
-    // No session without its log row (activity-log design D4).
-    await db.delete(session).where(eq(session.token, attempt.token));
-    throw error;
-  }
+
+  await finishSignIn(db, {
+    token: attempt.token,
+    usernameKey,
+    ip,
+    remember: input.remember,
+    account: { id: account.id, role: account.role as Role },
+    headers: input.headers,
+    now,
+  });
 
   return {
     ok: true,
     user: {
-      id: attempt.userId,
+      id: account.id,
       role: account.role as Role,
       mustChangePassword: account.mustChange,
     },
@@ -147,10 +154,63 @@ export async function signIn(
   };
 }
 
-interface PasswordAttempt {
-  userId: string;
-  token: string;
-  setCookies: string[];
+/** The steps every completed sign-in shares, whatever proved it. */
+export async function finishSignIn(
+  db: Database,
+  input: {
+    token: string;
+    usernameKey: string;
+    ip: string;
+    remember: boolean;
+    account: { id: string; role: Role };
+    headers: Headers;
+    now: Date;
+    logEntry?: SignInLogEntry;
+  },
+): Promise<void> {
+  await db
+    .delete(loginThrottle)
+    .where(
+      and(
+        eq(loginThrottle.usernameKey, input.usernameKey),
+        eq(loginThrottle.ip, input.ip),
+      ),
+    );
+  if (!input.remember) {
+    await db
+      .update(session)
+      .set({
+        persistent: false,
+        expiresAt: new Date(input.now.getTime() + SHORT_SESSION_MS),
+      })
+      .where(eq(session.token, input.token));
+  }
+  try {
+    await recordSignIn(
+      db,
+      input.account,
+      input.headers,
+      input.now,
+      input.logEntry,
+    );
+  } catch (error: unknown) {
+    // No session without its log row (activity-log design D4).
+    await db.delete(session).where(eq(session.token, input.token));
+    throw error;
+  }
+}
+
+type PasswordAttempt =
+  | { kind: "session"; userId: string; token: string; setCookies: string[] }
+  | { kind: "challenge"; setCookies: string[] };
+
+async function dropSession(
+  db: Database,
+  attempt: PasswordAttempt,
+): Promise<void> {
+  if (attempt.kind === "session") {
+    await db.delete(session).where(eq(session.token, attempt.token));
+  }
 }
 
 /** Better Auth checks the password and creates the session; null if wrong. */
@@ -168,10 +228,16 @@ async function tryPassword(
       headers: input.headers,
       returnHeaders: true,
     });
+    const setCookies = headers.getSetCookie();
+    // Better Auth's twoFactor plugin replaced the session with a challenge.
+    if ("twoFactorRedirect" in response) {
+      return { kind: "challenge", setCookies };
+    }
     return {
+      kind: "session",
       userId: response.user.id,
       token: response.token,
-      setCookies: headers.getSetCookie(),
+      setCookies,
     };
   } catch (error: unknown) {
     // 401 wrong name/password, 422 a name that cannot exist (bad format).
@@ -185,7 +251,7 @@ async function tryPassword(
   }
 }
 
-async function loadThrottle(
+export async function loadThrottle(
   db: Database,
   usernameKey: string,
   ip: string,
@@ -203,7 +269,7 @@ async function loadThrottle(
  * One more wrong password for `(usernameKey, ip)`. The row is locked while it is
  * read and rewritten, so concurrent failures are all counted.
  */
-async function recordFailedAttempt(
+export async function recordFailedAttempt(
   db: Database,
   usernameKey: string,
   ip: string,
@@ -252,6 +318,7 @@ async function recordSignIn(
   account: { id: string; role: Role },
   headers: Headers,
   now: Date,
+  entry: SignInLogEntry = { summary: "Đăng nhập thành công" },
 ): Promise<void> {
   const actor = actorFromRequest(account, headers);
   await db.transaction(async (tx) => {
@@ -259,11 +326,6 @@ async function recordSignIn(
       .update(user)
       .set({ lastLoginAt: now, lastLoginDevice: actor.device })
       .where(eq(user.id, account.id));
-    await logActivity(
-      tx,
-      actor,
-      { action: "SIGN_IN", summary: "Đăng nhập thành công" },
-      { now },
-    );
+    await logActivity(tx, actor, { action: "SIGN_IN", ...entry }, { now });
   });
 }

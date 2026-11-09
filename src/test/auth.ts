@@ -1,7 +1,9 @@
 // Integration-test helpers for real sign-in against TEST_DATABASE_URL.
-import { sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { createDatabase, type DatabaseHandle } from "@/db/client";
+import { user } from "@/db/schema";
+import { PERMISSIONS } from "@/domain/permissions";
 import type { Role } from "@/domain/role";
 import { createAuth, type Auth } from "@/lib/auth/auth";
 import { insertUser, type UserStatus } from "@/lib/auth/credentials";
@@ -117,15 +119,33 @@ export async function createTestUser(
 
 /** Cookie header for a fresh session of `user`, made by Better Auth. */
 export async function signInAs(
-  { auth }: TestContext,
-  user: Pick<TestUser, "username" | "password">,
+  { db, auth }: TestContext,
+  account: Pick<TestUser, "username" | "password">,
   rememberMe = true,
 ): Promise<string> {
+  // Off for the sign-in, on after: the session passes the D1 gate of
+  // director-mfa without every route test entering a code (design D9).
+  const setFlag = (on: boolean) =>
+    db
+      .update(user)
+      .set({ twoFactorEnabled: on })
+      .where(
+        and(
+          eq(user.username, account.username),
+          inArray(user.role, [...PERMISSIONS["twoFactor.manage"]]),
+        ),
+      );
+  await setFlag(false);
   const { headers } = await auth.api.signInUsername({
-    body: { username: user.username, password: user.password, rememberMe },
+    body: {
+      username: account.username,
+      password: account.password,
+      rememberMe,
+    },
     headers: new Headers({ "user-agent": "vitest" }),
     returnHeaders: true,
   });
+  await setFlag(true);
   return cookieHeaderFrom(headers);
 }
 

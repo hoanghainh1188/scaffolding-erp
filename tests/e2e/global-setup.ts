@@ -1,6 +1,9 @@
 // Before any E2E test: put the e2e.* accounts in a known state and remove
 // the throwaway accounts earlier runs created. Uses the same database as the
 // dev server (DATABASE_URL).
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
+
 import { and, eq, inArray, like, notInArray, sql } from "drizzle-orm";
 
 import { createDatabase, type Database } from "@/db/client";
@@ -27,6 +30,7 @@ import {
   siteTransfer,
   stockAdjustmentLine,
   stocktake,
+  twoFactor,
   user,
 } from "@/db/schema";
 import { actorByUsername, type ActivityActor } from "@/lib/activity/actor";
@@ -47,7 +51,7 @@ import { rejectBuyBack } from "@/lib/buy-backs/service";
 import { seedSiteOperations } from "@/lib/site-transfers/sample";
 import { changeSiteTransferStatus } from "@/lib/site-transfers/service";
 import { seedContracts } from "@/lib/contracts/sample";
-import { createAuth } from "@/lib/auth/auth";
+import { createAuth, type Auth } from "@/lib/auth/auth";
 import { getEnv } from "@/lib/env";
 import { createGroup } from "@/lib/catalog/item-groups";
 import { createItem, setRepairLaborRate } from "@/lib/catalog/items";
@@ -65,8 +69,12 @@ import { cancelWorkOrder, deleteWorkOrder } from "@/lib/repairs/work-orders";
 import { createHoliday } from "@/lib/holidays/service";
 import { seedStocktakes } from "@/lib/stocktakes/sample";
 import { cancelStocktake } from "@/lib/stocktakes/sessions";
+import { isTwoFactorRequired } from "@/domain/two-factor";
+import { enroll } from "@/test/two-factor";
 import { E2E_ACCOUNTS, E2E_TEMP_PREFIX } from "@/lib/users/e2e-accounts";
 import { seedAccounts } from "@/lib/users/seed";
+
+import { TOTP_SECRETS_PATH } from "./auth-helpers";
 
 /**
  * Rows catalog.spec.ts creates (codes E2E-..., sites "Công trình thử ..."),
@@ -448,6 +456,39 @@ export async function cancelTestStocktakes(db: Database, actor: ActivityActor) {
     });
     if (!done.ok) throw new Error(`${row.code}: ${done.error}`);
   }
+}
+
+/**
+ * The real second factor for the e2e.* accounts that must have one
+ * (director-mfa design D9). The secrets go next to the saved browser states.
+ */
+async function enrollAccounts(
+  context: { db: Database; auth: Auth },
+  password: string,
+): Promise<void> {
+  const secrets: Record<string, string> = {};
+  for (const entry of E2E_ACCOUNTS) {
+    if (!isTwoFactorRequired({ role: entry.role, systemAdmin: false }, false)) {
+      continue;
+    }
+    const [row] = await context.db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.username, entry.username));
+    if (!row) continue;
+    await context.db.delete(twoFactor).where(eq(twoFactor.userId, row.id));
+    await context.db
+      .update(user)
+      .set({ twoFactorEnabled: false, systemAdmin: false })
+      .where(eq(user.id, row.id));
+    const { secret } = await enroll(context, {
+      username: entry.username,
+      password,
+    });
+    secrets[entry.username] = secret;
+  }
+  mkdirSync(dirname(TOTP_SECRETS_PATH), { recursive: true });
+  writeFileSync(TOTP_SECRETS_PATH, JSON.stringify(secrets));
 }
 
 /**
@@ -887,6 +928,7 @@ export default async function globalSetup(): Promise<void> {
       password: env.E2E_PASSWORD,
       reset: true,
     });
+    await enrollAccounts({ db: handle.db, auth }, env.E2E_PASSWORD ?? "");
     // contracts.spec.ts never changes these, but a failed run may have.
     await handle.db
       .update(user)

@@ -28,6 +28,8 @@ const SKIPPED_DIRS = ["activity/", "drafts/"];
 export const NOT_LOGGED: Readonly<Record<string, string>> = {
   "auth/auth.ts#createAuth": "builds the Better Auth instance",
   "auth/actions.ts#signOutAction": "signing out is not logged (spec)",
+  "auth/two-factor.ts#startTwoFactorSetup":
+    "nothing is on yet; confirming the code logs",
   "inventory/post.ts#postMovements":
     "ledger helper; the document's own service logs the action",
   "inventory/adjustments.ts#lockAdjustment":

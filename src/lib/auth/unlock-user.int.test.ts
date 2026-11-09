@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase } from "@/db/client";
-import { loginThrottle } from "@/db/schema";
+import { loginThrottle, twoFactor, user } from "@/db/schema";
 import { resetAuthTables } from "@/test/auth";
 
 const execFileAsync = promisify(execFile);
@@ -21,6 +21,40 @@ beforeEach(async () => {
 });
 
 describe("scripts/unlock-user.mts", () => {
+  it("also lifts the lock on wrong second-factor codes", async () => {
+    const lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+    await db.insert(user).values({
+      id: "u-minhanh",
+      name: "Minh Anh",
+      email: "minhanh@users.invalid",
+      username: "minhanh",
+      role: "DIRECTOR",
+    });
+    await db.insert(twoFactor).values({
+      id: "t-minhanh",
+      userId: "u-minhanh",
+      secret: "x",
+      backupCodes: "[]",
+      verified: true,
+      failedVerificationCount: 10,
+      lockedUntil,
+    });
+    await execFileAsync(
+      "node",
+      [
+        "--import",
+        "./scripts/register-aliases.mjs",
+        "scripts/unlock-user.mts",
+        "--username",
+        "minhanh",
+      ],
+      { env: { ...process.env, DATABASE_URL: url } },
+    );
+    const [row] = await db.select().from(twoFactor);
+    expect(row?.failedVerificationCount).toBe(0);
+    expect(row?.lockedUntil).toBeNull();
+  });
+
   it("clears throttle records for a specific username via CLI", async () => {
     await db.insert(loginThrottle).values([
       {

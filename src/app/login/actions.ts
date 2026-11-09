@@ -7,12 +7,15 @@ import { getDatabase } from "@/db/client";
 import { getAuth } from "@/lib/auth/auth";
 import { afterSignInPath, CHANGE_PASSWORD_PATH } from "@/lib/auth/paths";
 import { signIn } from "@/lib/auth/sign-in";
+import { completeTwoFactorSignIn } from "@/lib/auth/two-factor-sign-in";
 import { getEnv } from "@/lib/env";
 
 export interface SignInFormState {
   error: string | null;
   /** Typed name, kept so a wrong password does not clear it. */
   username: string;
+  /** The password was right and a code is now needed. */
+  step: "password" | "code";
 }
 
 const text = (form: FormData, key: string): string => {
@@ -42,7 +45,53 @@ export async function signInAction(
   );
   if (!result.ok) {
     await clearSessionCookies(auth);
-    return { error: result.error, username };
+    return { error: result.error, username, step: "password" };
+  }
+  if ("twoFactorRequired" in result) {
+    return { error: null, username, step: "code" };
+  }
+  redirect(
+    result.user.mustChangePassword
+      ? CHANGE_PASSWORD_PATH
+      : afterSignInPath(result.user.role, text(form, "next")),
+  );
+}
+
+/** The one action of the /login form: its hidden `step` says which half. */
+export async function loginAction(
+  previous: SignInFormState,
+  form: FormData,
+): Promise<SignInFormState> {
+  return form.get("step") === "code"
+    ? verifyTwoFactorAction(previous, form)
+    : signInAction(previous, form);
+}
+
+/** Form action of the code step of /login (spec two-factor-auth). */
+export async function verifyTwoFactorAction(
+  previous: SignInFormState,
+  form: FormData,
+): Promise<SignInFormState> {
+  const auth = getAuth();
+  const result = await completeTwoFactorSignIn(
+    {
+      db: getDatabase(),
+      auth,
+      ipLimitPerMinute: getEnv().AUTH_SIGN_IN_LIMIT_PER_MINUTE,
+    },
+    {
+      code: text(form, "code"),
+      trustDevice: form.get("trustDevice") === "on",
+      headers: await headers(),
+    },
+  );
+  if (!result.ok) {
+    if (result.restart) await clearSessionCookies(auth);
+    return {
+      error: result.error,
+      username: previous.username,
+      step: result.restart ? "password" : "code",
+    };
   }
   redirect(
     result.user.mustChangePassword
@@ -60,4 +109,5 @@ async function clearSessionCookies(auth: ReturnType<typeof getAuth>) {
   const jar = await cookies();
   jar.delete(authCookies.sessionToken.name);
   jar.delete(authCookies.dontRememberToken.name);
+  jar.delete((await auth.$context).createAuthCookie("two_factor").name);
 }

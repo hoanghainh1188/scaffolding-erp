@@ -3,10 +3,21 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { username } from "better-auth/plugins";
+import { twoFactor as twoFactorPlugin, username } from "better-auth/plugins";
 
 import { getDatabase, type Database } from "@/db/client";
-import { account, rateLimit, session, user, verification } from "@/db/schema";
+import {
+  account,
+  rateLimit,
+  session,
+  twoFactor,
+  user,
+  verification,
+} from "@/db/schema";
+import {
+  TRUST_DEVICE_DAYS,
+  TWO_FACTOR_CHALLENGE_SECONDS,
+} from "@/domain/two-factor";
 import {
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
@@ -14,6 +25,8 @@ import {
   normalizeUsername,
 } from "@/domain/username";
 import { getEnv } from "@/lib/env";
+
+import { generateBackupCodes, hashedBackupCodeStore } from "./backup-codes";
 
 const DAY_SECONDS = 24 * 60 * 60;
 /** "Giữ đăng nhập" ticked: 30 days since last use, renewed at most daily. */
@@ -45,6 +58,15 @@ const DISABLED_PATHS = [
   "/revoke-session",
   "/revoke-sessions",
   "/revoke-other-sessions",
+  // Every HTTP route of the twoFactor plugin (director-mfa design D2).
+  "/two-factor/enable",
+  "/two-factor/disable",
+  "/two-factor/get-totp-uri",
+  "/two-factor/verify-totp",
+  "/two-factor/send-otp",
+  "/two-factor/verify-otp",
+  "/two-factor/verify-backup-code",
+  "/two-factor/generate-backup-codes",
 ];
 
 export interface AuthConfig {
@@ -60,7 +82,7 @@ export function createAuth({ db, secret, baseURL }: AuthConfig) {
     baseURL,
     database: drizzleAdapter(db, {
       provider: "pg",
-      schema: { user, session, account, verification, rateLimit },
+      schema: { user, session, account, verification, rateLimit, twoFactor },
     }),
     emailAndPassword: {
       enabled: true,
@@ -91,6 +113,12 @@ export function createAuth({ db, secret, baseURL }: AuthConfig) {
           defaultValue: "ALL",
           input: false,
         },
+        systemAdmin: {
+          type: "boolean",
+          required: true,
+          defaultValue: false,
+          input: false,
+        },
       },
     },
     session: {
@@ -117,6 +145,14 @@ export function createAuth({ db, secret, baseURL }: AuthConfig) {
         usernameValidator: isValidUsername,
         // Validate "ThuHa" as "thuha".
         validationOrder: { username: "post-normalization" },
+      }),
+      twoFactorPlugin({
+        twoFactorCookieMaxAge: TWO_FACTOR_CHALLENGE_SECONDS,
+        trustDeviceMaxAge: TRUST_DEVICE_DAYS * DAY_SECONDS,
+        backupCodeOptions: {
+          customBackupCodesGenerate: generateBackupCodes,
+          storeBackupCodes: hashedBackupCodeStore,
+        },
       }),
       // Must stay last: lets server actions set the session cookie.
       nextCookies(),

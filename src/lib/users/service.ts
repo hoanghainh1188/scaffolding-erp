@@ -16,6 +16,7 @@ import {
 import { ROLE_LABELS, ROLES, type Role } from "@/domain/role";
 import { generateTempPassword } from "@/domain/temp-password";
 import { isValidUsername, normalizeUsername } from "@/domain/username";
+import { forgetTrustedDevices } from "@/lib/auth/trusted-devices";
 import type { ActivityActor } from "@/lib/activity/actor";
 import { logActivity } from "@/lib/activity/log";
 import type { Auth } from "@/lib/auth/auth";
@@ -61,6 +62,8 @@ export interface UserRow {
   /** ISO time, or null if the user never signed in. */
   lastLoginAt: string | null;
   lastLoginDevice: Device | null;
+  twoFactorEnabled: boolean;
+  systemAdmin: boolean;
 }
 
 export interface UserCounts {
@@ -146,6 +149,8 @@ const rowColumns = {
   tempPasswordExpiresAt: user.tempPasswordExpiresAt,
   lastLoginAt: user.lastLoginAt,
   lastLoginDevice: user.lastLoginDevice,
+  twoFactorEnabled: user.twoFactorEnabled,
+  systemAdmin: user.systemAdmin,
 };
 
 type StoredRow = {
@@ -159,6 +164,8 @@ type StoredRow = {
   tempPasswordExpiresAt: Date | null;
   lastLoginAt: Date | null;
   lastLoginDevice: string | null;
+  twoFactorEnabled: boolean;
+  systemAdmin: boolean;
 };
 
 function toUserRow(row: StoredRow): UserRow {
@@ -176,6 +183,8 @@ function toUserRow(row: StoredRow): UserRow {
       row.lastLoginDevice && isDevice(row.lastLoginDevice)
         ? row.lastLoginDevice
         : null,
+    twoFactorEnabled: row.twoFactorEnabled,
+    systemAdmin: row.systemAdmin,
   };
 }
 
@@ -538,6 +547,8 @@ async function setPassword(
   hash: string,
   expiresAt: Date = new Date(Date.now() + TEMP_PASSWORD_TTL_MS),
 ): Promise<void> {
+  // A device trusted under the old password must enter a code again.
+  await forgetTrustedDevices(tx, target.id);
   await tx
     .update(account)
     .set({ password: hash, updatedAt: new Date() })

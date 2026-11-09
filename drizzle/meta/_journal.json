@@ -176,6 +176,13 @@
       "when": 1794016411786,
       "tag": "0024_repair_work_order_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794191034382,
+      "tag": "0025_director_mfa",
+      "breakpoints": true
     }
   ]
 }

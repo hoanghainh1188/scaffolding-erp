@@ -1,7 +1,10 @@
-import { expect, type Browser, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
+
+import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import type { Role } from "@/domain/role";
 import { E2E_TEMP_PREFIX } from "@/lib/users/e2e-accounts";
+import { totpCode } from "@/test/two-factor";
 
 export const E2E_PASSWORD = process.env.E2E_PASSWORD ?? "";
 
@@ -11,6 +14,17 @@ export function statePath(role: Role): string {
 }
 
 export const SIGNED_OUT = { cookies: [], origins: [] };
+
+/** Secrets of the e2e.* accounts global setup turned the second factor on for. */
+export const TOTP_SECRETS_PATH = "tests/e2e/.auth/totp-secrets.json";
+
+function totpSecretOf(username: string): string | undefined {
+  const secrets = JSON.parse(readFileSync(TOTP_SECRETS_PATH, "utf8")) as Record<
+    string,
+    string
+  >;
+  return secrets[username];
+}
 
 export async function signInThroughForm(
   page: Page,
@@ -25,6 +39,64 @@ export async function signInThroughForm(
     await page.getByRole("checkbox", { name: "Ghi nhớ đăng nhập" }).check();
   }
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+  const secret = password === E2E_PASSWORD ? totpSecretOf(username) : undefined;
+  if (secret) {
+    // A used code is refused for 120 s: a retry waits for the next one.
+    if (test.info().retry > 0) await page.waitForTimeout(31_000);
+    await enterCode(page, secret);
+  }
+}
+
+/** The code step of /login, once the password was right. */
+export async function enterCode(page: Page, secret: string): Promise<void> {
+  await page.getByLabel("Mã 6 số").fill(totpCode(secret));
+  await page.getByRole("button", { name: "Xác nhận", exact: true }).click();
+}
+
+/** From /two-factor step 1 to the end; returns the secret of the new phone. */
+export async function enrollThroughScreen(
+  page: Page,
+  password: string,
+  options: { checkNarrow?: boolean } = {},
+): Promise<string> {
+  await expect(page).toHaveURL(/\/two-factor$/);
+  await page.getByLabel("Mật khẩu hiện tại").fill(password);
+  await page.getByRole("button", { name: "Tiếp tục" }).click();
+  const secret = (
+    (await page.getByTestId("two-factor-secret").textContent()) ?? ""
+  ).replaceAll(" ", "");
+  if (options.checkNarrow) await expectNoOverflowAt320(page);
+  await page.getByLabel("Mã 6 số").fill(totpCode(secret));
+  await page.getByRole("button", { name: "Xác nhận", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Tôi đã lưu các mã này" }).check();
+  await page.getByRole("button", { name: "Hoàn tất" }).click();
+  return secret;
+}
+
+/** No sideways scrolling on the narrowest phone; the size is put back. */
+export async function expectNoOverflowAt320(page: Page): Promise<void> {
+  const size = page.viewportSize();
+  await page.setViewportSize({ width: 320, height: 720 });
+  const scrollWidth = await page.evaluate(
+    () => document.documentElement.scrollWidth,
+  );
+  expect(scrollWidth).toBeLessThanOrEqual(320);
+  if (size) await page.setViewportSize(size);
+}
+
+/** Gives an account the "Admin hệ thống" flag, as `auth:set-admin` does. */
+export async function flagSystemAdmin(username: string): Promise<void> {
+  const { createDatabase } = await import("@/db/client");
+  const { sql } = await import("drizzle-orm");
+  const { getEnv } = await import("@/lib/env");
+  const { db, close } = createDatabase(getEnv().DATABASE_URL);
+  try {
+    await db.execute(
+      sql`UPDATE "user" SET "system_admin" = true WHERE "username" = ${username}`,
+    );
+  } finally {
+    await close();
+  }
 }
 
 let counter = 0;

@@ -14,6 +14,7 @@ import {
   hashPassword,
   verifyPassword,
 } from "./credentials";
+import { forgetTrustedDevices } from "./trusted-devices";
 
 export const CHANGE_PASSWORD_MESSAGES = {
   wrongCurrent: "Mật khẩu hiện tại không đúng",
@@ -102,6 +103,7 @@ export async function changePassword(
           ne(session.id, input.currentSessionId),
         ),
       );
+    await forgetTrustedDevices(tx, input.actor.id);
     // Never the password itself (activity-log design D7).
     await logActivity(tx, input.actor, {
       action: "UPDATE",

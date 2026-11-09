@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { homePathFor, safeNextPath } from "@/lib/auth/paths";
 import { getCurrentUser } from "@/lib/current-user";
+import { dict } from "@/locales";
 
 import { LoginForm } from "./login-form";
 
@@ -18,7 +19,7 @@ interface LoginPageProps {
 /** Sign-in (design Login.dc.html): brand panel + form. */
 export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
-    <div className="flex min-h-dvh flex-wrap bg-background text-foreground">
+    <div className="group/login flex min-h-dvh flex-wrap bg-background text-foreground">
       <section
         aria-label="Giới thiệu"
         className="relative flex min-h-60 flex-[1_1_480px] flex-col justify-between gap-12 overflow-hidden bg-primary p-8 text-primary-foreground lg:min-h-dvh lg:p-12"
@@ -38,7 +39,10 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
             Scaffolding ERP
           </span>
         </div>
-        <div className="relative flex max-w-[520px] flex-col gap-4">
+        <p className="relative hidden max-w-[520px] font-display text-[34px] leading-[38px] font-bold tracking-tight group-has-[[data-login-step=code]]/login:block lg:text-[48px] lg:leading-[52px]">
+          {dict.auth.twoFactor.panelCode}
+        </p>
+        <div className="relative flex max-w-[520px] flex-col gap-4 group-has-[[data-login-step=code]]/login:hidden">
           <p className="font-display text-[34px] leading-[38px] font-bold tracking-tight lg:text-[48px] lg:leading-[52px]">
             Giàn giáo đang ở đâu, ai đang nợ bao nhiêu.
           </p>

@@ -57,6 +57,12 @@ describe("route guards", () => {
     );
   });
 
+  it("two-factor requires a signed-in user", () => {
+    expect(readFileSync(join(APP, "two-factor/page.tsx"), "utf8")).toMatch(
+      /await requireUser\(/,
+    );
+  });
+
   it.each(routes.map((file) => [label(file), file]))(
     "%s wraps every handler in withAuth",
     (_name, file) => {

@@ -24,6 +24,20 @@ async function post(path: string, body: unknown): Promise<Response> {
 }
 
 describe("Better Auth setup", () => {
+  it("answers 404 for every HTTP route of the twoFactor plugin", async () => {
+    const context = await ctx.auth.$context;
+    const plugin = context.options.plugins?.find(
+      (entry) => entry.id === "two-factor",
+    );
+    const paths = Object.values(plugin?.endpoints ?? {})
+      .map((endpoint) => endpoint.path)
+      .filter((path) => path?.startsWith("/two-factor/"));
+    expect(paths.length).toBeGreaterThanOrEqual(8);
+    for (const path of paths) {
+      expect((await post(path ?? "", {})).status).toBe(404);
+    }
+  });
+
   it("signs in from the server and reads the session back", async () => {
     const thuha = await createTestUser(ctx, {
       role: "ACCOUNTANT",

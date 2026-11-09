@@ -3,11 +3,14 @@
 // Or unlock all:
 //   npm run auth:unlock -- --all
 import { parseArgs } from "node:util";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 import { createDatabase } from "@/db/client";
-import { loginThrottle } from "@/db/schema";
+import { loginThrottle, twoFactor, user } from "@/db/schema";
 import { normalizeUsername } from "@/domain/username";
+
+/** The lock on wrong second-factor codes, kept per account. */
+const NOT_LOCKED = { failedVerificationCount: 0, lockedUntil: null };
 
 async function main(): Promise<number> {
   const { values } = parseArgs({
@@ -37,6 +40,7 @@ async function main(): Promise<number> {
   try {
     if (values.all) {
       const deleted = await handle.db.delete(loginThrottle).returning();
+      await handle.db.update(twoFactor).set(NOT_LOCKED);
       process.stdout.write(
         `Đã gỡ tạm khóa toàn bộ hệ thống (${deleted.length} bản ghi).\n`,
       );
@@ -48,6 +52,18 @@ async function main(): Promise<number> {
       .delete(loginThrottle)
       .where(eq(loginThrottle.usernameKey, usernameKey))
       .returning();
+    await handle.db
+      .update(twoFactor)
+      .set(NOT_LOCKED)
+      .where(
+        inArray(
+          twoFactor.userId,
+          handle.db
+            .select({ id: user.id })
+            .from(user)
+            .where(eq(user.username, usernameKey)),
+        ),
+      );
 
     if (deleted.length === 0) {
       process.stdout.write(
