@@ -153,6 +153,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 132 | Thư viện vẽ mã QR | Thêm **`uqr`** (MIT, không phụ thuộc gói nào) để vẽ mã QR khi bật xác thực 2 lớp, vẽ thành `<svg>`. Màn bật **luôn hiện cả chuỗi bí mật** để gõ tay. K5 #40 (in nhãn QR) dùng lại được thư viện này (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
 | 133 | Ai bắt buộc xác thực 2 lớp | Bắt buộc cho **Giám đốc và Kế toán** (Kế toán giữ công nợ, phiếu thu, phiếu chi). Kinh doanh, Thủ kho, Xưởng không bị hỏi. Bản demo (`DEMO_MODE=true`) không dùng (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
 | 134 | Mã dự phòng xác thực 2 lớp | Mỗi người **10 mã**, mỗi mã **16 ký tự** dạng `XXXX-XXXX-XXXX-XXXX`, không phân biệt hoa thường. Hiện đúng một lần, chỉ lưu dạng băm, mỗi mã dùng một lần (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
+| 135 | Tin thiết bị khi xác thực 2 lớp | Ở bước nhập mã có ô **"Tin thiết bị này 30 ngày"**, mặc định không chọn. Máy đã tin chỉ cần mật khẩu; hạn 30 ngày tính lại sau mỗi lần đăng nhập trên máy đó. Mã dự phòng không tin được máy. Đổi mật khẩu, đặt lại mật khẩu, đổi điện thoại, lệnh cứu hộ, hoặc bấm "Quên mọi thiết bị đã tin" thì mọi máy đều mất tin (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 

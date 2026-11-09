@@ -63,7 +63,7 @@ Người dùng thuộc vai trò bắt buộc SHALL bật xác thực 2 lớp qua
 - **THEN** máy tính dùng tiếp **AND** thao tác tiếp theo trên điện thoại bị chuyển tới `/login`
 
 ### Requirement: Đăng nhập hai bước
-Với tài khoản đã bật xác thực 2 lớp, đúng mật khẩu SHALL chuyển `/login` sang ô nhập mã và SHALL chưa tạo phiên đăng nhập. Chỉ khi nhập đúng mã 6 số hoặc mã dự phòng, hệ thống mới tạo phiên, ghi lần đăng nhập gần nhất và áp dụng lựa chọn "Giữ đăng nhập" đã chọn ở bước mật khẩu. Bước nhập mã SHALL hết hạn sau 10 phút. Tài khoản bị khóa hoặc mật khẩu tạm hết hạn SHALL bị từ chối ngay ở bước mật khẩu như quy tắc hiện có. Hệ thống SHALL không có tùy chọn bỏ qua bước nhập mã trên một thiết bị.
+Với tài khoản đã bật xác thực 2 lớp, trên thiết bị chưa được tin, đúng mật khẩu SHALL chuyển `/login` sang ô nhập mã và SHALL chưa tạo phiên đăng nhập. Chỉ khi nhập đúng mã 6 số hoặc mã dự phòng, hệ thống mới tạo phiên, ghi lần đăng nhập gần nhất và áp dụng lựa chọn "Giữ đăng nhập" đã chọn ở bước mật khẩu. Bước nhập mã SHALL hết hạn sau 10 phút. Tài khoản bị khóa hoặc mật khẩu tạm hết hạn SHALL bị từ chối ngay ở bước mật khẩu như quy tắc hiện có.
 
 #### Scenario: Đúng mật khẩu, chưa nhập mã
 - **WHEN** `minhanh` (đã bật 2 lớp) nhập đúng mật khẩu lúc 08:00 rồi mở thẳng `/dashboard`
@@ -88,6 +88,56 @@ Với tài khoản đã bật xác thực 2 lớp, đúng mật khẩu SHALL chu
 #### Scenario: Ô nhập mã dễ dùng
 - **WHEN** form chuyển sang bước nhập mã trên điện thoại
 - **THEN** ô nhập hiện bàn phím số, có gợi ý tự điền mã một lần **AND** có liên kết "Dùng mã dự phòng"
+
+### Requirement: Tin thiết bị 30 ngày
+Ở bước nhập mã 6 số, người dùng SHALL chọn được "Tin thiết bị này 30 ngày", mặc định không chọn. Trên thiết bị đã tin, đúng mật khẩu SHALL đăng nhập luôn, không hỏi mã. Hạn 30 ngày SHALL tính lại sau mỗi lần đăng nhập trên thiết bị đó. Mật khẩu SHALL luôn bắt buộc. Đăng nhập bằng mã dự phòng SHALL không tin được thiết bị.
+
+#### Scenario: Tin máy văn phòng
+- **WHEN** `thuha` đăng nhập đúng mật khẩu và mã ngày 01/11/2026, có chọn "Tin thiết bị này 30 ngày", rồi đăng xuất và đăng nhập lại ngày 10/11/2026 trên máy đó
+- **THEN** đúng mật khẩu là vào `/dashboard`, không hỏi mã
+
+#### Scenario: Máy đã tin vẫn cần mật khẩu
+- **WHEN** ai đó dùng máy đã tin của `thuha` và nhập sai mật khẩu
+- **THEN** trang hiện "Tên đăng nhập hoặc mật khẩu không đúng", không tạo phiên
+
+#### Scenario: Quá 30 ngày không đăng nhập
+- **WHEN** `thuha` tin máy ngày 01/11/2026 và đăng nhập lại trên máy đó ngày 02/12/2026
+- **THEN** đúng mật khẩu vẫn phải nhập mã
+
+#### Scenario: Đăng nhập đều đặn
+- **WHEN** `thuha` tin máy ngày 01/11/2026 và đăng nhập trên máy đó ngày 25/11/2026, rồi ngày 20/12/2026
+- **THEN** cả hai lần không hỏi mã
+
+#### Scenario: Máy khác vẫn hỏi mã
+- **WHEN** `thuha` đã tin máy văn phòng và đăng nhập từ điện thoại chưa tin
+- **THEN** đúng mật khẩu vẫn phải nhập mã
+
+#### Scenario: Không chọn tin
+- **WHEN** `minhanh` nhập đúng mã, không chọn ô, rồi đăng xuất và đăng nhập lại trên máy đó
+- **THEN** đúng mật khẩu vẫn phải nhập mã
+
+#### Scenario: Mã dự phòng không tin được máy
+- **WHEN** `minhanh` đăng nhập bằng mã dự phòng
+- **THEN** màn nhập mã dự phòng không có ô tin thiết bị **AND** lần đăng nhập sau trên máy đó vẫn phải nhập mã
+
+### Requirement: Thu hồi thiết bị đã tin
+Hệ thống SHALL hủy mọi thiết bị đã tin của một tài khoản khi người dùng bấm "Quên mọi thiết bị đã tin", đổi mật khẩu, được đặt lại mật khẩu, đổi điện thoại, hoặc khi lệnh cứu hộ chạy. `/two-factor` SHALL hiện số thiết bị đang được tin.
+
+#### Scenario: Mất máy tính xách tay
+- **WHEN** `thuha` có 2 máy đã tin và bấm "Quên mọi thiết bị đã tin" từ máy thứ ba
+- **THEN** lần đăng nhập sau trên cả 2 máy đều phải nhập mã **AND** `/two-factor` hiện "Đang tin 0 thiết bị"
+
+#### Scenario: Đổi mật khẩu
+- **WHEN** `minhanh` có 1 máy đã tin rồi đổi mật khẩu
+- **THEN** lần đăng nhập sau trên máy đó phải nhập mã
+
+#### Scenario: Đổi điện thoại
+- **WHEN** `minhanh` có 2 máy đã tin rồi đổi điện thoại và bật lại xong
+- **THEN** lần đăng nhập sau trên cả 2 máy đều phải nhập mã
+
+#### Scenario: Lệnh cứu hộ
+- **WHEN** quản trị chạy lệnh tắt xác thực 2 lớp của `thuha` rồi `thuha` bật lại
+- **THEN** các máy đã tin trước đó đều phải nhập mã
 
 ### Requirement: Giới hạn nhập sai mã theo tài khoản
 Ngoài quy tắc tạm khóa theo tên đăng nhập và địa chỉ IP, sau 10 lần sai mã liên tiếp trên một tài khoản, từ bất kỳ địa chỉ IP nào, hệ thống SHALL từ chối mọi lần nhập mã của tài khoản đó trong 15 phút với thông báo tạm khóa. Nhập đúng mã SHALL đưa bộ đếm này về 0. Bước nhập mã SHALL dùng chung giới hạn 20 lần gọi mỗi phút theo địa chỉ IP với đăng nhập.

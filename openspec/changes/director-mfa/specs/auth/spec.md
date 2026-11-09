@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Đăng nhập bằng tên đăng nhập và mật khẩu
-Hệ thống SHALL cho người dùng đăng nhập ở `/login` bằng tên đăng nhập và mật khẩu; tài khoản đã bật xác thực 2 lớp SHALL nhập thêm mã. Không có đăng nhập bằng email, số điện thoại hay mạng xã hội. Tên đăng nhập không phân biệt hoa thường khi gõ. Đăng nhập xong, hệ thống SHALL chuyển tới trang `next` (nếu là đường dẫn nội bộ hợp lệ) hoặc trang mặc định theo vai trò: `/dashboard` cho Giám đốc, Kế toán, Kinh doanh; `/m` cho Thủ kho, Xưởng.
+Hệ thống SHALL cho người dùng đăng nhập ở `/login` bằng tên đăng nhập và mật khẩu; tài khoản đã bật xác thực 2 lớp SHALL nhập thêm mã, trừ trên thiết bị đã tin. Không có đăng nhập bằng email, số điện thoại hay mạng xã hội. Tên đăng nhập không phân biệt hoa thường khi gõ. Đăng nhập xong, hệ thống SHALL chuyển tới trang `next` (nếu là đường dẫn nội bộ hợp lệ) hoặc trang mặc định theo vai trò: `/dashboard` cho Giám đốc, Kế toán, Kinh doanh; `/m` cho Thủ kho, Xưởng.
 
 #### Scenario: Kế toán đăng nhập đúng
 - **WHEN** người dùng `thuha` (vai trò `ACCOUNTANT`, đang hoạt động, đã đổi mật khẩu, đã bật 2 lớp) nhập đúng mật khẩu và mã ở `/login`
@@ -24,7 +24,7 @@ Hệ thống SHALL cho người dùng đăng nhập ở `/login` bằng tên đ�
 - **THEN** hệ thống bỏ qua `next` và chuyển tới trang mặc định theo vai trò
 
 ### Requirement: Tạm khóa khi nhập sai nhiều lần
-Sau 5 lần đăng nhập sai liên tiếp với cùng một tên đăng nhập từ cùng một địa chỉ IP trong vòng 15 phút, hệ thống SHALL từ chối mọi lần đăng nhập với tên đó từ địa chỉ IP đó trong 15 phút kể từ lần sai thứ 5, kể cả khi mật khẩu đúng, với thông báo "Nhập sai quá nhiều lần. Thử lại sau 15 phút hoặc nhờ Giám đốc đặt lại mật khẩu". Sai mật khẩu và sai mã xác thực 2 lớp SHALL đếm chung một bộ đếm. Quy tắc áp dụng cả cho tên không tồn tại. Đăng nhập trọn vẹn từ địa chỉ IP đó (với tài khoản đã bật 2 lớp là đúng cả mã, đúng mật khẩu thôi chưa đủ), hoặc Giám đốc đặt lại mật khẩu, hoặc lệnh dòng lệnh cứu hộ SHALL xóa bản ghi khóa. Người dùng hợp lệ đăng nhập từ địa chỉ IP khác SHALL không bị chặn bởi các lần nhập sai từ địa chỉ IP ban đầu.
+Sau 5 lần đăng nhập sai liên tiếp với cùng một tên đăng nhập từ cùng một địa chỉ IP trong vòng 15 phút, hệ thống SHALL từ chối mọi lần đăng nhập với tên đó từ địa chỉ IP đó trong 15 phút kể từ lần sai thứ 5, kể cả khi mật khẩu đúng, với thông báo "Nhập sai quá nhiều lần. Thử lại sau 15 phút hoặc nhờ Giám đốc đặt lại mật khẩu". Sai mật khẩu và sai mã xác thực 2 lớp SHALL đếm chung một bộ đếm. Quy tắc áp dụng cả cho tên không tồn tại. Đăng nhập trọn vẹn từ địa chỉ IP đó (với tài khoản đã bật 2 lớp là đúng cả mã, đúng mật khẩu thôi chưa đủ, trừ trên thiết bị đã tin), hoặc Giám đốc đặt lại mật khẩu, hoặc lệnh dòng lệnh cứu hộ SHALL xóa bản ghi khóa. Người dùng hợp lệ đăng nhập từ địa chỉ IP khác SHALL không bị chặn bởi các lần nhập sai từ địa chỉ IP ban đầu.
 
 #### Scenario: Sai lần thứ 5
 - **WHEN** người dùng `vantung` nhập sai mật khẩu 5 lần liên tiếp từ cùng một địa chỉ IP lúc 08:00–08:03

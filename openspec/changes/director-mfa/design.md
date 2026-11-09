@@ -7,6 +7,7 @@
 - `signIn` (`src/lib/auth/sign-in.ts`) gọi `auth.api.signInUsername` ở server. Route HTTP `/sign-in/*` đã nằm trong `DISABLED_PATHS`; danh sách này chỉ chặn HTTP, không chặn `auth.api`.
 - Plugin `twoFactor` có sẵn. Hook của plugin chạy sau `/sign-in/username`: nếu `user.twoFactorEnabled` thì **xóa phiên vừa tạo**, đặt cookie `two_factor` (10 phút) và trả `{ twoFactorRedirect: true }`, không có `token`, `user`.
 - Plugin đã có: mã hóa bí mật bằng khóa của Better Auth; khóa 5 lần sai trên một lượt nhập; khóa 10 lần sai liên tiếp trên một tài khoản (`failedVerificationCount`, `lockedUntil`, 15 phút); cập nhật mã dự phòng kiểu so-rồi-ghi nên hai yêu cầu cùng lúc không dùng được cùng một mã.
+- Plugin có sẵn "tin thiết bị" (`trustDevice`, cookie ký + dòng `verification` tên `trust-device-*`, gia hạn sau mỗi lần đăng nhập). Khi tắt 2 lớp, plugin **chỉ xóa dấu tin của máy đang gửi yêu cầu**, các máy khác còn nguyên.
 - Plugin **thiếu**: (1) không chống dùng lại mã (`verifyTOTP` chấp nhận lệch ±1 bước, một mã sống tới 90 giây); (2) mã dự phòng mặc định mã hóa, không băm.
 - `user.email` là `<username>@users.invalid`, plugin dùng nó làm nhãn trong app tạo mã.
 - Mã QR: repo chưa có thư viện tạo QR (`barcode-detector` chỉ đọc).
@@ -29,7 +30,7 @@
 
 ### D2. Code riêng gọi `auth.api`, đóng mọi route `/two-factor/*` (điểm 2)
 
-- **Chọn:** service `src/lib/auth/two-factor.ts` gọi `auth.api.enableTwoFactor`, `verifyTOTP`, `verifyBackupCode`, `generateBackupCodes`, `disableTwoFactor`. Thêm vào `DISABLED_PATHS`: `/two-factor/enable`, `/two-factor/disable`, `/two-factor/get-totp-uri`, `/two-factor/verify-totp`, `/two-factor/send-otp`, `/two-factor/verify-otp`, `/two-factor/verify-backup-code`, `/two-factor/generate-backup-codes`.
+- **Chọn:** service `src/lib/auth/two-factor.ts` gọi `auth.api.enableTwoFactor`, `verifyTOTP`, `verifyBackupCode`, `generateBackupCodes`, `disableTwoFactor` (tin thiết bị xem D11). Thêm vào `DISABLED_PATHS`: `/two-factor/enable`, `/two-factor/disable`, `/two-factor/get-totp-uri`, `/two-factor/verify-totp`, `/two-factor/send-otp`, `/two-factor/verify-otp`, `/two-factor/verify-backup-code`, `/two-factor/generate-backup-codes`.
 - **Test chống lệch:** duyệt mọi endpoint của plugin có đường dẫn `/two-factor/`, không phải `serverOnly`, phải nằm trong `DISABLED_PATHS`. Nâng cấp thư viện thêm route thì test đỏ.
 - **Lý do:** `/api/auth/*` là đường dẫn công khai. Mở route plugin thì đếm sai, kiểm quyền, nhật ký đều bị vòng qua.
 - **Đã cân nhắc:** mở route plugin kèm hook (khó ghi nhật ký cùng logic, phụ thuộc giới hạn 3 lần/10 giây của plugin); tự viết toàn bộ (phải tự làm mã hóa, phiên chờ; "phiên chờ xác thực" có nguy cơ quên kiểm ở một chỗ, còn plugin không tạo phiên nên an toàn từ gốc).
@@ -96,6 +97,7 @@
 | `POST /api/me/two-factor/confirm` | `{ code }` | `{ enabled: true }` |
 | `POST /api/me/two-factor/backup-codes` | `{ password }` | `{ backupCodes[] }` |
 | `POST /api/me/two-factor/replace` | `{ password, code }` | `{ enabled: false }` |
+| `POST /api/me/two-factor/forget-devices` | (không) | `{ forgotten: number }` |
 
 Validate bằng schema. `confirm`, `replace` thêm giới hạn 5 lần/phút theo người dùng. Các route trả Set-Cookie của plugin vì plugin đổi token phiên khi bật, tắt.
 
@@ -116,8 +118,21 @@ Bí mật TOTP mã hóa bằng khóa này, nên quy trình đổi khóa hiện t
 - Không giải mã được thì báo lỗi rõ ràng, không 500 trắng.
 - Sửa Sự cố 6 trong `docs/ops/production.md`.
 
+### D11. Tin thiết bị 30 ngày (đã chốt 0.2 #135)
+
+- **Chọn:** dùng `trustDevice` của plugin. `completeTwoFactorSignIn` chỉ truyền `trustDevice: true` với mã 6 số có tick ô. Thời hạn đặt ở `TRUST_DEVICE_DAYS` (`src/domain/two-factor.ts`), truyền vào `trustDeviceMaxAge`.
+- **Máy đã tin:** hook của plugin không tạo lượt nhập mã, `signInUsername` trả kết quả thường nên `signIn` đi đúng nhánh cũ. Đây là đăng nhập trọn vẹn nên xóa `login_throttle` như bình thường.
+- **Thu hồi cho mọi máy:** `forgetTrustedDevices(tx, userId)` xóa các dòng `verification` có `identifier like 'trust-device-%'` và `value = userId`. Gọi trong transaction của: `changePassword`, đặt lại mật khẩu (`src/lib/users/service.ts`), `replaceTwoFactor`, `resetTwoFactorByCli`, và nút "Quên mọi thiết bị đã tin". Không dựa vào `disableTwoFactor` vì plugin chỉ xóa máy hiện tại.
+- **Đếm thiết bị:** các dòng trên còn `expires_at > now`.
+- **Mã dự phòng không tin được máy:** mã này dùng lúc mất điện thoại, thường trên máy lạ.
+- Plugin xóa cookie `dont_remember` khi tin thiết bị. "Giữ đăng nhập" vẫn đúng vì server áp `persistent = false` và hạn 12 giờ theo lựa chọn lưu ở server (D2).
+- **Đã cân nhắc:** không có tin thiết bị (an toàn nhất, người dùng đã chọn có); hạn cứng 30 ngày không gia hạn (plugin luôn gia hạn, muốn khác phải sửa code nội bộ thư viện).
+
 ## Risks / Trade-offs
 
+- [Máy dùng đều không bao giờ bị hỏi mã lại; kẻ có cả máy đã tin lẫn mật khẩu vào được] → ô mặc định không chọn, có nút thu hồi từ máy khác, D18 có cờ khi tin máy, đổi mật khẩu tự thu hồi.
+- [Tin thiết bị trên máy dùng chung] → dòng nhắc cạnh ô tick: chỉ chọn trên máy riêng.
+- [Nâng cấp thư viện đổi tên `trust-device-*`] → integration test thu hồi đỏ ngay.
 - [Giám đốc duy nhất mất cả điện thoại lẫn mã dự phòng khi không ai có quyền chạy lệnh] → runbook ghi rõ người giữ quyền DB; màn bật nhắc in mã dự phòng cất nơi khác.
 - [Nâng cấp `better-auth` đổi hành vi hook hay `storeBackupCodes`] → integration test luồng 2 bước, test băm, test chống lệch route; repo ghim phiên bản.
 - [Giờ điện thoại lệch quá 30 giây] → màn nhập mã có dòng nhắc bật giờ tự động trên điện thoại.

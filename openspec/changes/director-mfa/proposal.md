@@ -9,7 +9,8 @@
 ## What Changes
 
 - **Bắt buộc cho Giám đốc và Kế toán.** Chưa bật thì chỉ mở được màn bật xác thực 2 lớp (`/two-factor`), giống cách bắt đổi mật khẩu tạm. Vai trò khác không bị hỏi. Bản demo (`DEMO_MODE=true`) không dùng tính năng này.
-- **Đăng nhập 2 bước ở `/login`.** Đúng mật khẩu thì form chuyển sang ô nhập mã. **Chưa có phiên đăng nhập nào cho tới khi nhập đúng mã.** Không có "tin thiết bị này".
+- **Đăng nhập 2 bước ở `/login`.** Đúng mật khẩu thì form chuyển sang ô nhập mã. **Chưa có phiên đăng nhập nào cho tới khi nhập đúng mã.**
+- **Tin thiết bị 30 ngày** (ô tick ở bước nhập mã, mặc định không chọn): máy đã tin chỉ cần mật khẩu. Đổi mật khẩu, đổi điện thoại, lệnh cứu hộ hoặc nút "Quên mọi thiết bị đã tin" làm mọi máy mất tin.
 - **Nhập sai mã đếm chung với nhập sai mật khẩu:** 5 lần trên một (tên đăng nhập + IP) thì khóa 15 phút. Thêm trần 10 lần sai liên tiếp trên một tài khoản dù đổi IP. Đúng mật khẩu không xóa bộ đếm, chỉ đúng mã mới xóa.
 - **Một mã đã đăng nhập thành công không dùng lại được** trong thời gian mã còn hiệu lực.
 - **10 mã dự phòng** hiện đúng một lần, lưu dạng băm, mỗi mã dùng một lần. Tạo lại thì bộ cũ mất hiệu lực.
@@ -41,7 +42,6 @@
 
 - Xác thực 2 lớp cho Kinh doanh, Thủ kho, Xưởng.
 - Mã gửi qua SMS, email; khóa bảo mật phần cứng, passkey.
-- "Tin thiết bị này 30 ngày".
 - Gỡ xác thực 2 lớp cho người khác trên giao diện (kể cả Giám đốc gỡ cho Kế toán).
 - Xem và đăng xuất thiết bị từ xa (K14 `session-management`).
 - Sổ kho, giá vốn, tiền thuê: không đổi, không ảnh hưởng số liệu đã có.
@@ -49,7 +49,7 @@
 ## Impact
 
 - **DB:** bảng mới `two_factor`, cột `user.two_factor_enabled`.
-- **Code:** `src/lib/auth/` (cấu hình plugin, `sign-in.ts`, `guard.ts`, `session.ts`), `src/domain/two-factor.ts` (mới), `src/domain/permissions.ts`, `src/app/login/`, `src/app/two-factor/` (mới), `src/app/api/me/two-factor/` (mới), `scripts/`, `src/components/shell/user-menu.tsx`, `src/locales/`.
+- **Code:** `src/lib/auth/` (cấu hình plugin, `sign-in.ts`, `guard.ts`, `session.ts`), `src/domain/two-factor.ts` (mới), `src/domain/permissions.ts`, `src/app/login/`, `src/app/two-factor/` (mới), `src/app/api/me/two-factor/` (mới), `scripts/`, `src/components/shell/user-menu.tsx`, `src/locales/`, `src/lib/auth/change-password.ts`, `src/lib/users/service.ts` (thu hồi thiết bị đã tin).
 - **Phụ thuộc:** không thêm gói nào cho TOTP (plugin nằm sẵn trong `better-auth`). Hiện mã QR thêm gói `uqr` (0.2 #132, design D6).
 - **Vận hành:** `docs/ops/production.md` thêm quy trình mất điện thoại và sửa quy trình đổi `BETTER_AUTH_SECRET` (bí mật TOTP được mã hóa bằng khóa này).
 - **Dev và E2E:** chạy local với `DEMO_MODE=true` để bỏ qua bước này; E2E bật 2 lớp thật cho tài khoản `e2e.*` Giám đốc và Kế toán (design D9).

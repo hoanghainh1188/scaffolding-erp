@@ -27,6 +27,9 @@
 - [ ] 3.9 `mustEnrollTwoFactor` trong `resolveCurrentUser`, chặn trong `requireUser`, `withAuth` (thứ tự sau đổi mật khẩu). Integration test đủ scenario "Giám đốc bắt buộc bật", gồm đổi vai trò sang `DIRECTOR`. Helper `src/test/auth.ts` đặt cờ 2 lớp cho vai trò bắt buộc sau khi đăng nhập (design D9); toàn bộ integration test hiện có xanh.
 - [ ] 3.10 Đổi khóa: integration test đọc được bí mật cũ khi cấu hình `BETTER_AUTH_SECRETS` có khóa cũ; khóa sai thì báo lỗi rõ ràng, không 500.
 
+- [ ] 3.11 Tin thiết bị: `TRUST_DEVICE_DAYS` và truyền `trustDevice` chỉ cho mã 6 số. Integration test đủ scenario "Tin thiết bị 30 ngày": máy đã tin không hỏi mã, xóa `login_throttle`; quá 30 ngày hỏi lại; gia hạn sau mỗi lần đăng nhập; mã dự phòng không tin được; "Giữ đăng nhập" không chọn vẫn là phiên 12 giờ khi có tin thiết bị.
+- [ ] 3.12 `forgetTrustedDevices` gọi trong `changePassword`, đặt lại mật khẩu, `replaceTwoFactor`, `resetTwoFactorByCli`, và nút quên (có `logActivity`). Integration test đủ scenario "Thu hồi thiết bị đã tin", gồm 2 máy cùng mất tin khi đổi điện thoại; số thiết bị chỉ đếm dòng còn hạn.
+
 ## 4. Lệnh dòng lệnh
 
 - [ ] 4.1 `resetTwoFactorByCli` (một transaction) và `scripts/reset-two-factor.mts`, script `auth:reset-2fa`. Integration test: xóa `two_factor`, cờ tắt, mọi phiên hết, throttle hết, có dòng nhật ký; tên sai thoát mã khác 0; tài khoản chưa bật báo rõ.
@@ -34,19 +37,19 @@
 
 ## 5. API và giao diện
 
-- [ ] 5.1 Bốn route `/api/me/two-factor/*` (design D8), validate bằng schema, `no-store`, chuyển Set-Cookie, giới hạn 5 lần/phút. Integration test từng route; `quocbao` (Kinh doanh) nhận 403; `route-guards.test.ts` xanh.
+- [ ] 5.1 Năm route `/api/me/two-factor/*` (design D8), validate bằng schema, `no-store`, chuyển Set-Cookie, giới hạn 5 lần/phút. Integration test từng route; `quocbao` (Kinh doanh) nhận 403; `route-guards.test.ts` xanh.
 - [ ] 5.2 Thêm `uqr` ghim đúng `0.1.3` (0.2 #132), lockfile đúng để `npm ci` trên CI xanh. Component `QrCode` (design D6): component test vẽ `<svg>`, không dùng `dangerouslySetInnerHTML`; `check-colors` xanh.
-- [ ] 5.3 Trang `/two-factor`: các bước bật, màn mã dự phòng (Sao chép, In, ô đã lưu), trạng thái còn N mã, tạo lại, đổi điện thoại. Component test; trang trả 403 với vai trò khác; mobile 320px không tràn.
-- [ ] 5.4 `/login` bước nhập mã: `verifyTwoFactorAction`, `inputMode="numeric"`, `autoComplete="one-time-code"`, chuyển sang ô mã dự phòng, lỗi trong `role="alert"`. Component test đủ trạng thái; `clearSessionCookies` xóa cả cookie `two_factor`.
+- [ ] 5.3 Trang `/two-factor`: các bước bật, màn mã dự phòng (Sao chép, In, ô đã lưu), trạng thái còn N mã, số thiết bị đang tin, nút quên, tạo lại, đổi điện thoại. Component test; trang trả 403 với vai trò khác; mobile 320px không tràn.
+- [ ] 5.4 `/login` bước nhập mã: `verifyTwoFactorAction`, `inputMode="numeric"`, `autoComplete="one-time-code"`, ô "Tin thiết bị này 30 ngày" (mặc định không chọn, ẩn ở ô mã dự phòng, có dòng nhắc chỉ chọn trên máy riêng), chuyển sang ô mã dự phòng, lỗi trong `role="alert"`. Component test đủ trạng thái; `clearSessionCookies` xóa cả cookie `two_factor`.
 - [ ] 5.5 Mục "Xác thực 2 lớp" trong `user-menu.tsx` theo quyền; chữ trong `src/locales/`. Component test: hiện với Giám đốc, Kế toán; ẩn với Kinh doanh.
 
 ## 6. E2E và tài liệu
 
 - [ ] 6.1 Helper TOTP thuần trong `tests/e2e/`; `global-setup` bật 2 lớp cho tài khoản `e2e.*` Giám đốc và Kế toán; `auth.setup.ts` nhập mã. Toàn bộ E2E hiện có xanh với hai vai trò này đã bật 2 lớp.
-- [ ] 6.2 E2E `two-factor.spec.ts`: đúng mật khẩu thì hiện ô mã; đúng mã vào `/dashboard`; sai mã báo lỗi; Giám đốc và Kế toán chưa bật bị chuyển `/two-factor`; bật từ đầu tới cuối.
+- [ ] 6.2 E2E `two-factor.spec.ts`: đúng mật khẩu thì hiện ô mã; đúng mã vào `/dashboard`; sai mã báo lỗi; Giám đốc và Kế toán chưa bật bị chuyển `/two-factor`; bật từ đầu tới cuối; tick tin thiết bị thì lần sau không hỏi mã.
 - [ ] 6.3 `docs/ops/production.md`: quy trình mất điện thoại (xác minh người yêu cầu), sửa Sự cố 6 đổi khóa, thêm `auth:reset-2fa`. `CLAUDE.md`: lệnh mới, ghi chú dev dùng `DEMO_MODE=true`, ghi chú E2E, quy ước module. Xem lại bằng mắt.
 - [ ] 6.4 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate director-mfa --strict` đều xanh. Gắn nhãn `update-snapshots` nếu ảnh mốc đổi.
-- [ ] 6.5 Kiểm tra tay trên điện thoại thật: bật 2 lớp cho Giám đốc và Kế toán; đăng nhập cần mã; mã sai bị đếm như sai mật khẩu; một mã dự phòng dùng được đúng một lần; `auth:unlock` và `auth:reset-2fa` theo runbook. Chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33.
+- [ ] 6.5 Kiểm tra tay trên điện thoại thật: bật 2 lớp cho Giám đốc và Kế toán; đăng nhập cần mã; mã sai bị đếm như sai mật khẩu; một mã dự phòng dùng được đúng một lần; tin thiết bị rồi bấm quên từ máy khác thì bị hỏi lại mã; `auth:unlock` và `auth:reset-2fa` theo runbook. Chưa làm được thì ghi "làm sau, theo dõi ở #33" và thêm mục vào issue #33.
 
 ## Workflow follow-up
 
