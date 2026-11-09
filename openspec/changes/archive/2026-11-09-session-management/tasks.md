@@ -37,5 +37,5 @@ Không có migration: dùng bảng `session` sẵn có.
 
 ## Workflow follow-up
 
-- Kiểm tra tay (làm sau, theo dõi ở #33): đăng nhập cùng tài khoản trên máy tính và điện thoại thật; từ máy tính đăng xuất điện thoại, điện thoại về màn đăng nhập ở thao tác kế tiếp; nhật ký D18 ghi đúng người làm.
+- Kiểm tra tay (làm sau, theo dõi ở #33, mục 20): đăng nhập cùng tài khoản trên máy tính và điện thoại thật; từ máy tính đăng xuất điện thoại, điện thoại về màn đăng nhập ở thao tác kế tiếp; nhật ký D18 ghi đúng người làm.
 - Sau khi merge: `/opsx:archive session-management`, PR archive ghi `Closes #98`, đánh dấu ✅ dòng K14 ở `docs/roadmap.md`.

@@ -320,11 +320,11 @@ Hệ thống SHALL có lệnh dòng lệnh tạo tài khoản Giám đốc khi c
 - **THEN** lệnh báo "Đã có tài khoản Giám đốc. Dùng màn Người dùng để thêm tài khoản" và không tạo tài khoản
 
 ### Requirement: Trang Cá nhân trên Mobile
-Tab Cá nhân (`/m/profile`) SHALL hiện họ tên, tên đăng nhập, vai trò bằng tiếng Việt, nút "Đổi mật khẩu" và nút "Đăng xuất". Mỗi nút cao tối thiểu 48px.
+Tab Cá nhân (`/m/profile`) SHALL hiện họ tên, tên đăng nhập, vai trò bằng tiếng Việt, nút "Đổi mật khẩu", nút "Thiết bị đăng nhập" và nút "Đăng xuất". Mỗi nút cao tối thiểu 48px.
 
 #### Scenario: Thủ kho xem tab Cá nhân
 - **WHEN** `vantung` (Thủ kho) mở `/m/profile`
-- **THEN** trang hiện "Văn Tùng", "vantung", "Thủ kho", nút "Đổi mật khẩu" và "Đăng xuất"
+- **THEN** trang hiện "Văn Tùng", "vantung", "Thủ kho", nút "Đổi mật khẩu", "Thiết bị đăng nhập" và "Đăng xuất"
 
 ### Requirement: Bảo vệ tài khẩu demo khi đổi mật khẩu
 Khi hệ thống hoạt động ở chế độ demo (`DEMO_MODE=true`), hệ thống SHALL từ chối yêu cầu đổi mật khẩu cá nhân của 5 tài khoản demo dùng chung (`giamdoc`, `ketoan`, `kinhdoanh`, `thukho`, `xuong`) với mã lỗi HTTP 400 và thông báo tiếng Việt "Tài khoản demo dùng chung không được đổi mật khẩu".
