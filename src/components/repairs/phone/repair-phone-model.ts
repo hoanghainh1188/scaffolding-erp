@@ -115,10 +115,17 @@ export function footerText(
   return `${bare(good)} sửa xong · ${bare(scrap)} phế · đủ ${bare(done)} / ${bare(taken)}`;
 }
 
-/** The body of "Báo sửa xong" / "Đếm xong". */
-export function stepBody(order: PhoneOrder, payload: RepairPhonePayload) {
+/**
+ * The body of "Báo sửa xong" / "Đếm xong". `version` is the order's updatedAt
+ * stored with the draft, so numbers typed before a change get a 409.
+ */
+export function stepBody(
+  order: PhoneOrder,
+  payload: RepairPhonePayload,
+  version: string,
+) {
   return {
-    updatedAt: order.updatedAt,
+    updatedAt: version,
     lines: order.lines.map((line) => {
       const draft = lineOf(payload, line.itemId);
       return {

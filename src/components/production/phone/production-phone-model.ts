@@ -219,13 +219,17 @@ export function lineSummary(
   return `${finished} / ${planned} · ${used} nguyên liệu · ${offcut} đầu thừa`;
 }
 
-/** The body of "Báo làm xong" / "Đếm xong". */
+/**
+ * The body of "Báo làm xong" / "Đếm xong". `version` is the order's updatedAt
+ * stored with the draft, so numbers typed before a change get a 409.
+ */
 export function stepBody(
   order: ProductionPhoneOrder,
   payload: ProductionPhonePayload,
+  version: string,
 ) {
   return {
-    updatedAt: order.updatedAt,
+    updatedAt: version,
     lines: order.lines.map((line) => {
       const draft = lineOf(payload, line.itemId);
       return {

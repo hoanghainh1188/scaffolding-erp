@@ -141,10 +141,14 @@ function BomForm({
   }
 
   async function remove() {
+    if (!bom) return;
     setPending(true);
     const result = await callApi(
       `/api/production/boms/${encodeURIComponent(target.code)}`,
-      { method: "DELETE" },
+      {
+        method: "DELETE",
+        body: { updatedAt: new Date(bom.updatedAt).toISOString() },
+      },
     );
     setPending(false);
     if (!result.ok) {

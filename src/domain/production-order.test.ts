@@ -293,6 +293,28 @@ describe("productionPostingLines (spec: ghi sổ lệnh sản xuất)", () => {
     ).toBe(5_100_000);
   });
 
+  it("writes every material out before anything comes in", () => {
+    const ctx = context();
+    const posting = productionPostingLines([frame, brace], ctx);
+    const movements = posting.drafts.map((draft) => draft.movement);
+    const firstIn = movements.indexOf("PRODUCTION_IN");
+    expect(firstIn).toBeGreaterThan(0);
+    expect(movements.lastIndexOf("PRODUCTION_OUT")).toBeLessThan(firstIn);
+    expect(
+      posting.drafts.reduce((sum, draft) => sum + draftValue(draft, ctx), 0),
+    ).toBe(5_100_000);
+  });
+
+  it("refuses an item that is both finished and a material of the order", () => {
+    const second: PostingLine = {
+      ...brace,
+      materials: [...brace.materials, material("GG-K17", 1, { unit: "PIECE" })],
+    };
+    expect(() => productionPostingLines([frame, second], context())).toThrow(
+      PRODUCTION_MESSAGES.finishedIsMaterial("GG-K17"),
+    );
+  });
+
   it("issues New first, then Good", () => {
     const ctx = context({
       stock: new Map([

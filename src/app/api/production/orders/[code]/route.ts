@@ -6,7 +6,11 @@ import {
   updateProductionOrder,
 } from "@/lib/production/orders";
 import { getProductionOrder } from "@/lib/production/queries";
-import { PRODUCTION_CODE, orderBody } from "@/lib/production/respond";
+import {
+  PRODUCTION_CODE,
+  deleteBody,
+  orderBody,
+} from "@/lib/production/respond";
 import { readJson } from "@/lib/read-json";
 
 type Params = { code: string };
@@ -33,10 +37,12 @@ export const PATCH = withAuth<Params>(
 );
 
 export const DELETE = withAuth<Params>(
-  async (_request, { actor, params }) => {
+  async (request, { actor, params }) => {
     if (!PRODUCTION_CODE.test(params.code)) return NOT_FOUND();
+    const body = await readJson(request, deleteBody);
+    if (!body.ok) return body.response;
     return respond(
-      await deleteProductionOrder(catalogDb(), actor, params.code),
+      await deleteProductionOrder(catalogDb(), actor, params.code, body.data),
     );
   },
   { permission: "production.manage" },

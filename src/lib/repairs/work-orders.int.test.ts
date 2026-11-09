@@ -501,13 +501,40 @@ describe("reporting, counting, returning (task 4.4)", () => {
         reason: "Que hàn ghi 60 kg, kiểm lại",
       }),
     );
+    const trail = await activityTrail(ctx.db, code);
+    const before = await orderRow(code);
     const late = await countWorkOrder(ctx.db, warehouse, code, {
       draftId: crypto.randomUUID(),
       ...seen,
       lines: D12_REPORT(),
     });
     expect(late).toMatchObject({ ok: false, status: 409 });
-    expect((await orderRow(code)).status).toBe("IN_PROGRESS");
+    const after = await orderRow(code);
+    expect(after.status).toBe("IN_PROGRESS");
+    expect(after.updatedAt).toEqual(before.updatedAt);
+    expect(await activityTrail(ctx.db, code)).toEqual(trail);
+  });
+
+  it("gives 409 to a count from before the workshop reported again", async () => {
+    const code = await received();
+    await reported(code);
+    const seen = await fresh(code);
+    await must(
+      returnWorkOrder(ctx.db, fx.accountant, code, {
+        ...seen,
+        reason: "Đếm lại khung",
+      }),
+    );
+    await reported(code);
+    const trail = await activityTrail(ctx.db, code);
+    const late = await countWorkOrder(ctx.db, warehouse, code, {
+      draftId: crypto.randomUUID(),
+      ...seen,
+      lines: D12_REPORT(),
+    });
+    expect(late).toMatchObject({ ok: false, status: 409 });
+    expect((await orderRow(code)).status).toBe("AWAITING_CHECK");
+    expect(await activityTrail(ctx.db, code)).toEqual(trail);
   });
 
   it("never lets a late first report overwrite the second (design D5)", async () => {

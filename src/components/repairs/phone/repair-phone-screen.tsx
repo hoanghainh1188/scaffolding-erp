@@ -40,6 +40,7 @@ import {
 const MESSAGES = {
   queued: "Chưa gửi được, sẽ tự gửi khi có mạng",
   signedOut: "Phiên đăng nhập hết hạn. Đăng nhập lại để gửi.",
+  reopened: "Lệnh đã đổi, đã mở số mới",
 } as const;
 
 interface RepairPhoneScreenProps {
@@ -133,6 +134,7 @@ export function RepairPhoneScreen({
     kind: "REPAIR",
     userId,
     documentRef: order.code,
+    version: order.updatedAt,
     title: `${mode === "count" ? "Đếm" : "Sửa"} ${order.code}`,
     initial: () => initialPayload(order),
     progressOf: (payload) => footerText(order, payload),
@@ -213,8 +215,9 @@ export function RepairPhoneScreen({
     setMessage(null);
     setBusy(true);
     const step = mode === "count" ? "count" : "report";
+    const version = draft.record?.version ?? order.updatedAt;
     const saved = await draft.saveNow({
-      payload: { ...payload, step, body: stepBody(order, payload) },
+      payload: { ...payload, step, body: stepBody(order, payload, version) },
       state: "QUEUED",
     });
     const outcome = await outboxFor(userId).submit(saved.draftId);
@@ -250,12 +253,14 @@ export function RepairPhoneScreen({
           Văn phòng trả lại: {order.returnNote}
         </p>
       ) : null}
-      {(queued || message || rejected) && (
+      {(queued || message || rejected || draft.reopened) && (
         <p
           role="status"
           className="rounded-lg border-2 border-warning bg-card p-4 text-label"
         >
-          {message ?? rejected ?? MESSAGES.queued}
+          {message ??
+            rejected ??
+            (queued ? MESSAGES.queued : MESSAGES.reopened)}
         </p>
       )}
       <fieldset

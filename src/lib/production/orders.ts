@@ -318,11 +318,13 @@ export function deleteProductionOrder(
   db: Database,
   actor: Actor,
   code: string,
+  body: { updatedAt?: string },
 ): Promise<ServiceResult<null>> {
   return runProduction(async () => {
     await db.transaction(async (tx) => {
       const current = await lockProductionOrder(tx, code);
       draftOnly(current.status, PRODUCTION_MESSAGES.notDeletable);
+      assertFresh(current, body.updatedAt);
       const draft = await productionView(tx, current.id);
       await tx
         .delete(productionOrder)

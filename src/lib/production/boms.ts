@@ -229,6 +229,16 @@ export function createBom(
   });
 }
 
+/** 409 when someone changed the BOM since the form opened. */
+function assertBomFresh(
+  current: { updatedAt: Date },
+  seen: string | undefined,
+): void {
+  if (!seen || new Date(seen).getTime() !== current.updatedAt.getTime()) {
+    throw new ServiceFailure(conflict(BOM_MESSAGES.stale));
+  }
+}
+
 async function lockBom(tx: Tx, itemCode: string) {
   const [row] = await tx
     .select({ bom: productionBom, itemCode: item.code })
@@ -322,12 +332,7 @@ export function updateBom(
   return runProduction(async () => {
     const saved = await db.transaction(async (tx) => {
       const current = await lockBom(tx, itemCode);
-      if (
-        !body.updatedAt ||
-        new Date(body.updatedAt).getTime() !== current.updatedAt.getTime()
-      ) {
-        throw new ServiceFailure(conflict(BOM_MESSAGES.stale));
-      }
+      assertBomFresh(current, body.updatedAt);
       const checked = await checkBody(tx, current.itemId, body);
       const before = await storedMaterials(tx, current.id);
       const changes = materialChanges(before, checked.materials);
@@ -386,10 +391,12 @@ export function deleteBom(
   db: Database,
   actor: Actor,
   itemCode: string,
+  body: { updatedAt?: string },
 ): Promise<ServiceResult<null>> {
   return runProduction(async () => {
     await db.transaction(async (tx) => {
       const current = await lockBom(tx, itemCode);
+      assertBomFresh(current, body.updatedAt);
       const materials = await storedMaterials(tx, current.id);
       await tx.delete(productionBom).where(eq(productionBom.id, current.id));
       await logActivity(tx, actor, {

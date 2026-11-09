@@ -335,6 +335,44 @@ describe("work orders (repair-work-orders design D7)", () => {
     ).toContain("Phiếu đã ghi sổ, không sửa hay xóa được");
   });
 
+  it("takes no line or supply moved into a posted order", async () => {
+    const refused = "Phiếu đã ghi sổ, không sửa hay xóa được";
+    const postedId = await workOrder({ status: "COUNTED" });
+    await insertLine(postedId);
+    const lineOf = async (orderId: string) => {
+      const [line] = await db
+        .select({ id: repairOrderLine.id })
+        .from(repairOrderLine)
+        .where(eq(repairOrderLine.orderId, orderId));
+      return line?.id ?? "";
+    };
+    const postedLine = await lineOf(postedId);
+    await post(postedId);
+    const draftId = await insertOrder({ code: "PSC-2026-025" });
+    await insertLine(draftId, { position: 2 });
+    const draftLine = await lineOf(draftId);
+    await db
+      .insert(repairOrderMaterial)
+      .values({ lineId: draftLine, itemId, quantity: "6" });
+    const admin = getAdminDatabase();
+    expect(
+      await errorMessage(() =>
+        admin
+          .update(repairOrderLine)
+          .set({ orderId: postedId })
+          .where(eq(repairOrderLine.id, draftLine)),
+      ),
+    ).toContain(refused);
+    expect(
+      await errorMessage(() =>
+        admin
+          .update(repairOrderMaterial)
+          .set({ lineId: postedLine })
+          .where(eq(repairOrderMaterial.lineId, draftLine)),
+      ),
+    ).toContain(refused);
+  });
+
   it("refuses a negative labour rate on an item", async () => {
     expect(
       await errorCode(() =>

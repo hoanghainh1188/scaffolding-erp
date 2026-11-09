@@ -262,6 +262,9 @@ describe("D18 with site operations (site-operations task 6.6)", () => {
     expect(documentHref("BUY_BACK", "MLA-2026-003")).toBe(
       "/sales/buy-backs/MLA-2026-003",
     );
+    expect(documentHref("SCRAP_PRICE", "PL-SATVUN")).toBe(
+      "/settings/scrap-price",
+    );
     expect(actionLabel("SEND", "SITE_TRANSFER")).toBe("Gửi điện thoại");
   });
 });

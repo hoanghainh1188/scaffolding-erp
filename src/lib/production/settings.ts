@@ -66,7 +66,7 @@ export function setScrapItem(
         });
       await logActivity(tx, actor, {
         action: "UPDATE",
-        document: { type: "PRODUCTION_BOM", id: itemId, code: found.itemCode },
+        document: { type: "SCRAP_PRICE", id: itemId, code: found.itemCode },
         summary: `Mã sắt vụn: ${before ?? "chưa chọn"} → ${found.itemCode}`,
         changes: [
           {
