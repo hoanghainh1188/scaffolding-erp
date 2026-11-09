@@ -26,7 +26,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | 13 | `rental-billing` | #13 | Tính tiền thuê theo kỳ (đã có công thức thực tế 0.2 #4, #39) | D7 | 12 | ✅ (Q1, Q2 mặc định tạm, 0.2 #73, #74) |
 | 14 | `receivables` | #14 | Công nợ tách loại (thuê, bán, vận chuyển, đền bù, mua lại, VAT), phiếu thu, tiền trả trước, cọc, bảo lãnh, thanh lý hợp đồng | D14, D14b | 13 | ✅ |
 | 15 | `dashboard-basic` | #15 | Việc chờ duyệt, **doanh số ngày/tháng**, công trình rủi ro, tra một công trình, hàng ở ngoài theo khu vực, top 5 nhà thầu (0.2 #90–#93) | D1 | 14 | ✅ |
-| 16 | `production-orders` | #46 | **Sản xuất** thành phẩm từ nguyên liệu: định mức, lệnh nhiều thành phẩm, công khoán, vượt định mức > 5 % Giám đốc duyệt, đầu thừa thành phế (0.2 #139–#146) | D19, D20, M10 | 04 | |
+| 16 | `production-orders` | #46 | **Sản xuất** thành phẩm từ nguyên liệu: định mức, lệnh nhiều thành phẩm, công khoán, vượt định mức > 5 % Giám đốc duyệt, đầu thừa thành phế (0.2 #139–#146) | D19, D20, M10 | 04 | ✅ |
 | 17 | `activity-log` | #47 | Nhật ký thao tác cho Giám đốc (mới) | D18 | 02 | ✅ |
 | 18 | `data-migration` | #48 | Chuyển dữ liệu từ Excel khi bắt đầu dùng (mới, **bắt buộc trước khi chạy thật**) | cần vẽ | 14 | |
 
