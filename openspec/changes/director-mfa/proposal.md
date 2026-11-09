@@ -38,7 +38,7 @@
 - **Đăng nhập, bước nhập mã:** `Login-TwoFactor.dc.html` (mới).
 - **`/two-factor`** (mới, `TwoFactor.dc.html`): trang đứng riêng như `/change-password`, không nằm trong D1–D18.
 - **D17:** thêm mục "Gỡ xác thực 2 lớp" trong menu của dòng, chỉ admin hệ thống thấy; admin không phải Giám đốc chỉ có mục này. **D18** hiện thêm các dòng nhật ký mới.
-- Hai màn trên đã vẽ trong `docs/design/screens/` (0.2 #136), đã duyệt 09/11/2026. Riêng hộp thoại gỡ 2 lớp trên D17 vẽ thêm sau, **chờ duyệt**.
+- Hai màn trên đã vẽ trong `docs/design/screens/` (0.2 #136), đã duyệt 09/11/2026, gồm cả hộp thoại gỡ 2 lớp trên D17.
 
 ## Ngoài phạm vi
 
