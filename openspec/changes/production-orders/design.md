@@ -49,7 +49,7 @@
 
 - Dòng lệnh sửa xoay quanh **hàng lấy vào** (`quantity_taken` Chờ sửa → Tốt / Phế liệu, CHECK `good + scrap = taken`). Dòng lệnh sản xuất không có hàng lấy vào: ra một mã Mới từ nhiều nguyên liệu. Dùng chung phải nới hoặc bỏ gần hết CHECK của `repair_order_line`.
 - Lệnh sửa có bước chuyển hàng bãi → xưởng lúc nhận (`receive_posting_id`, `cancel_posting_id`). Lệnh sản xuất không có, vì nguyên liệu đã ở xưởng.
-- D15 đọc `repair_order_line.repair_cost`, `loss_amount`. Trộn lệnh sản xuất vào thì `repairSums` phải lọc theo `kind` ở mọi chỗ, dễ sót.
+- D15 đọc `repair_order_line.repair_cost`, `loss_amount` của lệnh `POSTED`. Trộn lệnh sản xuất vào thì `repairSums` và mọi chỗ đọc `repair_order` phải lọc thêm `kind`, dễ sót.
 - Mã khác dãy: `LSX` (thiết kế D20 `LSX-2026-004`), không chung `PSC`.
 
 **Dùng lại:**
@@ -81,13 +81,21 @@
 
 **Lý do:**
 
-- Thẻ kho và D11 hiện loại biến động. Ghi "Nhập sau sửa" cho khung mới làm là sai nghĩa với người đọc.
+- Dữ liệu đúng nghĩa: lọc, đếm, đối chiếu theo loại biến động (D15, `inventory:check`, báo cáo sau này) không phải nhớ lọc thêm `document_type`. Thẻ kho (D11) chỉ hiện mã chứng từ và `description`, nên chữ trên thẻ kho do `description` quyết định (xem dưới).
 - `classifyLedger` trả `null` cho loại lạ, nên D15 đúng ngay. Test chống lệch giữa CHECK DB và `MOVEMENTS` đã có, bắt chỗ quên.
 - Thành phẩm Mới phải đổi giá BQ. Đó đúng là vai trò của loại nhập đổi giá.
 
+**Mô tả dòng sổ** (`description`, hiện trên thẻ kho D11), sinh trong `productionPostingLines`:
+
+- nguyên liệu: `LSX-2026-004: nguyên liệu làm GG-K17`;
+- thành phẩm: `LSX-2026-004: nhập sản xuất GG-K17`;
+- đầu thừa: `LSX-2026-004: đầu thừa làm GG-K17`.
+
+Câu báo `amountNotAllowed` (`src/domain/movement.ts`) đang liệt kê các loại đổi giá: thêm loại sản xuất.
+
 **Đã cân nhắc:**
 
-- **Dùng lại `REPAIR_OUT` / `REPAIR_IN` với `document_type = 'PRODUCTION'`:** không phải sửa CHECK. Nhưng nhãn thẻ kho sai, và mọi chỗ đọc `REPAIR_*` (hiện chỉ D15) phải nhớ lọc `document_type`. Bỏ.
+- **Dùng lại `REPAIR_OUT` / `REPAIR_IN` với `document_type = 'PRODUCTION'`:** không phải sửa CHECK. Nhưng mọi chỗ đọc `REPAIR_*` phải nhớ lọc `document_type`, và dữ liệu lẫn nghĩa sửa với làm mới. Bỏ.
 - **`ADJUST_*`:** D15 xếp vào chênh lệch kiểm kê. Sai. Bỏ.
 
 **Nơi ghi:**
@@ -115,7 +123,7 @@ Ví dụ D20:
   - Thêm `ProductionSum { month, laborCost }`.
   - `ledgerCostCheck(…, productions)` cộng thêm `Σ laborCost`.
   - `monthlyProfit` trả thêm `productionSpent` để ghi dưới bảng.
-- `src/lib/reports/costs.ts`: `productionSums()` nối `inventory_ledger.posting_id = production_order.posting_id` (lệnh Đã ghi sổ). Tháng = `min(business_date)` của posting đó, cộng `production_order_line.labor_amount`. Không lấy theo `document_type`, giống cách sửa của `repairSums`.
+- `src/lib/reports/costs.ts`: `productionSums()` nối `inventory_ledger.posting_id = production_order.posting_id` (lệnh Đã ghi sổ). Lọc `document_type = 'PRODUCTION'`, tháng = `min(business_date)` của posting đó, cộng `production_order_line.labor_amount`. Cùng mẫu với `repairSums` (lọc `REPAIR` và nối theo `posting_id` của lần ghi sổ).
 - `classifyLedger` **không đổi**: `PRODUCTION_*` trả `null`. Thêm test khẳng định điều này, để ai thêm nhánh sau này không vô tình xếp vào giá vốn.
 
 **Kiểm:**
@@ -148,12 +156,15 @@ Ví dụ D20:
 - So theo **số Thủ kho đếm** (cả làm xong và thực dùng). Số xưởng báo chỉ để nhắc trên M10.
 - `src/domain/production-order.ts`:
   - `OVERUSE_LIMIT_PERCENT = 5`, chỉ đặt ở đây.
-  - `normMilli(perUnitMilli, finished)`.
+  - `normMilli(perUnitMilli, finished, unit)`: định mức × số làm xong. Nguyên liệu **đơn vị đếm** (cái, cây…) **làm tròn lên số nguyên** (0,5 cây × 3 = 1,5 → 2 cây), vì sổ kho không xuất lẻ đơn vị đếm (`assertMovementLine`). Đơn vị đo (kg, m, lít) giữ 3 số lẻ, làm tròn nửa lên. M10 điền sẵn đúng số này, và vượt định mức so với chính số này, nên xưởng dùng đúng số điền sẵn thì không bao giờ bị tính là vượt.
   - `overuse(actualMilli, normMilli)` → `{ percentTenths, over }`, với `over` = `actual × 100 > norm × 105`, tính số nguyên, không dùng số thực.
   - Định mức 0 mà thực dùng > 0 thì `over = true`, % hiện "—" (ngoài định mức).
 - Đếm xong: có `over` thì sang `AWAITING_APPROVAL`, không thì `COUNTED`.
 - Ghi sổ tính lại `over` từ số đã lưu. Nếu có vượt mà lệnh chưa có `approved_at` thì từ chối (phòng dữ liệu lệch).
-- **Giá trị dùng vượt** chỉ để xem: trước ghi sổ theo giá BQ hiện tại; sau ghi sổ theo giá trị nguyên liệu đã ghi ÷ số thực dùng. Không lưu.
+- **Giá trị dùng vượt** chỉ để xem, không lưu: phần vượt × giá BQ, làm tròn 1 ₫ từng nguyên liệu. Trước ghi sổ dùng giá BQ hiện tại; sau ghi sổ dùng giá bình quân thực xuất = `amount` ÷ số thực dùng của (dòng, nguyên liệu), làm tròn nửa lên.
+- **"Tạm tính" trên D20** (trước ghi sổ): chia Mới trước rồi Tốt theo tồn và giá BQ hiện tại ở xưởng, đúng cách ghi sổ sẽ chia, nên số tạm tính khớp số ghi sổ nếu tồn không đổi.
+
+- Báo / đếm: số nguyên liệu đơn vị đếm phải là số nguyên, đơn vị đo tối đa 3 số lẻ (cùng luật số lượng của danh mục).
 
 **Lý do:**
 
@@ -191,7 +202,8 @@ Chưa làm (0.2 #154). Xưởng dùng M10. Khi cần thì một change nhỏ th�
 
 **Seed (`db:seed:dev`, `db:seed:demo`), `src/lib/production/sample.ts`:**
 
-- Nhóm "Nguyên liệu sản xuất" (`MATERIAL`): `VT-ONG42` (kg), `VT-ONG27` (kg), `VT-CHOT` (cái, 0,15 kg). Dùng lại `VT-QH`, `VT-SON` của lệnh sửa. Tồn đầu kỳ ở `XUONG-01` theo giá như D19/D20.
+- Nhóm "Nguyên liệu sản xuất" (`MATERIAL`): `VT-ONG42` (kg), `VT-ONG27` (kg), `VT-CHOT` (cái, 0,15 kg), tồn đầu kỳ ở `XUONG-01` đủ cho lệnh mẫu, giá như D19/D20.
+- Dùng lại `VT-QH`, `VT-SON` của lệnh sửa, nhưng tồn hiện có (18 kg, 12 lít) không đủ: lệnh mẫu cần 12,5 kg và 14 lít, lệnh sửa mẫu còn dùng 6 kg và 3,5 lít. `seedProduction` thêm tồn đầu kỳ `VT-QH` 20 kg × 45.000 ₫ và `VT-SON` 20 lít × 90.000 ₫ (cùng giá cũ, nên giá BQ trên D19 / D20 / D12 không đổi).
 - Mã sắt vụn `PL-SATVUN` (kg, nhóm Vật tư), đặt làm Mã sắt vụn nếu chưa có.
 - Định mức `GG-K17` (5 nguyên liệu, công 35.000 ₫) và `GG-CH` (`VT-ONG27` 2,9 kg, `VT-SON` 0,03 lít, công 8.000 ₫) như D19.
 - Một lệnh mẫu `LSX` **Chờ Giám đốc duyệt** như D20 (tổ anh Lực), đi qua đúng các hàm thật với `draftId` cố định. Chạy lại không thêm.
@@ -220,6 +232,7 @@ Chưa làm (0.2 #154). Xưởng dùng M10. Khi cần thì một change nhỏ th�
 - D20 lệnh mẫu: ô tiền gắn `data-mask`.
 - M10 lệnh mẫu không có tiền: không cần mask.
 - Sidebar đổi 10 mục: mọi ảnh mốc desktop đổi. Gắn nhãn `update-snapshots`.
+- Mã `E2E-SX-01`, `E2E-VT-02` mới có thể làm đổi ảnh mốc D9, D10, D1 (đếm mã, tồn). Khi apply kiểm các ảnh đó: đặt hai mã vào nhóm E2E sẵn có, hoặc lọc như các mã `E2E-*` khác đang lọc.
 
 ### D9. Dữ liệu
 
@@ -229,11 +242,14 @@ Chưa làm (0.2 #154). Xưởng dùng M10. Khi cần thì một change nhỏ th�
 - `labor_rate bigint not null ≥ 0`, `note`.
 - `created_by/at`, `updated_by/at`.
 
+**Danh sách D19:** chỉ hiện mã **đã có định mức**, xếp theo mã. Nút "+ Thêm định mức" chọn trong các mã Thiết bị đơn vị đếm chưa có định mức. Bản vẽ có dòng `CC-3M · chưa có định mức`: đó là trạng thái vừa chọn mã, chưa lưu, không phải một dòng thường trực. Cách này giữ danh sách gọn khi danh mục có hàng trăm mã (cả mã `E2E-*`).
+
 **`production_bom_material`:**
 
 - `id`, `bom_id` → `production_bom` ON DELETE CASCADE, `item_id` → `item` RESTRICT.
 - `quantity_per_unit numeric(14,3) > 0`, `position`.
 - UNIQUE(`bom_id`, `item_id`).
+- Lưu định mức gửi kèm `updatedAt` của định mức, lệch thì 409 (hai người cùng sửa).
 - Nhóm Vật tư, thành phẩm nhóm Thiết bị đơn vị đếm: service kiểm dưới `FOR SHARE` của vật tư (CHECK không đọc được bảng khác).
 
 **`production_setting`** (một dòng, `id = 1` CHECK):
@@ -255,7 +271,7 @@ Chưa làm (0.2 #154). Xưởng dùng M10. Khi cần thì một change nhỏ th�
 **`production_order_line`:**
 
 - `id`, `order_id` CASCADE, `position`, `item_id` RESTRICT.
-- `quantity_planned numeric(14,3) > 0`, nguyên.
+- `quantity_planned numeric(14,3)`, CHECK `> 0 and quantity_planned = trunc(quantity_planned)`.
 - `labor_rate bigint null` (chụp lúc giao).
 - `reported_finished`, `reported_offcut_kg`, `quantity_finished`, `offcut_kg` (numeric, null khi chưa có).
 - `labor_amount`, `material_amount`, `offcut_amount`, `finished_amount` (bigint, lúc ghi sổ).
@@ -275,7 +291,12 @@ Chưa làm (0.2 #154). Xưởng dùng M10. Khi cần thì một change nhỏ th�
 
 **Trigger:** `production_order_frozen` chặn UPDATE / DELETE lệnh, INSERT / UPDATE / DELETE dòng và nguyên liệu khi lệnh `POSTED` hoặc `CANCELLED`. Số cuối ghi trước khi đổi trạng thái, như lệnh sửa.
 
-**Nhật ký:** thêm loại chứng từ `PRODUCTION_ORDER`, `PRODUCTION_BOM` vào `DOCUMENT_TYPES` và CHECK `activity_log_document_type_check`. Thêm thao tác `RETURN` nếu chưa có cho trả lại. `APPROVE`, `ASSIGN`, `RECALL`, `RECEIVE`, `REPORT`, `COUNT` đã có. `WRITE_NAME` của test phủ thêm `^(assign|recall|receive|report|count|approve)ProductionOrder$`.
+**Nhật ký:**
+
+- Thêm loại chứng từ `PRODUCTION_ORDER`, `PRODUCTION_BOM` vào `DOCUMENT_TYPES` và CHECK `activity_log_document_type_check`.
+- Mọi thao tác cần dùng đã có (`ASSIGN`, `RECALL`, `RECEIVE`, `REPORT`, `COUNT`, `RETURN`, `APPROVE`), không đổi `activity_log_action_check`.
+- `actionLabel` (`src/domain/activity.ts`) thêm nhánh cho `PRODUCTION_ORDER`: `REPORT` → "Báo làm xong", `RETURN` → "Trả lại xưởng", `APPROVE` → "Duyệt vượt định mức". Không thì D18 hiện "Báo sửa xong", "Trả lại", "Duyệt".
+- Tên hàm ghi dùng tiền tố `WRITE_NAME` đã bắt (`createBom`, `updateBom`, `deleteBom`, `setScrapItem`…, không dùng `save…`). Regex phủ thêm `^(assign|recall|receive|report|count|approve)ProductionOrder$`.
 
 ### D10. Thứ tự khóa và ghi sổ
 
@@ -287,12 +308,12 @@ Chưa làm (0.2 #154). Xưởng dùng M10. Khi cần thì một change nhỏ th�
 - **Giao xưởng:** khóa lệnh, rồi `FOR SHARE` định mức của các mã (`production_bom` theo id tăng dần), chép định mức. Sửa định mức khóa `FOR UPDATE` định mức. Hai bên không chờ nhau vòng tròn vì giao không khóa gì sau định mức.
 - **Ghi sổ:**
   1. Khóa lệnh.
-  2. `lockForPosting`:
+  2. Đọc `production_setting` (`FOR SHARE`) lấy Mã sắt vụn, và `currentScrapPrice` (bảng chỉ ghi thêm, không khóa), khi lệnh có đầu thừa. Đổi Mã sắt vụn chỉ khóa `production_setting` `FOR UPDATE`, không khóa gì khác, nên không có vòng chờ khóa.
+  3. `lockForPosting`:
      - `itemIds` = thành phẩm ∪ nguyên liệu ∪ Mã sắt vụn;
      - `locationIds` = [xưởng, bãi nhận];
      - `pairs` = (thành phẩm, NEW) ∪ (nguyên liệu, NEW | GOOD) ∪ (Mã sắt vụn, SCRAP).
-  3. Đọc tồn nguyên liệu ở xưởng dưới khóa. Kiểm tổng cần cho cả lệnh, rồi chia Mới trước rồi Tốt theo thứ tự dòng.
-  4. Đọc giá sắt vụn và Mã sắt vụn (khi có đầu thừa).
+  4. Đọc tồn nguyên liệu ở xưởng dưới khóa. Kiểm tổng cần cho cả lệnh bằng câu báo riêng của sản xuất ("VT-ONG27 ở XUONG-01 còn 900 kg, lệnh cần 977 kg"), rồi mới chia Mới trước rồi Tốt theo thứ tự dòng. `splitMaterialIssue` nhận câu báo làm tham số, để không lộ câu của lệnh sửa.
   5. Tính bằng hàm thuần `productionPostingLines` (`src/domain/production-order.ts`).
   6. `postMovements`.
   7. Cập nhật dòng, nguyên liệu, rồi trạng thái `POSTED`.
@@ -346,4 +367,4 @@ Chưa làm (0.2 #154). Xưởng dùng M10. Khi cần thì một change nhỏ th�
 
 ## Open Questions
 
-Không còn. Bốn câu hỏi lúc propose đã chốt (0.2 #155–#155).
+Không còn. Bốn câu hỏi lúc propose đã chốt (0.2 #152–#155).

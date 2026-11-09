@@ -30,14 +30,14 @@ Chủ đã chốt cách làm (0.2 #139–#146, 09/11/2026), thiết kế D19, D2
   - Đầu thừa nhập **Phế liệu** của mã chung "Sắt vụn" ở cùng bãi, theo giá sắt vụn.
   - Giá trị dòng = nguyên liệu + công − đầu thừa.
   - Hai loại dòng sổ mới: `PRODUCTION_OUT`, `PRODUCTION_IN`. `PRODUCTION_IN` làm đổi giá BQ.
-- **Cài đặt:** trang Giá sắt vụn thêm ô **Mã sắt vụn** (một mã kg, nhóm Vật tư) để nhận đầu thừa (0.2 #155).
+- **Cài đặt:** trang Giá sắt vụn thêm ô **Mã sắt vụn** (một mã kg, nhóm Vật tư) để nhận đầu thừa (0.2 #152).
 - **Menu:** thêm mục **Sản xuất**, sidebar thành 10 mục (0.2 #153). Việc hôm nay trên điện thoại thêm khối Sản xuất.
 - **D15:** công khoán sản xuất là chi phí ngoài sổ, nên đẳng thức đối chiếu cộng bù công. Nguyên liệu không bị trừ hai lần, đầu thừa không thành lãi. Dưới bảng ghi thêm "Công sản xuất đã chi trong kỳ".
 
 ### Ngoài phạm vi
 
 - Mẫu in "Phiếu giao việc xưởng" A5 (0.2 #154). Xưởng dùng M10.
-- Ghi nguyên liệu hỏng khi cả mẻ hỏng thành lỗ sản xuất (0.2 #155). Dòng làm xong 0 cái không ghi sổ được. Nguyên liệu hỏng thì lập phiếu điều chỉnh `ĐC`.
+- Ghi nguyên liệu hỏng khi cả mẻ hỏng thành lỗ sản xuất (0.2 #155). Dòng làm xong 0 cái không ghi sổ được. Nguyên liệu hỏng thì Kế toán lập phiếu điều chỉnh `ĐC`, Giám đốc duyệt.
 - Định mức có tỷ lệ hao hụt dự kiến riêng. Ngưỡng vượt chỉ là 5 % chung (0.2 #140).
 - Nhiều phiên bản định mức theo ngày. Lệnh chụp định mức lúc giao là đủ (0.2 #145).
 - Chi phí khác ngoài công (điện, khí hàn tính chung). Chỉ có nguyên liệu và công khoán.
@@ -64,6 +64,7 @@ Chủ đã chốt cách làm (0.2 #139–#146, 09/11/2026), thiết kế D19, D2
 - `app-shell`: sidebar 10 mục, thêm Sản xuất; lọc theo vai trò.
 - `mobile-home`: khối Sản xuất trên Việc hôm nay.
 - `activity-log`: thao tác trên định mức và lệnh sản xuất được ghi.
+- `management-reports`: dưới bảng lợi nhuận gộp D15 thêm "Công sản xuất đã chi trong kỳ".
 
 ## Impact
 

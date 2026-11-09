@@ -80,7 +80,7 @@ Khi giao xưởng, hệ thống SHALL chép vào lệnh, cho từng dòng thành
 - **THEN** dòng `GG-CH` ghi công 9.000 ₫
 
 ### Requirement: Vượt định mức
-Với mỗi nguyên liệu của một dòng, **định mức** SHALL bằng số / 1 cái đã chụp × số làm xong do Thủ kho đếm. Nguyên liệu xưởng dùng thêm, không có trong định mức, SHALL có định mức 0. Nguyên liệu **vượt quá 5 %** khi thực dùng × 100 > định mức × 105. Thực dùng > 0 trên định mức 0 luôn là vượt. Ngưỡng 5 % SHALL đặt ở một chỗ trong code.
+Với mỗi nguyên liệu của một dòng, **định mức** SHALL bằng số / 1 cái đã chụp × số làm xong do Thủ kho đếm; nguyên liệu đơn vị đếm làm tròn lên số nguyên. Nguyên liệu ngoài định mức có định mức 0. **Vượt quá 5 %** khi thực dùng × 100 > định mức × 105; thực dùng > 0 trên định mức 0 luôn là vượt. Ngưỡng 5 % đặt ở một chỗ trong code.
 
 Khi Thủ kho đếm xong, có ít nhất một nguyên liệu vượt quá 5 % thì lệnh SHALL sang **Chờ Giám đốc duyệt**, không thì sang Chờ ghi sổ.
 
@@ -93,8 +93,12 @@ Khi Thủ kho đếm xong, có ít nhất một nguyên liệu vượt quá 5 % 
 - **THEN** chênh lệch + 5,0 % **AND** lệnh sang Chờ ghi sổ
 
 #### Scenario: Dùng thêm nguyên liệu ngoài định mức
-- **WHEN** xưởng báo thêm 0,5 kg `VT-QH` cho dòng `GG-CH` (định mức không có `VT-QH`)
+- **WHEN** Thủ kho đếm xong `LSX-2026-004` có 0,5 kg `VT-QH` ở dòng `GG-CH` (định mức không có `VT-QH`)
 - **THEN** `VT-QH` của dòng `GG-CH` có định mức 0 và bị tính là vượt **AND** lệnh sang Chờ Giám đốc duyệt
+
+#### Scenario: Định mức nguyên liệu tính theo cây
+- **WHEN** định mức `MAM-1,6` có `VT-THANH` 0,5 cây / cái và Thủ kho đếm 3 cái, thực dùng 2 cây
+- **THEN** định mức của `VT-THANH` là 2 cây (1,5 làm tròn lên) **AND** không tính là vượt
 
 #### Scenario: Dùng ít hơn định mức
 - **WHEN** `VT-SON` của khung định mức 8 lít, thực dùng 7,5 lít

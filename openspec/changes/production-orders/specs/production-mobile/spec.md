@@ -18,7 +18,7 @@ Mỗi thẻ SHALL có mã, tổ, xưởng → bãi nhận, số thành phẩm th
 ### Requirement: Xưởng ghi số trên M10
 Sau khi nhận lệnh, M10 SHALL cho xưởng ghi theo từng dòng thành phẩm:
 - **Làm xong:** stepper số nguyên ≥ 0, mặc định bằng số kế hoạch.
-- **Nguyên liệu thực dùng:** điền sẵn định mức đã chụp × số làm xong, sửa được, tối đa 3 chữ số lẻ. Xưởng thêm được mã nhóm Vật tư ngoài định mức, bỏ được nguyên liệu (về 0).
+- **Nguyên liệu thực dùng:** điền sẵn định mức đã chụp × số làm xong (đơn vị đếm làm tròn lên số nguyên), sửa được: đơn vị đếm là số nguyên, kg / m / lít tối đa 3 chữ số lẻ. Xưởng thêm được mã nhóm Vật tư ngoài định mức, bỏ được nguyên liệu (về 0).
 - **Đầu thừa (kg):** ≥ 0, tối đa 3 chữ số lẻ.
 
 M10 SHALL không hiện giá, giá trị, công hay giá sắt vụn.
@@ -26,6 +26,10 @@ M10 SHALL không hiện giá, giá trị, công hay giá sắt vụn.
 #### Scenario: Điền sẵn theo định mức
 - **WHEN** `hoangnam` mở `LSX-2026-004` Đang làm, dòng `GG-K17` để làm xong 100
 - **THEN** `VT-ONG42` điền sẵn 980 kg, `VT-ONG27` 360 kg, `VT-QH` 12 kg, `VT-SON` 8 lít, `VT-CHOT` 400 cái
+
+#### Scenario: Điền sẵn nguyên liệu tính theo cây
+- **WHEN** định mức có `VT-THANH` 0,5 cây / cái và xưởng để làm xong 3
+- **THEN** `VT-THANH` điền sẵn 2 cây
 
 #### Scenario: Đổi số làm xong thì định mức đổi theo
 - **WHEN** xưởng đổi làm xong `GG-K17` từ 100 thành 90 khi chưa sửa số nguyên liệu nào
@@ -57,7 +61,7 @@ Mỗi lần bấm Nhận lệnh, Báo làm xong, Đếm xong SHALL mang một `d
 - **THEN** server trả trạng thái hiện tại **AND** số của lần `d2` giữ nguyên
 
 ### Requirement: API điện thoại không có tiền
-`/api/m/production/**` SHALL chỉ trả mã, tên, đơn vị, số lượng, trạng thái, người, lúc. Không có giá, giá trị, công, đơn giá, giá sắt vụn. Báo làm xong và Đếm xong SHALL kiểm: mỗi dòng của lệnh có đúng một mục, số làm xong nguyên ≥ 0, số nguyên liệu và đầu thừa ≥ 0, nguyên liệu là mã nhóm Vật tư đang dùng.
+`/api/m/production/**` SHALL chỉ trả mã, tên, đơn vị, số lượng, trạng thái, người, lúc. Không có giá, giá trị, công, đơn giá, giá sắt vụn. Báo làm xong và Đếm xong SHALL kiểm: mỗi dòng của lệnh có đúng một mục, số làm xong nguyên ≥ 0, số nguyên liệu ≥ 0 (nguyên với đơn vị đếm), đầu thừa ≥ 0, nguyên liệu là mã nhóm Vật tư đang dùng.
 
 #### Scenario: Không có khóa tiền trong JSON
 - **WHEN** `hoangnam` gọi `GET /api/m/production/LSX-2026-004`
@@ -66,6 +70,10 @@ Mỗi lần bấm Nhận lệnh, Báo làm xong, Đếm xong SHALL mang một `d
 #### Scenario: Báo nguyên liệu không phải vật tư
 - **WHEN** xưởng báo nguyên liệu `GG-CH` (nhóm Thiết bị) cho dòng `GG-K17`
 - **THEN** API trả 422 "Nguyên liệu phải là mã nhóm Vật tư"
+
+#### Scenario: Số lẻ với nguyên liệu tính theo cái
+- **WHEN** xưởng báo `VT-CHOT` 400,5 cái
+- **THEN** API trả 422 "VT-CHOT tính theo cái, nhập số nguyên"
 
 #### Scenario: Thủ kho gọi báo làm xong
 - **WHEN** `vantung` (Thủ kho) gọi `POST /api/m/production/LSX-2026-004/report`
