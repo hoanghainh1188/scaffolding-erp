@@ -96,7 +96,11 @@ function Progress({ detail }: { detail: WorkOrderDetail }) {
           </span>
           <span className="flex flex-col">
             <span className="font-semibold">{label}</span>
-            {sub ? <span className="text-caption">{sub}</span> : null}
+            {sub ? (
+              <span data-mask className="text-caption tabular-nums">
+                {sub}
+              </span>
+            ) : null}
           </span>
         </li>
       ))}
