@@ -25,6 +25,7 @@ import { seedPurchasing } from "@/lib/purchasing/sample";
 import { seedPayables } from "@/lib/payables/sample";
 import { seedReceivables } from "@/lib/receivables/sample";
 import { SAMPLE_RECEIVING_AT, seedReceiving } from "@/lib/receiving/sample";
+import { seedProduction } from "@/lib/production/sample";
 import { seedRepairs } from "@/lib/repairs/sample";
 import { seedWorkOrders } from "@/lib/repairs/work-sample";
 import { seedReturns } from "@/lib/returns/sample";
@@ -186,6 +187,17 @@ export async function runDemoSeed(now: Date = new Date()): Promise<number> {
     process.stdout.write(
       `Vật tư phụ và lệnh sửa mẫu: thêm ${workOrders} bản ghi.\n`,
     );
+    // production-orders design D8: materials, BOMs and the D20 sample order.
+    const production =
+      director && accountant && warehouse && workshopUser
+        ? await seedProduction(handle.db, {
+            director,
+            accountant,
+            warehouse,
+            workshop: workshopUser,
+          })
+        : 0;
+    process.stdout.write(`Sản xuất mẫu: thêm ${production} bản ghi.\n`);
 
     const activity =
       director && accountant && sales && warehouse

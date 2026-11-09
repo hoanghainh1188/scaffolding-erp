@@ -5,6 +5,7 @@ export const navigation = {
     purchasing: "Mua hàng",
     inventory: "Kho",
     repairs: "Sửa chữa",
+    production: "Sản xuất",
     sales: "Cho thuê & Bán",
     receivables: "Công nợ",
     reports: "Báo cáo",

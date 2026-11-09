@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { DeliveryHome } from "@/components/delivery-picking/delivery-home";
 import { DraftBanner } from "@/components/drafts/draft-banner";
 import { ArrivalList } from "@/components/receiving/arrival-list";
+import { ProductionPhoneCards } from "@/components/production/phone/production-phone-list";
 import { RepairPhoneCards } from "@/components/repairs/phone/repair-phone-list";
 import { ReturnHome } from "@/components/returns/return-home";
 import { MobilePage } from "@/components/shell/mobile/mobile-page";
@@ -18,6 +19,11 @@ import {
 import { can } from "@/domain/permissions";
 import { requireUser } from "@/lib/auth/guard";
 import { mobileTasks, type MobileTask } from "@/lib/deliveries/queries";
+import {
+  productionPhoneOrders,
+  productionPhoneStatuses,
+  type ProductionPhoneCard,
+} from "@/lib/production/phone-queries";
 import { arrivals, type Arrivals } from "@/lib/receiving/queries";
 import {
   phoneOrders,
@@ -77,6 +83,17 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
     repairScope.work || repairScope.count
       ? await phoneOrders(getDatabase(), phoneStatuses(repairScope))
       : null;
+  const productionScope = {
+    work: can(user.role, "production.work"),
+    count: can(user.role, "production.count"),
+  };
+  const production: ProductionPhoneCard[] | null =
+    productionScope.work || productionScope.count
+      ? await productionPhoneOrders(
+          getDatabase(),
+          productionPhoneStatuses(productionScope),
+        )
+      : null;
   // A session still being counted is today's work too (spec mobile-home),
   // and so is every delivery note due by today.
   const due =
@@ -84,7 +101,8 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
     (counts?.filter((session) => session.status === "COUNTING").length ?? 0) +
     (shipping?.length ?? 0) +
     (moving?.length ?? 0) +
-    (repairs?.length ?? 0);
+    (repairs?.length ?? 0) +
+    (production?.length ?? 0);
   const day = weekday.format(now);
   return (
     <MobilePage title="Việc hôm nay">
@@ -117,6 +135,17 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
             Sửa chữa
           </h2>
           <RepairPhoneCards cards={repairs} />
+        </section>
+      ) : null}
+      {production && production.length > 0 ? (
+        <section
+          aria-labelledby="production-home"
+          className="flex flex-col gap-3"
+        >
+          <h2 id="production-home" className="text-h3 font-display">
+            Sản xuất
+          </h2>
+          <ProductionPhoneCards cards={production} />
         </section>
       ) : null}
       {returned && <ReturnHome notes={returned} />}

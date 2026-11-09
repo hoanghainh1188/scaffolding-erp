@@ -142,7 +142,7 @@ async function storedLines(tx: Tx, orderId: string): Promise<StoredLine[]> {
 }
 
 /** New and Good stock of the supplies at the workshop, under the locks. */
-async function supplyStock(
+export async function supplyStock(
   tx: Tx,
   itemIds: readonly string[],
   workshopId: string,

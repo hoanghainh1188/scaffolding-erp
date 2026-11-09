@@ -65,6 +65,12 @@ describe("actions and groups (design D3)", () => {
     expect(actionLabel("REJECT", "COMPENSATION_NOTE")).toBe("Từ chối");
     expect(actionLabel("RETURN", "REPAIR_ORDER")).toBe("Trả lại xưởng");
     expect(actionLabel("ASSIGN", "REPAIR_ORDER")).toBe("Giao xưởng");
+    expect(actionLabel("REPORT", "PRODUCTION_ORDER")).toBe("Báo làm xong");
+    expect(actionLabel("RETURN", "PRODUCTION_ORDER")).toBe("Trả lại xưởng");
+    expect(actionLabel("APPROVE", "PRODUCTION_ORDER")).toBe(
+      "Duyệt vượt định mức",
+    );
+    expect(actionLabel("APPROVE", "CONTRACT")).toBe("Duyệt");
     expect(GROUP_ACTIONS.UPDATE).toEqual([
       "UPDATE",
       "START",

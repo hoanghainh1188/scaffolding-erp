@@ -29,6 +29,7 @@ const MOVEMENTS_IN = [
   "OPENING",
   "PURCHASE_IN",
   "REPAIR_IN",
+  "PRODUCTION_IN",
   "DELIVERY_IN",
   "RETURN_IN",
   "TRANSFER_IN",
@@ -36,6 +37,7 @@ const MOVEMENTS_IN = [
 ];
 const MOVEMENTS_OUT = [
   "REPAIR_OUT",
+  "PRODUCTION_OUT",
   "DELIVERY_OUT",
   "RETURN_OUT",
   "LOSS_OUT",

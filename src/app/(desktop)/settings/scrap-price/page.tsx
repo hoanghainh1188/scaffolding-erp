@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ScrapItemForm } from "@/components/production/scrap-item-form";
 import { ScrapPriceForm } from "@/components/settings/scrap-price-form";
 import { getDatabase } from "@/db/client";
 import {
@@ -11,6 +12,8 @@ import {
 import { formatMoney } from "@/domain/money";
 import { SCRAP_PRICE_MESSAGES } from "@/domain/scrap-price";
 import { requirePermission } from "@/lib/auth/guard";
+import { scrapItemChoices } from "@/lib/production/queries";
+import { currentScrapItem } from "@/lib/production/settings";
 import {
   currentScrapPrice,
   scrapPriceHistory,
@@ -22,9 +25,11 @@ export const metadata: Metadata = { title: "Giá sắt vụn tham khảo" };
 export default async function Page() {
   await requirePermission("scrap-price.manage");
   const db = getDatabase();
-  const [current, history] = await Promise.all([
+  const [current, history, scrapItem, choices] = await Promise.all([
     currentScrapPrice(db),
     scrapPriceHistory(db),
+    currentScrapItem(db),
+    scrapItemChoices(db),
   ]);
   return (
     <div className="flex w-full max-w-3xl flex-col gap-6">
@@ -62,6 +67,7 @@ export default async function Page() {
         )}
       </section>
       <ScrapPriceForm />
+      <ScrapItemForm current={scrapItem} choices={choices} />
       {history.length > 0 && (
         <section className="flex flex-col gap-3 rounded-lg border bg-card p-5">
           <h2 className="font-display text-h2">Các lần đổi giá</h2>

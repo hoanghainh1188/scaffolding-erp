@@ -66,7 +66,15 @@ export function ItemsTable({
         </Link>
       ),
     },
-    { id: "group", header: "Nhóm", accessorFn: (row) => row.groupName },
+    {
+      id: "group",
+      header: "Nhóm",
+      accessorFn: (row) => row.groupName,
+      // A long group name wraps: both rent columns must fit at 1366px.
+      cell: ({ row }) => (
+        <span className="whitespace-normal">{row.original.groupName}</span>
+      ),
+    },
     {
       id: "unit",
       header: "ĐVT",

@@ -22,14 +22,37 @@ const line = (
 });
 
 describe("movement types", () => {
-  it("has 15 types; opening, purchase, repaired and revalue change the average", () => {
-    expect(MOVEMENTS).toHaveLength(15);
+  it("has 17 types; opening, purchase, repaired, produced and revalue change the average", () => {
+    expect(MOVEMENTS).toHaveLength(17);
     expect(MOVEMENTS.filter(changesAverage)).toEqual([
       "OPENING",
       "PURCHASE_IN",
       "REPAIR_IN",
+      "PRODUCTION_IN",
       "REVALUE",
     ]);
+  });
+
+  it("wants a value on PRODUCTION_IN and none on PRODUCTION_OUT", () => {
+    expect(() =>
+      assertMovementLine(line({ movement: "PRODUCTION_IN", hasAmount: false })),
+    ).toThrow("Dòng làm đổi giá vốn phải có giá trị");
+    expect(() =>
+      assertMovementLine(
+        line({
+          movement: "PRODUCTION_OUT",
+          quantityMilli: -1000,
+          hasAmount: true,
+        }),
+      ),
+    ).toThrow(
+      "Chỉ tồn đầu kỳ, nhập mua, nhập sau sửa, nhập sản xuất, điều chỉnh giá mới có giá trị",
+    );
+    expect(() =>
+      assertMovementLine(
+        line({ movement: "PRODUCTION_IN", quantityMilli: -1000 }),
+      ),
+    ).toThrow("Dòng nhập phải có số lượng dương");
   });
 
   it("tells inbound from outbound", () => {
@@ -113,7 +136,7 @@ describe("assertMovementLine", () => {
     expect(() =>
       assertMovementLine(line({ movement: "RETURN_IN", hasAmount: true })),
     ).toThrow(
-      "Chỉ tồn đầu kỳ, nhập mua, nhập sau sửa, điều chỉnh giá mới có giá trị",
+      "Chỉ tồn đầu kỳ, nhập mua, nhập sau sửa, nhập sản xuất, điều chỉnh giá mới có giá trị",
     );
   });
 

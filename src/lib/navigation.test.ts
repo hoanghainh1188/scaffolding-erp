@@ -12,6 +12,7 @@ describe("navigation", () => {
       ["Mua hàng", "/purchasing"],
       ["Kho", "/inventory"],
       ["Sửa chữa", "/repairs"],
+      ["Sản xuất", "/production"],
       ["Cho thuê & Bán", "/sales"],
       ["Công nợ", "/receivables"],
       ["Báo cáo", "/reports"],
@@ -20,8 +21,8 @@ describe("navigation", () => {
     ]);
   });
 
-  it("shows all nine items to the director", () => {
-    expect(labels("DIRECTOR")).toHaveLength(9);
+  it("shows all ten items to the director", () => {
+    expect(labels("DIRECTOR")).toHaveLength(10);
   });
 
   it("hides receivables, reports and settings from sales", () => {
@@ -30,6 +31,7 @@ describe("navigation", () => {
       "Mua hàng",
       "Kho",
       "Sửa chữa",
+      "Sản xuất",
       "Cho thuê & Bán",
       "Danh mục",
     ]);

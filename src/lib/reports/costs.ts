@@ -6,8 +6,19 @@
 import { and, between, eq, sql } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
-import { inventoryLedger, repairOrder, repairOrderLine } from "@/db/schema";
-import type { LedgerSum, RepairSum } from "@/domain/gross-profit";
+import {
+  inventoryLedger,
+  productionOrder,
+  productionOrderLine,
+  repairOrder,
+  repairOrderLine,
+} from "@/db/schema";
+import type {
+  LedgerSum,
+  ProductionSum,
+  RepairSum,
+} from "@/domain/gross-profit";
+import { PRODUCTION_DOCUMENT_TYPE } from "@/domain/production-order";
 import type { DateRange } from "@/domain/report-period";
 import { REPAIR_DOCUMENT_TYPE } from "@/domain/repair-order";
 
@@ -80,5 +91,47 @@ export async function repairSums(
     repairCost: Number(row.repairCost),
     lossAmount: Number(row.lossAmount),
     materialCost: Number(row.materialCost),
+  }));
+}
+
+/** Labour of the production orders posted in the range, by posting month. */
+export async function productionSums(
+  db: Reader,
+  range: DateRange,
+): Promise<ProductionSum[]> {
+  const posted = db
+    .select({
+      orderId: sql<string>`${productionOrder.id}`.as("posted_order_id"),
+      day: sql<string>`min(${inventoryLedger.businessDate})`.as("day"),
+    })
+    .from(inventoryLedger)
+    .innerJoin(
+      productionOrder,
+      eq(productionOrder.postingId, inventoryLedger.postingId),
+    )
+    .where(
+      and(
+        eq(inventoryLedger.documentType, PRODUCTION_DOCUMENT_TYPE),
+        eq(productionOrder.status, "POSTED"),
+        between(inventoryLedger.businessDate, range.from, range.to),
+      ),
+    )
+    .groupBy(productionOrder.id)
+    .as("posted");
+  const month = sql<string>`to_char(${posted.day}::date, 'YYYY-MM')`;
+  const rows = await db
+    .select({
+      month,
+      laborCost: sql<string>`sum(coalesce(${productionOrderLine.laborAmount}, 0))`,
+    })
+    .from(posted)
+    .innerJoin(
+      productionOrderLine,
+      eq(productionOrderLine.orderId, posted.orderId),
+    )
+    .groupBy(month);
+  return rows.map((row) => ({
+    month: row.month,
+    laborCost: Number(row.laborCost),
   }));
 }

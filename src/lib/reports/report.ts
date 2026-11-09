@@ -33,7 +33,7 @@ import {
   type ReportPeriod,
 } from "@/domain/report-period";
 
-import { ledgerSums, repairSums } from "./costs";
+import { ledgerSums, productionSums, repairSums } from "./costs";
 import { reportFleet } from "./fleet";
 import { customerRanking, type CustomerRanking } from "./ranking";
 import { reportRevenue, revenueBetween } from "./revenue";
@@ -80,10 +80,11 @@ export async function buildReport(
     from: earlier(previous.from, ytd.from),
     to: yearEnd,
   };
-  const [revenue, ledger, repairs, fleet] = await Promise.all([
+  const [revenue, ledger, repairs, productions, fleet] = await Promise.all([
     reportRevenue(db, read, today),
     ledgerSums(db, read),
     repairSums(db, read),
+    productionSums(db, read),
     reportFleet(db, { from: ytd.from, to: range.to }),
   ]);
   const ranking = await customerRanking(db, revenue.book, ytd.from, yearEnd);
@@ -93,6 +94,7 @@ export async function buildReport(
     ledger,
     repairs,
     revenue.book.openMonths,
+    productions,
   );
   const current = sumMonths(rows, monthsOf(range));
   const comparable = comparableRange(period, today);

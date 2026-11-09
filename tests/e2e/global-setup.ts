@@ -24,6 +24,8 @@ import {
   purchaseOrder,
   purchaseOrderLine,
   rentalHoliday,
+  productionBom,
+  productionOrder,
   repairOrder,
   session,
   site,
@@ -63,6 +65,12 @@ import { seedInventory } from "@/lib/inventory/sample";
 import { seedPurchasing } from "@/lib/purchasing/sample";
 import { seedReceiving } from "@/lib/receiving/sample";
 import { currentScrapPrice, setScrapPrice } from "@/lib/receiving/scrap-price";
+import { createBom } from "@/lib/production/boms";
+import {
+  cancelProductionOrder,
+  deleteProductionOrder,
+} from "@/lib/production/orders";
+import { seedProduction } from "@/lib/production/sample";
 import { seedRepairs } from "@/lib/repairs/sample";
 import { seedWorkOrders } from "@/lib/repairs/work-sample";
 import { cancelWorkOrder, deleteWorkOrder } from "@/lib/repairs/work-orders";
@@ -358,6 +366,140 @@ async function ensureWorkOrderStock(db: Database, actor: ActivityActor) {
       documentCode: "E2E-LSC",
       businessDate: toBusinessDate(new Date()),
       lines,
+    }),
+  );
+}
+
+/** What production.spec.ts makes and uses (production-orders design D8). */
+export const E2E_PRODUCT_ITEM = "E2E-SX-01";
+export const E2E_RAW_ITEM = "E2E-VT-02";
+
+async function itemOf(db: Database, code: string) {
+  const [row] = await db
+    .select({ id: item.id })
+    .from(item)
+    .where(eq(item.code, code));
+  return row?.id ?? null;
+}
+
+async function materialGroupId(db: Database) {
+  const [group] = await db
+    .select({ id: itemGroup.id })
+    .from(itemGroup)
+    .where(eq(itemGroup.category, "MATERIAL"))
+    .limit(1);
+  return group?.id;
+}
+
+/** Orders e2e.* left open; the D20 sample (tổ anh Lực) stays. */
+async function dropOpenProductionOrders(db: Database, actor: ActivityActor) {
+  const open = await db
+    .select({
+      code: productionOrder.code,
+      status: productionOrder.status,
+      updatedAt: productionOrder.updatedAt,
+    })
+    .from(productionOrder)
+    .innerJoin(user, eq(user.id, productionOrder.createdBy))
+    .where(
+      and(
+        notInArray(productionOrder.status, ["POSTED", "CANCELLED"]),
+        like(user.username, "e2e.%"),
+        sql`${productionOrder.team} is distinct from 'tổ anh Lực'`,
+      ),
+    );
+  for (const order of open) {
+    const done =
+      order.status === "DRAFT"
+        ? await deleteProductionOrder(db, actor, order.code)
+        : await cancelProductionOrder(db, actor, order.code, {
+            updatedAt: order.updatedAt.toISOString(),
+            reason: "E2E dọn lệnh lần trước",
+          });
+    if (!done.ok) throw new Error(`${order.code}: ${done.error}`);
+  }
+}
+
+/**
+ * production.spec.ts makes E2E-SX-01 from E2E-VT-02 at XUONG-01: the items,
+ * the BOM (2 kg, 1.000 ₫ a piece) and at least 50 kg of the material.
+ */
+async function ensureProductionStock(db: Database, actor: ActivityActor) {
+  await dropOpenProductionOrders(db, actor);
+  const [equipment] = await db
+    .select({ id: itemGroup.id })
+    .from(itemGroup)
+    .where(eq(itemGroup.nameKey, "gian giao"));
+  const [workshop] = await db
+    .select({ id: location.id })
+    .from(location)
+    .where(eq(location.code, "XUONG-01"));
+  const materialGroup = await materialGroupId(db);
+  if (!equipment || !workshop || !materialGroup) return;
+  let product = await itemOf(db, E2E_PRODUCT_ITEM);
+  if (!product) {
+    const made = await createItem(db, actor, {
+      code: E2E_PRODUCT_ITEM,
+      name: "Thành phẩm thử E2E",
+      groupId: equipment.id,
+      unit: "PIECE",
+      standardWeightKg: "2",
+    });
+    if (!made.ok) throw new Error(made.error);
+    product = made.data.id;
+  }
+  let raw = await itemOf(db, E2E_RAW_ITEM);
+  if (!raw) {
+    const made = await createItem(db, actor, {
+      code: E2E_RAW_ITEM,
+      name: "Nguyên liệu thử E2E",
+      groupId: materialGroup,
+      unit: "KG",
+    });
+    if (!made.ok) throw new Error(made.error);
+    raw = made.data.id;
+  }
+  const [bom] = await db
+    .select({ id: productionBom.id })
+    .from(productionBom)
+    .where(eq(productionBom.itemId, product));
+  if (!bom) {
+    const made = await createBom(db, actor, E2E_PRODUCT_ITEM, {
+      laborRate: 1_000,
+      materials: [{ itemId: raw, quantity: "2" }],
+    });
+    if (!made.ok) throw new Error(made.error);
+  }
+  const [row] = await db
+    .select({
+      total: sql<string>`coalesce(sum(${inventoryLedger.quantity}), 0)`,
+    })
+    .from(inventoryLedger)
+    .where(
+      and(
+        eq(inventoryLedger.itemId, raw),
+        eq(inventoryLedger.condition, "NEW"),
+        eq(inventoryLedger.locationId, workshop.id),
+      ),
+    );
+  if (Number(row?.total ?? 0) >= 50) return;
+  await db.transaction((tx) =>
+    postMovements(tx, actor, {
+      documentType: "E2E",
+      documentId: null,
+      documentCode: "E2E-LSX",
+      businessDate: toBusinessDate(new Date()),
+      lines: [
+        {
+          itemId: raw,
+          condition: "NEW",
+          locationId: workshop.id,
+          movement: "ADJUST_IN",
+          quantityMilli: 100_000,
+          unitCost: 20_000,
+          description: "E2E: nguyên liệu cho lệnh sản xuất",
+        },
+      ],
     }),
   );
 }
@@ -973,6 +1115,15 @@ export default async function globalSetup(): Promise<void> {
             warehouse,
             workshop,
           });
+          // production-orders 5.2: the D19 / D20 sample, once, then what
+          // production.spec.ts makes.
+          await seedProduction(handle.db, {
+            director,
+            accountant,
+            warehouse,
+            workshop,
+          });
+          await ensureProductionStock(handle.db, director);
         }
       }
       // The D13 sample session at BAI-01 (stocktake design D16), once; the
