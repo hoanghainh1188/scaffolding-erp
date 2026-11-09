@@ -33,7 +33,7 @@ Không có migration: dùng bảng `session` sẵn có.
 ## 5. Tài liệu và kiểm tra tổng
 
 - [x] 5.1 Thêm một gạch đầu dòng về phiên đăng nhập vào `CLAUDE.md` (đi qua `src/lib/auth/sessions.ts`, không mở route revoke, không để token ra client, E2E dùng tài khoản tạm). Kiểm `npm run format:check`.
-- [ ] 5.2 Chạy `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate session-management --strict`, tất cả xanh. Gắn nhãn `update-snapshots` nếu ảnh mốc đổi.
+- [x] 5.2 Chạy `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate session-management --strict`, tất cả xanh. Gắn nhãn `update-snapshots` nếu ảnh mốc đổi.
 
 ## Workflow follow-up
 
