@@ -116,7 +116,7 @@ export function createAuth({ db, secret, baseURL }: AuthConfig) {
         usernameNormalization: normalizeUsername,
         usernameValidator: isValidUsername,
         // Validate "ThuHa" as "thuha".
-        validationOrder: { username: "pre-normalization" },
+        validationOrder: { username: "post-normalization" },
       }),
       // Must stay last: lets server actions set the session cookie.
       nextCookies(),
