@@ -76,6 +76,8 @@ export function documentHref(
       return `/production/${path}`;
     case "PRODUCTION_BOM":
       return `/production/boms?item=${path}`;
+    case "SCRAP_PRICE":
+      return "/settings/scrap-price";
     case "STOCKTAKE":
       return `/inventory/stocktakes/${path}`;
     case "ITEM":

@@ -35,6 +35,8 @@ export interface DraftRecord<P = unknown> {
   createdAt: string;
   updatedAt: string;
   attempts: number;
+  /** The document's updatedAt when the draft was made (see useDraft). */
+  version?: string;
 }
 
 export interface DraftStore {

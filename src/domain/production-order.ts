@@ -106,6 +106,8 @@ export const PRODUCTION_MESSAGES = {
   posted: "Lệnh đã được ghi sổ",
   cancelled: "Lệnh đã hủy",
   stale: "Lệnh vừa được người khác cập nhật, tải lại trang",
+  finishedIsMaterial: (code: string) =>
+    `${code} vừa là thành phẩm vừa là nguyên liệu của lệnh`,
   notAssignedAnymore: "Lệnh không còn ở trạng thái Đã giao",
   notCounted: "Lệnh chưa ở trạng thái Chờ ghi sổ",
   received:
@@ -722,24 +724,39 @@ function incomingDrafts(
   ];
 }
 
+function assertNoFinishedMaterial(lines: readonly PostingLine[]): void {
+  const used = new Set(
+    lines.flatMap((line) => line.materials.map((material) => material.itemId)),
+  );
+  const both = lines.find((line) => used.has(line.itemId));
+  if (both) {
+    throw new DomainValueError(
+      PRODUCTION_MESSAGES.finishedIsMaterial(both.itemCode),
+    );
+  }
+}
+
 /**
  * The ledger lines and the figures of posting an order (design D2, D3, D10):
  * materials out at the workshop at the average, New first; finished goods
- * New and offcuts Scrap in at the yard. All ledger lines add up to + labour.
+ * New and offcuts Scrap in at the yard. All ledger lines add up to + labour:
+ * materials are priced at the average before posting, so every OUT comes
+ * before any IN and no item may be both finished and a material.
  */
 export function productionPostingLines(
   lines: readonly PostingLine[],
   context: PostingContext,
 ): ProductionPosting {
+  assertNoFinishedMaterial(lines);
   const costed = costLines(lines, context, true);
   const sum = (pick: (line: CostedLine) => number) =>
     costed.reduce((total, line) => total + pick(line), 0);
   return {
     lines: costed,
-    drafts: costed.flatMap((line) => [
-      ...materialDrafts(line, context),
-      ...incomingDrafts(line, context),
-    ]),
+    drafts: [
+      ...costed.flatMap((line) => materialDrafts(line, context)),
+      ...costed.flatMap((line) => incomingDrafts(line, context)),
+    ],
     totals: {
       finishedMilli: sum((line) => line.finishedMilli),
       offcutMilli: sum((line) => line.offcutMilli),

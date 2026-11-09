@@ -5,7 +5,12 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resetDraftRuntime } from "@/lib/drafts/runtime";
-import { memoryDraftStore, setDraftStore } from "@/lib/drafts/store";
+import {
+  draftStore,
+  memoryDraftStore,
+  setDraftStore,
+  type DraftState,
+} from "@/lib/drafts/store";
 import type {
   ProductionPhoneCard,
   ProductionPhoneLine,
@@ -209,7 +214,8 @@ describe("the draft (spec: xưởng ghi số trên M10)", () => {
   });
 
   it("sends numbers only", () => {
-    const body = stepBody(order, initialPayload(order));
+    const body = stepBody(order, initialPayload(order), "2026-11-01T00:00:00Z");
+    expect(body.updatedAt).toBe("2026-11-01T00:00:00Z");
     expect(body.lines[0]).toMatchObject({
       itemId: "k17",
       finished: "100.000",
@@ -264,6 +270,83 @@ describe("the screen", () => {
     expect(
       await screen.findByRole("button", { name: "Nhận lệnh" }),
     ).toBeTruthy();
+  });
+
+  describe("a draft older than the order (trả lại xưởng)", () => {
+    const reported: ProductionPhoneOrder = {
+      ...order,
+      status: "AWAITING_CHECK",
+      updatedAt: "2026-11-05T02:00:00.000Z",
+      lines: [{ ...line, reportedFinished: "90.000" }],
+    };
+    const oldDraft = (version: string, state: DraftState = "EDITING") => ({
+      draftId: "old",
+      kind: "PRODUCTION" as const,
+      userId: "u2",
+      documentRef: order.code,
+      title: "Đếm",
+      progress: "",
+      payload: initialPayload({
+        ...reported,
+        lines: [{ ...line, reportedFinished: "70.000" }],
+      }),
+      state,
+      error: null,
+      createdAt: "2026-11-04T03:00:00.000Z",
+      updatedAt: "2026-11-04T03:00:00.000Z",
+      attempts: 0,
+      version,
+    });
+    const screenOf = () =>
+      render(
+        <ProductionPhoneScreen
+          order={reported}
+          materials={[]}
+          userId="u2"
+          mode="count"
+        />,
+      );
+    const finished = { name: "Làm xong GG-K17" };
+
+    it("opens with the numbers just reported and says so", async () => {
+      await draftStore().put(oldDraft(order.updatedAt));
+      screenOf();
+      expect(await screen.findByRole("textbox", finished)).toHaveValue("90");
+      expect(screen.getByText("Lệnh đã đổi, đã mở số mới")).toBeTruthy();
+      expect(await draftStore().get("old")).toBeNull();
+    });
+
+    it("keeps the draft of the order as it stands", async () => {
+      await draftStore().put(oldDraft(reported.updatedAt));
+      screenOf();
+      expect(await screen.findByRole("textbox", finished)).toHaveValue("70");
+      expect(screen.queryByText("Lệnh đã đổi, đã mở số mới")).toBeNull();
+    });
+
+    it("sends the version of the draft", async () => {
+      fetchMock.mockResolvedValue(
+        Response.json({
+          success: true,
+          data: { code: order.code, status: "COUNTED" },
+          error: null,
+        }),
+      );
+      const user = userEvent.setup();
+      screenOf();
+      await user.click(await screen.findByRole("button", { name: "Đếm xong" }));
+      await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(JSON.parse(String(init.body)).updatedAt).toBe(reported.updatedAt);
+    });
+
+    it("leaves a queued draft locked with its old version", async () => {
+      await draftStore().put(oldDraft(order.updatedAt, "QUEUED"));
+      screenOf();
+      expect(await screen.findByRole("textbox", finished)).toBeDisabled();
+      expect(await draftStore().get("old")).toMatchObject({
+        version: order.updatedAt,
+      });
+    });
   });
 
   it("counts on the same screen", async () => {

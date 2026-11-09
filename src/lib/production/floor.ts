@@ -213,14 +213,13 @@ async function loadFloor(
   const raw = body.lines ?? [];
   const materialIds = [
     ...new Set(
-      raw.flatMap((line) =>
-        (line.materials ?? []).map((material) => material.itemId ?? ""),
-      ),
+      raw
+        .flatMap((line) =>
+          (line.materials ?? []).map((material) => material.itemId ?? ""),
+        )
+        .filter((id) => UUID.test(id)),
     ),
   ];
-  if (!materialIds.every((id) => UUID.test(id))) {
-    throw new DomainValueError(FLOOR_MESSAGES.materialMissing);
-  }
   const materials = materialIds.length
     ? await tx
         .select({
@@ -242,12 +241,18 @@ async function loadFloor(
     finishedMilli: readMilli(line.finished, `lines.${index}.finished`),
     offcutMilli: readMilli(line.offcutKg, `lines.${index}.offcutKg`),
     materials: (line.materials ?? []).map((material, at) => {
+      const field = `lines.${index}.materials.${at}.itemId`;
       const found = byId.get(material.itemId ?? "");
-      if (!found) throw new DomainValueError(FLOOR_MESSAGES.materialMissing);
+      if (!found) {
+        throw new ProductionFieldError(FLOOR_MESSAGES.materialMissing, field);
+      }
       const category = found.category as ItemCategory;
       // Category first: the kind of item is the mistake worth naming.
       if (category === "MATERIAL" && found.status !== "ACTIVE") {
-        throw new DomainValueError(BOM_MESSAGES.materialArchived(found.code));
+        throw new ProductionFieldError(
+          BOM_MESSAGES.materialArchived(found.code),
+          field,
+        );
       }
       return {
         itemId: found.id,

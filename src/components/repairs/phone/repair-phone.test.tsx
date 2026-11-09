@@ -1,15 +1,19 @@
 // M8 and the M1 repair cards (repair-work-orders tasks 8.1–8.3; spec
 // repair-mobile, mobile-home). No price on any of them.
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resetDraftRuntime } from "@/lib/drafts/runtime";
-import { memoryDraftStore, setDraftStore } from "@/lib/drafts/store";
+import {
+  draftStore,
+  memoryDraftStore,
+  setDraftStore,
+} from "@/lib/drafts/store";
 import type { PhoneOrder, PhoneOrderCard } from "@/lib/repairs/phone-queries";
 
 import { RepairPhoneCards, cardTitle } from "./repair-phone-list";
-import { footerText, initialPayload } from "./repair-phone-model";
+import { footerText, initialPayload, stepBody } from "./repair-phone-model";
 import { RepairPhoneScreen } from "./repair-phone-screen";
 
 const push = vi.fn();
@@ -174,6 +178,69 @@ describe("M8 (spec: màn M8 ghi số sửa)", () => {
       screen.getByText("Xưởng báo 40 sửa xong, 0 phế"),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Báo sửa xong" })).toBeNull();
+  });
+
+  describe("a draft older than the order (trả lại xưởng)", () => {
+    const withGood = (good: string): PhoneOrder => ({
+      ...order,
+      status: "AWAITING_CHECK",
+      updatedAt: "2026-11-05T02:00:00.000Z",
+      lines: order.lines.map((line) => ({
+        ...line,
+        good: line.itemId === "k17" ? good : line.taken,
+        scrap: line.itemId === "k17" ? `${40 - Number(good)}.000` : "0.000",
+      })),
+    });
+    const reported = withGood("36.000");
+    const oldDraft = (version: string) => ({
+      draftId: "old",
+      kind: "REPAIR" as const,
+      userId: "u2",
+      documentRef: order.code,
+      title: "Đếm",
+      progress: "",
+      payload: initialPayload(withGood("30.000")),
+      state: "EDITING" as const,
+      error: null,
+      createdAt: "2026-11-04T03:00:00.000Z",
+      updatedAt: "2026-11-04T03:00:00.000Z",
+      attempts: 0,
+      version,
+    });
+    const screenOf = () =>
+      render(
+        <RepairPhoneScreen
+          order={reported}
+          supplies={supplies}
+          userId="u2"
+          mode="count"
+        />,
+      );
+    const good = async () =>
+      within(await screen.findByRole("article", { name: "GG-K17" })).getByRole(
+        "textbox",
+        { name: "Sửa xong" },
+      );
+
+    it("opens with the numbers just reported and says so", async () => {
+      await draftStore().put(oldDraft(order.updatedAt));
+      screenOf();
+      expect(await good()).toHaveValue("36");
+      expect(screen.getByText("Lệnh đã đổi, đã mở số mới")).toBeInTheDocument();
+      expect(await draftStore().get("old")).toBeNull();
+    });
+
+    it("keeps the draft of the order as it stands", async () => {
+      await draftStore().put(oldDraft(reported.updatedAt));
+      screenOf();
+      expect(await good()).toHaveValue("30");
+      expect(screen.queryByText("Lệnh đã đổi, đã mở số mới")).toBeNull();
+    });
+
+    it("sends the version of the draft", () => {
+      const body = stepBody(reported, initialPayload(reported), "v-of-draft");
+      expect(body.updatedAt).toBe("v-of-draft");
+    });
   });
 
   it("asks again before taking the order, then sends a draft id", async () => {

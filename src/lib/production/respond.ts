@@ -27,6 +27,9 @@ export const bomBody = z.object({
 
 export const scrapItemBody = z.object({ itemId: id.optional() });
 
+/** DELETE of a draft order or a BOM: the updatedAt the form opened with. */
+export const deleteBody = z.object({ updatedAt: stamp.optional() });
+
 export const orderBody = z.object({
   workshopId: id.optional(),
   toLocationId: id.optional(),

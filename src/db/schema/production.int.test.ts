@@ -256,6 +256,93 @@ describe("production_order_frozen", () => {
     ).toEqual({ code: "P0001", message: refused });
   });
 
+  describe.each([
+    ["posted", post, "Lệnh đã ghi sổ, không sửa hay xóa được"],
+    ["cancelled", cancel, "Lệnh đã hủy, không sửa hay xóa được"],
+  ] as const)("a %s parent", (_name, freeze, refused) => {
+    async function frozenAndDraft() {
+      const frozenId = await insertOrder();
+      const frozenLine = await insertLine(frozenId);
+      await freeze(frozenId);
+      const draftId = await insertOrder({ code: "LSX-2026-005" });
+      const draftLine = await insertLine(draftId);
+      await db
+        .insert(productionOrderMaterial)
+        .values({ lineId: draftLine, itemId: materialId, quantity: "10" });
+      return { frozenId, frozenLine, draftId, draftLine };
+    }
+
+    it("takes no line or material moved into it", async () => {
+      const { frozenId, frozenLine, draftLine } = await frozenAndDraft();
+      const admin = getAdminDatabase();
+      expect(
+        await failure(() =>
+          admin
+            .update(productionOrderLine)
+            .set({ orderId: frozenId })
+            .where(eq(productionOrderLine.id, draftLine)),
+        ),
+      ).toEqual({ code: "P0001", message: refused });
+      expect(
+        await failure(() =>
+          admin
+            .update(productionOrderMaterial)
+            .set({ lineId: frozenLine })
+            .where(eq(productionOrderMaterial.lineId, draftLine)),
+        ),
+      ).toEqual({ code: "P0001", message: refused });
+    });
+
+    it("gives up no line or material moved out of it", async () => {
+      const { frozenLine, draftId } = await frozenAndDraft();
+      const admin = getAdminDatabase();
+      expect(
+        await failure(() =>
+          admin
+            .update(productionOrderLine)
+            .set({ orderId: draftId, position: 2 })
+            .where(eq(productionOrderLine.id, frozenLine)),
+        ),
+      ).toEqual({ code: "P0001", message: refused });
+    });
+
+    it("takes no new line or material", async () => {
+      const { frozenId, frozenLine } = await frozenAndDraft();
+      const admin = getAdminDatabase();
+      expect(
+        await failure(() =>
+          admin.insert(productionOrderLine).values({
+            orderId: frozenId,
+            position: 2,
+            itemId: materialId,
+            quantityPlanned: "1",
+          }),
+        ),
+      ).toEqual({ code: "P0001", message: refused });
+      expect(
+        await failure(() =>
+          admin
+            .insert(productionOrderMaterial)
+            .values({ lineId: frozenLine, itemId: materialId, quantity: "1" }),
+        ),
+      ).toEqual({ code: "P0001", message: refused });
+    });
+  });
+
+  it("still moves a line between two drafts", async () => {
+    const first = await insertOrder();
+    const line = await insertLine(first);
+    const second = await insertOrder({ code: "LSX-2026-005" });
+    await db
+      .update(productionOrderLine)
+      .set({ orderId: second })
+      .where(eq(productionOrderLine.id, line));
+    const [row] = await db
+      .select({ orderId: productionOrderLine.orderId })
+      .from(productionOrderLine);
+    expect(row?.orderId).toBe(second);
+  });
+
   it("freezes a cancelled order", async () => {
     const orderId = await insertOrder();
     await insertLine(orderId);

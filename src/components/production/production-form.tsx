@@ -189,6 +189,7 @@ export function ProductionForm({
     setPending(true);
     const result = await callApi(`/api/production/orders/${draft.code}`, {
       method: "DELETE",
+      body: { updatedAt: draft.updatedAt },
     });
     setPending(false);
     if (!result.ok) {

@@ -3,7 +3,7 @@ import { withAuth } from "@/lib/auth/guard";
 import { NOT_FOUND, catalogDb, respond } from "@/lib/catalog/respond";
 import { createBom, deleteBom, updateBom } from "@/lib/production/boms";
 import { getBom } from "@/lib/production/queries";
-import { bomBody } from "@/lib/production/respond";
+import { bomBody, deleteBody } from "@/lib/production/respond";
 import { readJson } from "@/lib/read-json";
 
 type Params = { itemCode: string };
@@ -28,7 +28,12 @@ export const PUT = withAuth<Params>(
 );
 
 export const DELETE = withAuth<Params>(
-  async (_request, { actor, params }) =>
-    respond(await deleteBom(catalogDb(), actor, params.itemCode)),
+  async (request, { actor, params }) => {
+    const body = await readJson(request, deleteBody);
+    if (!body.ok) return body.response;
+    return respond(
+      await deleteBom(catalogDb(), actor, params.itemCode, body.data),
+    );
+  },
   { permission: "production.manage" },
 );

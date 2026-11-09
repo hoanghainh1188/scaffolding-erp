@@ -411,7 +411,9 @@ async function dropOpenProductionOrders(db: Database, actor: ActivityActor) {
   for (const order of open) {
     const done =
       order.status === "DRAFT"
-        ? await deleteProductionOrder(db, actor, order.code)
+        ? await deleteProductionOrder(db, actor, order.code, {
+            updatedAt: order.updatedAt.toISOString(),
+          })
         : await cancelProductionOrder(db, actor, order.code, {
             updatedAt: order.updatedAt.toISOString(),
             reason: "E2E dọn lệnh lần trước",

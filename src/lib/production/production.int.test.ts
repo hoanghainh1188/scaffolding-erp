@@ -8,6 +8,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   inventoryCost,
   inventoryLedger,
+  item as itemTable,
   productionOrder,
   productionOrderLine,
   productionOrderMaterial,
@@ -19,6 +20,7 @@ import {
 } from "@/domain/gross-profit";
 import type { BusinessDate } from "@/domain/business-date";
 import type { Condition } from "@/domain/condition";
+import { BOM_MESSAGES } from "@/domain/production-bom";
 import { createGroup } from "@/lib/catalog/item-groups";
 import { createItem } from "@/lib/catalog/items";
 import { postMovements } from "@/lib/inventory/post";
@@ -400,9 +402,26 @@ describe("BOMs (spec production-boms)", () => {
     });
   });
 
+  it.each([
+    ["an old updatedAt", { updatedAt: new Date(0).toISOString() }],
+    ["no updatedAt", {}],
+  ])(
+    "answers 409 for a delete with %s and keeps the BOM",
+    async (_name, body) => {
+      const result = await deleteBom(ctx.db, fx.accountant, "GG-CH", body);
+      expect(result).toMatchObject({ ok: false, status: 409 });
+      expect(await bomTrail("GG-CH")).toEqual(["CREATE"]);
+      expect((await lastBom("GG-CH")).updatedAt.getTime()).toBeGreaterThan(0);
+    },
+  );
+
   it("deletes with a log row; a draft cannot be assigned afterwards", async () => {
     const code = await draft([[["GG-CH", 10]]]);
-    must(await deleteBom(ctx.db, fx.accountant, "GG-CH"));
+    must(
+      await deleteBom(ctx.db, fx.accountant, "GG-CH", {
+        updatedAt: (await lastBom("GG-CH")).updatedAt.toISOString(),
+      }),
+    );
     expect(await bomTrail("GG-CH")).toEqual(["CREATE", "DELETE"]);
     const refused = await assignProductionOrder(
       ctx.db,
@@ -452,6 +471,8 @@ describe("scrap item", () => {
     must(await setScrapItem(ctx.db, fx.director, { itemId: item("VT-QH") }));
     const row = await lastActivity(ctx.db, "VT-QH");
     expect(row?.summary).toBe("Mã sắt vụn: PL-SATVUN → VT-QH");
+    expect(row?.documentType).toBe("SCRAP_PRICE");
+    expect(await bomTrail("VT-QH")).toEqual([]);
   });
 });
 
@@ -494,6 +515,29 @@ describe("drafts (spec: lập lệnh sản xuất)", () => {
     expect(result).toMatchObject({ ok: false, status: 422, error: message });
   });
 
+  it.each([
+    ["an old updatedAt", { updatedAt: new Date(0).toISOString() }],
+    ["no updatedAt", {}],
+  ])(
+    "answers 409 for a delete with %s and keeps the draft",
+    async (_name, body) => {
+      const code = await draft();
+      const result = await deleteProductionOrder(
+        ctx.db,
+        fx.accountant,
+        code,
+        body,
+      );
+      expect(result).toMatchObject({
+        ok: false,
+        status: 409,
+        error: "Lệnh vừa được người khác cập nhật, tải lại trang",
+      });
+      expect((await orderRow(code)).status).toBe("DRAFT");
+      expect(await activityTrail(ctx.db, code)).toEqual([`CREATE ${code}`]);
+    },
+  );
+
   it("edits and deletes a draft, 409 on a stale edit", async () => {
     const code = await draft();
     const stale = await updateProductionOrder(ctx.db, fx.accountant, code, {
@@ -512,7 +556,14 @@ describe("drafts (spec: lập lệnh sản xuất)", () => {
       }),
     );
     expect((await lastActivity(ctx.db, code))?.action).toBe("UPDATE");
-    must(await deleteProductionOrder(ctx.db, fx.accountant, code));
+    must(
+      await deleteProductionOrder(
+        ctx.db,
+        fx.accountant,
+        code,
+        await fresh(code),
+      ),
+    );
     expect(await activityTrail(ctx.db, code)).toEqual([
       `CREATE ${code}`,
       `UPDATE ${code}`,
@@ -733,6 +784,80 @@ describe("phone steps (spec production-mobile)", () => {
       ok: false,
       status: 409,
       error: "Mã nháp đã dùng cho lệnh khác",
+    });
+  });
+
+  it("answers 409 to a count from before the office returned the order, writing nothing", async () => {
+    const code = await draft();
+    await assigned(code);
+    await receive(code);
+    must(await report(code, onNorm()));
+    const seen = await fresh(code);
+    must(
+      await returnProductionOrder(ctx.db, fx.accountant, code, {
+        ...seen,
+        note: "Đếm lại ống D27",
+      }),
+    );
+    must(await report(code, d20()));
+    const before = await orderRow(code);
+    const trail = await activityTrail(ctx.db, code);
+    const late = await countProductionOrder(ctx.db, warehouse, code, {
+      draftId: randomUUID(),
+      ...seen,
+      lines: onNorm(),
+    });
+    expect(late).toMatchObject({
+      ok: false,
+      status: 409,
+      error: "Lệnh vừa được người khác cập nhật, tải lại trang",
+    });
+    const after = await orderRow(code);
+    expect(after.updatedAt).toEqual(before.updatedAt);
+    expect(after.countedAt).toBeNull();
+    expect(await activityTrail(ctx.db, code)).toEqual(trail);
+    const detail = await getProductionOrder(ctx.db, code);
+    expect(detail?.lines[0]?.finishedMilli).toBeNull();
+  });
+
+  describe("a material the phone cannot name (422 on the field)", () => {
+    const field = "lines.0.materials.1.itemId";
+    const withMaterialId = (itemId: string | undefined): FloorLineBody[] => {
+      const [first, ...rest] = onNorm();
+      if (!first) throw new Error("no line");
+      const [kept] = first.materials ?? [];
+      return [
+        {
+          ...first,
+          materials: [
+            ...(kept ? [kept] : []),
+            { ...(itemId ? { itemId } : {}), quantity: "1" },
+          ],
+        },
+        ...rest,
+      ];
+    };
+    async function refused(itemId: string | undefined, error: string) {
+      const code = await draft();
+      await assigned(code);
+      await receive(code);
+      const result = await report(code, withMaterialId(itemId));
+      expect(result).toMatchObject({ ok: false, status: 422, error, field });
+      expect((await orderRow(code)).status).toBe("IN_PROGRESS");
+    }
+
+    it.each<[string, string | undefined]>([
+      ["no id", undefined],
+      ["an id of the wrong shape", "not-a-uuid"],
+      ["an item that does not exist", "00000000-0000-4000-8000-000000000000"],
+    ])("%s", (_name, itemId) => refused(itemId, "Không tìm thấy nguyên liệu"));
+
+    it("an item no longer in use", async () => {
+      await ctx.db
+        .update(itemTable)
+        .set({ status: "ARCHIVED" })
+        .where(eq(itemTable.id, item("VT-QH")));
+      await refused(item("VT-QH"), BOM_MESSAGES.materialArchived("VT-QH"));
     });
   });
 
