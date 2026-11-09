@@ -152,6 +152,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 131 | Phiếu nhập vật tư vào xưởng | Phiếu nhập **được nhập thẳng vào xưởng** khi **mọi dòng là mã nhóm Vật tư**; có mã Thiết bị thì vẫn chỉ nhập vào bãi. Server kiểm, M3 chỉ hiện xưởng khi đơn chỉ có vật tư (chốt 07/11/2026 khi review PR #158, change `repair-work-orders`) |
 | 132 | Thư viện vẽ mã QR | Thêm **`uqr`** (MIT, không phụ thuộc gói nào) để vẽ mã QR khi bật xác thực 2 lớp, vẽ thành `<svg>`. Màn bật **luôn hiện cả chuỗi bí mật** để gõ tay. K5 #40 (in nhãn QR) dùng lại được thư viện này (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
 | 133 | Ai bắt buộc xác thực 2 lớp | Bắt buộc cho **Giám đốc và Kế toán** (Kế toán giữ công nợ, phiếu thu, phiếu chi). Kinh doanh, Thủ kho, Xưởng không bị hỏi. Bản demo (`DEMO_MODE=true`) không dùng (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
+| 134 | Mã dự phòng xác thực 2 lớp | Mỗi người **10 mã**, mỗi mã **16 ký tự** dạng `XXXX-XXXX-XXXX-XXXX`, không phân biệt hoa thường. Hiện đúng một lần, chỉ lưu dạng băm, mỗi mã dùng một lần (chốt 09/11/2026 khi review PR #162, change `director-mfa`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 

@@ -52,7 +52,7 @@
 - **Chống dùng lại:** trước khi kiểm mã 6 số, gọi `consumeRateLimit(db, "totp-used:<userId>:<sha256 của mã>", now, 1, 120)`. Câu lệnh đơn nên hai yêu cầu cùng lúc chỉ một lần qua. Trả về false thì coi như mã sai. 120 giây > 90 giây sống của mã. Không cần cột mới. Áp cho đăng nhập và đổi điện thoại; không áp cho bước xác nhận khi bật, để Giám đốc đăng nhập ngay sau khi bật không bị từ chối oan.
 - **Đã cân nhắc:** lưu `last_used_step` (phải tự kiểm TOTP vì plugin không cho biết bước nào khớp); bỏ qua chống dùng lại (RFC 6238 mục 5.2 yêu cầu, và chi phí chỉ vài dòng).
 
-### D4. 10 mã dự phòng, lưu băm, hiện một lần (điểm 4)
+### D4. 10 mã dự phòng, lưu băm, hiện một lần (điểm 4, đã chốt 0.2 #134)
 
 - **Chọn:** 10 mã, 16 ký tự Crockford base32 (80 bit), hiện dạng `XXXX-XXXX-XXXX-XXXX`, bỏ các chữ dễ nhầm I, L, O, U. Gõ không phân biệt hoa thường, bỏ gạch, khoảng trắng (`normalizeBackupCode`, ánh xạ O→0, I/L→1).
 - **Lưu băm mà vẫn dùng plugin:** cấu hình `storeBackupCodes: { encrypt, decrypt }`. `encrypt` đổi từng mã chưa băm thành `sha256:<hex>`, mã đã có tiền tố giữ nguyên (plugin ghi lại danh sách còn lại qua `encrypt` sau mỗi lần dùng). `decrypt` trả nguyên chuỗi. Service băm mã người dùng gõ rồi mới gọi `verifyBackupCode`. Route đã đóng (D2) nên không ai gửi được chuỗi băm thẳng từ trình duyệt.
