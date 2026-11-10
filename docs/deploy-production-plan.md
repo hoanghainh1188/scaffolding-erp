@@ -111,6 +111,7 @@ Giống demo (kế hoạch demo mục 2), khác ở:
 
 - App lưu CCCD, số tài khoản của nhà cung cấp cá nhân và thông tin nhân viên → là **dữ liệu cá nhân** theo pháp luật Việt Nam về bảo vệ dữ liệu cá nhân (Nghị định 13/2023/NĐ-CP và Luật Bảo vệ dữ liệu cá nhân có hiệu lực từ 01/01/2026).
 - Vercel và Neon lưu dữ liệu ở **Singapore** → là chuyển dữ liệu cá nhân ra nước ngoài; có thể phải lập hồ sơ đánh giá tác động và thông báo cơ quan quản lý.
+- **Đã chốt (0.2 #156–#159, 10/11/2026):** tuân theo luật Việt Nam (Luật 91/2025, Nghị định 356/2025) và PDPA Singapore; mã hóa CCCD trong DB; số tài khoản chỉ lưu 4 số cuối; Claude soạn nháp hồ sơ đánh giá tác động và chuyển dữ liệu ra nước ngoài, luật sư duyệt và nộp. **Chưa đưa dữ liệu cá nhân thật lên production khi chưa có ý kiến luật sư.**
 - **Việc cần làm:** hỏi tư vấn pháp lý / kế toán của công ty trước khi đưa dữ liệu thật lên. Nếu yêu cầu dữ liệu nằm ở Việt Nam → phương án VPS / cloud trong nước (đã cân nhắc ở kế hoạch demo) thay cho Neon; code không phải đổi nhiều vì mọi truy cập DB đi qua `src/db/client.ts`.
 - Trong app đã có: chỉ trả CCCD/STK đã che (trừ form sửa cần `partners.manage`), nhật ký chỉ lưu dạng che, không ghi mật khẩu. Báo lỗi (K11) cũng phải che các trường này.
 
