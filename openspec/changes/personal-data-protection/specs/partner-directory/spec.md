@@ -20,8 +20,12 @@ Nhà cung cấp SHALL có: loại (công ty / cá nhân), tên (bắt buộc), �
 - **THEN** hệ thống từ chối với "Chỉ nhập 4 số cuối của tài khoản" **AND** không lưu, không ghi số đó vào đâu
 
 #### Scenario: Xác nhận trên form
-- **WHEN** Kế toán mở form nhà cung cấp và nhập CCCD lần đầu
+- **WHEN** Kế toán mở form người bán cá nhân chưa có ghi nhận và nhập điện thoại, địa chỉ, CCCD hoặc tài khoản
 - **THEN** form hiện câu thông báo và ô xác nhận "Đã thông báo cho người bán"
+
+#### Scenario: Chỉ nhập tên
+- **WHEN** Kinh doanh mở form người bán cá nhân và chỉ nhập tên
+- **THEN** form không yêu cầu xác nhận
 
 ### Requirement: Che số CCCD và số tài khoản
 Số CCCD là dữ liệu cá nhân. Danh sách và màn chi tiết D16 SHALL chỉ hiện 4 số cuối CCCD (`•••• •••• 0123`) và tài khoản dạng `<ngân hàng> ···5678`. API đọc dùng chung (mọi vai trò) SHALL không trả số CCCD đầy đủ. Số CCCD đầy đủ SHALL chỉ có trong dữ liệu form sửa, cho người có quyền sửa đối tác (`DIRECTOR`, `SALES`, `ACCOUNTANT`). Số tài khoản đầy đủ SHALL không tồn tại trong hệ thống.

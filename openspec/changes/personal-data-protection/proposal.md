@@ -21,12 +21,13 @@ Chủ đã chốt cách làm (0.2 #156–#159, 10/11/2026). Change này phải x
 - **Migration hai bước** (theo `docs/deploy-production-plan.md` mục 7):
   - Bước 1: thêm cột mới, deploy code mới, chạy `npm run pii:backfill` để chuyển dữ liệu và xóa trắng cột cũ.
   - Bước 2 (PR riêng, deploy sau): bỏ cột `id_number`, `bank_account`.
-- **Ghi nhận đã thông báo:** có CCCD thì phải có ghi nhận đã thông báo cho người bán (phiên bản câu chữ, người ghi, lúc ghi). Chưa có thì không lưu được CCCD.
+- **Ghi nhận đã thông báo** (0.2 #163): câu thông báo nêu đủ mọi dữ liệu cá nhân phần mềm lưu. Người bán cá nhân lưu lần đầu điện thoại, địa chỉ, CCCD hoặc tài khoản thì phải có ghi nhận (phiên bản câu chữ, người ghi, lúc ghi). Chỉ có tên thì không cần. Mọi dòng có CCCD đều cần, kể cả loại công ty.
 - **Ẩn danh người bán cá nhân khi được yêu cầu** (nút mới trên D16, chỉ Giám đốc):
   - giữ mã NCC và mọi chứng từ;
-  - xóa tên thật, điện thoại, địa chỉ, mã số thuế, 4 số cuối, ngân hàng, ghi chú;
-  - CCCD: xóa ngay nếu chưa từng nhập hàng; đã nhập hàng thì giữ bản mã tới hết thời hạn thuế (mặc định 10 năm, chờ luật sư), không ai xem được trên app, hết hạn thì `npm run pii:purge` xóa;
+  - xóa tên thật, điện thoại, địa chỉ, mã số thuế, CCCD, 4 số cuối, ngân hàng, ghi chú khỏi các trường hiện;
+  - người đã nhập hàng: giữ **tên + địa chỉ + CCCD** thành một gói mã hóa "hồ sơ thuế" (0.2 #161), không màn nào giải mã được, hết hạn thì `npm run pii:purge` xóa. Chưa nhập hàng lần nào thì xóa hết, không tạo gói;
   - chặn khi còn nợ, còn tiền ứng trước hoặc còn đơn đang xử lý.
+- **Thời hạn giữ CCCD áp cho mọi người bán** (0.2 #166): quá thời hạn (mặc định 10 năm, chờ luật sư) kể từ lần nhập gần nhất, chưa từng nhập thì từ ngày tạo, `npm run pii:purge` xóa CCCD, ghi nhật ký.
 - **Không ghi tên thật người bán cá nhân vào bảng chỉ ghi thêm:** sổ kho và nhật ký ghi **mã NCC** thay tên; trường tên, điện thoại, địa chỉ, ghi chú trong nhật ký chỉ ghi "(đã đổi)". Nếu không, ẩn danh sẽ không xóa được tên ở hai bảng này. Người bán công ty giữ nguyên.
 - **Báo lỗi (K11):** quét cả nội dung chuỗi, che dãy 12 chữ số và bản mã, không chỉ theo tên trường.
 - **Runbook:** `docs/ops/data-breach.md` (sự cố lộ dữ liệu) và `docs/ops/personal-data.md` (khóa, đổi khóa, ẩn danh, khôi phục bản sao lưu).
@@ -36,8 +37,9 @@ Chủ đã chốt cách làm (0.2 #156–#159, 10/11/2026). Change này phải x
 - Hồ sơ đánh giá tác động và hồ sơ chuyển dữ liệu ra nước ngoài: tài liệu riêng, luật sư duyệt (0.2 #159, #78).
 - Ảnh CCCD: không lưu (0.2 #158).
 - Số tài khoản của **công ty mình** (`company_profile.bank_account`): là thông tin in trên hợp đồng, không phải dữ liệu cá nhân, giữ nguyên.
-- Nhà thầu cá nhân và thông tin nhân viên: chưa có CCCD hay số tài khoản trong DB. Ẩn danh nhà thầu cá nhân chờ ý kiến luật sư (#78).
-- Mẫu in bảng kê thu mua không hóa đơn: chưa có màn này. Khi làm sẽ giải mã qua đúng một hàm như form sửa.
+- **Nhà thầu cá nhân** (`customer`: tên, người liên hệ, điện thoại, địa chỉ) (0.2 #167): change này chỉ làm người bán vì đó là chỗ có dữ liệu nhạy cảm (CCCD, tài khoản); nhà thầu không có hai trường này. Quyền xem, sửa, xóa theo luật vẫn áp cho họ: yêu cầu xóa xử lý tay theo `docs/ops/personal-data.md`.
+- Thông tin nhân viên: không có CCCD hay số tài khoản trong DB.
+- Mẫu in bảng kê thu mua không hóa đơn: chưa có màn này. Bảng kê của người đã ẩn danh cần đọc gói hồ sơ thuế, việc đó phải có change riêng.
 - Tìm hoặc kiểm trùng theo CCCD: không làm (design D3).
 - Ghi chú tự do trên chứng từ (đơn mua, phiếu chi): phần mềm không quét được, runbook có bước rà tay.
 
