@@ -27,6 +27,8 @@ export const ACTIVITY_ACTIONS = [
   "RECEIVE",
   "REPORT",
   "COUNT",
+  // personal-data-protection: a seller erased on request, a tax file purged.
+  "ANONYMIZE",
 ] as const;
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
@@ -52,6 +54,7 @@ export const ACTION_LABELS: Readonly<Record<ActivityAction, string>> = {
   RECEIVE: "Nhận lệnh",
   REPORT: "Báo sửa xong",
   COUNT: "Đếm xong",
+  ANONYMIZE: "Ẩn danh",
 };
 
 export const ACTION_GROUPS = [
@@ -86,6 +89,7 @@ export const GROUP_ACTIONS: Readonly<
     "CLOSE",
     "DELETE_DRAFT",
     "DELETE",
+    "ANONYMIZE",
   ],
   SIGN_IN: ["SIGN_IN"],
 };
@@ -108,6 +112,7 @@ export const EDIT_TILE_ACTIONS: readonly ActivityAction[] = [
   "CLOSE",
   "DELETE_DRAFT",
   "DELETE",
+  "ANONYMIZE",
 ];
 
 export const DOCUMENT_TYPES = [

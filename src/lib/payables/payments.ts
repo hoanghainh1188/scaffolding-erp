@@ -20,6 +20,7 @@ import {
   type BusinessDate,
 } from "@/domain/business-date";
 import { formatMoney, toMoney, type Money } from "@/domain/money";
+import { sellerLabel } from "@/domain/personal-data";
 import {
   allocatePayment,
   PAYABLE_MESSAGES,
@@ -216,7 +217,7 @@ function createSummary(
   body: CleanBody,
   plan: PaymentPlan,
 ): string {
-  const head = `${who.name} · ${PAYMENT_KIND_LABELS[body.kind]} ${formatMoney(body.amount)}`;
+  const head = `${sellerLabel(who)} · ${PAYMENT_KIND_LABELS[body.kind]} ${formatMoney(body.amount)}`;
   const parts = plan.parts.map(
     (part) => `${part.code} ${formatMoney(part.amount)}`,
   );
@@ -313,6 +314,9 @@ export function recordPayment(
     return db
       .transaction(async (tx) => {
         const who = await lockSupplier(tx, input.supplierId);
+        if (who.anonymizedAt) {
+          throw new PayableRuleError(PAYABLE_MESSAGES.sellerAnonymized, 409);
+        }
         const ledger = await readLedger(tx, input.supplierId, today);
         const plan = planOf(ledger, who.name, input);
         const code = await nextDocumentCode(

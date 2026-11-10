@@ -186,6 +186,9 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 165 | Khi nào chặn ẩn danh | Còn nợ, còn tiền ứng trước, hoặc còn đơn đang xử lý (chốt 10/11/2026 khi review PR #175, change `personal-data-protection`) |
 | 166 | Thời hạn giữ CCCD | Áp cho **mọi người bán**, không chỉ người đã ẩn danh: quá thời hạn kể từ lần nhập gần nhất (chưa từng nhập thì từ ngày tạo) thì xóa CCCD, ghi nhật ký (chốt 10/11/2026 khi review PR #175, change `personal-data-protection`) |
 | 167 | Nhà thầu cá nhân | **Ngoài phạm vi** change `personal-data-protection`, vì không có CCCD, số tài khoản. Quyền xem, sửa, xóa theo luật vẫn áp cho họ: yêu cầu xóa xử lý tay theo `docs/ops/personal-data.md` (chốt 10/11/2026 khi review PR #175) |
+| 168 | Người được ghi trên nhật ký của lệnh `pii:purge` | **Giám đốc đang hoạt động được tạo sớm nhất**, trình duyệt "Khác": nhật ký bắt buộc gắn một tài khoản thật và không có tài khoản "Hệ thống" (chốt 10/11/2026 khi apply, change `personal-data-protection`) |
+| 169 | Ô "4 số cuối tài khoản" | **Không đặt giới hạn ký tự** trên ô: trình duyệt sẽ cắt ngầm số dán vào còn 4 số đầu rồi lưu nhầm; số sai bị server từ chối với "Chỉ nhập 4 số cuối của tài khoản" (chốt 10/11/2026 khi apply, change `personal-data-protection`) |
+| 170 | Đổi loại người bán | Người bán **cá nhân đã có đơn mua hoặc phiếu chi không đổi được sang công ty**: công ty được ghi tên thật vào sổ kho, nhật ký và không ẩn danh được. Chưa có chứng từ thì đổi được (chốt 10/11/2026 khi apply, change `personal-data-protection`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 

@@ -22,6 +22,7 @@ import { countText, joinParts } from "@/domain/activity-summary";
 import { formatBusinessDate } from "@/domain/business-date";
 import { ALLOCATION_METHOD_LABELS } from "@/domain/landed-cost";
 import { toMoney } from "@/domain/money";
+import { sellerLabel } from "@/domain/personal-data";
 import {
   orderTotals,
   PURCHASE_KIND_LABELS,
@@ -130,6 +131,8 @@ export async function orderView(
   const [[head], lines, costs] = await Promise.all([
     tx
       .select({
+        supplierKind: supplier.kind,
+        supplierCode: supplier.code,
         supplierName: supplier.name,
         kind: purchaseOrder.kind,
         expectedDate: purchaseOrder.expectedDate,
@@ -162,8 +165,15 @@ export async function orderView(
       .orderBy(asc(purchaseOrderCost.lineNo)),
   ]);
   if (!head) throw new Error(`purchase order ${orderId} not found`);
+  const { supplierKind, supplierCode, supplierName, ...rest } = head;
   return {
-    ...head,
+    ...rest,
+    // Written into the log: a person only by code (design D8).
+    supplierName: sellerLabel({
+      kind: supplierKind,
+      code: supplierCode,
+      name: supplierName,
+    }),
     lines: lines.map((line) => ({
       ...line,
       unit: line.unit as QuantityUnit,

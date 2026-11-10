@@ -74,10 +74,10 @@ export const SUPPLIER_FIELDS: FormField[] = [
     hint: "12 chữ số. Ngoài form này chỉ hiện 4 số cuối.",
   },
   {
-    name: "bankAccount",
-    label: "Số tài khoản",
+    name: "bankAccountLast4",
+    label: "4 số cuối tài khoản",
     inputMode: "numeric",
-    hint: "Ngoài form này chỉ hiện 4 số cuối.",
+    hint: "Chỉ nhập 4 số cuối. Phần mềm không lưu số đầy đủ.",
   },
   { name: "bankName", label: "Ngân hàng" },
   {

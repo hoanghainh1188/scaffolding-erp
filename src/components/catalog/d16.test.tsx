@@ -6,7 +6,7 @@ import type { CustomerRow, SupplierRow } from "@/lib/catalog/partners";
 import type { SiteRow } from "@/lib/catalog/places";
 
 import { CustomerDetail, SiteDetail, SupplierDetail } from "./partner-details";
-import { SITE_FIELDS } from "./partner-form-fields";
+import { SITE_FIELDS, SUPPLIER_FIELDS } from "./partner-form-fields";
 import { RecordFormSheet } from "./record-form-sheet";
 import { UrlSelect } from "./url-select";
 
@@ -57,7 +57,8 @@ const SELLER: SupplierRow = {
   address: null,
   taxCode: null,
   idNumberMasked: "•••• •••• 2345",
-  bankAccountMasked: "•••• 5678",
+  bankAccountLast4: "5678",
+  anonymized: false,
   paymentTermsDays: 0,
   bankName: null,
   note: null,
@@ -98,6 +99,229 @@ describe("D16 customer detail", () => {
 });
 
 describe("D16 supplier detail", () => {
+  it("shows an account without a bank name", () => {
+    render(<SupplierDetail supplier={SELLER} canEdit />);
+    expect(screen.getByText("···5678")).toBeInTheDocument();
+  });
+
+  it("offers an erased seller no edit, reuse or erasure", () => {
+    render(
+      <SupplierDetail
+        supplier={{ ...SELLER, anonymized: true, status: "ARCHIVED" }}
+        canEdit
+        canAnonymize
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Sửa thông tin" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Dùng lại" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Ẩn danh theo yêu cầu" }),
+    ).toBeNull();
+  });
+
+  it("offers erasure only with the permission, only for a person", () => {
+    const button = () =>
+      screen.queryByRole("button", { name: "Ẩn danh theo yêu cầu" });
+    const { rerender } = render(
+      <SupplierDetail supplier={SELLER} canEdit canAnonymize={false} />,
+    );
+    expect(button()).toBeNull();
+    rerender(
+      <SupplierDetail
+        supplier={{ ...SELLER, kind: "COMPANY" }}
+        canEdit
+        canAnonymize
+      />,
+    );
+    expect(button()).toBeNull();
+    rerender(<SupplierDetail supplier={SELLER} canEdit canAnonymize />);
+    expect(button()).toBeInTheDocument();
+  });
+
+  it("asks for the code and the date, and sends them", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ success: true, data: {}, error: null }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <SupplierDetail
+        supplier={SELLER}
+        canEdit
+        canAnonymize
+        today="2026-11-10"
+      />,
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Ẩn danh theo yêu cầu" }),
+    );
+    const dialog = within(screen.getByRole("dialog"));
+    expect(dialog.getByText(/Không hoàn tác được/)).toBeInTheDocument();
+    await userEvent.type(dialog.getByLabelText(/Nhập mã NCC-0002/), "NCC-0002");
+    await userEvent.type(
+      dialog.getByLabelText("Ngày nhận yêu cầu"),
+      "09/11/2026",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Ẩn danh" }));
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/catalog/suppliers/s1/anonymize");
+    expect(JSON.parse(String(init.body))).toEqual({
+      confirmCode: "NCC-0002",
+      requestedOn: "2026-11-09",
+    });
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("D16 seller form notice", () => {
+  const NOTICE = "An Phát lưu các thông tin sau của ông/bà.";
+
+  function openForm(extra: Record<string, unknown> = {}) {
+    render(
+      <RecordFormSheet
+        title="Thêm nhà cung cấp"
+        trigger={<button type="button">Mở</button>}
+        fields={SUPPLIER_FIELDS}
+        values={{ kind: "PERSON" }}
+        withDataNotice
+        noticeText={NOTICE}
+        path="/api/catalog/suppliers"
+        method="POST"
+        submitLabel="Lưu"
+        {...extra}
+      />,
+    );
+    return userEvent.click(screen.getByRole("button", { name: "Mở" }));
+  }
+
+  const tick = () => screen.queryByLabelText("Đã thông báo cho người bán");
+
+  it("is hidden with only a name", async () => {
+    await openForm();
+    await userEvent.type(screen.getByLabelText("Tên nhà cung cấp"), "Chú Ba");
+    expect(tick()).toBeNull();
+  });
+
+  it("appears when a person's phone is typed", async () => {
+    await openForm();
+    await userEvent.type(screen.getByLabelText("Điện thoại"), "0912345678");
+    expect(screen.getByText(NOTICE)).toBeInTheDocument();
+    expect(tick()).toBeInTheDocument();
+  });
+
+  it("follows the kind of seller", async () => {
+    await openForm();
+    await userEvent.type(screen.getByLabelText("Điện thoại"), "0912345678");
+    expect(tick()).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText("Loại"), "COMPANY");
+    expect(tick()).toBeNull();
+  });
+
+  it("appears for any CCCD, even a company's", async () => {
+    await openForm({ values: { kind: "COMPANY" } });
+    await userEvent.type(
+      screen.getByLabelText("Số CCCD (cá nhân)"),
+      "000203012345",
+    );
+    expect(tick()).toBeInTheDocument();
+  });
+
+  it("sends the tick", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ success: true, data: {}, error: null }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await openForm();
+    await userEvent.type(screen.getByLabelText("Tên nhà cung cấp"), "Anh Tâm");
+    await userEvent.type(screen.getByLabelText("Điện thoại"), "0912345678");
+    await userEvent.click(tick() as HTMLElement);
+    await userEvent.click(screen.getByRole("button", { name: "Lưu" }));
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      dataNoticeConfirmed: true,
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("does not send the tick when no notice is needed", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ success: true, data: {}, error: null }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await openForm();
+    await userEvent.type(screen.getByLabelText("Tên nhà cung cấp"), "Chú Ba");
+    await userEvent.click(screen.getByRole("button", { name: "Lưu" }));
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).not.toHaveProperty(
+      "dataNoticeConfirmed",
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("shows who recorded the notice instead of asking again", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              kind: "PERSON",
+              phone: "0912345678",
+              notice: { text: NOTICE },
+              dataNotice: { at: "2026-11-10T08:00:00Z", byName: "Thu Hà" },
+            },
+            error: null,
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+    await openForm({ loadValues: "/api/x/edit", method: "PATCH" });
+    expect(
+      await screen.findByText(/Đã thông báo ngày\s+10\/11\/2026,\s+Thu Hà/),
+    ).toBeInTheDocument();
+    expect(tick()).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it("renders a checkbox field and sends a boolean", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ success: true, data: {}, error: null }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <RecordFormSheet
+        title="T"
+        trigger={<button type="button">Mở</button>}
+        fields={[{ name: "flag", label: "Cờ", kind: "checkbox" }]}
+        path="/x"
+        method="POST"
+        submitLabel="Lưu"
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Mở" }));
+    await userEvent.click(screen.getByRole("button", { name: "Lưu" }));
+    let [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({ flag: false });
+    await userEvent.click(screen.getByRole("button", { name: "Mở" }));
+    await userEvent.click(screen.getByLabelText("Cờ"));
+    await userEvent.click(screen.getByRole("button", { name: "Lưu" }));
+    [, init] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({ flag: true });
+    vi.unstubAllGlobals();
+  });
   it("shows only the last 4 digits of the CCCD and the bank account", () => {
     render(
       <SupplierDetail
@@ -106,7 +330,7 @@ describe("D16 supplier detail", () => {
       />,
     );
     expect(screen.getByText("•••• •••• 2345")).toBeInTheDocument();
-    expect(screen.getByText("•••• 5678 · Vietcombank")).toBeInTheDocument();
+    expect(screen.getByText("Vietcombank ···5678")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/\d{12}/);
   });
 

@@ -247,3 +247,35 @@ describe("capChanges", () => {
     expect(capChanges(many.slice(0, 50)).at(-1)?.field).toBe("f49");
   });
 });
+
+describe("diffFields with personal fields", () => {
+  interface Record {
+    kind: string;
+    phone: string | null;
+  }
+  const spec = [
+    {
+      field: "phone",
+      label: "Điện thoại",
+      value: (r: Record) => r.phone,
+      personal: (r: Record) => r.kind === "PERSON",
+    },
+  ];
+  const person = { kind: "PERSON", phone: "0912345678" };
+
+  it("says only that it changed", () => {
+    const changes = diffFields(spec, person, { ...person, phone: "0912" });
+    expect(changes).toEqual([
+      { field: "phone", label: "Điện thoại", before: null, after: "(đã đổi)" },
+    ]);
+  });
+
+  it("writes nothing when the value is the same", () => {
+    expect(diffFields(spec, person, { ...person })).toEqual([]);
+  });
+
+  it("is not a sensitive change", () => {
+    const changes = diffFields(spec, person, { ...person, phone: "0912" });
+    expect(touchesSensitive(spec, changes)).toBe(false);
+  });
+});

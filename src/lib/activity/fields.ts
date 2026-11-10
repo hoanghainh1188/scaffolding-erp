@@ -204,12 +204,18 @@ export interface SupplierView {
   address: string | null;
   taxCode: string | null;
   idNumber: string | null;
-  bankAccount: string | null;
+  bankAccountLast4: string | null;
   bankName: string | null;
   paymentTermsDays: number;
   note: string | null;
   status: string;
+  dataNoticeVersion: number | null;
 }
+
+export const SUPPLIER_NOTICE_LABEL = "Ghi nhận thông báo";
+
+// A person's values never enter the log: it cannot be erased (design D8).
+const isPerson = (r: SupplierView): boolean => r.kind === "PERSON";
 
 export const SUPPLIER_FIELDS: readonly FieldSpec<SupplierView>[] = [
   {
@@ -217,10 +223,30 @@ export const SUPPLIER_FIELDS: readonly FieldSpec<SupplierView>[] = [
     label: "Loại",
     value: (r) => PARTNER_KIND_LABELS[r.kind] ?? r.kind,
   },
-  { field: "name", label: "Tên nhà cung cấp", value: (r) => r.name },
-  { field: "phone", label: "Điện thoại", value: (r) => phoneText(r.phone) },
-  { field: "address", label: "Địa chỉ", value: (r) => text(r.address) },
-  { field: "taxCode", label: "Mã số thuế", value: (r) => text(r.taxCode) },
+  {
+    field: "name",
+    label: "Tên nhà cung cấp",
+    value: (r) => r.name,
+    personal: isPerson,
+  },
+  {
+    field: "phone",
+    label: "Điện thoại",
+    value: (r) => phoneText(r.phone),
+    personal: isPerson,
+  },
+  {
+    field: "address",
+    label: "Địa chỉ",
+    value: (r) => text(r.address),
+    personal: isPerson,
+  },
+  {
+    field: "taxCode",
+    label: "Mã số thuế",
+    value: (r) => text(r.taxCode),
+    personal: isPerson,
+  },
   {
     field: "idNumber",
     label: "Số CCCD",
@@ -230,7 +256,7 @@ export const SUPPLIER_FIELDS: readonly FieldSpec<SupplierView>[] = [
   {
     field: "bankAccount",
     label: "Số tài khoản",
-    value: (r) => text(r.bankAccount),
+    value: (r) => text(r.bankAccountLast4),
     sensitive: "BANK_ACCOUNT",
   },
   { field: "bankName", label: "Ngân hàng", value: (r) => text(r.bankName) },
@@ -239,8 +265,19 @@ export const SUPPLIER_FIELDS: readonly FieldSpec<SupplierView>[] = [
     label: "Số ngày được nợ",
     value: (r) => `${r.paymentTermsDays} ngày`,
   },
-  { field: "note", label: "Ghi chú", value: (r) => text(r.note) },
+  {
+    field: "note",
+    label: "Ghi chú",
+    value: (r) => text(r.note),
+    personal: isPerson,
+  },
   status<SupplierView>(),
+  {
+    field: "dataNotice",
+    label: SUPPLIER_NOTICE_LABEL,
+    value: (r) =>
+      r.dataNoticeVersion === null ? null : `Phiên bản ${r.dataNoticeVersion}`,
+  },
 ];
 
 export interface SiteView {

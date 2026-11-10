@@ -68,6 +68,7 @@ Neon Project: scaffolding-erp-demo
    - Không đặt `DATABASE_URL_UNPOOLED` hay `DATABASE_URL_MIGRATE` (URL owner) trên Vercel.
    - `BETTER_AUTH_SECRET`: Chuỗi ngẫu nhiên bảo mật 32 byte (`openssl rand -base64 32`).
    - `BETTER_AUTH_URL`: `https://demo.<tên-miền-công-ty>` hoặc `https://<project-name>.vercel.app`.
+   - `PII_ENCRYPTION_KEYS`: `1:<khóa>`, khóa riêng của demo (`openssl rand -base64 32`), không dùng lại của production. Thiếu là app không khởi động.
    - `DEMO_MODE`: `true`.
    - `DB_POOL_MAX`: `5` (phù hợp serverless).
    - `DB_CONNECT_TIMEOUT_SECONDS`: `10` (cho phép compute Neon thức dậy).
@@ -87,7 +88,7 @@ Trên GitHub repository, vào **Settings → Environments**, tạo environment t
 | `DEMO_URL` | Đường dẫn ứng dụng demo (ví dụ: `https://scaffolding-erp-demo.vercel.app`) |
 | `VERCEL_DEPLOY_HOOK` | Deploy Hook URL tạo từ Vercel (Project Settings → Git → Deploy Hooks) |
 
-Không cần `BETTER_AUTH_SECRET` trên GitHub: bước nạp dữ liệu mẫu chỉ băm mật khẩu, không ký phiên, nên workflow tự sinh một chuỗi dùng một lần. Secret thật chỉ đặt trên Vercel.
+Không cần `BETTER_AUTH_SECRET` và `PII_ENCRYPTION_KEYS` trên GitHub: bước nạp dữ liệu mẫu chỉ băm mật khẩu, không ký phiên, không lưu CCCD, nên workflow tự sinh chuỗi dùng một lần. Secret thật chỉ đặt trên Vercel.
 
 ### Bước 4: Chuyển demo đang chạy sang role app (change `db-least-privilege`, làm một lần)
 

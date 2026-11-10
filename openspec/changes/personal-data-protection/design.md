@@ -128,7 +128,7 @@ Quay lui giữa hai bước: bản cũ vẫn chạy vì cột cũ còn và cho p
 Form và API:
 
 - Trường `bankAccountLast4`, kiểm `^[0-9]{4}$`. Sai thì 422 với câu cố định, không lặp lại giá trị đã nhập.
-- Không cắt tự động khi dán cả số: cắt ngầm khiến người dùng tưởng đã lưu đủ.
+- Không cắt tự động khi dán cả số, kể cả ở trình duyệt: ô **không** đặt `maxLength`, vì trình duyệt sẽ cắt ngầm còn 4 số **đầu** rồi lưu nhầm.
 - Trường `bankAccount` cũ trong thân yêu cầu bị zod bỏ qua, không lưu.
 - Hàm `formatBankRef(bankName, last4)` ở `src/domain/partner-fields.ts` cho D16, D14c, form phiếu chi, Excel. Không tự ghép chuỗi ở từng màn.
 
@@ -172,7 +172,7 @@ Giao diện D16: nút "Ẩn danh theo yêu cầu" (chỉ người bán cá nhân
 
 **Hồ sơ thuế (0.2 #161):** bảng kê thu mua không hóa đơn (mẫu 01/TNDN) cần tên, địa chỉ, CCCD. Chỉ giữ CCCD thì không dựng lại được bảng kê. Gói dùng cùng định dạng `pii1.` và cùng khóa, AAD riêng. Hàm giải mã gói tách riêng khỏi hàm giải mã CCCD để kiểm tĩnh bắt được: danh sách cho phép chỉ gồm `rotate.ts` và `purge.ts`. Khi cần đọc gói cho cơ quan thuế thì mở change riêng.
 
-**Thời hạn:** `ID_NUMBER_RETENTION_YEARS = 10` ở `src/domain/personal-data.ts`. Hạn = mốc + số năm, **tính ra**, không lưu, nên đổi tham số không phải sửa dữ liệu. `npm run pii:purge` (`src/lib/privacy/purge.ts`), chạy lại được, ghi nhật ký với `systemActor`, chạy hằng năm (bảng chu kỳ ở `docs/ops/production.md`). Lệnh làm hai việc, chỉ `UPDATE` thành NULL:
+**Thời hạn:** `ID_NUMBER_RETENTION_YEARS = 10` ở `src/domain/personal-data.ts`. Hạn = mốc + số năm, **tính ra**, không lưu, nên đổi tham số không phải sửa dữ liệu. `npm run pii:purge` (`src/lib/privacy/purge.ts`), chạy lại được, ghi nhật ký với `systemActor` của Giám đốc đang hoạt động được tạo sớm nhất (0.2 #168: `activity_log.user_id` bắt buộc là tài khoản thật), chạy hằng năm (bảng chu kỳ ở `docs/ops/production.md`). Lệnh làm hai việc, chỉ `UPDATE` thành NULL:
 
 | Đối tượng | Mốc | Xóa | Nhật ký |
 |---|---|---|---|
@@ -195,6 +195,8 @@ Sổ kho và nhật ký không `UPDATE` được, nên chỉ có một cách đ�
 
 - Hàm `sellerLabel({ kind, code, name })` ở `src/domain/personal-data.ts`: `PERSON` trả mã, `COMPANY` trả tên. Dùng ở 4 chỗ liệt kê ở Context.
 - `FieldSpec` thêm `personal?: (record) => boolean`. Khi đúng, `diffFields` chỉ ghi "(đã đổi)" và `touchesSensitive` không tính. Áp cho tên, điện thoại, địa chỉ, mã số thuế, ghi chú của người bán đang hoặc vừa là cá nhân.
+
+Người bán cá nhân đã có đơn mua hoặc phiếu chi không đổi được sang công ty (0.2 #170): nếu không, các chứng từ sau đó ghi tên thật vào hai bảng này và nút ẩn danh từ chối dòng đó.
 
 Được vì production chưa có dữ liệu thật (0.2 #159): từ lúc có dữ liệu thật, hai bảng này chưa bao giờ chứa tên.
 

@@ -52,7 +52,7 @@ describe("purchase orders in the activity log", () => {
     const code = await made(true);
     const rows = await activityRows(ctx.db, code);
     expect(rows.map((row) => [row.action, row.summary])).toEqual([
-      ["CREATE", "Chú Ba ve chai · 4 mã hàng · 80.928.750 ₫"],
+      ["CREATE", "NCC-0002 · 4 mã hàng · 80.928.750 ₫"],
       ["SUBMIT", "Dự kiến về 26/10/2026"],
     ]);
     expect(rows[0]).toMatchObject({
@@ -144,7 +144,7 @@ describe("purchase orders in the activity log", () => {
       `DELETE_DRAFT ${code}`,
     ]);
     expect((await lastActivity(ctx.db, code))?.summary).toBe(
-      "Nháp: Chú Ba ve chai · 4 mã hàng · 80.928.750 ₫",
+      "Nháp: NCC-0002 · 4 mã hàng · 80.928.750 ₫",
     );
   });
 });

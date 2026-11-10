@@ -161,10 +161,18 @@ describe("PaymentForm", () => {
       <PaymentForm
         supplierId="s2"
         supplierName="Anh Tâm"
+        bankRef="Vietcombank ···5678"
         today={"2026-11-06" as BusinessDate}
         payables={payables}
       />,
     );
+
+  it("shows where a transfer goes", () => {
+    form();
+    expect(
+      screen.getByText("Chuyển vào: Vietcombank ···5678"),
+    ).toBeInTheDocument();
+  });
 
   it("previews 42.750.000 ₫ and records the payment", async () => {
     fetchMock.mockResolvedValue(

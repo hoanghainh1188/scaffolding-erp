@@ -58,7 +58,7 @@ export const activityLog = pgTable(
     ),
     check(
       "activity_log_action_check",
-      sql`${table.action} in ('CREATE', 'UPDATE', 'SUBMIT', 'APPROVE', 'POST', 'RETURN', 'CANCEL', 'CLOSE', 'DELETE_DRAFT', 'DELETE', 'SIGN_IN', 'START', 'REJECT', 'SEND', 'CLOSE_PERIOD', 'SETTLE', 'ASSIGN', 'RECALL', 'RECEIVE', 'REPORT', 'COUNT')`,
+      sql`${table.action} in ('CREATE', 'UPDATE', 'SUBMIT', 'APPROVE', 'POST', 'RETURN', 'CANCEL', 'CLOSE', 'DELETE_DRAFT', 'DELETE', 'SIGN_IN', 'START', 'REJECT', 'SEND', 'CLOSE_PERIOD', 'SETTLE', 'ASSIGN', 'RECALL', 'RECEIVE', 'REPORT', 'COUNT', 'ANONYMIZE')`,
     ),
     check(
       "activity_log_document_type_check",

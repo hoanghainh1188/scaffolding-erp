@@ -1,7 +1,6 @@
-import { ok } from "@/lib/api-response";
 import { withAuth } from "@/lib/auth/guard";
 import { getSupplierForEdit } from "@/lib/catalog/partners";
-import { NOT_FOUND, catalogDb, isUuid } from "@/lib/catalog/respond";
+import { NOT_FOUND, catalogDb, isUuid, respond } from "@/lib/catalog/respond";
 
 /**
  * The edit form's data, with the full CCCD. Only for people who may edit
@@ -10,9 +9,7 @@ import { NOT_FOUND, catalogDb, isUuid } from "@/lib/catalog/respond";
 export const GET = withAuth<{ id: string }>(
   async (_request, { params }) => {
     if (!isUuid(params.id)) return NOT_FOUND();
-    const row = await getSupplierForEdit(catalogDb(), params.id);
-    if (!row) return NOT_FOUND();
-    const response = ok(row);
+    const response = respond(await getSupplierForEdit(catalogDb(), params.id));
     response.headers.set("cache-control", "no-store");
     return response;
   },

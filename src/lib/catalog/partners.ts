@@ -1,6 +1,8 @@
 // Customers (nhà thầu) and suppliers (nhà cung cấp) for D16
 // (spec partner-directory, design D1, D5, D7; catalog-extensions D5: sales
 // staff in charge).
+import { randomUUID } from "node:crypto";
+
 import {
   and,
   asc,
@@ -17,9 +19,11 @@ import type { Database } from "@/db/client";
 import {
   customer,
   customerCodeSeq,
+  purchaseOrder,
   site,
   supplier,
   supplierCodeSeq,
+  supplierPayment,
   user,
 } from "@/db/schema";
 import {
@@ -29,19 +33,38 @@ import {
 import { DomainValueError } from "@/domain/errors";
 import {
   PARTNER_FIELD_MESSAGES,
+  isValidBankLast4,
   isValidIdNumber,
   isValidTaxCode,
-  maskBankAccount,
   maskIdNumber,
   normalizePhone,
 } from "@/domain/partner-fields";
+import {
+  CURRENT_NOTICE_VERSION,
+  DATA_NOTICE_MESSAGE,
+  needsDataNotice,
+  renderDataNotice,
+  sellerLabel,
+} from "@/domain/personal-data";
 import { diffFields, touchesSensitive } from "@/domain/activity-changes";
 import { changeSummary, joinParts } from "@/domain/activity-summary";
 import { PAYABLE_MESSAGES, PAYMENT_TERMS_MAX_DAYS } from "@/domain/payables";
 import { toSearchText } from "@/domain/search-text";
-import { CUSTOMER_FIELDS, SUPPLIER_FIELDS } from "@/lib/activity/fields";
+import {
+  CUSTOMER_FIELDS,
+  SUPPLIER_FIELDS,
+  SUPPLIER_NOTICE_LABEL,
+} from "@/lib/activity/fields";
 import { logActivity } from "@/lib/activity/log";
 import type { Executor } from "@/lib/auth/credentials";
+import { getCompanyProfile } from "@/lib/company/service";
+import {
+  PiiCipherError,
+  decryptIdNumber,
+  encryptIdNumber,
+} from "@/lib/privacy/cipher";
+import { cipherFailure } from "@/lib/privacy/failure";
+import { getPiiKeyRing } from "@/lib/privacy/key-ring";
 
 import {
   archivedAt,
@@ -71,6 +94,9 @@ export const PARTNER_MESSAGES = {
   customerHasSites: "Ngừng dùng các công trình của nhà thầu này trước",
   salesUser:
     "Người phụ trách phải là tài khoản Kinh doanh hoặc Giám đốc đang hoạt động",
+  supplierAnonymized: "Người bán đã ẩn danh, không sửa hay dùng lại được",
+  personHasDocuments:
+    "Người bán cá nhân đã có chứng từ nên không đổi sang công ty được",
   supplierHasOrders: (code: string, orders: string) =>
     `${code} còn đơn thu mua đang xử lý: ${orders}. Đóng hoặc hủy đơn trước`,
 } as const;
@@ -114,6 +140,20 @@ function idNumber(value: string | null | undefined): string | null {
   const text = optionalText(value)?.replace(/\s/g, "") ?? null;
   if (text !== null && !isValidIdNumber(text)) {
     throw new DomainValueError(PARTNER_FIELD_MESSAGES.idNumber);
+  }
+  return text;
+}
+
+function bankAccountLast4(value: string | null | undefined): string | null {
+  const text = optionalText(value);
+  if (text !== null && !isValidBankLast4(text)) {
+    // A fixed sentence: a pasted full number must not come back or be stored.
+    throw new ServiceFailure({
+      ok: false,
+      status: 422,
+      error: PARTNER_FIELD_MESSAGES.bankAccountLast4,
+      field: "bankAccountLast4",
+    });
   }
   return text;
 }
@@ -522,7 +562,7 @@ export function deleteCustomer(
 
 // ---------------------------------------------------------------- suppliers
 
-/** What everyone may read: CCCD and bank account only masked (design D5). */
+/** What everyone may read: never the full CCCD (personal-data-protection). */
 export interface SupplierRow {
   id: string;
   code: string;
@@ -533,19 +573,36 @@ export interface SupplierRow {
   taxCode: string | null;
   /** "•••• •••• 2345", or null when there is no CCCD. */
   idNumberMasked: string | null;
-  /** "•••• 5678", or null when there is none. */
-  bankAccountMasked: string | null;
+  /** All that is kept of the account number (0.2 số 157). */
+  bankAccountLast4: string | null;
   bankName: string | null;
   /** Days the seller lets us owe; 0 = pay on receipt (0.2 #99). */
   paymentTermsDays: number;
   note: string | null;
   status: CatalogStatus;
+  /** Erased on request: no edit, no reuse (design D7). */
+  anonymized: boolean;
 }
 
-/** The edit form only, for partners.manage: full CCCD and bank account. */
+/** The proof that the seller was told (design D6). */
+export interface DataNoticeRecord {
+  version: number;
+  /** ISO instant. */
+  at: string;
+  byName: string;
+}
+
+/** The wording to read to the seller, company filled in from settings. */
+export interface DataNoticeText {
+  version: number;
+  text: string;
+}
+
+/** The edit form only, for partners.manage: the full CCCD. */
 export interface SupplierEditRow extends SupplierRow {
   idNumber: string | null;
-  bankAccount: string | null;
+  dataNotice: DataNoticeRecord | null;
+  notice: DataNoticeText;
 }
 
 export interface SupplierInput {
@@ -555,14 +612,19 @@ export interface SupplierInput {
   address?: string | null;
   taxCode?: string | null;
   idNumber?: string | null;
-  bankAccount?: string | null;
+  bankAccountLast4?: string | null;
   bankName?: string | null;
   paymentTermsDays?: number;
   note?: string | null;
   status?: CatalogStatus;
+  /** "Đã thông báo cho người bán"; who and when come from the server. */
+  dataNoticeConfirmed?: boolean;
 }
 
 type SupplierRecord = typeof supplier.$inferSelect;
+
+const unprocessable = (error: string, field: string) =>
+  ({ ok: false, status: 422, error, field }) as const;
 
 function toSupplierRow(row: SupplierRecord): SupplierRow {
   return {
@@ -573,15 +635,28 @@ function toSupplierRow(row: SupplierRecord): SupplierRow {
     phone: row.phone,
     address: row.address,
     taxCode: row.taxCode,
-    idNumberMasked: row.idNumber ? maskIdNumber(row.idNumber) : null,
-    bankAccountMasked: row.bankAccount
-      ? maskBankAccount(row.bankAccount)
-      : null,
+    idNumberMasked: row.idNumberLast4 ? maskIdNumber(row.idNumberLast4) : null,
+    bankAccountLast4: row.bankAccountLast4,
     bankName: row.bankName,
     paymentTermsDays: row.paymentTermsDays,
     note: row.note,
     status: row.status as CatalogStatus,
+    anonymized: row.anonymizedAt !== null,
   };
+}
+
+/** runService, plus cipher failures as a fixed sentence (design D12). */
+function runSupplierService<T>(
+  body: () => Promise<ServiceResult<T>>,
+): Promise<ServiceResult<T>> {
+  return runService(async () => {
+    try {
+      return await body();
+    } catch (error: unknown) {
+      if (error instanceof PiiCipherError) return cipherFailure(error);
+      throw error;
+    }
+  });
 }
 
 export async function listSuppliers(
@@ -598,24 +673,50 @@ export async function listSuppliers(
   return rows.map(toSupplierRow);
 }
 
-/** Full record for the edit form; callers must hold partners.manage. */
-export async function getSupplierForEdit(
-  db: Pick<Database, "select">,
-  id: string,
-  lock: "update" | null = null,
-): Promise<SupplierEditRow | null> {
-  const query = db.select().from(supplier).where(eq(supplier.id, id));
-  const [row] = await (lock ? query.for(lock) : query);
-  return row
-    ? {
-        ...toSupplierRow(row),
-        idNumber: row.idNumber,
-        bankAccount: row.bankAccount,
-      }
-    : null;
+/** The notice as it reads today, for the create and edit forms. */
+export async function currentDataNotice(
+  db: Pick<Database, "select" | "insert">,
+): Promise<DataNoticeText> {
+  const profile = await getCompanyProfile(db);
+  return {
+    version: CURRENT_NOTICE_VERSION,
+    text:
+      renderDataNotice(CURRENT_NOTICE_VERSION, {
+        companyName: profile.name,
+        companyPhone: profile.phone ?? "công ty",
+      }) ?? "",
+  };
 }
 
-function supplierValues(input: SupplierInput, current?: SupplierEditRow) {
+/** Edit form data with the CCCD decrypted; callers hold partners.manage. */
+export function getSupplierForEdit(
+  db: Database,
+  id: string,
+): Promise<ServiceResult<SupplierEditRow>> {
+  return runSupplierService(async () => {
+    const [row] = await db.select().from(supplier).where(eq(supplier.id, id));
+    if (!row) return notFound();
+    if (row.anonymizedAt) return conflict(PARTNER_MESSAGES.supplierAnonymized);
+    const noticeBy = await userName(db, row.dataNoticeBy);
+    return ok({
+      ...toSupplierRow(row),
+      idNumber: row.idNumberEnc
+        ? decryptIdNumber(row.id, row.idNumberEnc, getPiiKeyRing())
+        : null,
+      dataNotice:
+        row.dataNoticeVersion !== null && row.dataNoticeAt
+          ? {
+              version: row.dataNoticeVersion,
+              at: row.dataNoticeAt.toISOString(),
+              byName: noticeBy ?? "",
+            }
+          : null,
+      notice: await currentDataNotice(db),
+    });
+  });
+}
+
+function supplierValues(input: SupplierInput, current?: SupplierRecord) {
   const keep = <K extends keyof SupplierInput>(key: K) =>
     input[key] === undefined && current !== undefined;
   return {
@@ -628,12 +729,10 @@ function supplierValues(input: SupplierInput, current?: SupplierEditRow) {
         : optionalText(input.address),
     taxCode:
       keep("taxCode") && current ? current.taxCode : taxCode(input.taxCode),
-    idNumber:
-      keep("idNumber") && current ? current.idNumber : idNumber(input.idNumber),
-    bankAccount:
-      keep("bankAccount") && current
-        ? current.bankAccount
-        : optionalText(input.bankAccount),
+    bankAccountLast4:
+      keep("bankAccountLast4") && current
+        ? current.bankAccountLast4
+        : bankAccountLast4(input.bankAccountLast4),
     bankName:
       keep("bankName") && current
         ? current.bankName
@@ -646,7 +745,116 @@ function supplierValues(input: SupplierInput, current?: SupplierEditRow) {
   };
 }
 
-// The CCCD is not searchable: it must not be guessable through search.
+type SupplierValues = ReturnType<typeof supplierValues>;
+
+interface IdNumberColumns {
+  columns: { idNumberEnc: string | null; idNumberLast4: string | null };
+  /** What the activity log compares; only ever leaves masked. */
+  before: string | null;
+  after: string | null;
+}
+
+/**
+ * The CCCD columns after this save. Decrypts only when the request carries
+ * a CCCD, and an unchanged number keeps its ciphertext (design D12).
+ */
+function idNumberColumns(
+  supplierId: string,
+  input: SupplierInput,
+  current?: SupplierRecord,
+): IdNumberColumns {
+  if (input.idNumber === undefined && current) {
+    return {
+      columns: {
+        idNumberEnc: current.idNumberEnc,
+        idNumberLast4: current.idNumberLast4,
+      },
+      before: current.idNumberLast4,
+      after: current.idNumberLast4,
+    };
+  }
+  const next = idNumber(input.idNumber);
+  const before = current?.idNumberEnc
+    ? decryptIdNumber(supplierId, current.idNumberEnc, getPiiKeyRing())
+    : null;
+  if (before === next && current) {
+    return {
+      columns: {
+        idNumberEnc: current.idNumberEnc,
+        idNumberLast4: current.idNumberLast4,
+      },
+      before,
+      after: next,
+    };
+  }
+  return {
+    columns: {
+      idNumberEnc:
+        next === null
+          ? null
+          : encryptIdNumber(supplierId, next, getPiiKeyRing()),
+      idNumberLast4: next === null ? null : next.slice(-4),
+    },
+    before,
+    after: next,
+  };
+}
+
+const NOTICE_TRIGGERS = [
+  "kind",
+  "idNumber",
+  "phone",
+  "address",
+  "bankAccountLast4",
+  "bankName",
+] as const;
+
+interface NoticeColumns {
+  dataNoticeVersion: number | null;
+  dataNoticeAt: Date | null;
+  dataNoticeBy: string | null;
+}
+
+/**
+ * The gate of design D6: a save touching personal data of a seller nobody
+ * has told yet needs the tick. Old rows are not given a proof, and a save
+ * touching none of those fields passes.
+ */
+function noticeColumns(
+  input: SupplierInput,
+  values: SupplierValues,
+  idLast4: string | null,
+  actor: Actor,
+  current?: SupplierRecord,
+): NoticeColumns {
+  const existing: NoticeColumns = {
+    dataNoticeVersion: current?.dataNoticeVersion ?? null,
+    dataNoticeAt: current?.dataNoticeAt ?? null,
+    dataNoticeBy: current?.dataNoticeBy ?? null,
+  };
+  if (existing.dataNoticeVersion !== null) return existing;
+  const needed = needsDataNotice(values.kind, {
+    ...values,
+    idNumber: idLast4,
+  });
+  if (!needed) return existing;
+  if (input.dataNoticeConfirmed === true) {
+    return {
+      dataNoticeVersion: CURRENT_NOTICE_VERSION,
+      dataNoticeAt: new Date(),
+      dataNoticeBy: actor.id,
+    };
+  }
+  if (NOTICE_TRIGGERS.some((field) => input[field] !== undefined)) {
+    throw new ServiceFailure(
+      unprocessable(DATA_NOTICE_MESSAGE, "dataNoticeConfirmed"),
+    );
+  }
+  return existing;
+}
+
+// The CCCD and the account are not searchable: they must not be guessable
+// through search.
 const supplierSearchText = (
   values: {
     name: string;
@@ -661,14 +869,26 @@ export function createSupplier(
   actor: Actor,
   input: SupplierInput,
 ): Promise<ServiceResult<SupplierRow>> {
-  return runService(async () => {
+  return runSupplierService(async () => {
     const values = supplierValues(input);
+    // Known before the insert: the ciphertext is bound to it (design D1).
+    const id = randomUUID();
+    const cccd = idNumberColumns(id, input);
+    const notice = noticeColumns(
+      input,
+      values,
+      cccd.columns.idNumberLast4,
+      actor,
+    );
     const row = await db.transaction(async (tx) => {
       const code = await nextCode(tx, supplierCodeSeq, CODE_PREFIXES.supplier);
       const [created] = await tx
         .insert(supplier)
         .values({
+          id,
           ...values,
+          ...cccd.columns,
+          ...notice,
           code,
           searchText: supplierSearchText(values, code),
           createdBy: actor.id,
@@ -679,7 +899,12 @@ export function createSupplier(
         await logActivity(tx, actor, {
           action: "CREATE",
           document: { type: "SUPPLIER", id: created.id, code },
-          summary: values.name,
+          summary: joinParts(
+            sellerLabel({ kind: values.kind, code, name: values.name }),
+            notice.dataNoticeVersion === null
+              ? null
+              : `${SUPPLIER_NOTICE_LABEL} phiên bản ${notice.dataNoticeVersion}`,
+          ),
         });
       }
       return created;
@@ -688,17 +913,58 @@ export function createSupplier(
   });
 }
 
+/**
+ * A company is written by name into append-only tables and cannot be erased,
+ * so a person with documents stays a person (0.2 số 170). The supplier row is
+ * locked by the caller; new orders take it FOR SHARE and wait.
+ */
+async function assertNoDocuments(tx: Executor, id: string): Promise<void> {
+  const [[order], [payment]] = await Promise.all([
+    tx
+      .select({ id: purchaseOrder.id })
+      .from(purchaseOrder)
+      .where(eq(purchaseOrder.supplierId, id))
+      .limit(1),
+    tx
+      .select({ id: supplierPayment.id })
+      .from(supplierPayment)
+      .where(eq(supplierPayment.supplierId, id))
+      .limit(1),
+  ]);
+  if (order || payment) {
+    throw new ServiceFailure(conflict(PARTNER_MESSAGES.personHasDocuments));
+  }
+}
+
 export function updateSupplier(
   db: Database,
   actor: Actor,
   id: string,
   input: SupplierInput,
 ): Promise<ServiceResult<SupplierRow>> {
-  return runService(async () => {
+  return runSupplierService(async () => {
     const row = await db.transaction(async (tx) => {
-      const current = await getSupplierForEdit(tx, id, "update");
+      const [current] = await tx
+        .select()
+        .from(supplier)
+        .where(eq(supplier.id, id))
+        .for("update");
       if (!current) return null;
+      if (current.anonymizedAt) {
+        throw new ServiceFailure(conflict(PARTNER_MESSAGES.supplierAnonymized));
+      }
       const values = supplierValues(input, current);
+      if (current.kind === "PERSON" && values.kind === "COMPANY") {
+        await assertNoDocuments(tx, id);
+      }
+      const cccd = idNumberColumns(id, input, current);
+      const notice = noticeColumns(
+        input,
+        values,
+        cccd.columns.idNumberLast4,
+        actor,
+        current,
+      );
       if (input.status === "ARCHIVED" && current.status === "ACTIVE") {
         // An order on its way would point at a supplier nobody can pick.
         const orders = await openOrderCodesForSupplier(tx, id);
@@ -717,6 +983,8 @@ export function updateSupplier(
         .update(supplier)
         .set({
           ...values,
+          ...cccd.columns,
+          ...notice,
           searchText: supplierSearchText(values, current.code),
           ...statusSet(input.status),
           updatedBy: actor.id,
@@ -725,7 +993,11 @@ export function updateSupplier(
         .where(eq(supplier.id, id))
         .returning();
       if (!updated) return null;
-      const changes = diffFields(SUPPLIER_FIELDS, current, updated);
+      const changes = diffFields(
+        SUPPLIER_FIELDS,
+        { ...current, idNumber: cccd.before },
+        { ...updated, idNumber: cccd.after },
+      );
       await logActivity(tx, actor, {
         action: "UPDATE",
         document: { type: "SUPPLIER", id, code: current.code },
@@ -750,12 +1022,16 @@ export function deleteSupplier(
         const [deleted] = await tx
           .delete(supplier)
           .where(eq(supplier.id, id))
-          .returning({ code: supplier.code, name: supplier.name });
+          .returning({
+            code: supplier.code,
+            name: supplier.name,
+            kind: supplier.kind,
+          });
         if (!deleted) return false;
         await logActivity(tx, actor, {
           action: "DELETE",
           document: { type: "SUPPLIER", id, code: deleted.code },
-          summary: deleted.name,
+          summary: sellerLabel(deleted),
         });
         return true;
       });

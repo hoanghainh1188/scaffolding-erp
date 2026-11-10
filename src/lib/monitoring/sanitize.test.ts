@@ -46,6 +46,65 @@ describe("sanitize.ts", () => {
     });
   });
 
+  describe("sanitizeErrorPayload content scan (personal-data-protection D10)", () => {
+    const query = "Failed query: insert ... params: 001203012345,Anh Tam";
+    const ciphertext = "pii1.1.abc_DEF-1.ghi_JKL-2";
+
+    it("replaces 12 digits in message and stack of an Error", () => {
+      const error = new Error(query);
+      error.stack = `Error: ${query}\n    at x (y.ts:1:2)`;
+      const clean = sanitizeErrorPayload({ error }) as unknown as {
+        error: { message: string; stack: string };
+      };
+      expect(clean.error.message).toBe(
+        "Failed query: insert ... params: [CCCD],Anh Tam",
+      );
+      expect(clean.error.stack).toContain("[CCCD]");
+      expect(clean.error.stack).not.toContain("001203012345");
+    });
+
+    it("replaces 12 digits in plain report fields", () => {
+      expect(sanitizeErrorPayload({ message: query, stack: query })).toEqual({
+        message: "Failed query: insert ... params: [CCCD],Anh Tam",
+        stack: "Failed query: insert ... params: [CCCD],Anh Tam",
+      });
+    });
+
+    it("leaves shorter and longer digit runs", () => {
+      expect(sanitizeErrorPayload({ a: "12345678901 1234567890123" })).toEqual({
+        a: "12345678901 1234567890123",
+      });
+    });
+
+    it("replaces ciphertext inside a string", () => {
+      expect(
+        sanitizeErrorPayload({ message: `bad value ${ciphertext} here` }),
+      ).toEqual({ message: "bad value [REDACTED] here" });
+    });
+
+    it("removes ciphertext and key fields entirely", () => {
+      expect(
+        sanitizeErrorPayload({
+          idNumberEnc: "anything",
+          id_number_enc: "anything",
+          taxIdentityEnc: "anything",
+          PII_ENCRYPTION_KEYS: "1:abc",
+        }),
+      ).toEqual({
+        idNumberEnc: "[REDACTED]",
+        id_number_enc: "[REDACTED]",
+        taxIdentityEnc: "[REDACTED]",
+        PII_ENCRYPTION_KEYS: "[REDACTED]",
+      });
+    });
+
+    it("still masks by field name first", () => {
+      expect(sanitizeErrorPayload({ idNumber: "001203012345" })).toEqual({
+        idNumber: "001***45",
+      });
+    });
+  });
+
   describe("sanitizeErrorPayload", () => {
     it("redacts authentication credentials and tokens", () => {
       const payload = {

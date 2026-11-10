@@ -36,6 +36,75 @@ describe("field specs (activity-log design D6, D7)", () => {
       SUPPLIER_FIELDS.filter((spec) => spec.sensitive).map((s) => s.field),
     ).toEqual(["idNumber", "bankAccount"]);
   });
+
+  describe("sellers in the append-only log (personal-data-protection D8)", () => {
+    const seller = {
+      kind: "PERSON",
+      name: "Anh Lê Văn Tâm",
+      phone: "0912345678",
+      address: "12 Trần Phú",
+      taxCode: null,
+      idNumber: null,
+      bankAccountLast4: null,
+      bankName: null,
+      paymentTermsDays: 0,
+      note: "Ghi chú A",
+      status: "ACTIVE",
+      dataNoticeVersion: null,
+    };
+    const changed = {
+      ...seller,
+      name: "Anh Tâm",
+      phone: "0912345679",
+      address: "13 Trần Phú",
+      note: "Ghi chú B",
+    };
+
+    it("writes only that a person's fields changed", () => {
+      const changes = diffFields(SUPPLIER_FIELDS, seller, changed);
+      expect(changes.map((change) => change.field)).toEqual([
+        "name",
+        "phone",
+        "address",
+        "note",
+      ]);
+      expect(changes.every((change) => change.after === "(đã đổi)")).toBe(true);
+      expect(JSON.stringify(changes)).not.toMatch(
+        /Tâm|09123|Trần Phú|Ghi chú [AB]/,
+      );
+    });
+
+    it("keeps a company's values", () => {
+      const before = { ...seller, kind: "COMPANY" };
+      const after = { ...changed, kind: "COMPANY" };
+      expect(diffFields(SUPPLIER_FIELDS, before, after)[0]).toMatchObject({
+        field: "name",
+        before: "Anh Lê Văn Tâm",
+        after: "Anh Tâm",
+      });
+    });
+
+    it("hides values of a person who has just become a company", () => {
+      const after = { ...changed, kind: "COMPANY" };
+      const changes = diffFields(SUPPLIER_FIELDS, seller, after);
+      expect(JSON.stringify(changes)).not.toMatch(/Tâm|09123|Trần Phú/);
+    });
+
+    it("records the notice version", () => {
+      const changes = diffFields(SUPPLIER_FIELDS, seller, {
+        ...seller,
+        dataNoticeVersion: 1,
+      });
+      expect(changes).toEqual([
+        {
+          field: "dataNotice",
+          label: "Ghi nhận thông báo",
+          before: null,
+          after: "Phiên bản 1",
+        },
+      ]);
+    });
+  });
 });
 
 describe("catalog-extensions fields", () => {

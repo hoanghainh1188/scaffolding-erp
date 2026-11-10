@@ -39,6 +39,7 @@ describe("actions and groups (design D3)", () => {
       "CLOSE",
       "DELETE_DRAFT",
       "DELETE",
+      "ANONYMIZE",
     ]);
   });
 

@@ -54,8 +54,9 @@ const SUPPLIER = {
   name: "Anh Tư – Bình Dương",
   phone: "0903123456",
   idNumber: "001203012345",
-  bankAccount: "0451000312341234",
+  bankAccountLast4: "1234",
   bankName: "Vietcombank",
+  dataNoticeConfirmed: true,
 };
 
 async function supplierNcc() {
@@ -73,7 +74,7 @@ describe("suppliers", () => {
       documentId: ncc.id,
       role: "SALES",
       device: "DESKTOP",
-      summary: "Anh Tư – Bình Dương",
+      summary: `${ncc.code} · Ghi nhận thông báo phiên bản 1`,
     });
   });
 
@@ -97,8 +98,8 @@ describe("suppliers", () => {
       {
         field: "phone",
         label: "Điện thoại",
-        before: "0903 123 456",
-        after: "0903 123 457",
+        before: null,
+        after: "(đã đổi)",
       },
     ]);
     expect(row?.flags).not.toContain("SENSITIVE");
@@ -108,16 +109,16 @@ describe("suppliers", () => {
     const ncc = await supplierNcc();
     await updateSupplier(ctx.db, lanphuong, ncc.id, {
       ...SUPPLIER,
-      bankAccount: "0451000312345678",
+      bankAccountLast4: "5678",
     });
     const row = await lastActivity(ctx.db, ncc.code);
     expect(row?.action).toBe("UPDATE");
     expect(row?.summary).toBe("Số tài khoản: •••• 1234 → •••• 5678");
     expect(row?.flags).toContain("SENSITIVE");
     const all = JSON.stringify(await activityRows(ctx.db));
-    expect(all).not.toContain("0451000312345678");
-    expect(all).not.toContain("0451000312341234");
     expect(all).not.toContain("001203012345");
+    expect(all).not.toContain("Anh Tư");
+    expect(all).not.toContain("0903123456");
   });
 
   it("a name change carries no flag but off hours", async () => {

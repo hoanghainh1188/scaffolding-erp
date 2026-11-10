@@ -54,8 +54,9 @@ async function setUp() {
   await ctx.db
     .update(supplier)
     .set({
-      idNumber: "001203012345",
-      bankAccount: "0451000312345678",
+      idNumberEnc: "pii1.1.YWJjZGVmZ2hpamts.YWJjZGVmZ2hpamtsbW5vcA",
+      idNumberLast4: "2345",
+      bankAccountLast4: "5678",
       bankName: "Vietcombank",
     })
     .where(eq(supplier.id, tam));
@@ -109,7 +110,10 @@ describe("exportPayables", () => {
     }
     const sellers = files.get("xl/worksheets/sheet1.xml") ?? "";
     expect(sellers).toContain("•••• •••• 2345");
-    expect(sellers).toContain("•••• 5678");
+    expect(sellers).toContain(">Tài khoản<");
+    expect(sellers).toContain(">Vietcombank ···5678<");
+    expect(sellers).not.toContain("Ngân hàng");
+    expect(sellers).not.toContain("001203012345");
     const receipts = files.get("xl/worksheets/sheet2.xml") ?? "";
     expect(receipts).toContain(kg.code);
     expect(receipts).toContain("<v>26500000</v>");

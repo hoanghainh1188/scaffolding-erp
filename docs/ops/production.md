@@ -22,6 +22,7 @@ Tài liệu quy chuẩn vận hành, bảo mật và quy trình ứng phó khẩ
 | `DATABASE_URL` | URL có Pooler của Neon, **role app `erp_app`** | Chứa `-pooler`, `sslmode=require`. Không dùng `neondb_owner` |
 | `BETTER_AUTH_SECRET` | Khóa ký phiên đăng nhập (32 bytes) | Độc lập, không trùng Demo |
 | `BETTER_AUTH_URL` | `https://erp.<tên-miền-công-ty>` | Bắt buộc ở Production |
+| `PII_ENCRYPTION_KEYS` | Khóa mã hóa CCCD, dạng `1:<base64 của 32 byte>` | Bắt buộc, thiếu là không khởi động. Riêng cho từng công ty. Xem `docs/ops/personal-data.md` |
 | `DEMO_MODE` | `false` | Giữ nguyên mặc định |
 | `DB_POOL_MAX` | `5` | Tối ưu tài nguyên serverless |
 | `DB_CONNECT_TIMEOUT_SECONDS` | `10` | Chống timeout khi mạng chập chờn |
@@ -41,6 +42,7 @@ Tài liệu quy chuẩn vận hành, bảo mật và quy trình ứng phó khẩ
 #### GitHub Secrets (Environment: `production`)
 - `PROD_DATABASE_URL_MIGRATE`: URL trực tiếp (không pooler) của **owner** `neondb_owner`, chạy migration & sao lưu.
 - `PROD_DATABASE_URL`: URL của **`erp_app`**, kiểm tra số dư kho hằng đêm.
+- `PROD_PII_ENCRYPTION_KEYS`: cùng giá trị `PII_ENCRYPTION_KEYS` trên Vercel, cho workflow `pii-maintenance.yml`.
 - `NEON_API_KEY`: API Key quyền quản trị project Neon.
 - `NEON_PROJECT_ID`: Project ID của `scaffolding-erp-prod`.
 - `VERCEL_DEPLOY_HOOK`: Webhook kích hoạt deploy Production trên Vercel.
@@ -144,6 +146,8 @@ Tài liệu quy chuẩn vận hành, bảo mật và quy trình ứng phó khẩ
 - Bản sao lưu chạy `--no-privileges`: khôi phục xong, `erp_app` **không có quyền gì** cho tới khi chạy bước 3. DB/nhánh đích phải có sẵn role `erp_app` (chưa có thì tạo bằng SQL như mục 1.2). Chỉ trỏ `DATABASE_URL` trên Vercel vào DB đích sau bước 3.
 - Cách 1 (PITR) và nhánh `pre-deploy-*` chép cả role lẫn quyền, không cần bước 3.
 
+> **Dữ liệu cá nhân:** khôi phục bản sao lưu phải có `PII_ENCRYPTION_KEYS` còn hiệu lực lúc sao lưu. Trước khi mở cho người dùng, ẩn danh lại những người trong sổ yêu cầu xóa (`docs/ops/personal-data.md` mục 8).
+
 ### Sự cố 5: Khóa tài khoản do nhập sai mật khẩu quá 5 lần
 - **Cách xử lý**:
   Quản trị viên chạy lệnh mở khóa tài khoản:
@@ -192,7 +196,8 @@ Khi có sự cố rò rỉ secret hoặc nhân sự quản trị rời khỏi d�
    - Role owner: Neon Console → **Roles** → `neondb_owner` → **Reset Password** → cập nhật secret `PROD_DATABASE_URL_MIGRATE`. Vercel không chứa URL owner nên không cần redeploy.
 3. **Đổi `NEON_API_KEY`**: Neon Console → Account settings → **API keys** → tạo khóa mới, cập nhật GitHub Secret, rồi **Revoke** khóa cũ.
 4. **Đổi `VERCEL_DEPLOY_HOOK`**: Vercel → Project → Settings → Git → **Deploy Hooks** → tạo hook mới, cập nhật GitHub Secret, xóa hook cũ.
-5. **Đổi `BACKUP_ENCRYPTION_KEY`**: sinh khóa mới (`openssl rand -base64 32`), cập nhật GitHub Secret. **Giữ khóa cũ** ở nơi an toàn cho tới khi các bản sao lưu mã hóa bằng nó hết hạn lưu giữ, nếu không sẽ không giải mã được.
+5. **Đổi `PII_ENCRYPTION_KEYS`**: theo `docs/ops/personal-data.md` mục 2. Nghi lộ dữ liệu thì làm theo `docs/ops/data-breach.md`.
+6. **Đổi `BACKUP_ENCRYPTION_KEY`**: sinh khóa mới (`openssl rand -base64 32`), cập nhật GitHub Secret. **Giữ khóa cũ** ở nơi an toàn cho tới khi các bản sao lưu mã hóa bằng nó hết hạn lưu giữ, nếu không sẽ không giải mã được.
 
 #### Lịch xoay vòng định kỳ (kể cả khi không có sự cố)
 
@@ -202,7 +207,14 @@ Khi có sự cố rò rỉ secret hoặc nhân sự quản trị rời khỏi d�
 | Mật khẩu DB `erp_app` và `neondb_owner` | 6 tháng | |
 | `NEON_API_KEY` | 6 tháng | |
 | `VERCEL_DEPLOY_HOOK` | 12 tháng | |
-| `BACKUP_ENCRYPTION_KEY` | 12 tháng | Giữ khóa cũ như bước 5 |
+| `BACKUP_ENCRYPTION_KEY` | 12 tháng | Giữ khóa cũ như bước 6 |
+| `PII_ENCRYPTION_KEYS` | 12 tháng | Giữ khóa cũ tới khi bản sao lưu dùng khóa đó hết hạn |
+
+#### Lịch việc dữ liệu cá nhân
+
+| Việc | Chu kỳ | Cách làm |
+|---|---|---|
+| `pii:purge`: xóa CCCD, hồ sơ thuế quá hạn | 12 tháng | Workflow **Personal Data Maintenance** → `purge`; lưu log vào hồ sơ tuân thủ |
 
 Ngay lập tức (không chờ chu kỳ) khi: nghi lộ secret, người có quyền quản trị nghỉ việc, hoặc secret lỡ xuất hiện trong log, chat, commit.
 

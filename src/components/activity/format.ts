@@ -27,6 +27,7 @@ const ACTION_TONES: Readonly<Record<ActivityAction, BadgeTone>> = {
   CLOSE: "warning",
   DELETE_DRAFT: "destructive",
   DELETE: "destructive",
+  ANONYMIZE: "destructive",
   SIGN_IN: "muted",
   START: "highlight",
   ASSIGN: "neutral",

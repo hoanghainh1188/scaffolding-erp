@@ -29,6 +29,7 @@ import * as locationOne from "./locations/[id]/route";
 import * as locations from "./locations/route";
 import * as siteOne from "./sites/[id]/route";
 import * as sites from "./sites/route";
+import * as supplierAnonymize from "./suppliers/[id]/anonymize/route";
 import * as supplierEdit from "./suppliers/[id]/edit/route";
 import * as supplierOne from "./suppliers/[id]/route";
 import * as suppliers from "./suppliers/route";
@@ -84,7 +85,8 @@ beforeEach(async () => {
     kind: "PERSON",
     name: "Chú Ba ve chai",
     idNumber: "001203012345",
-    bankAccount: "0451000312345678",
+    bankAccountLast4: "5678",
+    dataNoticeConfirmed: true,
   });
   const [yard] = await listLocations(ctx.db, { type: "WORKSHOP" });
   fixture = {
@@ -420,8 +422,58 @@ describe("supplier CCCD", () => {
     const text = await response.text();
     expect(text).toContain("•••• •••• 2345");
     expect(text).not.toContain("001203012345");
-    expect(text).toContain("•••• 5678");
+    expect(text).toContain('"bankAccountLast4":"5678"');
+  });
+
+  it("refuses a pasted full account number without repeating it", async () => {
+    const response = await suppliers.POST(
+      appRequest("/api/catalog/suppliers", {
+        method: "POST",
+        cookie: cookies.get("ACCOUNTANT"),
+        body: {
+          kind: "PERSON",
+          name: "Anh Tâm",
+          bankAccountLast4: "0451000312345678",
+          dataNoticeConfirmed: true,
+        },
+      }),
+    );
+    expect(response.status).toBe(422);
+    const text = await response.text();
+    expect(text).toContain("Chỉ nhập 4 số cuối của tài khoản");
     expect(text).not.toContain("0451000312345678");
+  });
+
+  it("drops the old bankAccount field", async () => {
+    const response = await suppliers.POST(
+      appRequest("/api/catalog/suppliers", {
+        method: "POST",
+        cookie: cookies.get("ACCOUNTANT"),
+        body: {
+          kind: "PERSON",
+          name: "Anh Tâm",
+          bankAccount: "0451000312345678",
+        },
+      }),
+    );
+    expect(response.status).toBe(201);
+    const { data } = await response.json();
+    expect(data.bankAccountLast4).toBeNull();
+  });
+
+  it("lets only the Director erase a seller", async () => {
+    const body = { confirmCode: "NCC-0001", requestedOn: "2026-01-02" };
+    const call = (role: Role) =>
+      supplierAnonymize.POST(
+        appRequest(`/api/catalog/suppliers/${fixture.supplierId}/anonymize`, {
+          method: "POST",
+          cookie: cookies.get(role),
+          body,
+        }),
+        params(fixture.supplierId),
+      );
+    expect((await call("ACCOUNTANT")).status).toBe(403);
+    expect((await call("DIRECTOR")).status).toBe(200);
   });
 
   it("gives the edit form the full number for partners.manage only", async () => {
@@ -437,7 +489,10 @@ describe("supplier CCCD", () => {
         expect(response.headers.get("cache-control")).toBe("no-store");
         const { data } = await response.json();
         expect(data.idNumber).toBe("001203012345");
-        expect(data.bankAccount).toBe("0451000312345678");
+        expect(data.bankAccountLast4).toBe("5678");
+        expect(data.bankAccount).toBeUndefined();
+        expect(data.dataNotice.version).toBe(1);
+        expect(data.notice.text).toContain("Singapore");
       } else {
         expect(response.status, role).toBe(403);
       }

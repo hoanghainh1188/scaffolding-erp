@@ -20,7 +20,10 @@ export interface LockedSupplier {
   id: string;
   code: string;
   name: string;
+  kind: string;
   paymentTermsDays: number;
+  /** Set once erased: no more payments or receipts (design D7). */
+  anonymizedAt: Date | null;
 }
 
 /** The supplier FOR UPDATE, or 404. */
@@ -33,7 +36,9 @@ export async function lockSupplier(
       id: supplier.id,
       code: supplier.code,
       name: supplier.name,
+      kind: supplier.kind,
       paymentTermsDays: supplier.paymentTermsDays,
+      anonymizedAt: supplier.anonymizedAt,
     })
     .from(supplier)
     .where(eq(supplier.id, id))

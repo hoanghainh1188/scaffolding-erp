@@ -84,6 +84,7 @@ Giống demo (kế hoạch demo mục 2), khác ở:
 
 - `BETTER_AUTH_SECRET` **riêng cho production**, không dùng lại của demo. Đổi giá trị này = mọi người bị đăng xuất.
 - `BETTER_AUTH_URL=https://erp.<tên-miền>`.
+- `PII_ENCRYPTION_KEYS` **riêng cho production** (và `PROD_PII_ENCRYPTION_KEYS` trên GitHub, cùng giá trị). Thiếu là app không khởi động. Mất khóa là mất hết CCCD: xem `docs/ops/personal-data.md`.
 - Không đặt `DEV_SEED_PASSWORD`, `E2E*`, `AUTH_SIGN_IN_LIMIT_PER_MINUTE`.
 - Ai giữ secret: chủ repo + một người dự phòng (Giám đốc). Lưu trong trình quản lý mật khẩu của công ty, không gửi qua chat.
 - Bật 2FA cho tài khoản Vercel, Neon, GitHub, nhà cung cấp tên miền.
@@ -113,7 +114,9 @@ Giống demo (kế hoạch demo mục 2), khác ở:
 - Vercel và Neon lưu dữ liệu ở **Singapore** → là chuyển dữ liệu cá nhân ra nước ngoài; có thể phải lập hồ sơ đánh giá tác động và thông báo cơ quan quản lý.
 - **Đã chốt (0.2 #156–#159, 10/11/2026):** tuân theo luật Việt Nam (Luật 91/2025, Nghị định 356/2025) và PDPA Singapore; mã hóa CCCD trong DB; số tài khoản chỉ lưu 4 số cuối; Claude soạn nháp hồ sơ đánh giá tác động và chuyển dữ liệu ra nước ngoài, luật sư duyệt và nộp. **Chưa đưa dữ liệu cá nhân thật lên production khi chưa có ý kiến luật sư.**
 - **Việc cần làm:** hỏi tư vấn pháp lý / kế toán của công ty trước khi đưa dữ liệu thật lên. Nếu yêu cầu dữ liệu nằm ở Việt Nam → phương án VPS / cloud trong nước (đã cân nhắc ở kế hoạch demo) thay cho Neon; code không phải đổi nhiều vì mọi truy cập DB đi qua `src/db/client.ts`.
-- Trong app đã có: chỉ trả CCCD/STK đã che (trừ form sửa cần `partners.manage`), nhật ký chỉ lưu dạng che, không ghi mật khẩu. Báo lỗi (K11) cũng phải che các trường này.
+- Trong app đã có (change `personal-data-protection`): CCCD mã hóa AES-256-GCM trong DB, chỉ form sửa cần `partners.manage` mới giải mã; số tài khoản chỉ lưu 4 số cuối; ghi nhận đã thông báo; ẩn danh người bán khi được yêu cầu; nhật ký và sổ kho ghi mã thay tên người bán cá nhân; báo lỗi (K11) quét cả nội dung chuỗi.
+- Quy trình: `docs/ops/personal-data.md` (khóa, yêu cầu xóa, thời hạn giữ, khôi phục), `docs/ops/data-breach.md` (sự cố lộ dữ liệu).
+- Thứ tự chuyển dữ liệu: thêm cột → deploy → `pii:backfill` → kiểm còn 0 → xóa nhánh `pre-deploy-*`, chờ bản sao lưu cũ hết hạn → mới đưa dữ liệu thật lên.
 
 ## 7. Migration, build, deploy
 

@@ -32,6 +32,8 @@ export interface OpenPayableOption {
 interface PaymentFormProps {
   supplierId: string;
   supplierName: string;
+  /** "Vietcombank ···5678": all the software keeps of the account. */
+  bankRef: string | null;
   today: string;
   payables: readonly OpenPayableOption[];
 }
@@ -193,6 +195,11 @@ export function PaymentForm(props: PaymentFormProps) {
           </label>
         ))}
       </fieldset>
+      {method === "TRANSFER" && props.bankRef ? (
+        <p className="text-sm text-muted-foreground">
+          Chuyển vào: {props.bankRef}
+        </p>
+      ) : null}
       <fieldset className="flex flex-wrap gap-4 text-sm">
         <legend className="sr-only">Loại phiếu chi</legend>
         {(
