@@ -6,7 +6,7 @@
 import type { Database } from "@/db/client";
 import { EXPORT_MAX_ROWS } from "@/domain/activity";
 import type { BusinessDate } from "@/domain/business-date";
-import { maskBankAccount, maskIdNumber } from "@/domain/partner-fields";
+import { formatBankRef, maskIdNumber } from "@/domain/partner-fields";
 import { PAYMENT_KIND_LABELS } from "@/domain/payables";
 import { PAYMENT_METHOD_LABELS } from "@/domain/receivables";
 import { buildXlsxBook, type XlsxValue } from "@/lib/export/xlsx";
@@ -42,9 +42,8 @@ export async function exportPayables(
       row.code,
       row.name,
       KIND_LABELS[row.kind],
-      info?.idNumber ? maskIdNumber(info.idNumber) : null,
-      info?.bankAccount ? maskBankAccount(info.bankAccount) : null,
-      info?.bankName ?? null,
+      info?.idNumberLast4 ? maskIdNumber(info.idNumberLast4) : null,
+      info ? formatBankRef(info.bankName, info.bankAccountLast4) : null,
       row.paymentTermsDays,
       row.owed,
       row.overdue.amount,
@@ -96,8 +95,7 @@ export async function exportPayables(
         { header: "Người bán", width: 34 },
         { header: "Loại", width: 10 },
         { header: "CCCD", width: 16 },
-        { header: "Số tài khoản", width: 14 },
-        { header: "Ngân hàng", width: 16 },
+        { header: "Tài khoản", width: 24 },
         { header: "Số ngày được nợ", width: 10 },
         { header: "Còn phải trả", width: 14 },
         { header: "Quá hạn", width: 14 },

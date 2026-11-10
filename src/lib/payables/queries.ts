@@ -4,7 +4,7 @@
 import { orderPayables } from "@/domain/payables";
 import type { BusinessDate } from "@/domain/business-date";
 import { toMoney, type Money } from "@/domain/money";
-import { maskBankAccount, maskIdNumber } from "@/domain/partner-fields";
+import { formatBankRef, maskIdNumber } from "@/domain/partner-fields";
 
 import {
   readLedger,
@@ -41,9 +41,8 @@ export interface SupplierDetail {
   paymentTermsDays: number;
   /** "•••• •••• 2345" or null. */
   idNumber: string | null;
-  /** "•••• 5678" or null. */
-  bankAccount: string | null;
-  bankName: string | null;
+  /** "Vietcombank ···5678" or null. */
+  bankRef: string | null;
   orderCount: number;
   owed: Money;
   advance: Money;
@@ -92,9 +91,8 @@ export async function supplierDetail(
     name: info.name,
     kind: info.kind,
     paymentTermsDays: info.paymentTermsDays,
-    idNumber: info.idNumber ? maskIdNumber(info.idNumber) : null,
-    bankAccount: info.bankAccount ? maskBankAccount(info.bankAccount) : null,
-    bankName: info.bankName,
+    idNumber: info.idNumberLast4 ? maskIdNumber(info.idNumberLast4) : null,
+    bankRef: formatBankRef(info.bankName, info.bankAccountLast4),
     orderCount: new Set(ledger.payables.map((row) => row.orderId)).size,
     owed: ledger.owed,
     advance: ledger.advance,

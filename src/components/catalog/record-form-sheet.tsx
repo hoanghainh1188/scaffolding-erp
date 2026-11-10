@@ -5,6 +5,9 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { formatBusinessDate, toBusinessDate } from "@/domain/business-date";
+import { needsDataNotice } from "@/domain/personal-data";
 import { toSearchText } from "@/domain/search-text";
 import {
   Sheet,
@@ -16,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { callApi } from "@/lib/api-client";
 
+import { DATA_NOTICE_FIELD, DataNoticeBlock } from "./data-notice-block";
 import { FormError } from "./form-error";
 import { useCatalogAction } from "./use-catalog-action";
 
@@ -25,7 +29,14 @@ export interface FormField {
   name: string;
   label: string;
   /** "search-select": a select with a filter box, accents ignored. */
-  kind?: "text" | "number" | "select" | "search-select" | "textarea" | "tel";
+  kind?:
+    | "text"
+    | "number"
+    | "select"
+    | "search-select"
+    | "textarea"
+    | "tel"
+    | "checkbox";
   options?: { value: string; label: string }[];
   /** First empty option of a select, e.g. "Chọn tỉnh/thành". */
   placeholder?: string;
@@ -53,9 +64,24 @@ interface RecordFormSheetProps {
   path: string;
   method: "POST" | "PATCH";
   submitLabel: string;
+  /** Seller forms: the notice and its tick (personal-data-protection D6). */
+  withDataNotice?: boolean;
+  /** The notice on a create form; an edit form loads its own. */
+  noticeText?: string;
+}
+
+/** Extra fields of the supplier edit data. */
+interface LoadedValues extends Record<string, unknown> {
+  notice?: { text: string };
+  dataNotice?: { at: string; byName: string } | null;
+}
+
+function typedValues(form: HTMLFormElement): Record<string, unknown> {
+  return Object.fromEntries(new FormData(form).entries());
 }
 
 function readValue(field: FormField, raw: FormDataEntryValue | null): unknown {
+  if (field.kind === "checkbox") return raw === "on";
   const text = typeof raw === "string" ? raw.trim() : "";
   if (field.kind === "number") return text === "" ? undefined : Number(text);
   return text === "" ? null : text;
@@ -76,22 +102,33 @@ export function RecordFormSheet({
   path,
   method,
   submitLabel,
+  withDataNotice = false,
+  noticeText,
 }: RecordFormSheetProps) {
   const [open, setOpen] = useState(false);
-  const [loaded, setLoaded] = useState<Record<string, FieldValue> | null>(null);
+  const [loaded, setLoaded] = useState<LoadedValues | null>(null);
+  const [typed, setTyped] = useState<Record<string, unknown> | null>(null);
   const action = useCatalogAction();
-  const current = loaded ?? values;
+  const current: Record<string, unknown> = loaded ?? values;
   const waiting = loadValues !== undefined && loaded === null;
+  const noticeRecord = withDataNotice ? (loaded?.dataNotice ?? null) : null;
+  const notice = loaded?.notice?.text ?? noticeText ?? "";
+  const live = typed ?? current;
+  const showNotice =
+    withDataNotice &&
+    noticeRecord === null &&
+    needsDataNotice(String(live.kind ?? ""), live);
 
   async function onOpenChange(next: boolean) {
     setOpen(next);
     action.setError(null);
+    setTyped(null);
     if (!next) {
       setLoaded(null);
       return;
     }
     if (loadValues) {
-      const result = await callApi<Record<string, FieldValue>>(loadValues);
+      const result = await callApi<LoadedValues>(loadValues);
       if (result.ok) setLoaded(result.data);
       else action.setError(result.error);
     }
@@ -110,6 +147,8 @@ export function RecordFormSheet({
       }
       if (value !== undefined) body[field.name] = value;
     }
+    if (showNotice)
+      body[DATA_NOTICE_FIELD] = form.get(DATA_NOTICE_FIELD) === "on";
     const saved = await action.run(path, { method, body });
     if (saved) setOpen(false);
   }
@@ -129,6 +168,7 @@ export function RecordFormSheet({
         ) : (
           <form
             onSubmit={submit}
+            onChange={(event) => setTyped(typedValues(event.currentTarget))}
             className="flex flex-col gap-4 px-4 pb-6"
             noValidate
           >
@@ -143,6 +183,19 @@ export function RecordFormSheet({
                 disabled: field.readOnly,
                 "aria-describedby": field.hint ? `${id}-hint` : undefined,
               };
+              if (field.kind === "checkbox") {
+                return (
+                  <div key={field.name} className="flex items-center gap-2">
+                    <Checkbox
+                      id={id}
+                      name={field.name}
+                      defaultChecked={value === true}
+                      disabled={field.readOnly}
+                    />
+                    <Label htmlFor={id}>{field.label}</Label>
+                  </div>
+                );
+              }
               return (
                 <div key={field.name} className="flex flex-col gap-1.5">
                   <Label htmlFor={id}>{field.label}</Label>
@@ -189,6 +242,14 @@ export function RecordFormSheet({
                 </div>
               );
             })}
+            {noticeRecord ? (
+              <p className="text-sm text-muted-foreground">
+                Đã thông báo ngày{" "}
+                {formatBusinessDate(toBusinessDate(new Date(noticeRecord.at)))},{" "}
+                {noticeRecord.byName}
+              </p>
+            ) : null}
+            {showNotice ? <DataNoticeBlock text={notice} /> : null}
             <FormError message={action.error} />
             <Button
               type="submit"

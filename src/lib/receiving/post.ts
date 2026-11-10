@@ -60,7 +60,8 @@ import {
   unconfirmedAnomalies,
   type Anomaly,
 } from "@/domain/receipt-anomalies";
-import { payableDueDate } from "@/domain/payables";
+import { PAYABLE_MESSAGES, payableDueDate } from "@/domain/payables";
+import { sellerLabel } from "@/domain/personal-data";
 import { costTrip, needsScrapPrice } from "@/domain/receipt-cost";
 import {
   conflict,
@@ -74,6 +75,7 @@ import {
 import { logActivity } from "@/lib/activity/log";
 import { nextDocumentCode } from "@/lib/inventory/counter";
 import { advanceSuffix, settleAdvances } from "@/lib/payables/advances";
+import { lockSupplier } from "@/lib/payables/common";
 import { postMovements, type Tx } from "@/lib/inventory/post";
 import { receiptSummary } from "@/lib/purchasing/receipts";
 
@@ -135,6 +137,8 @@ async function lockOrder(tx: Tx, code: string) {
       allocationMethod: purchaseOrder.allocationMethod,
       expectedDate: purchaseOrder.expectedDate,
       supplierName: supplier.name,
+      supplierKind: supplier.kind,
+      supplierCode: supplier.code,
       supplierId: supplier.id,
       // Read without a lock: the supplier row is locked last, by
       // settleAdvances (payables design D4).
@@ -412,7 +416,11 @@ async function postInTransaction(
       businessDate,
       lines: movementsOf(
         locationId,
-        `Nhập từ ${order.code} · ${order.supplierName} · chuyến ${tripNo}`,
+        `Nhập từ ${order.code} · ${sellerLabel({
+          kind: order.supplierKind,
+          code: order.supplierCode,
+          name: order.supplierName,
+        })} · chuyến ${tripNo}`,
         inputs,
         facts,
         costed,
@@ -524,6 +532,12 @@ async function postInTransaction(
   await tx.insert(purchaseOrderEvent).values(events);
   // The seller's advance pays this receipt at once (0.2 số 100); the supplier
   // is the last lock (payables design D4).
+  // Last lock of the path (design D4): an erasure either came first and is
+  // seen here, or waits for this receipt and finds an unpaid debt.
+  const seller = await lockSupplier(tx, order.supplierId);
+  if (seller.anonymizedAt) {
+    throw new ServiceFailure(conflict(PAYABLE_MESSAGES.sellerAnonymized));
+  }
   const advance = await settleAdvances(
     tx,
     order.supplierId,

@@ -122,9 +122,7 @@ export default async function Page({
             heading={[
               termsHeading(detail.paymentTermsDays),
               `${detail.orderCount} đơn mua`,
-              detail.bankAccount
-                ? `STK ${[detail.bankAccount, detail.bankName].filter(Boolean).join(" · ")}`
-                : null,
+              detail.bankRef,
             ]
               .filter(Boolean)
               .join(" · ")}
@@ -139,6 +137,7 @@ export default async function Page({
                 key={detail.id}
                 supplierId={detail.id}
                 supplierName={detail.name}
+                bankRef={detail.bankRef}
                 today={today}
                 payables={detail.payables
                   .filter((row) => row.remaining > 0)

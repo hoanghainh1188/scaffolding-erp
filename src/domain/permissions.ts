@@ -33,6 +33,8 @@ export const PERMISSIONS = {
   "catalog.read": EVERYONE,
   "items.manage": ["DIRECTOR", "SALES"],
   "partners.manage": ["DIRECTOR", "SALES", "ACCOUNTANT"],
+  // Cannot be undone, so one person answers for it (personal-data-protection D7).
+  "partners.anonymize": ["DIRECTOR"],
   "locations.manage": ["DIRECTOR"],
   // inventory-ledger design D8: the accountant keeps the books and drafts
   // adjustments and opening balances; only the director approves them.

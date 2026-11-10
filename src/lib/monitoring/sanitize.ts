@@ -8,7 +8,7 @@ const REDACTED_VALUE = "[REDACTED]";
 
 // Keys that must always have their values completely redacted
 const SENSITIVE_KEY_PATTERN =
-  /^(password|currentpassword|newpassword|confirmpassword|secret|token|authorization|cookie|set-cookie|apikey|api_key|accesstoken|access_token|refreshtoken|refresh_token)$/i;
+  /^(password|currentpassword|newpassword|confirmpassword|secret|token|authorization|cookie|set-cookie|apikey|api_key|accesstoken|access_token|refreshtoken|refresh_token|idnumberenc|id_number_enc|taxidentityenc|tax_identity_enc|pii_encryption_keys)$/i;
 
 // Keys representing personal identity number (CCCD/CMND)
 const ID_NUMBER_KEY_PATTERN =
@@ -17,6 +17,17 @@ const ID_NUMBER_KEY_PATTERN =
 // Keys representing bank account numbers
 const BANK_ACCOUNT_KEY_PATTERN =
   /^(bankaccount|accountnumber|stk|bank_account|account_number)$/i;
+
+// Content, not field names (personal-data-protection D10): a CCCD or a
+// ciphertext can sit inside an error message or a stack trace.
+const TWELVE_DIGITS = /\b\d{12}\b/g;
+const CIPHERTEXT = /pii1\.[\w.-]+/g;
+
+function scrubText(text: string): string {
+  return text
+    .replace(CIPHERTEXT, REDACTED_VALUE)
+    .replace(TWELVE_DIGITS, "[CCCD]");
+}
 
 /**
  * Mask an identity number (CCCD/CMND), preserving first 3 and last 2 digits.
@@ -106,16 +117,17 @@ export function sanitizeErrorPayload<T>(input: T): T {
     }
 
     if (typeof val === "string") {
+      const clean = scrubText(val);
       // If it looks like a URL with query params
       if (
-        val.includes("?") &&
-        (val.startsWith("http://") ||
-          val.startsWith("https://") ||
-          val.startsWith("/"))
+        clean.includes("?") &&
+        (clean.startsWith("http://") ||
+          clean.startsWith("https://") ||
+          clean.startsWith("/"))
       ) {
-        return sanitizeUrl(val);
+        return sanitizeUrl(clean);
       }
-      return val;
+      return clean;
     }
 
     if (typeof val !== "object") {
@@ -132,8 +144,8 @@ export function sanitizeErrorPayload<T>(input: T): T {
     if (val instanceof Error) {
       const errorObj: Record<string, unknown> = {
         name: val.name,
-        message: val.message,
-        stack: val.stack,
+        message: scrubText(val.message),
+        stack: val.stack === undefined ? undefined : scrubText(val.stack),
       };
 
       if ("digest" in val) {

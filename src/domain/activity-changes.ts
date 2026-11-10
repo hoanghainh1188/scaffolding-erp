@@ -20,6 +20,11 @@ export interface FieldSpec<T> {
   value: (record: T) => string | null;
   /** Masked before comparing: the raw value never leaves diffFields. */
   sensitive?: Sensitive;
+  /**
+   * True on either side: the row only says the field changed, because an
+   * append-only row can never be erased later (personal-data-protection D8).
+   */
+  personal?: (record: T) => boolean;
 }
 
 const MASKS: Readonly<Record<Sensitive, (raw: string) => string>> = {
@@ -28,6 +33,7 @@ const MASKS: Readonly<Record<Sensitive, (raw: string) => string>> = {
 };
 
 const CHANGED_MARK = " (đã đổi)";
+export const PERSONAL_CHANGE_MARK = "(đã đổi)";
 
 function rawKey(value: string | null): string | null {
   return value === null ? null : value.replace(/\s/g, "");
@@ -42,6 +48,18 @@ export function diffFields<T>(
   return spec.flatMap((entry): FieldChange[] => {
     const from = entry.value(before);
     const to = entry.value(after);
+    if (entry.personal?.(before) || entry.personal?.(after)) {
+      return from === to
+        ? []
+        : [
+            {
+              field: entry.field,
+              label: entry.label,
+              before: null,
+              after: PERSONAL_CHANGE_MARK,
+            },
+          ];
+    }
     if (!entry.sensitive) {
       return from === to
         ? []

@@ -105,11 +105,12 @@ export const supplierBody = z.object({
   address: nullableText.optional(),
   taxCode: nullableText.optional(),
   idNumber: nullableText.optional(),
-  bankAccount: nullableText.optional(),
+  bankAccountLast4: nullableText.optional(),
   bankName: nullableText.optional(),
   paymentTermsDays: z.number().optional(),
   note: nullableText.optional(),
   status: statusField.optional(),
+  dataNoticeConfirmed: z.boolean().optional(),
 });
 
 export const siteBody = z.object({

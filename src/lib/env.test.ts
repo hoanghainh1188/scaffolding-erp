@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { ConfigError, parseEnv } from "./env";
+import { ConfigError, parseEnv, parsePiiKeys } from "./env";
 
 const SECRET = "x".repeat(32);
+const key = (bytes: number, fill = 1) =>
+  Buffer.alloc(bytes, fill).toString("base64");
+const PII_KEYS = `1:${key(32)}`;
 
 const valid = {
   NODE_ENV: "development",
@@ -181,6 +184,7 @@ describe("parseEnv", () => {
       ...valid,
       NODE_ENV: "production",
       BETTER_AUTH_URL: "https://erp.example.vn",
+      PII_ENCRYPTION_KEYS: PII_KEYS,
     };
 
     it("refuses to start in production with DATABASE_URL_MIGRATE", () => {
@@ -227,6 +231,7 @@ describe("parseEnv", () => {
       const env = parseEnv({
         ...valid,
         NODE_ENV: "production",
+        PII_ENCRYPTION_KEYS: PII_KEYS,
         VERCEL_ENV: "preview",
         VERCEL_URL: "scaffolding-erp-pr-42.vercel.app",
         BETTER_AUTH_URL: undefined,
@@ -234,6 +239,66 @@ describe("parseEnv", () => {
       expect(env.BETTER_AUTH_URL).toBe(
         "https://scaffolding-erp-pr-42.vercel.app",
       );
+    });
+  });
+
+  describe("PII_ENCRYPTION_KEYS (personal-data-protection D2)", () => {
+    const production = {
+      ...valid,
+      NODE_ENV: "production",
+      BETTER_AUTH_URL: "https://erp.example.vn",
+    };
+
+    it("is required in production and names the variable", () => {
+      expect(messageOf(() => parseEnv(production))).toContain(
+        "PII_ENCRYPTION_KEYS: thiếu biến này",
+      );
+    });
+
+    it("is optional outside production", () => {
+      expect(parseEnv(valid).PII_ENCRYPTION_KEYS).toBeUndefined();
+    });
+
+    it("accepts several keys with different numbers", () => {
+      const value = `2:${key(32, 2)},1:${key(32)}`;
+      expect(
+        parseEnv({ ...production, PII_ENCRYPTION_KEYS: value })
+          .PII_ENCRYPTION_KEYS,
+      ).toBe(value);
+    });
+
+    it.each([
+      ["a 16-byte key", `1:${key(16)}`],
+      ["a repeated number", `1:${key(32)},1:${key(32, 2)}`],
+      ["no number", key(32)],
+      ["a number below 1", `0:${key(32)}`],
+      ["not base64", `1:${"*".repeat(44)}`],
+      ["a trailing comma", `1:${key(32)},`],
+    ])("refuses %s and does not repeat the value", (_name, value) => {
+      const message = messageOf(() =>
+        parseEnv({ ...production, PII_ENCRYPTION_KEYS: value }),
+      );
+      expect(message).toContain("PII_ENCRYPTION_KEYS");
+      expect(message).not.toContain(value);
+    });
+
+    it("refuses a bad value in development too", () => {
+      expect(() =>
+        parseEnv({ ...valid, PII_ENCRYPTION_KEYS: "1:short" }),
+      ).toThrow(ConfigError);
+    });
+  });
+
+  describe("parsePiiKeys", () => {
+    it("keeps the order: the first key encrypts", () => {
+      const keys = parsePiiKeys(`2:${key(32, 2)}, 1:${key(32)}`);
+      expect(keys?.map((entry) => entry.id)).toEqual([2, 1]);
+      expect(keys?.[0]?.key).toEqual(Buffer.alloc(32, 2));
+    });
+
+    it("returns null for anything malformed", () => {
+      expect(parsePiiKeys("")).toBeNull();
+      expect(parsePiiKeys(`x:${key(32)}`)).toBeNull();
     });
   });
 

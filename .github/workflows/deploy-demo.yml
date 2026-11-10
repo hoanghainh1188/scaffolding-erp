@@ -68,6 +68,10 @@ jobs:
           BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
           echo "::add-mask::$BETTER_AUTH_SECRET"
           export BETTER_AUTH_SECRET
+          # The demo seed stores no CCCD, so this key encrypts nothing.
+          PII_ENCRYPTION_KEYS="1:$(openssl rand -base64 32)"
+          echo "::add-mask::$PII_ENCRYPTION_KEYS"
+          export PII_ENCRYPTION_KEYS
           echo "Seeding updated demo data..."
           npm run db:seed:demo
 

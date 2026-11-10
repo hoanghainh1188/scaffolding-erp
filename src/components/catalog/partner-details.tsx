@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { ToneBadge } from "@/components/domain/tone-badge";
 import { Button } from "@/components/ui/button";
-import { formatPhone } from "@/domain/partner-fields";
+import { formatBankRef, formatPhone } from "@/domain/partner-fields";
 import { termsHeading } from "@/domain/payables";
 import { REGION_LABELS, UNKNOWN_REGION_LABEL } from "@/domain/province";
 import type {
@@ -15,6 +15,7 @@ import type {
 import type { LocationRow, SiteRow } from "@/lib/catalog/places";
 import { dict } from "@/locales";
 
+import { AnonymizeSupplier } from "./anonymize-supplier";
 import {
   LOCATION_FIELDS,
   SITE_FIELDS,
@@ -199,12 +200,21 @@ export function CustomerDetail({
 
 export function SupplierDetail({
   supplier,
-  canEdit,
+  canEdit: mayEdit,
+  canAnonymize = false,
+  today = "",
 }: {
   supplier: SupplierRow;
   canEdit: boolean;
+  /** partners.anonymize; only ever offered for a person. */
+  canAnonymize?: boolean;
+  today?: string;
 }) {
   const path = `/api/catalog/suppliers/${supplier.id}`;
+  // An erased seller cannot be edited or used again (design D7).
+  const canEdit = mayEdit && !supplier.anonymized;
+  const showAnonymize =
+    canAnonymize && supplier.kind === "PERSON" && !supplier.anonymized;
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -219,6 +229,7 @@ export function SupplierDetail({
             trigger={editButton}
             fields={SUPPLIER_FIELDS}
             loadValues={`${path}/edit`}
+            withDataNotice
             path={path}
             method="PATCH"
             submitLabel="Lưu thay đổi"
@@ -234,11 +245,7 @@ export function SupplierDetail({
           ["Số CCCD", supplier.idNumberMasked],
           [
             "Tài khoản",
-            supplier.bankAccountMasked
-              ? [supplier.bankAccountMasked, supplier.bankName]
-                  .filter(Boolean)
-                  .join(" · ")
-              : null,
+            formatBankRef(supplier.bankName, supplier.bankAccountLast4),
           ],
           ["Số ngày được nợ", termsHeading(supplier.paymentTermsDays)],
           ["Ghi chú", supplier.note],
@@ -251,6 +258,15 @@ export function SupplierDetail({
           label={`nhà cung cấp ${supplier.code}`}
           afterDelete="/catalog/partners?tab=suppliers"
         />
+      ) : null}
+      {showAnonymize ? (
+        <div>
+          <AnonymizeSupplier
+            id={supplier.id}
+            code={supplier.code}
+            today={today}
+          />
+        </div>
       ) : null}
     </div>
   );

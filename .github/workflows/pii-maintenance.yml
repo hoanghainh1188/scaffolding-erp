@@ -1,0 +1,62 @@
+name: Personal Data Maintenance
+
+# Run by hand, approved like a deploy, so production keys never reach a
+# personal machine (personal-data-protection D4). Commands print row counts
+# only; keep each run's log in the compliance file (docs/ops/personal-data.md).
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "Lệnh cần chạy"
+        required: true
+        type: choice
+        options:
+          - backfill
+          - backfill-check
+          - rotate
+          - rotate-check
+          - purge
+
+concurrency:
+  group: production-pii-maintenance
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: Run ${{ inputs.command }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # PROD_DATABASE_URL is the app role erp_app: enough for every command.
+      - name: Run the command
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          PII_ENCRYPTION_KEYS: ${{ secrets.PROD_PII_ENCRYPTION_KEYS }}
+          COMMAND: ${{ inputs.command }}
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$PII_ENCRYPTION_KEYS" ]; then
+            echo "::error::PROD_DATABASE_URL and PROD_PII_ENCRYPTION_KEYS are required."
+            exit 1
+          fi
+          case "$COMMAND" in
+            backfill) npm run pii:backfill ;;
+            backfill-check) npm run pii:backfill -- --check ;;
+            rotate) npm run pii:rotate ;;
+            rotate-check) npm run pii:rotate -- --check ;;
+            purge) npm run pii:purge ;;
+            *) echo "::error::Unknown command"; exit 2 ;;
+          esac

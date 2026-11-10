@@ -301,6 +301,7 @@ export async function seedCatalog(db: Database, actor: Actor): Promise<number> {
       kind: "PERSON",
       name: "Chú Ba ve chai",
       phone: "0977654321",
+      dataNoticeConfirmed: true,
     });
     created += 2;
   }

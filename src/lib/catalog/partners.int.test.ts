@@ -206,38 +206,34 @@ describe("suppliers", () => {
       kind: "PERSON",
       name: "Chú Ba ve chai",
       idNumber: "001203012345",
+      dataNoticeConfirmed: true,
     });
     const id = created.ok ? created.data.id : "";
     const listed = await listSuppliers(ctx.db);
     expect(listed[0]?.idNumberMasked).toBe("•••• •••• 2345");
     expect(JSON.stringify(listed)).not.toContain("001203012345");
     expect(JSON.stringify(created)).not.toContain("001203012345");
-    expect((await getSupplierForEdit(ctx.db, id))?.idNumber).toBe(
-      "001203012345",
-    );
+    expect(await getSupplierForEdit(ctx.db, id)).toMatchObject({
+      data: { idNumber: "001203012345" },
+    });
     // The CCCD is not searchable.
     expect(await listSuppliers(ctx.db, { q: "001203" })).toHaveLength(0);
   });
 
-  it("lists the bank account masked; only the edit read has it in full", async () => {
-    const created = await createSupplier(ctx.db, actor, {
+  it("keeps only the last 4 digits of the account, not searchable", async () => {
+    await createSupplier(ctx.db, actor, {
       kind: "PERSON",
       name: "Chú Ba ve chai",
-      bankAccount: "0451000312345678",
+      bankAccountLast4: "5678",
       bankName: "Vietcombank",
+      dataNoticeConfirmed: true,
     });
-    const id = created.ok ? created.data.id : "";
     const listed = await listSuppliers(ctx.db);
     expect(listed[0]).toMatchObject({
-      bankAccountMasked: "•••• 5678",
+      bankAccountLast4: "5678",
       bankName: "Vietcombank",
     });
-    expect(JSON.stringify(listed)).not.toContain("0451000312345678");
-    expect(JSON.stringify(created)).not.toContain("0451000312345678");
-    expect((await getSupplierForEdit(ctx.db, id))?.bankAccount).toBe(
-      "0451000312345678",
-    );
-    expect(await listSuppliers(ctx.db, { q: "04510003" })).toHaveLength(0);
+    expect(await listSuppliers(ctx.db, { q: "5678" })).toHaveLength(0);
   });
 
   it("keeps the CCCD when an edit leaves it out, archives and deletes", async () => {
@@ -245,12 +241,13 @@ describe("suppliers", () => {
       kind: "PERSON",
       name: "Chú Ba",
       idNumber: "001203012345",
+      dataNoticeConfirmed: true,
     });
     const id = created.ok ? created.data.id : "";
     await updateSupplier(ctx.db, actor, id, { phone: "0987654321" });
-    expect((await getSupplierForEdit(ctx.db, id))?.idNumber).toBe(
-      "001203012345",
-    );
+    expect(await getSupplierForEdit(ctx.db, id)).toMatchObject({
+      data: { idNumber: "001203012345" },
+    });
     await updateSupplier(ctx.db, actor, id, { status: "ARCHIVED" });
     expect(await listSuppliers(ctx.db)).toHaveLength(0);
     expect(await deleteSupplier(ctx.db, actor, id)).toEqual({
@@ -282,7 +279,9 @@ describe("supplier payment terms (payables, 0.2 #99)", () => {
     );
     // An edit that leaves it out keeps it.
     await updateSupplier(ctx.db, actor, id, { phone: "0987654321" });
-    expect((await getSupplierForEdit(ctx.db, id))?.paymentTermsDays).toBe(30);
+    expect(await getSupplierForEdit(ctx.db, id)).toMatchObject({
+      data: { paymentTermsDays: 30 },
+    });
   });
 
   it.each([400, -1, 1.5])("refuses %s days", async (days) => {

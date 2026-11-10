@@ -88,7 +88,7 @@ describe("missing rows answer 404", () => {
       notFound,
     );
     expect(await deleteSupplier(ctx.db, actor, MISSING)).toEqual(notFound);
-    expect(await getSupplierForEdit(ctx.db, MISSING)).toBeNull();
+    expect(await getSupplierForEdit(ctx.db, MISSING)).toEqual(notFound);
     expect(await updateSite(ctx.db, actor, MISSING, { name: "X" })).toEqual(
       notFound,
     );

@@ -87,6 +87,7 @@ export const PAYABLE_MESSAGES = {
   alreadyCancelled: (code: string, at: string, by: string) =>
     `Phiếu ${code} đã hủy lúc ${at} bởi ${by}.`,
   termsRange: `Số ngày được nợ từ 0 đến ${PAYMENT_TERMS_MAX_DAYS} ngày`,
+  sellerAnonymized: "Người bán đã ẩn danh, không ghi chứng từ mới được.",
 } as const;
 
 type Ordered = Pick<OpenPayable, "dueDate" | "issuedDate" | "code">;

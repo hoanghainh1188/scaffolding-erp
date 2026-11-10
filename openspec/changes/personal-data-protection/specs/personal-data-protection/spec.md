@@ -209,6 +209,21 @@ Khi người bán cá nhân yêu cầu xóa dữ liệu, Giám đốc SHALL ẩn
 - **WHEN** Kế toán chuyển `NCC-0004` đã ẩn danh về Đang dùng
 - **THEN** API trả 409 và trạng thái vẫn là Ngừng dùng
 
+### Requirement: Người bán cá nhân đã có chứng từ không đổi thành công ty
+Người bán loại cá nhân đã có đơn thu mua hoặc phiếu chi SHALL không đổi được sang loại công ty, vì công ty được ghi bằng tên thật vào sổ kho và nhật ký và không ẩn danh được. Chưa có chứng từ thì SHALL đổi được.
+
+#### Scenario: Đã có đơn mua
+- **WHEN** Kế toán đổi `NCC-0004` (cá nhân, đã có đơn mua) sang công ty
+- **THEN** API trả 409 với "Người bán cá nhân đã có chứng từ nên không đổi sang công ty được" **AND** loại vẫn là cá nhân
+
+#### Scenario: Đã có phiếu chi
+- **WHEN** Kế toán đổi người bán cá nhân chỉ có phiếu chi Ứng trước sang công ty
+- **THEN** API trả 409
+
+#### Scenario: Chưa có chứng từ
+- **WHEN** Kế toán đổi người bán cá nhân vừa tạo, chưa có chứng từ, sang công ty
+- **THEN** lưu thành công
+
 ### Requirement: Giữ hồ sơ thuế của người đã ẩn danh
 Khi ẩn danh người bán đã có phiếu nhập, tên, địa chỉ và số CCCD SHALL được gộp thành một gói mã hóa "hồ sơ thuế", cùng định dạng và cùng khóa với bản mã CCCD nhưng gắn với trường riêng, trong cùng transaction ẩn danh. Không có CCCD thì gói vẫn có tên và địa chỉ. Không màn hình hay API nào SHALL giải mã gói. Người bán chưa có phiếu nhập SHALL không có gói, mọi dữ liệu bị xóa ngay.
 
@@ -229,7 +244,7 @@ Khi ẩn danh người bán đã có phiếu nhập, tên, địa chỉ và số
 - **THEN** không có gói hồ sơ thuế **AND** bản mã CCCD bị xóa ngay trong cùng thao tác
 
 ### Requirement: Xóa hồ sơ thuế khi hết hạn
-Hạn giữ gói hồ sơ thuế SHALL tính từ ngày nhập gần nhất; thời hạn là một tham số, mặc định 10 năm (chờ xác nhận, #78), và hạn SHALL tính ra lúc cần, không lưu theo từng dòng. Lệnh dọn SHALL xóa gói đã hết hạn, chạy lại được, ghi nhật ký.
+Hạn giữ gói hồ sơ thuế SHALL tính từ ngày nhập gần nhất; thời hạn là một tham số, mặc định 10 năm (chờ xác nhận, #78), và hạn SHALL tính ra lúc cần, không lưu theo từng dòng. Lệnh dọn SHALL xóa gói đã hết hạn, chạy lại được, ghi nhật ký với người làm là Giám đốc đang hoạt động được tạo sớm nhất (nhật ký bắt buộc gắn một tài khoản thật, 0.2 #168).
 
 #### Scenario: Chưa tới hạn
 - **WHEN** chạy lệnh dọn ngày 04/03/2036 với `NCC-0004`
@@ -237,18 +252,18 @@ Hạn giữ gói hồ sơ thuế SHALL tính từ ngày nhập gần nhất; th�
 
 #### Scenario: Tới hạn
 - **WHEN** chạy lệnh dọn ngày 05/03/2036 với `NCC-0004`
-- **THEN** gói bị xóa **AND** nhật ký có một dòng cho `NCC-0004` với người làm là Hệ thống **AND** chạy lại không đổi gì
+- **THEN** gói bị xóa **AND** nhật ký có một dòng cho `NCC-0004` ghi người làm là Giám đốc được tạo sớm nhất, trình duyệt "Khác" **AND** chạy lại không đổi gì
 
 #### Scenario: Đổi thời hạn
 - **WHEN** luật sư chốt 5 năm và tham số đổi thành 5
 - **THEN** lần dọn sau xóa gói của `NCC-0004` từ 05/03/2031 mà không cần sửa dữ liệu
 
 ### Requirement: Thời hạn giữ CCCD áp cho mọi người bán
-Với người bán chưa ẩn danh, lệnh dọn SHALL xóa bản mã và 4 số cuối CCCD khi đã quá thời hạn kể từ lần nhập gần nhất; chưa từng có phiếu nhập thì tính từ ngày tạo theo giờ Việt Nam. Mỗi người bán bị xóa SHALL có một dòng nhật ký với người làm là Hệ thống, chỉ chứa số đã che. Các thông tin khác SHALL giữ nguyên.
+Với người bán chưa ẩn danh, lệnh dọn SHALL xóa bản mã và 4 số cuối CCCD khi đã quá thời hạn kể từ lần nhập gần nhất; chưa từng có phiếu nhập thì tính từ ngày tạo theo giờ Việt Nam. Mỗi người bán bị xóa SHALL có một dòng nhật ký với người làm là Giám đốc đang hoạt động được tạo sớm nhất, chỉ chứa số đã che. Các thông tin khác SHALL giữ nguyên.
 
 #### Scenario: Lâu không bán hàng
 - **WHEN** chạy lệnh dọn ngày 05/03/2036 với `NCC-0006` chưa ẩn danh, CCCD `001203012345`, phiếu nhập gần nhất 05/03/2026
-- **THEN** bản mã và 4 số cuối CCCD trống, tên và điện thoại giữ nguyên **AND** nhật ký có dòng Sửa của Hệ thống, trường "Số CCCD" `•••• •••• 2345` → `–`
+- **THEN** bản mã và 4 số cuối CCCD trống, tên và điện thoại giữ nguyên **AND** nhật ký có dòng Sửa do lệnh dọn ghi, trường "Số CCCD" `•••• •••• 2345` → `–`
 
 #### Scenario: Còn bán hàng
 - **WHEN** chạy lệnh dọn ngày 05/03/2036 với `NCC-0006` có phiếu nhập gần nhất 01/02/2030

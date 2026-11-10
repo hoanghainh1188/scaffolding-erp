@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   check,
+  date,
   index,
   integer,
   numeric,
@@ -201,6 +202,16 @@ export const kitComponent = pgTable(
 const partnerKindCheck = (name: string, column: unknown) =>
   check(name, sql`${column} in ('COMPANY', 'PERSON')`);
 
+// "pii1.<key number>.<iv>.<ciphertext>": a plain number cannot land here.
+const piiCiphertextCheck = (name: string, column: unknown) =>
+  check(
+    name,
+    sql`${column} is null or ${column} ~ '^pii1\\.[0-9]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$'`,
+  );
+
+const lastFourCheck = (name: string, column: unknown) =>
+  check(name, sql`${column} is null or ${column} ~ '^[0-9]{4}$'`);
+
 export const customer = pgTable(
   "customer",
   {
@@ -243,15 +254,34 @@ export const supplier = pgTable(
     phone: text("phone"),
     address: text("address"),
     taxCode: text("tax_code"),
-    // CCCD: personal data, masked everywhere but the edit form (D5).
-    idNumber: text("id_number"),
-    bankAccount: text("bank_account"),
+    // CCCD: AES-256-GCM ciphertext, decrypted only by the edit form and the
+    // paths listed in src/lib/privacy/pii-coverage.test.ts. The last 4 digits
+    // sit apart so lists never decrypt (personal-data-protection D1, D5).
+    idNumberEnc: text("id_number_enc"),
+    idNumberLast4: text("id_number_last4"),
+    // The full account number is never stored (0.2 số 157).
+    bankAccountLast4: text("bank_account_last4"),
     bankName: text("bank_name"),
     // Days the seller lets us owe (payables design D2, 0.2 #99); 0 = pay on
     // receipt. Copied onto each goods receipt as its due date when posted.
     paymentTermsDays: integer("payment_terms_days").notNull().default(0),
     note: text("note"),
     searchText: text("search_text").notNull(),
+    // Name, address and CCCD of an erased seller who sold us goods; no screen
+    // decrypts it (design D7, 0.2 số 161).
+    taxIdentityEnc: text("tax_identity_enc"),
+    // Proof the seller was told what we keep (design D6, 0.2 số 163).
+    dataNoticeVersion: integer("data_notice_version"),
+    dataNoticeAt: timestamp("data_notice_at", { withTimezone: true }),
+    dataNoticeBy: text("data_notice_by").references(() => user.id, {
+      onDelete: "restrict",
+    }),
+    anonymizedAt: timestamp("anonymized_at", { withTimezone: true }),
+    anonymizedBy: text("anonymized_by").references(() => user.id, {
+      onDelete: "restrict",
+    }),
+    // When the request arrived: proves the 20-day limit was kept.
+    anonymizeRequestedOn: date("anonymize_requested_on", { mode: "string" }),
     ...audit(),
   },
   (table) => [
@@ -260,9 +290,21 @@ export const supplier = pgTable(
       "supplier_payment_terms_check",
       sql`${table.paymentTermsDays} between 0 and 365`,
     ),
+    piiCiphertextCheck("supplier_id_number_enc_check", table.idNumberEnc),
+    piiCiphertextCheck("supplier_tax_identity_enc_check", table.taxIdentityEnc),
+    lastFourCheck("supplier_id_number_last4_check", table.idNumberLast4),
+    lastFourCheck("supplier_bank_account_last4_check", table.bankAccountLast4),
     check(
-      "supplier_id_number_check",
-      sql`${table.idNumber} is null or ${table.idNumber} ~ '^[0-9]{12}$'`,
+      "supplier_id_number_pair_check",
+      sql`(${table.idNumberEnc} is null) = (${table.idNumberLast4} is null)`,
+    ),
+    check(
+      "supplier_tax_identity_check",
+      sql`${table.taxIdentityEnc} is null or ${table.anonymizedAt} is not null`,
+    ),
+    check(
+      "supplier_anonymized_check",
+      sql`${table.anonymizedAt} is null or (${table.phone} is null and ${table.address} is null and ${table.taxCode} is null and ${table.note} is null and ${table.bankName} is null and ${table.bankAccountLast4} is null and ${table.idNumberEnc} is null and ${table.idNumberLast4} is null and ${table.status} = 'ARCHIVED')`,
     ),
     statusCheck("supplier_status_check", table.status),
   ],

@@ -311,8 +311,8 @@ export interface SupplierInfo {
   kind: "COMPANY" | "PERSON";
   status: string;
   paymentTermsDays: number;
-  idNumber: string | null;
-  bankAccount: string | null;
+  idNumberLast4: string | null;
+  bankAccountLast4: string | null;
   bankName: string | null;
   searchText: string;
 }
@@ -379,8 +379,8 @@ export async function readSupplierInfos(
       kind: supplier.kind,
       status: supplier.status,
       paymentTermsDays: supplier.paymentTermsDays,
-      idNumber: supplier.idNumber,
-      bankAccount: supplier.bankAccount,
+      idNumberLast4: supplier.idNumberLast4,
+      bankAccountLast4: supplier.bankAccountLast4,
       bankName: supplier.bankName,
       searchText: supplier.searchText,
     })

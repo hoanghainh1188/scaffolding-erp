@@ -180,7 +180,7 @@ describe("recordPayment", () => {
       [pieces.code]: 12_750_000,
     });
     expect(await lastSummary()).toBe(
-      `Chú Ba ve chai · Trả tiền hàng 30.000.000 ₫ · ${kg.code} 26.500.000 ₫, ${pieces.code} 3.500.000 ₫`,
+      `NCC-0002 · Trả tiền hàng 30.000.000 ₫ · ${kg.code} 26.500.000 ₫, ${pieces.code} 3.500.000 ₫`,
     );
   });
 
@@ -328,7 +328,7 @@ describe("advance settles later receipts", () => {
   it("pays a smaller receipt in full when it is posted", async () => {
     const pc = await advance(10_000_000, "2026-11-01");
     expect(await lastSummary()).toBe(
-      "Chú Ba ve chai · Ứng trước 10.000.000 ₫ · giữ làm tiền ứng trước 10.000.000 ₫",
+      "NCC-0002 · Ứng trước 10.000.000 ₫ · giữ làm tiền ứng trước 10.000.000 ₫",
     );
     const pn = await receiptFor(ctx, fx, {
       quantity: "256",
@@ -528,8 +528,9 @@ describe("supplierBalances and supplierDetail", () => {
     await db
       .update(supplier)
       .set({
-        idNumber: "001203012345",
-        bankAccount: "0451000312345678",
+        idNumberEnc: "pii1.1.YWJjZGVmZ2hpamts.YWJjZGVmZ2hpamtsbW5vcA",
+        idNumberLast4: "2345",
+        bankAccountLast4: "5678",
         bankName: "Vietcombank",
       })
       .where(eq(supplier.id, tam));
@@ -537,8 +538,7 @@ describe("supplierBalances and supplierDetail", () => {
     const detail = await supplierDetail(db, tam, d("2026-11-06"));
     expect(detail).toMatchObject({
       idNumber: "•••• •••• 2345",
-      bankAccount: "•••• 5678",
-      bankName: "Vietcombank",
+      bankRef: "Vietcombank ···5678",
       orderCount: 2,
       owed: 16_250_000,
     });

@@ -27,6 +27,7 @@ const ALLOWED: Readonly<Record<Permission, readonly Role[]>> = {
   "catalog.read": ["DIRECTOR", "ACCOUNTANT", "SALES", "WAREHOUSE", "WORKSHOP"],
   "items.manage": ["DIRECTOR", "SALES"],
   "partners.manage": ["DIRECTOR", "SALES", "ACCOUNTANT"],
+  "partners.anonymize": ["DIRECTOR"],
   "locations.manage": ["DIRECTOR"],
   "inventory.adjust": ["DIRECTOR", "ACCOUNTANT"],
   "inventory.approve": ["DIRECTOR"],

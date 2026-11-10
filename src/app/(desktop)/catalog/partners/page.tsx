@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import type { ReactNode } from "react";
 
 import { ItemsFilters } from "@/components/catalog/items-filters";
@@ -23,6 +24,7 @@ import { RecordFormSheet } from "@/components/catalog/record-form-sheet";
 import { CatalogSwitch, TabLinks } from "@/components/catalog/tab-links";
 import { Button } from "@/components/ui/button";
 import { getDatabase } from "@/db/client";
+import { toBusinessDate } from "@/domain/business-date";
 import { formatPhone } from "@/domain/partner-fields";
 import {
   REGIONS,
@@ -38,6 +40,7 @@ import {
   listCustomers,
   listSalesStaff,
   listSuppliers,
+  currentDataNotice,
 } from "@/lib/catalog/partners";
 import { countPlaces, listLocations, listSites } from "@/lib/catalog/places";
 import { cn } from "@/lib/utils";
@@ -70,6 +73,7 @@ interface ListEntry {
 /** D16 Đối tác & công trình (specs partner-directory, sites-and-locations). */
 export default async function Page({ searchParams }: { searchParams: Search }) {
   const user = await requirePermission("catalog.view");
+  await connection();
   const params = await searchParams;
   const requested = one(params.tab);
   const tab: Tab = TABS.includes(requested as Tab)
@@ -86,6 +90,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       : undefined;
   const sales = one(params.sales);
   const canEditPartners = can(user.role, "partners.manage");
+  const canAnonymize = can(user.role, "partners.anonymize");
   const canEditLocations = can(user.role, "locations.manage");
   const db = getDatabase();
 
@@ -189,6 +194,8 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
           key={selected.id}
           supplier={selected}
           canEdit={canEditPartners}
+          canAnonymize={canAnonymize}
+          today={toBusinessDate(new Date())}
         />
       );
     if (canEditPartners) {
@@ -204,6 +211,8 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
           }
           fields={SUPPLIER_FIELDS}
           values={{ kind: "PERSON" }}
+          withDataNotice
+          noticeText={(await currentDataNotice(db)).text}
           path="/api/catalog/suppliers"
           method="POST"
           submitLabel="Thêm nhà cung cấp"

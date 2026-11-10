@@ -52,6 +52,8 @@ const integration: TestProjectConfiguration = {
     env: {
       TEST_DATABASE_URL: env.TEST_DATABASE_URL ?? "",
       TEST_DATABASE_URL_MIGRATE: env.TEST_DATABASE_URL_MIGRATE ?? "",
+      // Fake key, same on every machine (personal-data-protection D2).
+      PII_ENCRYPTION_KEYS: `1:${Buffer.alloc(32, 7).toString("base64")}`,
     },
     setupFiles: ["./src/test/setup-integration.ts"],
     // Tests share one database; run files one at a time.

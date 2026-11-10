@@ -18,22 +18,45 @@ async function totalShown(page: Page): Promise<number> {
   return Number((text ?? "").split("/")[1]?.replace(/\D/g, "") ?? NaN);
 }
 
-async function editSupplier(page: Page, bankAccount: string) {
+async function editSupplier(page: Page, last4: string) {
   await page.goto("/catalog/partners?tab=suppliers");
   await waitForHydration(page, DESKTOP_READY);
   await page.getByRole("link", { name: /Chú Ba ve chai/ }).click();
   await page.getByRole("button", { name: "Sửa thông tin" }).click();
   const sheet = page.getByRole("dialog");
-  await sheet.getByLabel("Số tài khoản").fill(bankAccount);
+  await sheet.getByLabel("4 số cuối tài khoản").fill(last4);
+  // A dev database older than this change has no notice on record yet.
+  const tick = sheet.getByLabel("Đã thông báo cho người bán");
+  if ((await tick.count()) > 0) await tick.check();
   await sheet.getByRole("button", { name: "Lưu thay đổi" }).click();
   await expect(sheet).toBeHidden();
 }
+
+test.describe("D16 seller form (personal-data-protection)", () => {
+  test("a CCCD cannot be saved until the seller has been told", async ({
+    page,
+  }) => {
+    await page.goto("/catalog/partners?tab=suppliers");
+    await waitForHydration(page, DESKTOP_READY);
+    await page.getByRole("button", { name: "Thêm nhà cung cấp" }).click();
+    const sheet = page.getByRole("dialog");
+    await sheet.getByLabel("Tên nhà cung cấp").fill("E2E chưa lưu");
+    await expect(sheet.getByLabel("Đã thông báo cho người bán")).toHaveCount(0);
+    await sheet.getByLabel("Số CCCD (cá nhân)").fill("000203012345");
+    await expect(sheet.getByLabel("Đã thông báo cho người bán")).toBeVisible();
+    await sheet.getByRole("button", { name: "Thêm nhà cung cấp" }).click();
+    await expect(sheet).toContainText(
+      "Chưa ghi nhận đã thông báo cho người bán",
+    );
+    await expect(sheet).toBeVisible();
+  });
+});
 
 test.describe("D18 for the director", () => {
   test("a bank account change shows masked, flagged, with before and after", async ({
     page,
   }) => {
-    const account = `0451${String(Date.now()).slice(-8)}`;
+    const account = String(Date.now()).slice(-4);
     await editSupplier(page, account);
 
     await page.goto("/settings/activity?type=SUPPLIER&group=UPDATE");
@@ -45,7 +68,6 @@ test.describe("D18 for the director", () => {
       .first();
     await expect(row).toContainText(`•••• ${account.slice(-4)}`);
     await expect(row).toContainText("Dữ liệu nhạy cảm");
-    await expect(row).not.toContainText(account);
     await row.click();
     const detail = page
       .getByRole("heading", { name: /^Thay đổi trên NCC-/ })

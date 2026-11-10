@@ -11,6 +11,34 @@ const HTTP_URL = /^https?:\/\/\S+$/;
 const MIN_SECRET_LENGTH = 32;
 const MIN_SEED_PASSWORD_LENGTH = 8;
 const DEFAULT_AUTH_URL = "http://localhost:3000";
+const PII_KEY_BYTES = 32;
+const STRICT_BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+const PII_KEY_ENTRY = /^([1-9][0-9]*):(.+)$/;
+
+/** One data-encryption key of PII_ENCRYPTION_KEYS. */
+export interface PiiKeyEntry {
+  readonly id: number;
+  readonly key: Buffer;
+}
+
+/**
+ * "2:<base64>,1:<base64>" → the keys in order, the first one encrypts
+ * (personal-data-protection D2). null when anything is wrong, so no caller
+ * can repeat the configured value in a message.
+ */
+export function parsePiiKeys(raw: string): readonly PiiKeyEntry[] | null {
+  const entries: PiiKeyEntry[] = [];
+  for (const part of raw.split(",")) {
+    const match = PII_KEY_ENTRY.exec(part.trim());
+    if (!match?.[1] || !match[2] || !STRICT_BASE64.test(match[2])) return null;
+    const key = Buffer.from(match[2], "base64");
+    const id = Number(match[1]);
+    if (key.length !== PII_KEY_BYTES || !Number.isSafeInteger(id)) return null;
+    if (entries.some((entry) => entry.id === id)) return null;
+    entries.push({ id, key });
+  }
+  return entries;
+}
 
 // Empty values (`DATABASE_URL=` in a .env file) count as missing.
 const optional = <T extends z.ZodType>(schema: T) =>
@@ -68,6 +96,14 @@ const envSchema = z.object({
       .optional(),
   ),
   ERROR_MONITORING_ENABLED: optional(booleanSchema.optional()),
+  // Keys that encrypt CCCD numbers (personal-data-protection D2). Required in
+  // production; elsewhere the error comes when a CCCD is first encrypted.
+  PII_ENCRYPTION_KEYS: optional(
+    z
+      .string()
+      .refine((value) => parsePiiKeys(value) !== null)
+      .optional(),
+  ),
 });
 
 type ParsedEnv = z.infer<typeof envSchema>;
@@ -92,6 +128,7 @@ const RULES: Readonly<Record<EnvKey, string>> = {
   DEMO_MODE: "phải là boolean (true hoặc false)",
   SENTRY_DSN: "phải là URL dạng https://xxx@host/id",
   ERROR_MONITORING_ENABLED: "phải là boolean (true hoặc false)",
+  PII_ENCRYPTION_KEYS: `phải có dạng <số>:<base64 của đúng ${PII_KEY_BYTES} byte>, nhiều khóa cách nhau bằng dấu phẩy, số khóa không trùng (tạo khóa bằng: openssl rand -base64 ${PII_KEY_BYTES})`,
 };
 
 type EnvKey = keyof ParsedEnv;
@@ -111,6 +148,14 @@ export function parseEnv(
   // The auth URL has a local default, but production must name its own.
   if (result.success && !authUrl && result.data.NODE_ENV === "production") {
     keys.push("BETTER_AUTH_URL");
+  }
+  // Without keys no CCCD can be read or written (design D2).
+  if (
+    result.success &&
+    result.data.NODE_ENV === "production" &&
+    !result.data.PII_ENCRYPTION_KEYS
+  ) {
+    keys.push("PII_ENCRYPTION_KEYS");
   }
   // The owner URL runs migrations only; on the app server it would undo the
   // least-privilege app role (db-least-privilege D1).
