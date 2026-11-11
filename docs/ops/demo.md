@@ -168,3 +168,15 @@ Khi người thử nhập dữ liệu sai lệch lớn, hoặc cần trả dữ 
 ### 4. Người dùng vô tình thay đổi mật khẩu
 - Khi `DEMO_MODE=true`, ứng dụng chặn hoàn toàn thao tác đổi mật khẩu trên giao diện (`/change-password` và API `/api/me/password`).
 - Nếu vô tình bị đổi bằng cách khác, chỉ cần kích hoạt workflow **Demo Reset** để đưa mật khẩu 5 vai trò về mặc định.
+
+### 5. Mọi trang báo lỗi, `/api/health` không trả lời, log Vercel báo `Cấu hình môi trường sai`
+- **Hiện tượng**: Vercel build xanh (READY) nhưng mọi request lỗi; log runtime (route `/middleware`) có `ConfigError ... Cấu hình môi trường sai: - <TÊN_BIẾN>: thiếu biến này`. Workflow **Demo Reset** đỏ ở bước kiểm `/api/health`.
+- **Nguyên nhân**: change mới thêm biến bắt buộc vào `src/lib/env.ts` nhưng biến chưa đặt trên Vercel. App kiểm biến lúc khởi động nên thiếu là không chạy. Đã gặp ngày 10–11/11/2026: thiếu `PII_ENCRYPTION_KEYS` sau khi merge `personal-data-protection` bước 1.
+- **Khắc phục**:
+  1. Đặt biến còn thiếu cho Production (giá trị theo mục Bước 2). Với khóa bí mật, tạo và gửi thẳng qua CLI để khóa không hiện ra màn hình:
+     ```bash
+     printf '1:%s' "$(openssl rand -base64 32)" | vercel env add PII_ENCRYPTION_KEYS production --sensitive
+     ```
+  2. Redeploy bản production mới nhất (Vercel → Deployments → Redeploy, hoặc `vercel redeploy <url-deploy> --target production`).
+  3. Kiểm `/api/health` trả 200 và đăng nhập `giamdoc`.
+- **Phòng tránh**: PR thêm biến bắt buộc phải đặt biến trên Vercel (và GitHub environment nếu workflow cần) **trước khi merge**, ghi rõ trong mô tả PR.
