@@ -4,7 +4,6 @@ import { Plus, X } from "lucide-react";
 
 import { FieldMessage } from "@/components/purchasing/field-message";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CONDITION_LABELS } from "@/domain/condition";
 import { byWeight, SALE_CONDITIONS } from "@/domain/contract-lines";
@@ -12,6 +11,7 @@ import { formatMoney, toMoney } from "@/domain/money";
 import { QUANTITY_UNIT_LABELS, type QuantityUnit } from "@/domain/quantity";
 
 import { nextKey, type ItemOption, type SaleRow } from "./form-model";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 interface SaleLinesProps {
   rows: SaleRow[];
@@ -150,9 +150,9 @@ export function SaleLines({
                     <Label htmlFor={`sale-qty-${row.key}`} className="sr-only">
                       Số lượng
                     </Label>
-                    <Input
+                    <NumericInput
                       id={`sale-qty-${row.key}`}
-                      inputMode="decimal"
+                      kind="decimal"
                       value={row.quantity}
                       disabled={disabled}
                       onChange={(event) =>
@@ -169,9 +169,9 @@ export function SaleLines({
                     >
                       Đơn giá
                     </Label>
-                    <Input
+                    <NumericInput
                       id={`sale-price-${row.key}`}
-                      inputMode="numeric"
+                      kind="money"
                       value={row.price}
                       disabled={disabled}
                       onChange={(event) =>

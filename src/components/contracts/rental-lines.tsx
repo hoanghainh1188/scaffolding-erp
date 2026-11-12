@@ -1,10 +1,10 @@
 "use client";
 
 import { Plus, X } from "lucide-react";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatMoney, toMoney } from "@/domain/money";
 import {
@@ -186,9 +186,9 @@ export function RentalLines({
                 </Label>
                 <span className="flex items-center gap-1">
                   ×
-                  <Input
+                  <NumericInput
                     id={`kit-${row.key}`}
-                    inputMode="numeric"
+                    kind="integer"
                     value={row.quantity}
                     disabled={disabled}
                     onChange={(event) =>
@@ -310,9 +310,9 @@ export function RentalLines({
                     <Label htmlFor={`own-${row.key}`} className="sr-only">
                       Thêm lẻ {found?.code}
                     </Label>
-                    <Input
+                    <NumericInput
                       id={`own-${row.key}`}
-                      inputMode="decimal"
+                      kind="decimal"
                       value={row.own}
                       disabled={disabled}
                       onChange={(event) =>
@@ -340,9 +340,9 @@ export function RentalLines({
                     <Label htmlFor={`price-${row.key}`} className="sr-only">
                       Giá thuê / ngày {found?.code}
                     </Label>
-                    <Input
+                    <NumericInput
                       id={`price-${row.key}`}
-                      inputMode="numeric"
+                      kind="money"
                       value={row.price}
                       disabled={disabled}
                       onChange={(event) =>

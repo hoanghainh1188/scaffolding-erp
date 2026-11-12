@@ -3,9 +3,9 @@
 import { DateInput } from "@/components/domain/date-input";
 import { FieldMessage } from "@/components/purchasing/field-message";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DEFAULT_VAT_RATE } from "@/domain/contract-lines";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { DEFAULT_MIN_RENTAL_DAYS } from "@/domain/rental";
 
 export interface TermsState {
@@ -109,9 +109,9 @@ export function TermsFields({
         <>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="min-days">Thuê tối thiểu (ngày)</Label>
-            <Input
+            <NumericInput
               id="min-days"
-              inputMode="numeric"
+              kind="integer"
               value={terms.minRentalDays}
               disabled={disabled}
               onChange={(event) =>
@@ -139,9 +139,9 @@ export function TermsFields({
       ) : null}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="payment-terms">Hạn thanh toán (ngày)</Label>
-        <Input
+        <NumericInput
           id="payment-terms"
-          inputMode="numeric"
+          kind="integer"
           value={terms.paymentTermsDays}
           disabled={disabled}
           onChange={(event) =>
@@ -173,9 +173,9 @@ export function TermsFields({
         {terms.vatEnabled ? (
           <span className="flex items-center gap-2">
             <Label htmlFor="vat-rate">Thuế suất</Label>
-            <Input
+            <NumericInput
               id="vat-rate"
-              inputMode="decimal"
+              kind="decimal"
               value={terms.vatRate}
               disabled={disabled}
               onChange={(event) => onChange({ vatRate: event.target.value })}
@@ -204,9 +204,9 @@ export function TermsFields({
         {terms.companyTruck ? (
           <span className="flex items-center gap-2">
             <Label htmlFor="freight">Cước một chiều</Label>
-            <Input
+            <NumericInput
               id="freight"
-              inputMode="numeric"
+              kind="money"
               value={terms.freightPerTrip}
               disabled={disabled}
               onChange={(event) =>

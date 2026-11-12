@@ -17,9 +17,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatMonth } from "@/domain/rental-billing";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { callApi } from "@/lib/api-client";
 
 export interface AdjustmentDraft {
@@ -153,9 +153,9 @@ export function AdjustmentDialog(props: AdjustmentDialogProps) {
           </div>
           <div className="flex flex-col gap-1">
             <Label htmlFor="adjustment-amount">Số tiền (₫)</Label>
-            <Input
+            <NumericInput
               id="adjustment-amount"
-              inputMode="numeric"
+              kind="signed-money"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
               className="max-w-48 text-right tabular-nums"

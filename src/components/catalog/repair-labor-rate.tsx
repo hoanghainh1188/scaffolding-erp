@@ -3,7 +3,6 @@
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DomainValueError } from "@/domain/errors";
 import { formatMoneyForInput, parseMoney, toMoney } from "@/domain/money";
@@ -11,6 +10,7 @@ import type { ItemRow } from "@/lib/catalog/items";
 
 import { FormError } from "./form-error";
 import { formatPrice } from "./format";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { useCatalogAction } from "./use-catalog-action";
 
 interface RepairLaborRateProps {
@@ -68,9 +68,9 @@ export function RepairLaborRate({ item, canEdit }: RepairLaborRateProps) {
         Đơn giá công sửa / {unit} ({item.code})
       </Label>
       <div className="flex gap-2">
-        <Input
+        <NumericInput
           id="item-labor-rate"
-          inputMode="numeric"
+          kind="money"
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder="Để trống nếu chưa đặt"

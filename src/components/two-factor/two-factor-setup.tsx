@@ -12,6 +12,7 @@ import { dict } from "@/locales";
 
 import { BackupCodeList } from "./backup-code-list";
 import { BrandPanel } from "./brand-panel";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { QrCode } from "./qr-code";
 
 const TEXT = dict.auth.twoFactor;
@@ -162,11 +163,11 @@ export function TwoFactorSetup({ doneHref }: { doneHref: string }) {
               <form onSubmit={submitCode} className="flex flex-col gap-5">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="code">{TEXT.scanCodeLabel}</Label>
-                  <Input
+                  <NumericInput
                     id="code"
                     name="code"
                     required
-                    inputMode="numeric"
+                    kind="integer"
                     autoComplete="one-time-code"
                     maxLength={6}
                     placeholder="000000"

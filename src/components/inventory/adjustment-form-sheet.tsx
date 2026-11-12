@@ -38,6 +38,7 @@ import {
   type AdjustmentKind,
   type AdjustmentLineType,
 } from "@/domain/stock-adjustment";
+import { NumericInput } from "@/components/domain/numeric-input";
 import type { AdjustmentDetail } from "@/lib/inventory/adjustments";
 
 export interface ItemOption {
@@ -434,9 +435,9 @@ export function AdjustmentFormSheet({
                     <Label htmlFor={id("quantity")}>
                       Số lượng ({QUANTITY_UNIT_LABELS[unit]})
                     </Label>
-                    <Input
+                    <NumericInput
                       id={id("quantity")}
-                      inputMode="decimal"
+                      kind="decimal"
                       value={line.quantity}
                       onChange={(event) =>
                         update(line.key, { quantity: event.target.value })
@@ -451,9 +452,9 @@ export function AdjustmentFormSheet({
                           ? `Đơn giá vốn (₫/${QUANTITY_UNIT_LABELS[unit]})`
                           : "Đơn giá (chỉ khi chưa có giá vốn)"}
                       </Label>
-                      <Input
+                      <NumericInput
                         id={id("cost")}
-                        inputMode="numeric"
+                        kind="money"
                         value={line.unitCost}
                         onChange={(event) =>
                           update(line.key, { unitCost: event.target.value })

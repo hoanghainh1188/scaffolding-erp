@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DomainValueError } from "@/domain/errors";
 import { formatMoney, parseMoney, toMoney } from "@/domain/money";
@@ -22,6 +21,7 @@ import {
   toQuantity,
 } from "@/domain/quantity";
 import { callApi } from "@/lib/api-client";
+import { NumericInput } from "@/components/domain/numeric-input";
 import type {
   BomDetail,
   BomListRow,
@@ -227,10 +227,10 @@ function BomForm({
                   </th>
                   <td className="border-b px-3 py-2 text-right tabular-nums">
                     {canManage ? (
-                      <Input
+                      <NumericInput
                         aria-label={`Định mức ${material.code}`}
                         value={row.quantity}
-                        inputMode="decimal"
+                        kind="decimal"
                         className="ml-auto w-28 text-right"
                         onChange={(event) =>
                           change(row.itemId, event.target.value)
@@ -315,9 +315,9 @@ function BomForm({
         <div className="flex w-64 flex-col gap-1.5">
           <Label htmlFor="bom-labor">Đơn giá công sản xuất / cái</Label>
           {canManage ? (
-            <Input
+            <NumericInput
               id="bom-labor"
-              inputMode="numeric"
+              kind="money"
               value={labor}
               onChange={(event) => setLabor(event.target.value)}
             />

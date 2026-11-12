@@ -6,13 +6,13 @@ import { XIcon } from "lucide-react";
 
 import { FieldMessage } from "@/components/purchasing/field-message";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { formatMoney, type Money } from "@/domain/money";
 import {
   QUANTITY_UNIT_LABELS,
   formatQuantity,
   toQuantity,
 } from "@/domain/quantity";
+import { NumericInput } from "@/components/domain/numeric-input";
 import type { AwaitingItem } from "@/lib/repairs/queries";
 
 export interface DraftLine {
@@ -71,9 +71,9 @@ export function RepairLines({
     label: string,
   ) => (
     <td className="border-b px-3 py-2.5 align-top">
-      <Input
+      <NumericInput
         aria-label={label}
-        inputMode="numeric"
+        kind={name === "cost" ? "money" : "count"}
         value={line[name]}
         readOnly={readOnly}
         aria-invalid={Boolean(errors[`lines.${index}.${field}`])}

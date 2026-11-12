@@ -6,7 +6,6 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { FormError } from "@/components/catalog/form-error";
 import { useCatalogAction } from "@/components/catalog/use-catalog-action";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Sheet,
@@ -23,6 +22,7 @@ import type { AdjustmentDetail } from "@/lib/inventory/adjustments";
 import type { ReceiptOption } from "@/lib/inventory/revaluations";
 
 import { formatCost } from "./format";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 interface TripCostSheetProps {
   receipts: ReceiptOption[];
@@ -147,9 +147,9 @@ export function TripCostSheet({
           </p>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="trip-cost">Chi phí chuyến đúng (₫)</Label>
-            <Input
+            <NumericInput
               id="trip-cost"
-              inputMode="numeric"
+              kind="money"
               value={cost}
               onChange={(event) => setCost(event.target.value)}
               className="w-64"

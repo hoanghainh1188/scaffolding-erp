@@ -9,7 +9,6 @@ import { forwardRef } from "react";
 import { ConditionBadge } from "@/components/domain/condition-badge";
 import { ToneBadge } from "@/components/domain/tone-badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { formatDateTime } from "@/domain/business-date";
 import {
   CONDITION_LABELS,
@@ -19,6 +18,7 @@ import {
 import { formatQuantity, isCountUnit, parseQuantity } from "@/domain/quantity";
 
 import { inputText, type ItemCount, type ItemView } from "./stocktake-model";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 interface CountItemCardProps {
   item: ItemView;
@@ -198,9 +198,9 @@ export const CountItemCard = forwardRef<HTMLElement, CountItemCardProps>(
                   >
                     <Minus aria-hidden className="size-5" />
                   </Button>
-                  <Input
+                  <NumericInput
                     aria-label={label}
-                    inputMode={isCountUnit(item.unit) ? "numeric" : "decimal"}
+                    kind={isCountUnit(item.unit) ? "count" : "decimal"}
                     value={text}
                     placeholder="–"
                     disabled={disabled}

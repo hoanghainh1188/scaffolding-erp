@@ -28,6 +28,7 @@ import { callApi } from "@/lib/api-client";
 import type { AdjustmentDetail } from "@/lib/inventory/adjustments";
 
 import type { ItemOption } from "./adjustment-form-sheet";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { formatValuePreview, type ValuePreviewView } from "./format";
 
 interface DraftLine {
@@ -298,9 +299,9 @@ export function ValueAdjustmentSheet({
                   </div>
                   <div className="flex flex-col gap-1">
                     <Label htmlFor={id("amount")}>Chênh lệch (₫)</Label>
-                    <Input
+                    <NumericInput
                       id={id("amount")}
-                      inputMode="numeric"
+                      kind="money"
                       value={line.amount}
                       onChange={(event) =>
                         update(line.key, { amount: event.target.value })

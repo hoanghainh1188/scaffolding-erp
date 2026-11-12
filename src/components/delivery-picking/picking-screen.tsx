@@ -5,6 +5,7 @@
 // goes on when the signal drops. Starting needs the network; confirming
 // queues the draft when offline. No price, freight or money is shown.
 import { useRouter } from "next/navigation";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { useState } from "react";
 
 import { ConditionBadge } from "@/components/domain/condition-badge";
@@ -386,9 +387,9 @@ export function PickingScreen({ note, userId }: PickingScreenProps) {
               {line.byKg ? (
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor={`kg-${line.id}`}>Kg cân</Label>
-                  <Input
+                  <NumericInput
                     id={`kg-${line.id}`}
-                    inputMode="decimal"
+                    kind="decimal"
                     value={picks.weighedKg}
                     disabled={locked}
                     className="h-12 text-right tabular-nums"

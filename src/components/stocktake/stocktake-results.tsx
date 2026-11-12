@@ -14,7 +14,6 @@ import { ConditionBadge } from "@/components/domain/condition-badge";
 import { ToneBadge } from "@/components/domain/tone-badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import type { Condition } from "@/domain/condition";
 import { formatMoney, parseMoney, toMoney } from "@/domain/money";
 import type { QuantityUnit } from "@/domain/quantity";
@@ -27,6 +26,7 @@ import { DomainValueError } from "@/domain/errors";
 import { cn } from "@/lib/utils";
 
 import { quantityText, signedMoney, signedQuantity } from "./format";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { ReasonDialog } from "./reason-dialog";
 
 export interface ResultRow {
@@ -232,9 +232,9 @@ export function StocktakeResults({
                     </td>
                     <td className={number}>
                       {deciding && row.needsCost ? (
-                        <Input
+                        <NumericInput
                           aria-label={`Đơn giá ${row.itemCode}`}
-                          inputMode="numeric"
+                          kind="money"
                           placeholder="Nhập đơn giá"
                           value={costs[row.id] ?? ""}
                           onChange={(event) =>

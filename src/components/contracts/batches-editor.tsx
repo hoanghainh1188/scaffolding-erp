@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { nextKey, type BatchRow } from "./form-model";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 export interface BatchChoice {
   /** "kit:<id>" or "item:<id>" */
@@ -122,9 +123,9 @@ export function BatchesEditor({
                   <Label htmlFor={`batch-qty-${line.key}`} className="sr-only">
                     Số lượng
                   </Label>
-                  <Input
+                  <NumericInput
                     id={`batch-qty-${line.key}`}
-                    inputMode="decimal"
+                    kind="decimal"
                     value={line.quantity}
                     disabled={disabled}
                     onChange={(event) =>

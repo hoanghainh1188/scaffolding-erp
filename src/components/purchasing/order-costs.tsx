@@ -14,6 +14,7 @@ import { COST_LABEL_SUGGESTIONS } from "@/domain/purchase-order";
 import { cn } from "@/lib/utils";
 
 import { FieldMessage } from "./field-message";
+import { NumericInput } from "@/components/domain/numeric-input";
 import type { DraftCost } from "./preview";
 
 const METHOD_HINTS: Readonly<Record<AllocationMethod, string>> = {
@@ -82,9 +83,9 @@ export function OrderCosts({
                   }
                   className="h-10 min-w-0 flex-1"
                 />
-                <Input
+                <NumericInput
                   aria-label={`Số tiền ${cost.label || `khoản ${index + 1}`}`}
-                  inputMode="numeric"
+                  kind="money"
                   value={cost.amount}
                   disabled={locked}
                   onChange={(event) =>

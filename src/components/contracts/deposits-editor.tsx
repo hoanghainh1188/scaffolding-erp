@@ -15,6 +15,7 @@ import {
 import { reminderDate } from "@/domain/guarantee";
 
 import { nextKey, type DepositRow } from "./form-model";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 interface DepositsEditorProps {
   rows: DepositRow[];
@@ -59,9 +60,9 @@ export function DepositsEditor({
               <Label htmlFor={`amount-${row.key}`}>
                 {row.kind === "CASH" ? "Số tiền" : "Giá trị"}
               </Label>
-              <Input
+              <NumericInput
                 id={`amount-${row.key}`}
-                inputMode="numeric"
+                kind="money"
                 value={row.amount}
                 disabled={disabled}
                 onChange={(event) =>

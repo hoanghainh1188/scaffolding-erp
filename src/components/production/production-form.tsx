@@ -20,6 +20,7 @@ import { callApi } from "@/lib/api-client";
 import type { ItemChoice } from "@/lib/production/queries";
 
 import { ProductionTabs } from "./production-tabs";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 export interface ProductionDraft {
   code: string;
@@ -299,9 +300,9 @@ export function ProductionForm({
                 <Label htmlFor={`production-planned-${line.key}`}>
                   Số kế hoạch
                 </Label>
-                <Input
+                <NumericInput
                   id={`production-planned-${line.key}`}
-                  inputMode="numeric"
+                  kind="count"
                   value={line.planned}
                   onChange={(event) =>
                     update(line.key, { planned: event.target.value })
