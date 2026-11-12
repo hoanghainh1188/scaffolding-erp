@@ -16,6 +16,9 @@ permissions:
 jobs:
   backup:
     name: Nightly encrypted database backup
+    # Scheduled runs wait for the repo variable PRODUCTION_READY=true
+    # (docs/ops/production.md 3.0); manual runs always execute.
+    if: github.event_name != 'schedule' || vars.PRODUCTION_READY == 'true'
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 30
