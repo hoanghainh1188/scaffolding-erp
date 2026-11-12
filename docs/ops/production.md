@@ -74,6 +74,11 @@ Tài liệu quy chuẩn vận hành, bảo mật và quy trình ứng phó khẩ
 
 ## 3. Lịch Sao lưu & Giám sát Tự động
 
+### 3.0. Bật lịch chạy hằng đêm
+- Lịch của `backup.yml` và `inventory-check.yml` chỉ chạy khi biến repo **`PRODUCTION_READY`** = `true`; chưa đặt thì job bị bỏ qua (không báo lỗi).
+- Bật sau khi đã thêm secret ở mục 1.2: GitHub → Settings → Secrets and variables → Actions → tab **Variables** → New repository variable `PRODUCTION_READY` = `true`. Rồi chạy tay hai workflow (Run workflow) để kiểm tra.
+- Chạy tay luôn chạy, kể cả khi chưa bật; thiếu secret thì fail.
+
 ### 3.1. Sao lưu định kỳ (`backup.yml`)
 - Chạy tự động lúc **02:00 AM (giờ Việt Nam)** mỗi ngày (19:00 UTC).
 - Xuất toàn bộ dữ liệu ra định dạng nhị phân nén của PostgreSQL (`pg_dump -Fc`).
