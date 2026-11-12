@@ -24,6 +24,7 @@ import { callApi } from "@/lib/api-client";
 import type { ExchangeForm as FormData } from "@/lib/exchanges/queries";
 
 import { readCount } from "./transfer-model";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 /** "100 × 300 ₫ → 100 × 280 ₫". */
 function swapText(
@@ -164,9 +165,9 @@ export function ExchangeForm({ data }: { data: FormData }) {
                     {amountText(item.yardStock[yardId] ?? 0, item.unit)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Input
+                    <NumericInput
                       aria-label={`Số giao ${item.code}`}
-                      inputMode="numeric"
+                      kind="count"
                       value={give[item.itemId] ?? ""}
                       onChange={(event) =>
                         setGive((prev) => ({
@@ -215,9 +216,9 @@ export function ExchangeForm({ data }: { data: FormData }) {
                     {amountText(item.onSiteMilli, item.unit)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Input
+                    <NumericInput
                       aria-label={`Số nhận ${item.code}`}
-                      inputMode="numeric"
+                      kind="count"
                       value={take[item.itemId] ?? ""}
                       onChange={(event) =>
                         setTake((prev) => ({
@@ -270,9 +271,9 @@ export function ExchangeForm({ data }: { data: FormData }) {
             {data.companyTruck ? (
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="exchange-freight">Cước một chiều</Label>
-                <Input
+                <NumericInput
                   id="exchange-freight"
-                  inputMode="numeric"
+                  kind="money"
                   value={freight}
                   onChange={(event) => setFreight(event.target.value)}
                 />

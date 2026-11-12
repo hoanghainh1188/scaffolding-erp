@@ -35,6 +35,7 @@ import { dict } from "@/locales";
 
 import { FormError } from "./form-error";
 import { formatPrice, monthlyPrice } from "./format";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { useCatalogAction } from "./use-catalog-action";
 
 interface ItemFormSheetProps {
@@ -311,9 +312,9 @@ export function ItemFormSheet({
             <Label htmlFor="item-daily">
               {text.units.dailyPrice(unitLabel)}
             </Label>
-            <Input
+            <NumericInput
               id="item-daily"
-              inputMode="numeric"
+              kind="money"
               value={daily}
               onChange={(event) => setDaily(event.target.value)}
               placeholder="Để trống nếu không cho thuê"
@@ -331,10 +332,10 @@ export function ItemFormSheet({
               <Label htmlFor="item-lost">
                 {text.units.lostPrice(unitLabel)}
               </Label>
-              <Input
+              <NumericInput
                 id="item-lost"
                 name="lostPrice"
-                inputMode="numeric"
+                kind="money"
                 defaultValue={priceText(item?.lostPrice ?? null)}
               />
             </div>
@@ -342,10 +343,10 @@ export function ItemFormSheet({
               <Label htmlFor="item-damage">
                 {text.units.damagePrice(unitLabel)}
               </Label>
-              <Input
+              <NumericInput
                 id="item-damage"
                 name="damagePrice"
-                inputMode="numeric"
+                kind="money"
                 defaultValue={priceText(item?.damagePrice ?? null)}
               />
             </div>

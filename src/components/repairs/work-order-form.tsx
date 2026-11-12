@@ -18,6 +18,7 @@ import { callApi } from "@/lib/api-client";
 import type { AwaitingItem, RepairPlace } from "@/lib/repairs/queries";
 
 import { AwaitingList } from "./awaiting-list";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 export interface WorkOrderDraft {
   code: string;
@@ -259,9 +260,9 @@ export function WorkOrderForm({ places, awaiting, draft }: WorkOrderFormProps) {
                       </span>
                       <div className="flex flex-col gap-1.5">
                         <Label htmlFor={`work-taken-${index}`}>Lấy ra</Label>
-                        <Input
+                        <NumericInput
                           id={`work-taken-${index}`}
-                          inputMode="numeric"
+                          kind="count"
                           value={line.taken}
                           className="w-28 text-right"
                           onChange={(event) =>

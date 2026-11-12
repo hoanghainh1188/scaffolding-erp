@@ -12,7 +12,6 @@ import { useEffect, useMemo, useState } from "react";
 import { FormError } from "@/components/catalog/form-error";
 import { DateInput } from "@/components/domain/date-input";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { parseMoney } from "@/domain/money";
 import type { ReceiptKind } from "@/domain/receivables";
@@ -21,6 +20,7 @@ import type { ReceiptPlan } from "@/lib/receivables/receipts";
 import { cn } from "@/lib/utils";
 
 import { dayMonth, money } from "./format";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 export interface OpenDebtOption {
   key: string;
@@ -176,9 +176,9 @@ export function ReceiptForm(props: ReceiptFormProps) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="receipt-amount">Số tiền</Label>
-          <Input
+          <NumericInput
             id="receipt-amount"
-            inputMode="numeric"
+            kind="money"
             className="text-right tabular-nums"
             value={amountText}
             onChange={(event) => setAmountText(event.target.value)}
@@ -306,9 +306,9 @@ export function ReceiptForm(props: ReceiptFormProps) {
                       {money(debt.remaining)}
                     </span>
                   </label>
-                  <Input
+                  <NumericInput
                     id={`named-${debt.key}`}
-                    inputMode="numeric"
+                    kind="money"
                     className="w-36 text-right tabular-nums"
                     value={named[debt.key] ?? ""}
                     onChange={(event) =>

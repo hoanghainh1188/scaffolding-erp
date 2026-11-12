@@ -3,13 +3,13 @@
 import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { formatMoney, type Money } from "@/domain/money";
 import { orderUnitAllowed, orderUnitsFor } from "@/domain/purchase-order";
 import { QUANTITY_UNIT_LABELS, type QuantityUnit } from "@/domain/quantity";
 import { cn } from "@/lib/utils";
 
 import { FieldMessage } from "./field-message";
+import { NumericInput } from "@/components/domain/numeric-input";
 import {
   unitHint,
   type DraftLine,
@@ -142,9 +142,9 @@ export function OrderLines({
                     <FieldMessage message={field("itemId")} />
                   </td>
                   <td className={cell}>
-                    <Input
+                    <NumericInput
                       aria-label={`Số lượng ${name}${hint ? ` (${hint})` : ""}`}
-                      inputMode="decimal"
+                      kind="decimal"
                       value={line.quantity}
                       disabled={locked}
                       onChange={(event) =>
@@ -170,9 +170,9 @@ export function OrderLines({
                     <FieldMessage message={field("quantity")} />
                   </td>
                   <td className={cell}>
-                    <Input
+                    <NumericInput
                       aria-label={`Đơn giá ${name}${hint ? ` mỗi ${hint}` : ""}`}
-                      inputMode="numeric"
+                      kind="money"
                       value={line.unitPrice}
                       disabled={locked}
                       onChange={(event) =>

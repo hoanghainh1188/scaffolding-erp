@@ -36,6 +36,7 @@ import {
   type KitRow,
   type LineRow,
 } from "./batch-model";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { amountText } from "./format";
 
 const select =
@@ -301,9 +302,9 @@ export function BatchForm({
                 </Label>
                 <span className="flex items-center gap-1">
                   ×
-                  <Input
+                  <NumericInput
                     id={`kit-${row.key}`}
-                    inputMode="numeric"
+                    kind="integer"
                     value={row.quantity}
                     onChange={(event) => updateKit(row, event.target.value)}
                     className="h-9 w-24 text-right tabular-nums"
@@ -339,9 +340,9 @@ export function BatchForm({
                   Số lượng {item?.code}
                 </Label>
                 <span className="flex items-center gap-1">
-                  <Input
+                  <NumericInput
                     id={`line-${row.key}`}
-                    inputMode="decimal"
+                    kind="decimal"
                     value={row.quantity}
                     onChange={(event) => updateLine(row, event.target.value)}
                     className="h-9 w-28 text-right tabular-nums"
@@ -470,9 +471,9 @@ export function BatchForm({
         {state.companyTruck ? (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="freight">Cước chiều đi (₫)</Label>
-            <Input
+            <NumericInput
               id="freight"
-              inputMode="numeric"
+              kind="money"
               value={state.freight}
               onChange={(event) => update({ freight: event.target.value })}
               className="text-right tabular-nums"

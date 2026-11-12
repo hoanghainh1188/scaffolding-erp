@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import { FormError } from "@/components/catalog/form-error";
 import { amountText, moneyText } from "@/components/deliveries/format";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -24,6 +23,7 @@ import { callApi } from "@/lib/api-client";
 import type { BuyBackForm as FormData } from "@/lib/buy-backs/queries";
 
 import { readCount } from "./transfer-model";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 export interface BuyBackDraft {
   id: string;
@@ -167,9 +167,9 @@ export function BuyBackForm({
                       {amountText(item.onSiteMilli, item.unit)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Input
+                      <NumericInput
                         aria-label={`Số mua ${item.code}`}
-                        inputMode="numeric"
+                        kind="count"
                         value={counts[item.itemId] ?? ""}
                         onChange={(event) =>
                           setCounts((prev) => ({
@@ -181,9 +181,9 @@ export function BuyBackForm({
                       />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Input
+                      <NumericInput
                         aria-label={`Đơn giá ${item.code}`}
-                        inputMode="numeric"
+                        kind="money"
                         placeholder="Chưa có giá"
                         value={prices[item.itemId] ?? ""}
                         onChange={(event) =>

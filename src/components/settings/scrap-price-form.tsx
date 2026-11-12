@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DomainValueError } from "@/domain/errors";
 import { parseMoney } from "@/domain/money";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { SCRAP_PRICE_MESSAGES } from "@/domain/scrap-price";
 
 export function ScrapPriceForm() {
@@ -62,9 +63,9 @@ export function ScrapPriceForm() {
         <label htmlFor="scrap-price" className="text-label">
           Giá mới (₫/kg)
         </label>
-        <Input
+        <NumericInput
           id="scrap-price"
-          inputMode="numeric"
+          kind="money"
           value={price}
           onChange={(event) => setPrice(event.target.value)}
           aria-invalid={errors.pricePerKg ? true : undefined}

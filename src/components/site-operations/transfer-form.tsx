@@ -27,6 +27,7 @@ import type { TransferForm as FormData } from "@/lib/site-transfers/queries";
 import { cn } from "@/lib/utils";
 
 import { minimumText, previewTransfer, remainingText } from "./transfer-model";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 export interface TransferDraft {
   id: string;
@@ -248,9 +249,9 @@ export function TransferForm({ data, today, draft }: TransferFormProps) {
                       Tốt
                     </TableCell>
                     <TableCell className="text-right">
-                      <Input
+                      <NumericInput
                         aria-label={`Số chuyển ${item.code}`}
-                        inputMode="numeric"
+                        kind="count"
                         value={counts[item.itemId] ?? ""}
                         onChange={(event) =>
                           setCounts((prev) => ({

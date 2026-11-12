@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 
+import { NumericInput } from "@/components/domain/numeric-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +49,7 @@ export interface FormField {
   required?: boolean;
   /** Shown but not sent (e.g. the customer of a site, fixed). */
   readOnly?: boolean;
+  /** "numeric": digits only (CCCD, last 4 digits of an account). */
   inputMode?: "numeric" | "text";
 }
 
@@ -221,13 +223,18 @@ export function RecordFormSheet({
                       rows={3}
                       className="rounded-md border border-input bg-card px-3 py-2 text-base"
                     />
+                  ) : field.kind === "number" ||
+                    field.inputMode === "numeric" ? (
+                    <NumericInput
+                      {...common}
+                      kind="integer"
+                      required={field.required}
+                    />
                   ) : (
                     <Input
                       {...common}
                       type={field.kind === "tel" ? "tel" : "text"}
-                      inputMode={
-                        field.kind === "number" ? "numeric" : field.inputMode
-                      }
+                      inputMode={field.inputMode}
                       required={field.required}
                     />
                   )}

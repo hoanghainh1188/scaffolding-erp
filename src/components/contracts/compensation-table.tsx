@@ -1,10 +1,10 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 import { FieldMessage } from "@/components/purchasing/field-message";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatMoney, toMoney } from "@/domain/money";
 import { QUANTITY_UNIT_LABELS, type QuantityUnit } from "@/domain/quantity";
@@ -103,9 +103,9 @@ export function CompensationTable({
                       Giá {kind === "lost" ? "mất" : "hỏng"} {found?.code} /{" "}
                       {unit}
                     </Label>
-                    <Input
+                    <NumericInput
                       id={`${kind}-${row.key}`}
-                      inputMode="numeric"
+                      kind="money"
                       value={value[kind]}
                       disabled={disabled}
                       onChange={(event) =>

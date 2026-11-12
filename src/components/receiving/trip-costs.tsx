@@ -12,6 +12,7 @@ import { formatMoney, toMoney } from "@/domain/money";
 import { COST_LABEL_SUGGESTIONS } from "@/domain/purchase-order";
 
 import type { CostForm } from "./receipt-model";
+import { NumericInput } from "@/components/domain/numeric-input";
 
 interface TripCostsProps {
   costs: CostForm[];
@@ -69,9 +70,9 @@ export function TripCosts({
             onChange={(event) => set(index, { label: event.target.value })}
             className="h-12 min-w-0 flex-1"
           />
-          <Input
+          <NumericInput
             aria-label={`Số tiền ${cost.label || `khoản ${index + 1}`}`}
-            inputMode="numeric"
+            kind="money"
             value={cost.amount}
             disabled={disabled}
             onChange={(event) => set(index, { amount: event.target.value })}

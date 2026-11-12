@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -38,6 +37,7 @@ import {
 import { DomainValueError } from "@/domain/errors";
 import { formatByUnit, type QuantityUnit } from "@/domain/quantity";
 import { parseMoney } from "@/domain/money";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { callApi } from "@/lib/api-client";
 
 export interface CompensationViewLine {
@@ -262,9 +262,9 @@ export function CompensationView(props: CompensationViewProps) {
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {editable && line.contractPrice === null ? (
-                          <Input
+                          <NumericInput
                             aria-label={label}
-                            inputMode="numeric"
+                            kind="money"
                             placeholder="Chưa có giá"
                             value={typed[key] ?? ""}
                             onChange={(event) =>
@@ -323,9 +323,9 @@ export function CompensationView(props: CompensationViewProps) {
               </h2>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="discount-amount">Số tiền giảm</Label>
-                <Input
+                <NumericInput
                   id="discount-amount"
-                  inputMode="numeric"
+                  kind="money"
                   value={discount}
                   onChange={(event) => setDiscount(event.target.value)}
                 />

@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginPathFor } from "@/lib/auth/paths";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { dict } from "@/locales";
 
 const TEXT = dict.auth.twoFactor;
@@ -68,13 +69,13 @@ export function TwoFactorStep({
         <>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="code">{TEXT.codeLabel}</Label>
-            <Input
+            <NumericInput
               key="app"
               id="code"
               name="code"
               required
               autoFocus
-              inputMode="numeric"
+              kind="integer"
               autoComplete="one-time-code"
               maxLength={6}
               placeholder="000000"

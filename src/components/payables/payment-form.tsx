@@ -13,12 +13,12 @@ import { FormError } from "@/components/catalog/form-error";
 import { DateInput } from "@/components/domain/date-input";
 import { dayMonth, money } from "@/components/receivables/format";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { parseMoney } from "@/domain/money";
 import { PAYABLE_MESSAGES, type PaymentKind } from "@/domain/payables";
 import { callApi } from "@/lib/api-client";
 import type { PaymentPlan } from "@/lib/payables/payments";
+import { NumericInput } from "@/components/domain/numeric-input";
 import { cn } from "@/lib/utils";
 
 export interface OpenPayableOption {
@@ -153,9 +153,9 @@ export function PaymentForm(props: PaymentFormProps) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="payment-amount">Số tiền</Label>
-          <Input
+          <NumericInput
             id="payment-amount"
-            inputMode="numeric"
+            kind="money"
             className="text-right tabular-nums"
             value={amountText}
             onChange={(event) => setAmountText(event.target.value)}
@@ -255,9 +255,9 @@ export function PaymentForm(props: PaymentFormProps) {
                       {dayMonth(row.dueDate)} · còn {money(row.remaining)}
                     </span>
                   </label>
-                  <Input
+                  <NumericInput
                     id={`named-${row.id}`}
-                    inputMode="numeric"
+                    kind="money"
                     className="w-36 text-right tabular-nums"
                     value={named[row.id] ?? ""}
                     onChange={(event) =>

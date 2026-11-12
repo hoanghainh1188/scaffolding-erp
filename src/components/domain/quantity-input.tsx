@@ -17,6 +17,8 @@ import {
 } from "@/domain/quantity";
 import { cn } from "@/lib/utils";
 
+import { cleanNumericField } from "./numeric-input";
+
 export interface QuantityInputProps extends Omit<
   ComponentProps<"input">,
   "value" | "defaultValue" | "onChange" | "type"
@@ -75,7 +77,14 @@ export function QuantityInput({
           setDraft(formatQuantityForInput(value));
           onFocus?.(event);
         }}
-        onChange={(event) => setDraft(event.target.value)}
+        onChange={(event) =>
+          setDraft(
+            cleanNumericField(
+              event.currentTarget,
+              isCountUnit(value.unit) ? "count" : "decimal",
+            ),
+          )
+        }
         onBlur={(event) => {
           if (draft !== null) commit(draft);
           setDraft(null);
