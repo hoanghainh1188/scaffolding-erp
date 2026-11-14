@@ -21,7 +21,7 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | 09 | `catalog-extensions` | #45 | Mã vật tư cũ, đơn vị mét/bó/sọt/cây, phân loại nguyên liệu, khu vực công trình, nhân viên phụ trách | D9, D16 (sửa) | 03 | ✅ |
 | 10 | `contracts` | #9 | Hợp đồng bán/thuê, giá theo hợp đồng, **cọc + bảo lãnh**, VAT, phụ lục, báo giá = nháp in ra, tách quyền thuê/bán | D4, D5, D5a, D5b | 09 | ✅ (Q5–Q7 mặc định tạm, 0.2 #48–#50) |
 | 11 | `deliveries` | #10 | Xuất kho theo đợt, rã bộ, cước vận chuyển | D6, M5 | 10 | ✅ |
-| 12 | `returns-and-compensation` | #11 | Thu hồi (Tốt/Chờ sửa/Phế liệu/Mất, ảnh), phiếu đền bù | M4, D8 | 11 || ✅ |
+| 12 | `returns-and-compensation` | #11 | Thu hồi (Tốt/Chờ sửa/Phế liệu/Mất, ảnh), phiếu đền bù | M4, D8 | 11 | ✅ |
 | 12b | `site-operations` | #132 | Chuyển thẳng giữa công trình, mua lại, đổi hàng (0.2 #38, #66–#68; tách từ #11 ngày 03/11/2026) | D6b, D6c, D6d, M9 | 12 | ✅ |
 | 13 | `rental-billing` | #13 | Tính tiền thuê theo kỳ (đã có công thức thực tế 0.2 #4, #39) | D7 | 12 | ✅ (Q1, Q2 mặc định tạm, 0.2 #73, #74) |
 | 14 | `receivables` | #14 | Công nợ tách loại (thuê, bán, vận chuyển, đền bù, mua lại, VAT), phiếu thu, tiền trả trước, cọc, bảo lãnh, thanh lý hợp đồng | D14, D14b | 13 | ✅ |
@@ -57,15 +57,15 @@ Trước mỗi change có màn hình: vẽ và chốt thiết kế bằng Claude
 | K12 | `db-least-privilege` | #96 | Tách role DB: app không sửa/xóa được sổ kho và nhật ký ✅ | – |
 | K13 | `director-mfa` | #97 | Xác thực 2 lớp (TOTP) cho Giám đốc và Kế toán ✅ | 02 |
 | K14 | `session-management` | #98 | Xem và đăng xuất thiết bị từ xa (không chặn production) ✅ | K13 |
-| K15 | `personal-data-protection` | #99 | Mã hóa CCCD/STK trong DB, lưu giữ và xóa | #78; trước 18 |
+| K15 | `personal-data-protection` | #99 | Mã hóa CCCD/STK trong DB, lưu giữ và xóa. Bước 1 (mã hóa, ẩn danh, xóa quá hạn) ✅ PR #176; còn bước 2 (bỏ cột cũ) và archive | #78; trước 18 |
 | K16 | `natural-ui-copy` | #118 | Viết lại chữ giao diện cho tự nhiên (Mua hàng, Cho thuê & Bán) ✅ | – |
-| – | Bảo mật CI và thư viện | #100 | Dependabot, CodeQL, `npm audit`, HSTS (không phải change) | – |
+| – | Bảo mật CI và thư viện | #100 | Dependabot, `npm audit`, HSTS (không phải change; CodeQL bỏ vì repo private gói Free) ✅ | – |
 | – | Hạ tầng demo | #80 | Vercel + Neon, reset hằng đêm ✅ | K8, K9 |
 | – | Hạ tầng production | #81 | Vercel + Neon, backup, giám sát, runbook ✅ | K11 |
 
 ## Ghi chú
 
 - Khi chủ trả lời câu hỏi ở #44: ghi quyết định vào `docs/requirements.md` 0.2, gỡ dòng tương ứng ở 0.2b, gỡ nhãn `blocked` của issue.
-- Trong lúc chờ câu trả lời ở #44: các change 07, 08, 17 và K6, K7 đã hoàn tất ✅. Có thể làm tiếp các change kỹ thuật K1–K5 (không bị chặn) hoặc kiểm tra tay #33. Song song: xin file Excel tính tiền của 2–3 công trình.
-- K12–K15 và #100 phát sinh từ rà soát bảo mật 01/11/2026. Trước production cần K12, K13, #100; K15 sau khi có câu trả lời #78.
+- Còn lại trước khi chạy thật (14/11/2026): 18 `data-migration`, K15 bước 2, K5 `qr-labels`, kiểm tra tay #33, câu trả lời #44 (Q1, Q2, Q5, Q6, Q7, Q14) và #78. Song song: xin file Excel tính tiền của 2–3 công trình.
+- K12–K15 và #100 phát sinh từ rà soát bảo mật 01/11/2026. K12, K13, K14, #100 đã xong; K15 bước 2 sau khi bước 1 đã deploy và `pii:backfill --check` = 0.
 - 18 `data-migration` làm cuối, nhưng nên xin sớm file mẫu dữ liệu để thiết kế mẫu nhập từ đầu.
