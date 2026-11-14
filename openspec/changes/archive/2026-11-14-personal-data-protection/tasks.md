@@ -122,8 +122,8 @@ Ghi chú: mục 1–11 là **PR code bước 1**. Mục 12 là **PR riêng bư�
 ## 11. Kiểm tra trước khi báo xong bước 1
 
 - [ ] 11.1 `npm run lint && npm run typecheck && npm test && npm run test:e2e` và `npx openspec validate personal-data-protection --strict` xanh; coverage `src/lib`, `src/domain` ≥ 80 %.
-- [ ] 11.2 Gắn nhãn `update-snapshots` vào PR (form nhà cung cấp, D14c đổi), chờ CI xanh.
-- [ ] 11.3 Kiểm tra tay trên staging: làm sau, theo dõi ở #33. Thêm mục vào #33 với các bước:
+- [x] 11.2 Gắn nhãn `update-snapshots` vào PR (form nhà cung cấp, D14c đổi), chờ CI xanh. Ảnh mốc cập nhật ở PR #176 và #184, CI xanh.
+- [ ] 11.3 Kiểm tra tay trên staging: làm sau, theo dõi ở #33 (mục 22). Thêm mục vào #33 với các bước:
   - xem bảng `supplier` bằng `psql`: CCCD là chuỗi `pii1.`, không có số tài khoản đầy đủ;
   - form sửa (`partners.manage`) hiện đúng CCCD;
   - bản `pg_dump` không chứa số gốc;
@@ -137,7 +137,7 @@ Ghi chú: mục 1–11 là **PR code bước 1**. Mục 12 là **PR riêng bư�
   - Xóa luôn `hasLegacyPii` (`backfill.ts`) và lời gọi trong `anonymize.ts` (review PR #176 mục 6).
   - Migration `drizzle/0030_drop_legacy_pii.sql`, test `src/db/schema/legacy-pii-drop.int.test.ts`.
 - [x] 12.3 Xóa `src/lib/privacy/backfill.ts`, lệnh `pii:backfill`, test của nó, lựa chọn `backfill` trong workflow. Thu hẹp danh sách cho phép của kiểm tĩnh.
-- [ ] 12.4 `npm run lint && npm run typecheck && npm test` xanh; deploy; `/api/health` = 200.
+- [x] 12.4 `npm run lint && npm run typecheck && npm test` xanh; deploy; `/api/health` = 200. CI PR #187 xanh; production chạy commit `a8e9c1f`, `/api/health` = 200 (14/11/2026). Chạy `0030` trên DB production: làm sau, theo dõi ở #33 (mục 22).
 
 ## Workflow follow-up
 

@@ -155,11 +155,19 @@ Cột hàng SHALL tóm tắt tối đa hai dòng của phiếu dạng "số + đ
 - **THEN** cột hàng hiện "3.312,5 kg sắt ống cân thực tế"
 
 ### Requirement: Che CCCD và số tài khoản trên D14c
-D14c, API của D14c và file Excel phải trả SHALL chỉ có CCCD và số tài khoản của người bán ở dạng che như D16 (`•••• •••• 2345`, `•••• 5678`); số đầy đủ SHALL không có trong phản hồi hay file.
+D14c, form ghi phiếu chi, API của D14c và file Excel phải trả SHALL chỉ có CCCD dạng che như D16 (`•••• •••• 2345`) và tài khoản dạng `<ngân hàng> ···5678`; số CCCD đầy đủ SHALL không có trong phản hồi hay file. File Excel SHALL có một cột "Tài khoản" thay cho hai cột số tài khoản và ngân hàng.
 
 #### Scenario: Người bán cá nhân có CCCD
-- **WHEN** Anh Tâm có CCCD `001203012345`, tài khoản `0451000312345678` tại Vietcombank, và `thuha` mở Anh Tâm trên D14c
-- **THEN** màn hiện "STK •••• 5678 · Vietcombank" **AND** chuỗi `001203012345` và `0451000312345678` không có trong phản hồi `GET /api/payables/suppliers/{id}`
+- **WHEN** Anh Tâm có CCCD `001203012345`, 4 số cuối tài khoản `5678` tại Vietcombank, và `thuha` mở Anh Tâm trên D14c
+- **THEN** màn hiện `Vietcombank ···5678` **AND** chuỗi `001203012345` không có trong phản hồi `GET /api/payables/suppliers/{id}`
+
+#### Scenario: Form ghi phiếu chi
+- **WHEN** `thuha` mở form ghi phiếu chi của Anh Tâm
+- **THEN** form hiện `Chuyển vào: Vietcombank ···5678`
+
+#### Scenario: Cột tài khoản trong Excel
+- **WHEN** `thuha` xuất Excel phải trả có Anh Tâm
+- **THEN** sheet "Theo người bán" có cột "Tài khoản" giá trị `Vietcombank ···5678` và cột CCCD `•••• •••• 2345`
 
 ### Requirement: Xuất Excel phải trả
 "Xuất Excel" trên D14c SHALL tải `cong-no-phai-tra-<YYYY-MM-DD>.xlsx` theo **bộ lọc và ô tìm đang chọn**, không theo trang, gồm ba sheet "Theo người bán", "Các khoản" (cả khoản đã trả đủ), "Phiếu chi" (cả phiếu đã hủy), cột như design D8. Tiền SHALL là ô số nguyên, ngày là ô ngày. Xuất SHALL không ghi nhật ký.
