@@ -16,8 +16,6 @@ on:
         required: true
         type: choice
         options:
-          - backfill
-          - backfill-check
           - rotate
           - rotate-check
           - purge
@@ -64,8 +62,6 @@ jobs:
             exit 1
           fi
           case "$COMMAND" in
-            backfill) npm run pii:backfill ;;
-            backfill-check) npm run pii:backfill -- --check ;;
             rotate) npm run pii:rotate ;;
             rotate-check) npm run pii:rotate -- --check ;;
             purge) npm run pii:purge ;;

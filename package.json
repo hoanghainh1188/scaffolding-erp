@@ -28,7 +28,6 @@
     "auth:reset-2fa": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/reset-two-factor.mts",
     "auth:set-admin": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/set-system-admin.mts",
     "auth:unlock": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/unlock-user.mts",
-    "pii:backfill": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/pii-backfill.mts",
     "pii:purge": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/pii-purge.mts",
     "pii:rotate": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/pii-rotate.mts",
     "inventory:check": "node --env-file-if-exists=.env --import ./scripts/register-aliases.mjs scripts/inventory-check.mts",

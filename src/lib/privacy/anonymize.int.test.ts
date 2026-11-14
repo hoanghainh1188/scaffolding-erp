@@ -34,7 +34,6 @@ import { postReceipt } from "@/lib/receiving/post";
 import { d3Order } from "@/test/purchasing";
 
 import { ANONYMIZE_MESSAGES, anonymizeSupplier } from "./anonymize";
-import { backfillLegacyPii } from "./backfill";
 import { decryptIdNumber, decryptTaxIdentity } from "./cipher";
 import { getPiiKeyRing } from "./key-ring";
 
@@ -436,43 +435,6 @@ describe("cancelling a payment after erasure", () => {
     expect(ledger.payments.find((p) => p.id === paid.data.id)?.cancelled).toBe(
       null,
     );
-  });
-});
-
-describe("before the backfill has run (0.2 bước 1)", () => {
-  // The old column is not in the schema any more; only the owner writes it.
-  const setLegacy = (column: "id_number" | "bank_account", value: string) =>
-    getAdminDatabase().execute(
-      sql`update supplier set ${sql.identifier(column)} = ${value} where id = ${tam}::uuid`,
-    );
-
-  it.each([
-    ["id_number", CCCD],
-    ["bank_account", "0451000312345678"],
-  ] as const)("is refused while %s still holds data", async (column, value) => {
-    await paidReceipt();
-    await setLegacy(column, value);
-    expect(await anonymize()).toEqual({
-      ok: false,
-      status: 409,
-      error: ANONYMIZE_MESSAGES.legacyData,
-    });
-    expect((await rowOf()).anonymizedAt).toBeNull();
-  });
-
-  it("goes through once the backfill moved the CCCD, which the tax file keeps", async () => {
-    await fillPerson(tam, null);
-    await paidReceipt();
-    await setLegacy("id_number", CCCD);
-    expect(await backfillLegacyPii(db, getPiiKeyRing())).toMatchObject({
-      migrated: 1,
-    });
-    expect(await anonymize()).toMatchObject({ ok: true });
-    const row = await rowOf();
-    expect(
-      decryptTaxIdentity(tam, row.taxIdentityEnc ?? "", getPiiKeyRing())
-        .idNumber,
-    ).toBe(CCCD);
   });
 });
 
