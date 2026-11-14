@@ -30,6 +30,7 @@ export function TransferActions({
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState("");
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -79,14 +80,31 @@ export function TransferActions({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="transfer-cancel-reason">Lý do hủy</Label>
+            <Label htmlFor="transfer-cancel-reason" required>
+              Lý do hủy
+            </Label>
             <textarea
               id="transfer-cancel-reason"
               value={reason}
+              required
               maxLength={500}
-              onChange={(event) => setReason(event.target.value)}
-              className="min-h-16 rounded-md border border-input bg-card px-3 py-2 text-base"
+              aria-invalid={reasonError ? true : undefined}
+              onChange={(event) => {
+                setReason(event.target.value);
+                if (reasonError && event.target.value.trim() !== "") {
+                  setReasonError(null);
+                }
+              }}
+              onBlur={(event) => {
+                if (event.target.value.trim() === "") {
+                  setReasonError("Vui lòng nhập lý do hủy phiếu chuyển");
+                }
+              }}
+              className="min-h-16 rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
             />
+            {reasonError && !error && (
+              <p className="text-caption text-destructive">{reasonError}</p>
+            )}
           </div>
           <FormError message={error} />
           <DialogFooter>

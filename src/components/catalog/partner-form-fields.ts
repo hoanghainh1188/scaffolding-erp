@@ -10,7 +10,13 @@ const KIND_OPTIONS = [
 ];
 
 export const CUSTOMER_FIELDS: FormField[] = [
-  { name: "kind", label: "Loại", kind: "select", options: KIND_OPTIONS },
+  {
+    name: "kind",
+    label: "Loại",
+    kind: "select",
+    options: KIND_OPTIONS,
+    required: true,
+  },
   { name: "name", label: "Tên nhà thầu", required: true },
   {
     name: "taxCode",
@@ -62,7 +68,13 @@ export function customerFields(
 }
 
 export const SUPPLIER_FIELDS: FormField[] = [
-  { name: "kind", label: "Loại", kind: "select", options: KIND_OPTIONS },
+  {
+    name: "kind",
+    label: "Loại",
+    kind: "select",
+    options: KIND_OPTIONS,
+    required: true,
+  },
   { name: "name", label: "Tên nhà cung cấp", required: true },
   { name: "phone", label: "Điện thoại", kind: "tel" },
   { name: "address", label: "Địa chỉ", kind: "textarea" },
@@ -97,6 +109,7 @@ export const SITE_FIELDS: FormField[] = [
     kind: "search-select",
     placeholder: dict.catalog.provinces.choose,
     searchLabel: dict.catalog.provinces.search,
+    required: true,
     requiredMessage: PROVINCE_MESSAGES.required,
     options: PROVINCES.map((province) => ({
       value: province.code,
@@ -110,6 +123,7 @@ export const LOCATION_FIELDS: FormField[] = [
   {
     name: "code",
     label: "Mã",
+    required: true,
     hint: "VD: BAI-02. Không đổi được sau khi tạo.",
   },
   { name: "name", label: "Tên", required: true },
@@ -117,6 +131,7 @@ export const LOCATION_FIELDS: FormField[] = [
     name: "type",
     label: "Loại",
     kind: "select",
+    required: true,
     options: [
       { value: "YARD", label: "Bãi" },
       { value: "WORKSHOP", label: "Xưởng" },

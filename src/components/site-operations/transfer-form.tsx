@@ -167,9 +167,12 @@ export function TransferForm({ data, today, draft }: TransferFormProps) {
               </span>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="transfer-target">Công trình nhận</Label>
+              <Label htmlFor="transfer-target" required>
+                Công trình nhận
+              </Label>
               <select
                 id="transfer-target"
+                required
                 value={toId}
                 onChange={(event) => setToId(event.target.value)}
                 className="h-11 w-full rounded-md border border-input bg-card px-3 text-base"
@@ -195,7 +198,7 @@ export function TransferForm({ data, today, draft }: TransferFormProps) {
                   setOtherCustomer(checked === true)
                 }
               />
-              <Label htmlFor="other-customer">
+              <Label htmlFor="other-customer" required>
                 Hàng chuyển sang nhà thầu khác ({data.from.customerName} →{" "}
                 {target?.customerName})
               </Label>
@@ -296,7 +299,7 @@ export function TransferForm({ data, today, draft }: TransferFormProps) {
                 checked={overContract}
                 onCheckedChange={(checked) => setOverContract(checked === true)}
               />
-              <Label htmlFor="over-contract">
+              <Label htmlFor="over-contract" required>
                 Chuyển nhiều hơn số hợp đồng nhận còn phải giao, vẫn chuyển
               </Label>
             </span>

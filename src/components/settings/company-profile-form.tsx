@@ -7,6 +7,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { FieldMessage } from "@/components/purchasing/field-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   COMPANY_MESSAGES,
   companyProfileInputSchema,
@@ -65,6 +66,45 @@ export function CompanyProfileForm({
       }
     };
     reader.readAsDataURL(file);
+  }
+
+  /** Validates a single field against companyProfileInputSchema on blur. */
+  function validateSingleField(fieldName: string, nextValue?: string) {
+    const payload = {
+      name,
+      shortName,
+      taxId,
+      address,
+      phone,
+      email,
+      website,
+      bankAccount,
+      bankName,
+      logoUrl,
+      ...(nextValue !== undefined ? { [fieldName]: nextValue } : {}),
+    };
+    const parsed = companyProfileInputSchema.safeParse(payload);
+    const issue = parsed.success
+      ? undefined
+      : parsed.error.issues.find((i) => String(i.path[0]) === fieldName);
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      if (issue) {
+        next[fieldName] = issue.message;
+      } else {
+        delete next[fieldName];
+      }
+      return next;
+    });
+  }
+
+  function clearFieldError(fieldName: string) {
+    setFieldErrors((prev) => {
+      if (!prev[fieldName]) return prev;
+      const next = { ...prev };
+      delete next[fieldName];
+      return next;
+    });
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -148,13 +188,17 @@ export function CompanyProfileForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label htmlFor="company-name" className="text-sm font-medium">
-            Tên công ty <span className="text-destructive">*</span>
-          </label>
+          <Label htmlFor="company-name" required>
+            Tên công ty
+          </Label>
           <Input
             id="company-name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              clearFieldError("name");
+            }}
+            onBlur={(e) => validateSingleField("name", e.target.value)}
             placeholder="VD: Công ty Cổ phần Cơ khí Xây dựng An Phát"
             required
             aria-invalid={Boolean(fieldErrors.name)}
@@ -163,13 +207,15 @@ export function CompanyProfileForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="company-short-name" className="text-sm font-medium">
-            Tên viết tắt / Tên ngắn
-          </label>
+          <Label htmlFor="company-short-name">Tên viết tắt / Tên ngắn</Label>
           <Input
             id="company-short-name"
             value={shortName}
-            onChange={(e) => setShortName(e.target.value)}
+            onChange={(e) => {
+              setShortName(e.target.value);
+              clearFieldError("shortName");
+            }}
+            onBlur={(e) => validateSingleField("shortName", e.target.value)}
             placeholder="VD: An Phát"
             aria-invalid={Boolean(fieldErrors.shortName)}
           />
@@ -179,13 +225,15 @@ export function CompanyProfileForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="company-tax-id" className="text-sm font-medium">
-            Mã số thuế (MST)
-          </label>
+          <Label htmlFor="company-tax-id">Mã số thuế (MST)</Label>
           <Input
             id="company-tax-id"
             value={taxId}
-            onChange={(e) => setTaxId(e.target.value)}
+            onChange={(e) => {
+              setTaxId(e.target.value);
+              clearFieldError("taxId");
+            }}
+            onBlur={(e) => validateSingleField("taxId", e.target.value)}
             placeholder="VD: 0101234567 hoặc 0101234567-001"
             aria-invalid={Boolean(fieldErrors.taxId)}
           />
@@ -193,13 +241,15 @@ export function CompanyProfileForm({
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label htmlFor="company-address" className="text-sm font-medium">
-            Địa chỉ trụ sở / văn phòng
-          </label>
+          <Label htmlFor="company-address">Địa chỉ trụ sở / văn phòng</Label>
           <Input
             id="company-address"
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            onChange={(e) => {
+              setAddress(e.target.value);
+              clearFieldError("address");
+            }}
+            onBlur={(e) => validateSingleField("address", e.target.value)}
             placeholder="VD: 123 Đường Giải Phóng, Phường Phương Mai, Hà Nội"
             aria-invalid={Boolean(fieldErrors.address)}
           />
@@ -209,14 +259,16 @@ export function CompanyProfileForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="company-phone" className="text-sm font-medium">
-            Số điện thoại / Hotline
-          </label>
+          <Label htmlFor="company-phone">Số điện thoại / Hotline</Label>
           <Input
             id="company-phone"
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              clearFieldError("phone");
+            }}
+            onBlur={(e) => validateSingleField("phone", e.target.value)}
             placeholder="VD: 0243 123 4567 hoặc 0901234567"
             aria-invalid={Boolean(fieldErrors.phone)}
           />
@@ -224,14 +276,16 @@ export function CompanyProfileForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="company-email" className="text-sm font-medium">
-            Email liên hệ
-          </label>
+          <Label htmlFor="company-email">Email liên hệ</Label>
           <Input
             id="company-email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              clearFieldError("email");
+            }}
+            onBlur={(e) => validateSingleField("email", e.target.value)}
             placeholder="VD: lienhe@anphat.vn"
             aria-invalid={Boolean(fieldErrors.email)}
           />
@@ -239,13 +293,15 @@ export function CompanyProfileForm({
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label htmlFor="company-website" className="text-sm font-medium">
-            Website
-          </label>
+          <Label htmlFor="company-website">Website</Label>
           <Input
             id="company-website"
             value={website}
-            onChange={(e) => setWebsite(e.target.value)}
+            onChange={(e) => {
+              setWebsite(e.target.value);
+              clearFieldError("website");
+            }}
+            onBlur={(e) => validateSingleField("website", e.target.value)}
             placeholder="VD: https://anphat.vn"
             aria-invalid={Boolean(fieldErrors.website)}
           />
@@ -255,13 +311,15 @@ export function CompanyProfileForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="company-bank-account" className="text-sm font-medium">
-            Số tài khoản ngân hàng
-          </label>
+          <Label htmlFor="company-bank-account">Số tài khoản ngân hàng</Label>
           <Input
             id="company-bank-account"
             value={bankAccount}
-            onChange={(e) => setBankAccount(e.target.value)}
+            onChange={(e) => {
+              setBankAccount(e.target.value);
+              clearFieldError("bankAccount");
+            }}
+            onBlur={(e) => validateSingleField("bankAccount", e.target.value)}
             placeholder="VD: 1903 1234 5678"
             aria-invalid={Boolean(fieldErrors.bankAccount)}
           />
@@ -271,13 +329,15 @@ export function CompanyProfileForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="company-bank-name" className="text-sm font-medium">
-            Ngân hàng & Chi nhánh
-          </label>
+          <Label htmlFor="company-bank-name">Ngân hàng & Chi nhánh</Label>
           <Input
             id="company-bank-name"
             value={bankName}
-            onChange={(e) => setBankName(e.target.value)}
+            onChange={(e) => {
+              setBankName(e.target.value);
+              clearFieldError("bankName");
+            }}
+            onBlur={(e) => validateSingleField("bankName", e.target.value)}
             placeholder="VD: Techcombank - Chi nhánh Thăng Long"
             aria-invalid={Boolean(fieldErrors.bankName)}
           />

@@ -148,6 +148,7 @@ export function AdjustmentFormSheet({
   const action = useCatalogAction();
   const [open, setOpen] = useState(defaultOpen);
   const [reason, setReason] = useState(adjustment?.reason ?? "");
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const [related, setRelated] = useState(adjustment?.relatedDocumentCode ?? "");
   const [openingDate, setOpeningDate] = useState(
     adjustment?.openingDate ?? today,
@@ -235,28 +236,47 @@ export function AdjustmentFormSheet({
           noValidate
         >
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="adjustment-reason">Lý do</Label>
+            <Label htmlFor="adjustment-reason" required>
+              Lý do
+            </Label>
             <textarea
               id="adjustment-reason"
               value={reason}
-              onChange={(event) => setReason(event.target.value)}
+              aria-invalid={Boolean(reasonError)}
+              onChange={(event) => {
+                setReason(event.target.value);
+                if (reasonError && event.target.value.trim()) {
+                  setReasonError(null);
+                }
+              }}
+              onBlur={() => {
+                if (!reason.trim()) {
+                  setReasonError("Vui lòng nhập lý do.");
+                }
+              }}
               maxLength={500}
               rows={3}
-              className="rounded-md border border-input bg-card px-3 py-2 text-base"
+              className="rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
               placeholder={
                 kind === "OPENING"
                   ? "VD: Số tồn khi bắt đầu dùng phần mềm"
                   : "VD: Sửa PTH-2026-064: 10 cái thực tế là Chờ sửa"
               }
             />
+            {reasonError && action.error !== reasonError ? (
+              <p className="text-caption text-destructive">{reasonError}</p>
+            ) : null}
           </div>
           {kind === "OPENING" ? (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="adjustment-opening-date">Ngày tồn đầu</Label>
+              <Label htmlFor="adjustment-opening-date" required>
+                Ngày tồn đầu
+              </Label>
               <DateInput
                 id="adjustment-opening-date"
                 value={openingDate}
                 max={today}
+                required
                 onValueChange={setOpeningDate}
                 className="w-48"
               />
@@ -313,7 +333,9 @@ export function AdjustmentFormSheet({
                     </div>
                   ) : null}
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor={id("item")}>Vật tư</Label>
+                    <Label htmlFor={id("item")} required>
+                      Vật tư
+                    </Label>
                     <select
                       id={id("item")}
                       value={line.itemId}
@@ -354,7 +376,7 @@ export function AdjustmentFormSheet({
                   </div>
                   {line.lineType === "CONDITION" ? (
                     <div className="flex flex-col gap-1">
-                      <Label htmlFor={id("to-condition")}>
+                      <Label htmlFor={id("to-condition")} required>
                         Sang tình trạng
                       </Label>
                       <select
@@ -376,7 +398,7 @@ export function AdjustmentFormSheet({
                     </div>
                   ) : null}
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor={id("location")}>
+                    <Label htmlFor={id("location")} required>
                       {line.lineType === "LOCATION" ? "Từ vị trí" : "Vị trí"}
                     </Label>
                     <select
@@ -396,7 +418,9 @@ export function AdjustmentFormSheet({
                   </div>
                   {line.lineType === "LOCATION" ? (
                     <div className="flex flex-col gap-1">
-                      <Label htmlFor={id("to-location")}>Sang vị trí</Label>
+                      <Label htmlFor={id("to-location")} required>
+                        Sang vị trí
+                      </Label>
                       <select
                         id={id("to-location")}
                         value={line.toLocationId}
@@ -432,7 +456,7 @@ export function AdjustmentFormSheet({
                     </div>
                   ) : null}
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor={id("quantity")}>
+                    <Label htmlFor={id("quantity")} required>
                       Số lượng ({QUANTITY_UNIT_LABELS[unit]})
                     </Label>
                     <NumericInput
@@ -447,7 +471,10 @@ export function AdjustmentFormSheet({
                   {line.lineType === "OPENING" ||
                   (line.lineType === "QUANTITY" && line.direction === "IN") ? (
                     <div className="flex flex-col gap-1">
-                      <Label htmlFor={id("cost")}>
+                      <Label
+                        htmlFor={id("cost")}
+                        required={line.lineType === "OPENING"}
+                      >
                         {line.lineType === "OPENING"
                           ? `Đơn giá vốn (₫/${QUANTITY_UNIT_LABELS[unit]})`
                           : "Đơn giá (chỉ khi chưa có giá vốn)"}

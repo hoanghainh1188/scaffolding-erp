@@ -55,6 +55,7 @@ export function HolidayManager({
   const [adding, setAdding] = useState(true);
   const [removing, setRemoving] = useState<HolidayItem | null>(null);
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export function HolidayManager({
 
   function open(row: HolidayItem | "new") {
     setError(null);
+    setNameError(null);
     setEditing(row);
     setAdding(row === "new");
     setName(row === "new" ? "" : row.name);
@@ -212,28 +214,51 @@ export function HolidayManager({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-1">
-            <Label htmlFor="holiday-name">Tên</Label>
+            <Label htmlFor="holiday-name" required>
+              Tên
+            </Label>
             <Input
               id="holiday-name"
               value={name}
+              required
               maxLength={100}
-              onChange={(event) => setName(event.target.value)}
+              aria-invalid={nameError ? true : undefined}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (nameError && event.target.value.trim() !== "") {
+                  setNameError(null);
+                }
+              }}
+              onBlur={(event) => {
+                if (event.target.value.trim() === "") {
+                  setNameError("Vui lòng nhập tên ngày nghỉ");
+                }
+              }}
               placeholder="VD: Tết Nguyên đán"
             />
+            {nameError && !error && (
+              <p className="text-caption text-destructive">{nameError}</p>
+            )}
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
-              <Label htmlFor="holiday-start">Từ ngày</Label>
+              <Label htmlFor="holiday-start" required>
+                Từ ngày
+              </Label>
               <DateInput
                 id="holiday-start"
+                required
                 value={startDate}
                 onValueChange={setStartDate}
               />
             </div>
             <div className="flex flex-col gap-1">
-              <Label htmlFor="holiday-end">Đến ngày</Label>
+              <Label htmlFor="holiday-end" required>
+                Đến ngày
+              </Label>
               <DateInput
                 id="holiday-end"
+                required
                 value={endDate}
                 onValueChange={setEndDate}
               />

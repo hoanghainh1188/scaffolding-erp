@@ -63,18 +63,21 @@ export function OrderLines({
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead className="bg-muted text-left">
             <tr>
-              <th scope="col" className="px-1.5 py-2.5 font-semibold">
+              <th
+                scope="col"
+                className="px-1.5 py-2.5 font-semibold after:ml-0.5 after:text-destructive after:content-['*']"
+              >
                 Mã hàng
               </th>
               <th
                 scope="col"
-                className="px-1.5 py-2.5 text-right font-semibold"
+                className="px-1.5 py-2.5 text-right font-semibold after:ml-0.5 after:text-destructive after:content-['*']"
               >
                 Số lượng
               </th>
               <th
                 scope="col"
-                className="px-1.5 py-2.5 text-right font-semibold"
+                className="px-1.5 py-2.5 text-right font-semibold after:ml-0.5 after:text-destructive after:content-['*']"
               >
                 Đơn giá
               </th>
@@ -115,6 +118,7 @@ export function OrderLines({
                       aria-label={`Mã hàng dòng ${index + 1}`}
                       value={line.itemId}
                       disabled={locked}
+                      aria-invalid={field("itemId") ? true : undefined}
                       onChange={(event) => {
                         const picked = itemById.get(event.target.value);
                         onChange(line.key, {
@@ -125,7 +129,7 @@ export function OrderLines({
                             : {}),
                         });
                       }}
-                      className="h-10 w-36 rounded-md border border-input bg-card px-2 text-sm"
+                      className="h-10 w-36 rounded-md border border-input bg-card px-2 text-sm aria-invalid:border-destructive"
                     >
                       <option value="">Chọn mã hàng</option>
                       {items.map((item) => (
@@ -147,6 +151,7 @@ export function OrderLines({
                       kind="decimal"
                       value={line.quantity}
                       disabled={locked}
+                      aria-invalid={field("quantity") ? true : undefined}
                       onChange={(event) =>
                         onChange(line.key, { quantity: event.target.value })
                       }
@@ -175,6 +180,7 @@ export function OrderLines({
                       kind="money"
                       value={line.unitPrice}
                       disabled={locked}
+                      aria-invalid={field("unitPrice") ? true : undefined}
                       onChange={(event) =>
                         onChange(line.key, { unitPrice: event.target.value })
                       }

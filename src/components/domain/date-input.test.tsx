@@ -4,24 +4,30 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DateInput } from "./date-input";
+import { Label } from "@/components/ui/label";
 
 function Harness({
   initial = "",
   max,
+  required,
   onChange,
 }: {
   initial?: string;
   max?: string;
+  required?: boolean;
   onChange?: (value: string) => void;
 }) {
   const [value, setValue] = useState(initial);
   return (
     <>
-      <label htmlFor="d">Ngày tồn đầu</label>
+      <Label htmlFor="d" required={required}>
+        Ngày tồn đầu
+      </Label>
       <DateInput
         id="d"
         value={value}
         max={max}
+        required={required}
         onValueChange={(next) => {
           setValue(next);
           onChange?.(next);
@@ -87,5 +93,17 @@ describe("DateInput", () => {
     );
     expect(onChange).toHaveBeenLastCalledWith("2026-11-20");
     expect(input()).toHaveValue("20/11/2026");
+  });
+
+  it("marks required Label and shows immediate error on blur when empty, clearing on change", async () => {
+    render(<Harness required />);
+    const label = screen.getByText("Ngày tồn đầu");
+    expect(label).toHaveAttribute("data-required", "true");
+    await userEvent.click(input());
+    await userEvent.tab();
+    expect(screen.getByText("Vui lòng nhập ngày")).toBeInTheDocument();
+    expect(input()).toHaveAttribute("aria-invalid", "true");
+    await userEvent.type(input(), "5");
+    expect(screen.queryByText("Vui lòng nhập ngày")).not.toBeInTheDocument();
   });
 });

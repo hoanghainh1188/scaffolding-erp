@@ -272,7 +272,9 @@ export function ReturnScreen(props: ReturnScreenProps) {
         </div>
         {props.yards.length > 1 ? (
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="yard">Bãi nhận hàng</Label>
+            <Label htmlFor="yard" required>
+              Bãi nhận hàng
+            </Label>
             <select
               id="yard"
               value={payload.yardLocationId}

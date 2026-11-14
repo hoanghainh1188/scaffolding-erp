@@ -38,6 +38,8 @@ export interface DateInputProps extends Omit<
   onValueChange: (value: string) => void;
   min?: string;
   max?: string;
+  /** Custom validation message shown on blur when `required` is true and the input is blank. */
+  requiredMessage?: string;
 }
 
 /** Calendar days are local `Date`s; only their y/m/d parts matter. */
@@ -80,10 +82,13 @@ export function DateInput({
   onValueChange,
   min,
   max,
+  required,
+  requiredMessage = "Vui lòng nhập ngày",
   className,
   disabled,
   onBlur,
   onKeyDown,
+  "aria-invalid": ariaInvalidProp,
   ...props
 }: DateInputProps) {
   const [draft, setDraft] = useState<string | null>(null);
@@ -95,8 +100,14 @@ export function DateInput({
   function commit(text: string) {
     try {
       const parsed = parseBusinessDateInput(text) ?? "";
-      if (parsed !== "") checkRange(parsed, min, max);
-      setError(null);
+      if (parsed !== "") {
+        checkRange(parsed, min, max);
+        setError(null);
+      } else if (required) {
+        setError(requiredMessage);
+      } else {
+        setError(null);
+      }
       if (parsed !== value) onValueChange(parsed);
     } catch (cause: unknown) {
       if (!(cause instanceof DomainValueError)) throw cause;
@@ -116,12 +127,24 @@ export function DateInput({
               placeholder="dd/mm/yyyy"
               value={draft ?? formatBusinessDateInput(value)}
               disabled={disabled}
-              aria-invalid={error ? true : undefined}
+              required={required}
+              aria-invalid={error || ariaInvalidProp ? true : undefined}
               aria-describedby={error ? messageId : undefined}
               className="h-11 w-full min-w-0 rounded-md border border-input bg-card pr-11 pl-3 text-base tabular-nums transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive"
-              onChange={(event) => setDraft(event.target.value)}
+              onChange={(event) => {
+                const nextDraft = event.target.value;
+                setDraft(nextDraft);
+                // Clear required error immediately when user starts typing
+                if (error === requiredMessage && nextDraft.trim() !== "") {
+                  setError(null);
+                }
+              }}
               onBlur={(event) => {
-                if (draft !== null) commit(draft);
+                if (draft !== null) {
+                  commit(draft);
+                } else if (required && value === "") {
+                  setError(requiredMessage);
+                }
                 setDraft(null);
                 onBlur?.(event);
               }}

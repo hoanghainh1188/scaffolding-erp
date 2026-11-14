@@ -35,6 +35,7 @@ export function ContractActions({
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState("");
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -116,14 +117,31 @@ export function ContractActions({
               bị hủy theo.
             </DialogDescription>
           </DialogHeader>
-          <Label htmlFor="cancel-reason">Lý do hủy</Label>
+          <Label htmlFor="cancel-reason" required>
+            Lý do hủy
+          </Label>
           <textarea
             id="cancel-reason"
             value={reason}
+            required
             maxLength={500}
-            onChange={(event) => setReason(event.target.value)}
-            className="min-h-16 rounded-md border border-input bg-card px-3 py-2 text-base"
+            aria-invalid={reasonError ? true : undefined}
+            onChange={(event) => {
+              setReason(event.target.value);
+              if (reasonError && event.target.value.trim() !== "") {
+                setReasonError(null);
+              }
+            }}
+            onBlur={(event) => {
+              if (event.target.value.trim() === "") {
+                setReasonError("Vui lòng nhập lý do hủy hợp đồng");
+              }
+            }}
+            className="min-h-16 rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
           />
+          {reasonError && !error && (
+            <p className="text-caption text-destructive">{reasonError}</p>
+          )}
           <FormError message={error} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setCancelling(false)}>

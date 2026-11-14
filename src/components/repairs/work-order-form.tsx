@@ -178,7 +178,9 @@ export function WorkOrderForm({ places, awaiting, draft }: WorkOrderFormProps) {
               Thông tin lệnh
             </h2>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="work-workshop">Xưởng</Label>
+              <Label htmlFor="work-workshop" required>
+                Xưởng
+              </Label>
               <select
                 id="work-workshop"
                 value={workshopId}
@@ -203,7 +205,9 @@ export function WorkOrderForm({ places, awaiting, draft }: WorkOrderFormProps) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="work-from">Lấy hàng Chờ sửa tại</Label>
+              <Label htmlFor="work-from" required>
+                Lấy hàng Chờ sửa tại
+              </Label>
               <select
                 id="work-from"
                 value={fromLocationId}
@@ -259,10 +263,13 @@ export function WorkOrderForm({ places, awaiting, draft }: WorkOrderFormProps) {
                         </span>
                       </span>
                       <div className="flex flex-col gap-1.5">
-                        <Label htmlFor={`work-taken-${index}`}>Lấy ra</Label>
+                        <Label htmlFor={`work-taken-${index}`} required>
+                          Lấy ra
+                        </Label>
                         <NumericInput
                           id={`work-taken-${index}`}
                           kind="count"
+                          required
                           value={line.taken}
                           className="w-28 text-right"
                           onChange={(event) =>

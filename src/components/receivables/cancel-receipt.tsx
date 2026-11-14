@@ -78,14 +78,27 @@ export function CancelReceipt(props: CancelReceiptProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Label htmlFor={`cancel-${props.id}`}>Lý do hủy</Label>
+            <Label htmlFor={`cancel-${props.id}`} required>
+              Lý do hủy
+            </Label>
             <textarea
               id={`cancel-${props.id}`}
               value={reason}
-              onChange={(event) => setReason(event.target.value)}
+              aria-invalid={Boolean(error)}
+              onChange={(event) => {
+                setReason(event.target.value);
+                if (error && event.target.value.trim()) {
+                  setError(null);
+                }
+              }}
+              onBlur={() => {
+                if (!reason.trim()) {
+                  setError("Bạn ghi lý do hủy phiếu thu.");
+                }
+              }}
               maxLength={500}
               rows={3}
-              className="rounded-md border bg-card px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+              className="rounded-md border bg-card px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-ring aria-invalid:border-destructive"
             />
           </div>
           <FormError message={error} />

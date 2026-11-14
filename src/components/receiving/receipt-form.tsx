@@ -225,7 +225,10 @@ export function ReceiptFormView({
           {order.yards.length > 1 && (
             <>
               <dt className="text-muted-foreground">
-                <label htmlFor="receipt-yard">
+                <label
+                  htmlFor="receipt-yard"
+                  className="after:ml-0.5 after:text-destructive after:content-['*']"
+                >
                   {order.materialsOnly ? "Nhập vào" : "Bãi nhập"}
                 </label>
               </dt>

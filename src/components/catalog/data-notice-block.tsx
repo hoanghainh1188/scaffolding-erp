@@ -16,7 +16,9 @@ export function DataNoticeBlock({ text }: { text: string }) {
       <p className="text-sm">{text}</p>
       <div className="flex items-center gap-2">
         <Checkbox id={CHECKBOX_ID} name={DATA_NOTICE_FIELD} />
-        <Label htmlFor={CHECKBOX_ID}>Đã thông báo cho người bán</Label>
+        <Label htmlFor={CHECKBOX_ID} required>
+          Đã thông báo cho người bán
+        </Label>
       </div>
     </section>
   );

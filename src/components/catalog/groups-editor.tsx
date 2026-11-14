@@ -52,11 +52,13 @@ export function GroupsEditor({
   canEdit: boolean;
 }) {
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
   const [category, setCategory] = useState<ItemCategory>("EQUIPMENT");
   const create = useCatalogAction();
 
   async function add(event: FormEvent) {
     event.preventDefault();
+    setNameError(null);
     if (
       await create.run("/api/catalog/item-groups", {
         method: "POST",
@@ -72,16 +74,32 @@ export function GroupsEditor({
       {canEdit ? (
         <form onSubmit={add} className="flex flex-wrap items-end gap-2">
           <div className="flex min-w-0 flex-1 basis-56 flex-col gap-1.5">
-            <Label htmlFor="new-group">Tên nhóm mới</Label>
+            <Label htmlFor="new-group" required>
+              Tên nhóm mới
+            </Label>
             <Input
               id="new-group"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              required
+              aria-invalid={nameError ? true : undefined}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (nameError && event.target.value.trim() !== "") {
+                  setNameError(null);
+                }
+              }}
+              onBlur={(event) => {
+                if (event.target.value.trim() === "") {
+                  setNameError("Vui lòng nhập tên nhóm mới");
+                }
+              }}
               maxLength={60}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-group-category">{categoryText.label}</Label>
+            <Label htmlFor="new-group-category" required>
+              {categoryText.label}
+            </Label>
             <CategorySelect
               id="new-group-category"
               value={category}
@@ -92,6 +110,9 @@ export function GroupsEditor({
             Thêm nhóm
           </Button>
           <div className="basis-full">
+            {nameError && !create.error && (
+              <p className="text-caption text-destructive">{nameError}</p>
+            )}
             <FormError message={create.error} />
           </div>
         </form>

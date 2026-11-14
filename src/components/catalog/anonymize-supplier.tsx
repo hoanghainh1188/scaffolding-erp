@@ -33,12 +33,14 @@ interface AnonymizeSupplierProps {
 export function AnonymizeSupplier({ id, code, today }: AnonymizeSupplierProps) {
   const [open, setOpen] = useState(false);
   const [confirmCode, setConfirmCode] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [requestedOn, setRequestedOn] = useState("");
   const action = useCatalogAction();
 
   function onOpenChange(next: boolean) {
     setOpen(next);
     action.setError(null);
+    setCodeError(null);
     if (!next) {
       setConfirmCode("");
       setRequestedOn("");
@@ -71,18 +73,38 @@ export function AnonymizeSupplier({ id, code, today }: AnonymizeSupplierProps) {
         </DialogHeader>
         <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="anonymize-code">Nhập mã {code} để xác nhận</Label>
+            <Label htmlFor="anonymize-code" required>
+              Nhập mã {code} để xác nhận
+            </Label>
             <Input
               id="anonymize-code"
               value={confirmCode}
-              onChange={(event) => setConfirmCode(event.target.value)}
+              required
+              aria-invalid={codeError ? true : undefined}
+              onChange={(event) => {
+                setConfirmCode(event.target.value);
+                if (codeError && event.target.value.trim() !== "") {
+                  setCodeError(null);
+                }
+              }}
+              onBlur={(event) => {
+                if (event.target.value.trim() === "") {
+                  setCodeError(`Vui lòng nhập mã ${code}`);
+                }
+              }}
               autoComplete="off"
             />
+            {codeError && !action.error && (
+              <p className="text-caption text-destructive">{codeError}</p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="anonymize-date">Ngày nhận yêu cầu</Label>
+            <Label htmlFor="anonymize-date" required>
+              Ngày nhận yêu cầu
+            </Label>
             <DateInput
               id="anonymize-date"
+              required
               value={requestedOn}
               onValueChange={setRequestedOn}
               max={today}

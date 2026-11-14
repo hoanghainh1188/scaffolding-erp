@@ -61,6 +61,7 @@ export function ReceiptForm(props: ReceiptFormProps) {
   const router = useRouter();
   const [requestId, setRequestId] = useState(newRequestId);
   const [amountText, setAmountText] = useState("");
+  const [amountError, setAmountError] = useState<string | null>(null);
   const [date, setDate] = useState(props.today);
   const [method, setMethod] = useState<"TRANSFER" | "CASH">("TRANSFER");
   const [kind, setKind] = useState<ReceiptKind>("PAYMENT");
@@ -175,24 +176,42 @@ export function ReceiptForm(props: ReceiptFormProps) {
       </h2>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="receipt-amount">Số tiền</Label>
+          <Label htmlFor="receipt-amount" required>
+            Số tiền
+          </Label>
           <NumericInput
             id="receipt-amount"
             kind="money"
             className="text-right tabular-nums"
             value={amountText}
-            onChange={(event) => setAmountText(event.target.value)}
+            aria-invalid={Boolean(amountError)}
+            onChange={(event) => {
+              setAmountText(event.target.value);
+              if (amountError && readAmount(event.target.value) !== null) {
+                setAmountError(null);
+              }
+            }}
             onBlur={() => {
-              if (amount !== null)
+              if (amount !== null) {
                 setAmountText(amount.toLocaleString("vi-VN"));
+                setAmountError(null);
+              } else {
+                setAmountError("Số tiền phải lớn hơn 0 ₫.");
+              }
             }}
           />
+          {amountError && error !== amountError ? (
+            <p className="text-caption text-destructive">{amountError}</p>
+          ) : null}
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="receipt-date">Ngày thu</Label>
+          <Label htmlFor="receipt-date" required>
+            Ngày thu
+          </Label>
           <DateInput
             id="receipt-date"
             value={date}
+            required
             onValueChange={setDate}
             max={props.today}
           />
@@ -250,7 +269,9 @@ export function ReceiptForm(props: ReceiptFormProps) {
 
       {kind === "DEPOSIT" ? (
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="receipt-contract">Cọc của hợp đồng</Label>
+          <Label htmlFor="receipt-contract" required>
+            Cọc của hợp đồng
+          </Label>
           <select
             id="receipt-contract"
             value={contractId}

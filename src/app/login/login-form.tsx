@@ -46,7 +46,9 @@ export function LoginForm({ next }: { next: string | null }) {
       {next ? <input type="hidden" name="next" value={next} /> : null}
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="username">{dict.auth.login.usernameLabel}</Label>
+        <Label htmlFor="username" required>
+          {dict.auth.login.usernameLabel}
+        </Label>
         <Input
           id="username"
           name="username"
@@ -63,7 +65,9 @@ export function LoginForm({ next }: { next: string | null }) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="password">{dict.auth.login.passwordLabel}</Label>
+        <Label htmlFor="password" required>
+          {dict.auth.login.passwordLabel}
+        </Label>
         <div className="relative">
           <Input
             id="password"

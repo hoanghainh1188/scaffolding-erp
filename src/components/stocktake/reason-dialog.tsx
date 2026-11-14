@@ -42,6 +42,7 @@ export function ReasonDialog({
 }: ReasonDialogProps) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
+  const [reasonError, setReasonError] = useState<string | null>(null);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -58,15 +59,31 @@ export function ReasonDialog({
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="stocktake-reason">{label}</Label>
+            <Label htmlFor="stocktake-reason" required>
+              {label}
+            </Label>
             <textarea
               id="stocktake-reason"
               value={reason}
-              onChange={(event) => setReason(event.target.value)}
+              aria-invalid={Boolean(reasonError)}
+              onChange={(event) => {
+                setReason(event.target.value);
+                if (reasonError && event.target.value.trim()) {
+                  setReasonError(null);
+                }
+              }}
+              onBlur={() => {
+                if (!reason.trim()) {
+                  setReasonError("Vui lòng nhập lý do.");
+                }
+              }}
               rows={3}
               maxLength={500}
-              className="rounded-md border border-input bg-card px-3 py-2 text-base"
+              className="rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
             />
+            {reasonError && error !== reasonError ? (
+              <p className="text-caption text-destructive">{reasonError}</p>
+            ) : null}
           </div>
           <FormError message={error} />
           <DialogFooter>

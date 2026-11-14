@@ -30,11 +30,13 @@ export function ApprovalBar({
 }: ApprovalBarProps) {
   const router = useRouter();
   const [reason, setReason] = useState("");
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<"approve" | "return" | null>(null);
 
   async function act(kind: "approve" | "return") {
     setError(null);
+    setReasonError(null);
     setPending(kind);
     const result = await callApi(`${path}/${kind}`, {
       method: "POST",
@@ -63,7 +65,7 @@ export function ApprovalBar({
         </p>
       ) : null}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="approval-reason">
+        <Label htmlFor="approval-reason" required={overdue.amount > 0}>
           Lý do
           {overdue.amount > 0
             ? ` vẫn duyệt · bắt buộc vì nhà thầu đang nợ quá hạn ${formatMoney(toMoney(overdue.amount))} (${overdue.days} ngày)`
@@ -73,9 +75,23 @@ export function ApprovalBar({
           id="approval-reason"
           value={reason}
           maxLength={500}
-          onChange={(event) => setReason(event.target.value)}
-          className="min-h-16 rounded-md border border-input bg-card px-3 py-2 text-base"
+          aria-invalid={reasonError ? true : undefined}
+          onChange={(event) => {
+            setReason(event.target.value);
+            if (reasonError && event.target.value.trim() !== "") {
+              setReasonError(null);
+            }
+          }}
+          onBlur={(event) => {
+            if (overdue.amount > 0 && event.target.value.trim() === "") {
+              setReasonError("Vui lòng nhập lý do vẫn duyệt");
+            }
+          }}
+          className="min-h-16 rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
         />
+        {reasonError && !error && (
+          <p className="text-caption text-destructive">{reasonError}</p>
+        )}
       </div>
       <FormError message={error} />
       <div className="flex flex-wrap justify-end gap-2">

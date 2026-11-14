@@ -54,6 +54,7 @@ export function PaymentForm(props: PaymentFormProps) {
   const router = useRouter();
   const [requestId, setRequestId] = useState(newRequestId);
   const [amountText, setAmountText] = useState("");
+  const [amountError, setAmountError] = useState<string | null>(null);
   const [date, setDate] = useState(props.today);
   const [method, setMethod] = useState<"TRANSFER" | "CASH">("TRANSFER");
   const [kind, setKind] = useState<PaymentKind>("PAYMENT");
@@ -152,24 +153,42 @@ export function PaymentForm(props: PaymentFormProps) {
       </h2>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="payment-amount">Số tiền</Label>
+          <Label htmlFor="payment-amount" required>
+            Số tiền
+          </Label>
           <NumericInput
             id="payment-amount"
             kind="money"
             className="text-right tabular-nums"
             value={amountText}
-            onChange={(event) => setAmountText(event.target.value)}
+            aria-invalid={Boolean(amountError)}
+            onChange={(event) => {
+              setAmountText(event.target.value);
+              if (amountError && readAmount(event.target.value) !== null) {
+                setAmountError(null);
+              }
+            }}
             onBlur={() => {
-              if (amount !== null)
+              if (amount !== null) {
                 setAmountText(amount.toLocaleString("vi-VN"));
+                setAmountError(null);
+              } else {
+                setAmountError(PAYABLE_MESSAGES.amount);
+              }
             }}
           />
+          {amountError && error !== amountError ? (
+            <p className="text-caption text-destructive">{amountError}</p>
+          ) : null}
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="payment-date">Ngày chi</Label>
+          <Label htmlFor="payment-date" required>
+            Ngày chi
+          </Label>
           <DateInput
             id="payment-date"
             value={date}
+            required
             onValueChange={setDate}
             max={props.today}
           />

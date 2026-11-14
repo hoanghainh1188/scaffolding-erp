@@ -154,12 +154,13 @@ export function ProductionActions({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="production-note">
+            <Label htmlFor="production-note" required>
               {ask === "return" ? "Ghi chú" : "Lý do"}
             </Label>
             <textarea
               id="production-note"
               value={note}
+              required
               maxLength={500}
               onChange={(event) => setNote(event.target.value)}
               className="min-h-24 rounded-md border bg-card px-3 py-2 text-base"

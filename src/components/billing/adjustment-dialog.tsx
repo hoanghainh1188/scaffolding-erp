@@ -56,7 +56,9 @@ export function AdjustmentDialog(props: AdjustmentDialogProps) {
   const [amount, setAmount] = useState(
     editing ? editing.amount.toLocaleString("vi-VN") : "",
   );
+  const [amountError, setAmountError] = useState<string | null>(null);
   const [reason, setReason] = useState(editing?.reason ?? "");
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -137,7 +139,9 @@ export function AdjustmentDialog(props: AdjustmentDialogProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-1">
-            <Label htmlFor="adjustment-ref">Kỳ được điều chỉnh</Label>
+            <Label htmlFor="adjustment-ref" required>
+              Kỳ được điều chỉnh
+            </Label>
             <select
               id="adjustment-ref"
               value={refMonth}
@@ -152,27 +156,61 @@ export function AdjustmentDialog(props: AdjustmentDialogProps) {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <Label htmlFor="adjustment-amount">Số tiền (₫)</Label>
+            <Label htmlFor="adjustment-amount" required>
+              Số tiền (₫)
+            </Label>
             <NumericInput
               id="adjustment-amount"
               kind="signed-money"
               value={amount}
-              onChange={(event) => setAmount(event.target.value)}
+              aria-invalid={Boolean(amountError)}
+              onChange={(event) => {
+                setAmount(event.target.value);
+                const parsed = readSignedMoney(event.target.value);
+                if (amountError && parsed !== null && parsed !== 0) {
+                  setAmountError(null);
+                }
+              }}
+              onBlur={() => {
+                const parsed = readSignedMoney(amount);
+                if (parsed === null || parsed === 0) {
+                  setAmountError("Vui lòng nhập số tiền khác 0.");
+                }
+              }}
               className="max-w-48 text-right tabular-nums"
               placeholder="93.000 hoặc -50.000"
             />
+            {amountError && error !== amountError ? (
+              <p className="text-caption text-destructive">{amountError}</p>
+            ) : null}
           </div>
           <div className="flex flex-col gap-1">
-            <Label htmlFor="adjustment-reason">Lý do</Label>
+            <Label htmlFor="adjustment-reason" required>
+              Lý do
+            </Label>
             <textarea
               id="adjustment-reason"
               value={reason}
+              aria-invalid={Boolean(reasonError)}
               maxLength={500}
               rows={3}
-              onChange={(event) => setReason(event.target.value)}
-              className="rounded-md border border-input bg-card px-3 py-2 text-base"
+              onChange={(event) => {
+                setReason(event.target.value);
+                if (reasonError && event.target.value.trim()) {
+                  setReasonError(null);
+                }
+              }}
+              onBlur={() => {
+                if (!reason.trim()) {
+                  setReasonError("Vui lòng nhập lý do.");
+                }
+              }}
+              className="rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
               placeholder="VD: Kỳ 01 thiếu 10 CHEO1,7 × 31 ngày (giao 31/12 chưa ghi)"
             />
+            {reasonError && error !== reasonError ? (
+              <p className="text-caption text-destructive">{reasonError}</p>
+            ) : null}
           </div>
           <FormError message={error} />
           <DialogFooter className="gap-2">

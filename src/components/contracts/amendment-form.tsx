@@ -228,11 +228,15 @@ export function AmendmentForm({ detail, options }: AmendmentFormProps) {
           </h2>
           <div className="flex flex-wrap gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="effective-from">Hiệu lực từ ngày</Label>
+              <Label htmlFor="effective-from" required={editable}>
+                Hiệu lực từ ngày
+              </Label>
               <DateInput
                 id="effective-from"
+                required={editable}
                 value={effectiveFrom}
                 disabled={!editable}
+                aria-invalid={errors.effectiveFrom ? true : undefined}
                 onValueChange={setEffectiveFrom}
                 aria-describedby="effective-hint"
               />
