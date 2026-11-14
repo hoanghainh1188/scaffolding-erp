@@ -405,7 +405,7 @@ export function BatchForm({
               update({ overConfirmed: checked === true })
             }
           />
-          <Label htmlFor="over-confirmed" className="font-normal">
+          <Label htmlFor="over-confirmed" required className="font-normal">
             Tôi xác nhận xuất vượt số trên hợp đồng. Giám đốc sẽ thấy việc này
             trong nhật ký.
           </Label>
@@ -421,9 +421,12 @@ export function BatchForm({
       <div className="grid gap-4 sm:grid-cols-2">
         {yards.length > 1 ? (
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="source">Bãi xuất hàng</Label>
+            <Label htmlFor="source" required>
+              Bãi xuất hàng
+            </Label>
             <select
               id="source"
+              required
               className={select}
               value={state.sourceLocationId}
               onChange={(event) =>
@@ -470,10 +473,13 @@ export function BatchForm({
         </div>
         {state.companyTruck ? (
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="freight">Cước chiều đi (₫)</Label>
+            <Label htmlFor="freight" required>
+              Cước chiều đi (₫)
+            </Label>
             <NumericInput
               id="freight"
               kind="money"
+              required
               value={state.freight}
               onChange={(event) => update({ freight: event.target.value })}
               className="text-right tabular-nums"

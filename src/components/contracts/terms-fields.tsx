@@ -68,13 +68,15 @@ export function DateFields({
         <FieldMessage message={errors.signedDate} />
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="start-date">
+        <Label htmlFor="start-date" required={!disabled && !fixedStart}>
           {type === "RENTAL" ? "Thuê từ ngày" : "Ngày giao"}
         </Label>
         <DateInput
           id="start-date"
+          required={!disabled && !fixedStart}
           value={terms.startDate}
           disabled={disabled || fixedStart}
+          aria-invalid={errors.startDate ? true : undefined}
           onValueChange={(value) => onChange({ startDate: value })}
         />
         <FieldMessage message={errors.startDate} />
@@ -108,12 +110,16 @@ export function TermsFields({
       {type === "RENTAL" ? (
         <>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="min-days">Thuê tối thiểu (ngày)</Label>
+            <Label htmlFor="min-days" required={!disabled}>
+              Thuê tối thiểu (ngày)
+            </Label>
             <NumericInput
               id="min-days"
               kind="integer"
+              required={!disabled}
               value={terms.minRentalDays}
               disabled={disabled}
+              aria-invalid={errors.minRentalDays ? true : undefined}
               onChange={(event) =>
                 onChange({ minRentalDays: event.target.value })
               }
@@ -138,12 +144,16 @@ export function TermsFields({
         </>
       ) : null}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="payment-terms">Hạn thanh toán (ngày)</Label>
+        <Label htmlFor="payment-terms" required={!disabled}>
+          Hạn thanh toán (ngày)
+        </Label>
         <NumericInput
           id="payment-terms"
           kind="integer"
+          required={!disabled}
           value={terms.paymentTermsDays}
           disabled={disabled}
+          aria-invalid={errors.paymentTermsDays ? true : undefined}
           onChange={(event) =>
             onChange({ paymentTermsDays: event.target.value })
           }
@@ -172,12 +182,16 @@ export function TermsFields({
         </span>
         {terms.vatEnabled ? (
           <span className="flex items-center gap-2">
-            <Label htmlFor="vat-rate">Thuế suất</Label>
+            <Label htmlFor="vat-rate" required={!disabled}>
+              Thuế suất
+            </Label>
             <NumericInput
               id="vat-rate"
               kind="decimal"
+              required={!disabled}
               value={terms.vatRate}
               disabled={disabled}
+              aria-invalid={errors.vatRate ? true : undefined}
               onChange={(event) => onChange({ vatRate: event.target.value })}
               className="h-9 w-20 text-right tabular-nums"
             />
@@ -203,12 +217,16 @@ export function TermsFields({
         </span>
         {terms.companyTruck ? (
           <span className="flex items-center gap-2">
-            <Label htmlFor="freight">Cước một chiều</Label>
+            <Label htmlFor="freight" required={!disabled}>
+              Cước một chiều
+            </Label>
             <NumericInput
               id="freight"
               kind="money"
+              required={!disabled}
               value={terms.freightPerTrip}
               disabled={disabled}
+              aria-invalid={errors.freightPerTrip ? true : undefined}
               onChange={(event) =>
                 onChange({ freightPerTrip: event.target.value })
               }

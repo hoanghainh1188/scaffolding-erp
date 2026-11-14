@@ -7,6 +7,7 @@ import { useState, type FormEvent } from "react";
 import { FieldMessage } from "@/components/purchasing/field-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DomainValueError } from "@/domain/errors";
 import { parseMoney } from "@/domain/money";
 import { NumericInput } from "@/components/domain/numeric-input";
@@ -60,14 +61,36 @@ export function ScrapPriceForm() {
       aria-label="Giá mới"
     >
       <div className="flex flex-col gap-1">
-        <label htmlFor="scrap-price" className="text-label">
+        <Label htmlFor="scrap-price" required className="text-label">
           Giá mới (₫/kg)
-        </label>
+        </Label>
         <NumericInput
           id="scrap-price"
           kind="money"
+          required
           value={price}
-          onChange={(event) => setPrice(event.target.value)}
+          onChange={(event) => {
+            setPrice(event.target.value);
+            if (errors.pricePerKg && event.target.value.trim() !== "") {
+              setErrors((prev) => {
+                const next = { ...prev };
+                delete next.pricePerKg;
+                return next;
+              });
+            }
+          }}
+          onBlur={() => {
+            try {
+              parseMoney(price);
+            } catch (error: unknown) {
+              if (error instanceof DomainValueError) {
+                setErrors((prev) => ({
+                  ...prev,
+                  pricePerKg: SCRAP_PRICE_MESSAGES.price,
+                }));
+              }
+            }
+          }}
           aria-invalid={errors.pricePerKg ? true : undefined}
           className="max-w-48 text-right tabular-nums"
           placeholder="7500"

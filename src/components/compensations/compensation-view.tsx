@@ -331,7 +331,7 @@ export function CompensationView(props: CompensationViewProps) {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="discount-reason">
+                <Label htmlFor="discount-reason" required={discountValue > 0}>
                   Lý do giảm{" "}
                   <span className="text-muted-foreground">
                     · bắt buộc nếu có giảm
@@ -340,6 +340,7 @@ export function CompensationView(props: CompensationViewProps) {
                 <textarea
                   id="discount-reason"
                   value={discountReason}
+                  required={discountValue > 0}
                   maxLength={500}
                   onChange={(event) => setDiscountReason(event.target.value)}
                   className="min-h-16 rounded-md border border-input bg-card px-3 py-2 text-base"
@@ -427,10 +428,13 @@ export function CompensationView(props: CompensationViewProps) {
               {props.returnCode}. Bạn không mở lại được phiếu này.
             </DialogDescription>
           </DialogHeader>
-          <Label htmlFor="reject-reason">Lý do từ chối</Label>
+          <Label htmlFor="reject-reason" required>
+            Lý do từ chối
+          </Label>
           <textarea
             id="reject-reason"
             value={rejectReason}
+            required
             maxLength={500}
             onChange={(event) => setRejectReason(event.target.value)}
             rows={3}

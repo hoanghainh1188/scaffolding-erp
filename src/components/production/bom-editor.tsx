@@ -313,11 +313,14 @@ function BomForm({
       ) : null}
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="flex w-64 flex-col gap-1.5">
-          <Label htmlFor="bom-labor">Đơn giá công sản xuất / cái</Label>
+          <Label htmlFor="bom-labor" required={canManage}>
+            Đơn giá công sản xuất / cái
+          </Label>
           {canManage ? (
             <NumericInput
               id="bom-labor"
               kind="money"
+              required
               value={labor}
               onChange={(event) => setLabor(event.target.value)}
             />

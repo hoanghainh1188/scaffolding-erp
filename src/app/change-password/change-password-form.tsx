@@ -33,6 +33,7 @@ const FIELDS = [
 
 export function ChangePasswordForm({ doneHref }: ChangePasswordFormProps) {
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -60,7 +61,9 @@ export function ChangePasswordForm({ doneHref }: ChangePasswordFormProps) {
     <form onSubmit={submit} className="flex flex-col gap-5">
       {FIELDS.map((field) => (
         <div key={field.name} className="flex flex-col gap-1.5">
-          <Label htmlFor={field.name}>{field.label}</Label>
+          <Label htmlFor={field.name} required>
+            {field.label}
+          </Label>
           <Input
             id={field.name}
             name={field.name}
@@ -68,10 +71,51 @@ export function ChangePasswordForm({ doneHref }: ChangePasswordFormProps) {
             required
             autoComplete={field.autoComplete}
             className="h-12 rounded-lg"
+            aria-invalid={fieldErrors[field.name] ? true : undefined}
             aria-describedby={
               field.name === "newPassword" ? "password-hint" : undefined
             }
+            onChange={(event) => {
+              if (fieldErrors[field.name] && event.target.value !== "") {
+                setFieldErrors((prev) => {
+                  const next = { ...prev };
+                  delete next[field.name];
+                  return next;
+                });
+              }
+            }}
+            onBlur={(event) => {
+              const val = event.target.value;
+              if (val === "") {
+                setFieldErrors((prev) => ({
+                  ...prev,
+                  [field.name]: `Vui lòng nhập ${field.label.toLowerCase()}`,
+                }));
+              } else if (field.name === "confirmPassword") {
+                const formEl = event.currentTarget.form;
+                const newPwd =
+                  formEl?.elements.namedItem("newPassword") instanceof
+                  HTMLInputElement
+                    ? (
+                        formEl.elements.namedItem(
+                          "newPassword",
+                        ) as HTMLInputElement
+                      ).value
+                    : "";
+                if (newPwd && val !== newPwd) {
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    confirmPassword: "Mật khẩu nhập lại không khớp",
+                  }));
+                }
+              }
+            }}
           />
+          {fieldErrors[field.name] && (
+            <p className="text-caption text-destructive">
+              {fieldErrors[field.name]}
+            </p>
+          )}
           {field.name === "newPassword" ? (
             <p id="password-hint" className="text-sm text-muted-foreground">
               {dict.auth.changePassword.hint}

@@ -57,14 +57,16 @@ export function DepositsEditor({
               {row.kind === "CASH" ? "Cọc tiền" : "Bảo lãnh ngân hàng"}
             </legend>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor={`amount-${row.key}`}>
+              <Label htmlFor={`amount-${row.key}`} required={!disabled}>
                 {row.kind === "CASH" ? "Số tiền" : "Giá trị"}
               </Label>
               <NumericInput
                 id={`amount-${row.key}`}
                 kind="money"
+                required={!disabled}
                 value={row.amount}
                 disabled={disabled}
+                aria-invalid={errors[`${name}.amount`] ? true : undefined}
                 onChange={(event) =>
                   change(row.key, { amount: event.target.value })
                 }
@@ -74,7 +76,9 @@ export function DepositsEditor({
             </div>
             {row.kind === "CASH" ? (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor={`method-${row.key}`}>Hình thức</Label>
+                <Label htmlFor={`method-${row.key}`} required={!disabled}>
+                  Hình thức
+                </Label>
                 <select
                   id={`method-${row.key}`}
                   value={row.method}
@@ -94,10 +98,13 @@ export function DepositsEditor({
             ) : (
               <>
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor={`bank-${row.key}`}>Ngân hàng</Label>
+                  <Label htmlFor={`bank-${row.key}`} required={!disabled}>
+                    Ngân hàng
+                  </Label>
                   <Input
                     id={`bank-${row.key}`}
                     value={row.bankName}
+                    required={!disabled}
                     disabled={disabled}
                     onChange={(event) =>
                       change(row.key, { bankName: event.target.value })
@@ -106,10 +113,13 @@ export function DepositsEditor({
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor={`number-${row.key}`}>Số chứng thư</Label>
+                  <Label htmlFor={`number-${row.key}`} required={!disabled}>
+                    Số chứng thư
+                  </Label>
                   <Input
                     id={`number-${row.key}`}
                     value={row.guaranteeNumber}
+                    required={!disabled}
                     disabled={disabled}
                     onChange={(event) =>
                       change(row.key, { guaranteeNumber: event.target.value })
@@ -118,9 +128,12 @@ export function DepositsEditor({
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor={`expiry-${row.key}`}>Hết hạn</Label>
+                  <Label htmlFor={`expiry-${row.key}`} required={!disabled}>
+                    Hết hạn
+                  </Label>
                   <DateInput
                     id={`expiry-${row.key}`}
+                    required={!disabled}
                     value={row.expiryDate}
                     disabled={disabled}
                     onValueChange={(value) =>

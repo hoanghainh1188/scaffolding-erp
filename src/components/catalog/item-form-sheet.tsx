@@ -156,7 +156,20 @@ export function ItemFormSheet({
       : toQuantity(0, "KG"),
   );
   const [daily, setDaily] = useState(priceText(item?.dailyRentalPrice ?? null));
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const action = useCatalogAction();
+
+  function setFieldError(key: string, message: string | null) {
+    setFieldErrors((prev) => {
+      if (message === null) {
+        if (!prev[key]) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return { ...prev, [key]: message };
+    });
+  }
 
   let monthly = "–";
   try {
@@ -227,31 +240,73 @@ export function ItemFormSheet({
         >
           {editing ? null : (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="item-code">Mã hàng</Label>
+              <Label htmlFor="item-code" required>
+                Mã hàng
+              </Label>
               <Input
                 id="item-code"
                 value={code}
-                onChange={(event) =>
-                  setCode(event.target.value.toLocaleUpperCase("vi"))
-                }
+                aria-invalid={fieldErrors.code ? true : undefined}
+                onChange={(event) => {
+                  const next = event.target.value.toLocaleUpperCase("vi");
+                  setCode(next);
+                  if (fieldErrors.code && next.trim() !== "") {
+                    setFieldError("code", null);
+                  }
+                }}
+                onBlur={() => {
+                  try {
+                    parseItemCode(code);
+                    setFieldError("code", null);
+                  } catch (cause: unknown) {
+                    if (cause instanceof DomainValueError) {
+                      setFieldError("code", cause.message);
+                    }
+                  }
+                }}
                 placeholder="VD: GG-K17, H1,7, NỐI 34"
                 autoCapitalize="characters"
                 spellCheck={false}
                 required
               />
+              {fieldErrors.code && action.error !== fieldErrors.code && (
+                <p className="text-caption text-destructive">
+                  {fieldErrors.code}
+                </p>
+              )}
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="item-name">Tên vật tư</Label>
+            <Label htmlFor="item-name" required>
+              Tên vật tư
+            </Label>
             <Input
               id="item-name"
               name="name"
               defaultValue={item?.name}
               required
+              aria-invalid={fieldErrors.name ? true : undefined}
+              onChange={(event) => {
+                if (fieldErrors.name && event.target.value.trim() !== "") {
+                  setFieldError("name", null);
+                }
+              }}
+              onBlur={(event) => {
+                if (event.target.value.trim() === "") {
+                  setFieldError("name", "Vui lòng nhập tên vật tư");
+                }
+              }}
             />
+            {fieldErrors.name && action.error !== fieldErrors.name && (
+              <p className="text-caption text-destructive">
+                {fieldErrors.name}
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="item-group">Nhóm</Label>
+            <Label htmlFor="item-group" required>
+              Nhóm
+            </Label>
             <select
               id="item-group"
               name="groupId"
@@ -268,7 +323,9 @@ export function ItemFormSheet({
           <OldCodesField codes={aliases} onChange={setAliases} />
           {editing ? null : (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="item-unit">{text.units.legend}</Label>
+              <Label htmlFor="item-unit" required>
+                {text.units.legend}
+              </Label>
               <select
                 id="item-unit"
                 value={unit}
@@ -296,14 +353,30 @@ export function ItemFormSheet({
           )}
           {weighted ? (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="item-weight">
+              <Label htmlFor="item-weight" required>
                 {text.units.weightLabel(unitLabel)}
               </Label>
               <QuantityInput
                 id="item-weight"
                 value={weight}
-                onValueChange={setWeight}
+                aria-invalid={fieldErrors.weight ? true : undefined}
+                onValueChange={(next) => {
+                  setWeight(next);
+                  if (next.milli > 0) setFieldError("weight", null);
+                }}
+                onBlur={() => {
+                  if (weight.milli <= 0) {
+                    setFieldError("weight", WEIGHT_MESSAGES.noWeight);
+                  } else {
+                    setFieldError("weight", null);
+                  }
+                }}
               />
+              {fieldErrors.weight && action.error !== fieldErrors.weight && (
+                <p className="text-caption text-destructive">
+                  {fieldErrors.weight}
+                </p>
+              )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">{text.units.kgNote}</p>

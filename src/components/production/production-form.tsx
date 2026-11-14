@@ -218,7 +218,9 @@ export function ProductionForm({
       <ProductionTabs active="orders" />
       <section className="grid gap-4 rounded-lg border bg-card p-5 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="production-workshop">Xưởng</Label>
+          <Label htmlFor="production-workshop" required>
+            Xưởng
+          </Label>
           <select
             id="production-workshop"
             className={SELECT}
@@ -233,7 +235,9 @@ export function ProductionForm({
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="production-yard">Bãi nhận thành phẩm</Label>
+          <Label htmlFor="production-yard" required>
+            Bãi nhận thành phẩm
+          </Label>
           <select
             id="production-yard"
             className={SELECT}
@@ -280,7 +284,9 @@ export function ProductionForm({
           <div key={line.key} className="flex flex-col gap-2 border-b pb-4">
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex min-w-64 flex-1 flex-col gap-1.5">
-                <Label htmlFor={`production-item-${line.key}`}>Mã hàng</Label>
+                <Label htmlFor={`production-item-${line.key}`} required>
+                  Mã hàng
+                </Label>
                 <select
                   id={`production-item-${line.key}`}
                   className={SELECT}
@@ -297,12 +303,13 @@ export function ProductionForm({
                 </select>
               </div>
               <div className="flex w-36 flex-col gap-1.5">
-                <Label htmlFor={`production-planned-${line.key}`}>
+                <Label htmlFor={`production-planned-${line.key}`} required>
                   Số kế hoạch
                 </Label>
                 <NumericInput
                   id={`production-planned-${line.key}`}
                   kind="count"
+                  required
                   value={line.planned}
                   onChange={(event) =>
                     update(line.key, { planned: event.target.value })

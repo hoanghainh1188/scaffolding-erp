@@ -40,6 +40,7 @@ export function AdjustmentActions({
   const action = useCatalogAction();
   const [returnOpen, setReturnOpen] = useState(false);
   const [why, setWhy] = useState("");
+  const [whyError, setWhyError] = useState<string | null>(null);
   const base = `/api/inventory/adjustments/${id}`;
 
   async function giveBack(event: FormEvent) {
@@ -100,17 +101,33 @@ export function AdjustmentActions({
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="return-reason">
+                    <Label htmlFor="return-reason" required>
                       {dict.inventory.adjustments.returnReasonLabel}
                     </Label>
                     <textarea
                       id="return-reason"
                       value={why}
-                      onChange={(event) => setWhy(event.target.value)}
+                      aria-invalid={Boolean(whyError)}
+                      onChange={(event) => {
+                        setWhy(event.target.value);
+                        if (whyError && event.target.value.trim()) {
+                          setWhyError(null);
+                        }
+                      }}
+                      onBlur={() => {
+                        if (!why.trim()) {
+                          setWhyError("Vui lòng nhập lý do.");
+                        }
+                      }}
                       rows={3}
                       maxLength={500}
-                      className="rounded-md border border-input bg-card px-3 py-2 text-base"
+                      className="rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
                     />
+                    {whyError && action.error !== whyError ? (
+                      <p className="text-caption text-destructive">
+                        {whyError}
+                      </p>
+                    ) : null}
                   </div>
                   <FormError message={action.error} />
                   <DialogFooter>

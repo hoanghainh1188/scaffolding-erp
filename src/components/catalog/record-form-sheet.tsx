@@ -110,6 +110,7 @@ export function RecordFormSheet({
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState<LoadedValues | null>(null);
   const [typed, setTyped] = useState<Record<string, unknown> | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const action = useCatalogAction();
   const current: Record<string, unknown> = loaded ?? values;
   const waiting = loadValues !== undefined && loaded === null;
@@ -125,6 +126,7 @@ export function RecordFormSheet({
     setOpen(next);
     action.setError(null);
     setTyped(null);
+    setFieldErrors({});
     if (!next) {
       setLoaded(null);
       return;
@@ -177,13 +179,47 @@ export function RecordFormSheet({
             {fields.map((field) => {
               const id = `field-${field.name}`;
               const value = current[field.name];
+              const isRequired = Boolean(
+                (field.required || field.requiredMessage) && !field.readOnly,
+              );
+              const fieldError = fieldErrors[field.name];
+              const handleBlur = (
+                event: React.FocusEvent<
+                  HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+                >,
+              ) => {
+                if (isRequired && event.target.value.trim() === "") {
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    [field.name]:
+                      field.requiredMessage ??
+                      `Vui lòng nhập ${field.label.toLowerCase()}`,
+                  }));
+                }
+              };
+              const handleInput = (
+                event: React.FormEvent<
+                  HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+                >,
+              ) => {
+                if (fieldError && event.currentTarget.value.trim() !== "") {
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next[field.name];
+                    return next;
+                  });
+                }
+              };
               const common = {
                 id,
                 name: field.name,
                 defaultValue:
                   value === null || value === undefined ? "" : String(value),
                 disabled: field.readOnly,
+                "aria-invalid": fieldError ? (true as const) : undefined,
                 "aria-describedby": field.hint ? `${id}-hint` : undefined,
+                onBlur: handleBlur,
+                onInput: handleInput,
               };
               if (field.kind === "checkbox") {
                 return (
@@ -194,19 +230,23 @@ export function RecordFormSheet({
                       defaultChecked={value === true}
                       disabled={field.readOnly}
                     />
-                    <Label htmlFor={id}>{field.label}</Label>
+                    <Label htmlFor={id} required={isRequired}>
+                      {field.label}
+                    </Label>
                   </div>
                 );
               }
               return (
                 <div key={field.name} className="flex flex-col gap-1.5">
-                  <Label htmlFor={id}>{field.label}</Label>
+                  <Label htmlFor={id} required={isRequired}>
+                    {field.label}
+                  </Label>
                   {field.kind === "search-select" ? (
                     <SearchSelect field={field} common={common} />
                   ) : field.kind === "select" ? (
                     <select
                       {...common}
-                      className="h-11 rounded-md border border-input bg-card px-3 text-base"
+                      className="h-11 rounded-md border border-input bg-card px-3 text-base aria-invalid:border-destructive"
                     >
                       {field.placeholder !== undefined ? (
                         <option value="">{field.placeholder}</option>
@@ -221,23 +261,28 @@ export function RecordFormSheet({
                     <textarea
                       {...common}
                       rows={3}
-                      className="rounded-md border border-input bg-card px-3 py-2 text-base"
+                      className="rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
                     />
                   ) : field.kind === "number" ||
                     field.inputMode === "numeric" ? (
                     <NumericInput
                       {...common}
                       kind="integer"
-                      required={field.required}
+                      required={isRequired}
                     />
                   ) : (
                     <Input
                       {...common}
                       type={field.kind === "tel" ? "tel" : "text"}
                       inputMode={field.inputMode}
-                      required={field.required}
+                      required={isRequired}
                     />
                   )}
+                  {fieldError && action.error !== fieldError ? (
+                    <p className="text-caption text-destructive">
+                      {fieldError}
+                    </p>
+                  ) : null}
                   {field.hint ? (
                     <span
                       id={`${id}-hint`}
@@ -281,7 +326,10 @@ interface SearchSelectProps {
     name: string;
     defaultValue: string;
     disabled?: boolean;
+    "aria-invalid"?: true;
     "aria-describedby"?: string;
+    onBlur?: React.FocusEventHandler<HTMLSelectElement>;
+    onInput?: React.FormEventHandler<HTMLSelectElement>;
   };
 }
 
@@ -310,10 +358,15 @@ function SearchSelect({ field, common }: SearchSelectProps) {
         id={common.id}
         name={common.name}
         value={value}
-        onChange={(event) => setValue(event.target.value)}
+        onChange={(event) => {
+          setValue(event.target.value);
+          common.onInput?.(event);
+        }}
+        onBlur={common.onBlur}
         disabled={common.disabled}
+        aria-invalid={common["aria-invalid"]}
         aria-describedby={common["aria-describedby"]}
-        className="h-11 rounded-md border border-input bg-card px-3 text-base"
+        className="h-11 rounded-md border border-input bg-card px-3 text-base aria-invalid:border-destructive"
       >
         <option value="">{field.placeholder ?? ""}</option>
         {options.map((option) => (

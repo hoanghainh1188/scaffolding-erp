@@ -247,7 +247,7 @@ export function RentalLines({
               </th>
               <th
                 scope="col"
-                className="border-b px-3 py-2.5 text-right font-semibold"
+                className="border-b px-3 py-2.5 text-right font-semibold after:ml-0.5 after:text-destructive after:content-['*']"
               >
                 Giá thuê / ngày
               </th>

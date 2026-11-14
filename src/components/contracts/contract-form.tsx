@@ -377,13 +377,34 @@ export function ContractForm({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="customer">Nhà thầu</Label>
+              <Label htmlFor="customer" required={!draft}>
+                Nhà thầu
+              </Label>
               <select
                 id="customer"
                 value={customerId}
                 disabled={Boolean(draft)}
-                onChange={(event) => pickCustomer(event.target.value)}
-                className="h-11 rounded-md border border-input bg-card px-3 text-base"
+                aria-invalid={errors.customerId ? true : undefined}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  pickCustomer(next);
+                  if (errors.customerId && next !== "") {
+                    setErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.customerId;
+                      return copy;
+                    });
+                  }
+                }}
+                onBlur={(event) => {
+                  if (!draft && event.target.value === "") {
+                    setErrors((prev) => ({
+                      ...prev,
+                      customerId: "Vui lòng chọn nhà thầu",
+                    }));
+                  }
+                }}
+                className="h-11 rounded-md border border-input bg-card px-3 text-base aria-invalid:border-destructive"
               >
                 <option value="">Chọn nhà thầu</option>
                 {options.customers.map((entry) => (
@@ -401,12 +422,33 @@ export function ContractForm({
               <FieldMessage message={errors.customerId} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="site">Công trình</Label>
+              <Label htmlFor="site" required={type === "RENTAL"}>
+                Công trình
+              </Label>
               <select
                 id="site"
                 value={siteId}
-                onChange={(event) => setSiteId(event.target.value)}
-                className="h-11 rounded-md border border-input bg-card px-3 text-base"
+                aria-invalid={errors.siteId ? true : undefined}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setSiteId(next);
+                  if (errors.siteId && next !== "") {
+                    setErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.siteId;
+                      return copy;
+                    });
+                  }
+                }}
+                onBlur={(event) => {
+                  if (type === "RENTAL" && event.target.value === "") {
+                    setErrors((prev) => ({
+                      ...prev,
+                      siteId: "Vui lòng chọn công trình",
+                    }));
+                  }
+                }}
+                className="h-11 rounded-md border border-input bg-card px-3 text-base aria-invalid:border-destructive"
               >
                 <option value="">
                   {type === "SALE" ? "Nhận hàng tại bãi" : "Chọn công trình"}

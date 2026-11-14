@@ -231,10 +231,13 @@ export function BuyBackForm({
             số đang ở công trình.
           </p>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="buy-back-reason">Lý do</Label>
+            <Label htmlFor="buy-back-reason" required>
+              Lý do
+            </Label>
             <textarea
               id="buy-back-reason"
               value={reason}
+              required
               maxLength={500}
               onChange={(event) => setReason(event.target.value)}
               className="min-h-16 rounded-md border border-input bg-card px-3 py-2 text-base"

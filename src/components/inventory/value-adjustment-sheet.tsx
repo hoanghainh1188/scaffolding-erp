@@ -143,6 +143,7 @@ export function ValueAdjustmentSheet({
   const action = useCatalogAction();
   const [open, setOpen] = useState(defaultOpen);
   const [reason, setReason] = useState(adjustment?.reason ?? "");
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const [related, setRelated] = useState(adjustment?.relatedDocumentCode ?? "");
   const [lines, setLines] = useState<DraftLine[]>(() =>
     adjustment ? fromDetail(adjustment) : [emptyLine(items)],
@@ -223,16 +224,32 @@ export function ValueAdjustmentSheet({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="value-reason">Lý do</Label>
+            <Label htmlFor="value-reason" required>
+              Lý do
+            </Label>
             <textarea
               id="value-reason"
               value={reason}
-              onChange={(event) => setReason(event.target.value)}
+              aria-invalid={Boolean(reasonError)}
+              onChange={(event) => {
+                setReason(event.target.value);
+                if (reasonError && event.target.value.trim()) {
+                  setReasonError(null);
+                }
+              }}
+              onBlur={() => {
+                if (!reason.trim()) {
+                  setReasonError("Vui lòng nhập lý do.");
+                }
+              }}
               maxLength={500}
               rows={3}
-              className="rounded-md border border-input bg-card px-3 py-2 text-base"
+              className="rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
               placeholder="VD: Phiếu nhập ghi nhầm đơn giá khung"
             />
+            {reasonError && action.error !== reasonError ? (
+              <p className="text-caption text-destructive">{reasonError}</p>
+            ) : null}
           </div>
           <fieldset className="flex flex-col gap-3">
             <legend className="mb-1 text-label">Các dòng</legend>
@@ -246,7 +263,9 @@ export function ValueAdjustmentSheet({
                   className="grid grid-cols-1 gap-3 rounded-md border p-3 sm:grid-cols-2"
                 >
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor={id("item")}>Vật tư</Label>
+                    <Label htmlFor={id("item")} required>
+                      Vật tư
+                    </Label>
                     <select
                       id={id("item")}
                       value={line.itemId}
@@ -298,7 +317,9 @@ export function ValueAdjustmentSheet({
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor={id("amount")}>Chênh lệch (₫)</Label>
+                    <Label htmlFor={id("amount")} required>
+                      Chênh lệch (₫)
+                    </Label>
                     <NumericInput
                       id={id("amount")}
                       kind="money"

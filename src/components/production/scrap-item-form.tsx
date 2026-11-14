@@ -55,9 +55,12 @@ export function ScrapItemForm({ current, choices }: ScrapItemFormProps) {
         kg, nhóm Vật tư. Đổi mã không đổi lệnh đã ghi sổ.
       </p>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="scrap-item">Chọn mã</Label>
+        <Label htmlFor="scrap-item" required>
+          Chọn mã
+        </Label>
         <select
           id="scrap-item"
+          required
           className="h-11 rounded-md border bg-card px-3 text-base"
           value={itemId}
           onChange={(event) => setItemId(event.target.value)}

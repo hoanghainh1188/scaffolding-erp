@@ -47,6 +47,7 @@ export function KitEditorDialog({ parts, kit, trigger }: KitEditorDialogProps) {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState(kit?.code ?? "");
   const [name, setName] = useState(kit?.name ?? "");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [lines, setLines] = useState<Line[]>(
     kit?.components.map(({ itemId, quantity }) => ({ itemId, quantity })) ?? [
       { itemId: parts[0]?.id ?? "", quantity: 1 },
@@ -115,25 +116,89 @@ export function KitEditorDialog({ parts, kit, trigger }: KitEditorDialogProps) {
         <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
           {editing ? null : (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="kit-code">Mã bộ</Label>
+              <Label htmlFor="kit-code" required>
+                Mã bộ
+              </Label>
               <Input
                 id="kit-code"
                 value={code}
-                onChange={(event) => setCode(event.target.value.toUpperCase())}
+                required
+                aria-invalid={fieldErrors.code ? true : undefined}
+                onChange={(event) => {
+                  const next = event.target.value.toUpperCase();
+                  setCode(next);
+                  if (fieldErrors.code && next.trim() !== "") {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.code;
+                      return copy;
+                    });
+                  }
+                }}
+                onBlur={() => {
+                  try {
+                    parseItemCode(code);
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.code;
+                      return copy;
+                    });
+                  } catch (cause: unknown) {
+                    if (cause instanceof DomainValueError) {
+                      setFieldErrors((prev) => ({
+                        ...prev,
+                        code: cause.message,
+                      }));
+                    }
+                  }
+                }}
                 placeholder="VD: BO-17"
               />
+              {fieldErrors.code && action.error !== fieldErrors.code && (
+                <p className="text-caption text-destructive">
+                  {fieldErrors.code}
+                </p>
+              )}
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="kit-name">Tên bộ</Label>
+            <Label htmlFor="kit-name" required>
+              Tên bộ
+            </Label>
             <Input
               id="kit-name"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              required
+              aria-invalid={fieldErrors.name ? true : undefined}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (fieldErrors.name && event.target.value.trim() !== "") {
+                  setFieldErrors((prev) => {
+                    const copy = { ...prev };
+                    delete copy.name;
+                    return copy;
+                  });
+                }
+              }}
+              onBlur={(event) => {
+                if (event.target.value.trim() === "") {
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    name: "Vui lòng nhập tên bộ",
+                  }));
+                }
+              }}
             />
+            {fieldErrors.name && action.error !== fieldErrors.name && (
+              <p className="text-caption text-destructive">
+                {fieldErrors.name}
+              </p>
+            )}
           </div>
           <fieldset className="flex flex-col gap-3">
-            <legend className="mb-1 text-label">Linh kiện</legend>
+            <legend className="mb-1 text-label after:ml-0.5 after:text-destructive after:content-['*']">
+              Linh kiện
+            </legend>
             {lines.map((line, index) => (
               <div key={index} className="flex flex-wrap items-center gap-2">
                 <select

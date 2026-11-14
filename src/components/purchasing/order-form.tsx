@@ -308,13 +308,34 @@ export function OrderForm({ suppliers, items, order }: OrderFormProps) {
           ) : null}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="order-supplier">Nhà cung cấp / cai thầu</Label>
+              <Label htmlFor="order-supplier" required>
+                Nhà cung cấp / cai thầu
+              </Label>
               <select
                 id="order-supplier"
                 value={supplierId}
                 disabled={locked}
-                onChange={(event) => setSupplierId(event.target.value)}
-                className="h-11 w-full rounded-md border border-input bg-card px-3 text-base"
+                aria-invalid={errors.supplierId ? true : undefined}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setSupplierId(next);
+                  if (errors.supplierId && next !== "") {
+                    setErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.supplierId;
+                      return copy;
+                    });
+                  }
+                }}
+                onBlur={(event) => {
+                  if (event.target.value === "") {
+                    setErrors((prev) => ({
+                      ...prev,
+                      supplierId: "Vui lòng chọn nhà cung cấp",
+                    }));
+                  }
+                }}
+                className="h-11 w-full rounded-md border border-input bg-card px-3 text-base aria-invalid:border-destructive"
               >
                 <option value="">Chọn nhà cung cấp</option>
                 {suppliers.map((supplier) => (
@@ -326,7 +347,10 @@ export function OrderForm({ suppliers, items, order }: OrderFormProps) {
               <FieldMessage message={errors.supplierId} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <span id="order-kind" className="text-label">
+              <span
+                id="order-kind"
+                className="text-label after:ml-0.5 after:text-destructive after:content-['*']"
+              >
                 Loại hàng
               </span>
               <div

@@ -42,6 +42,7 @@ export function QuantityInput({
   onFocus,
   onBlur,
   onKeyDown,
+  "aria-invalid": ariaInvalidProp,
   ...props
 }: QuantityInputProps) {
   const [draft, setDraft] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export function QuantityInput({
         inputMode={isCountUnit(value.unit) ? "numeric" : "decimal"}
         autoComplete="off"
         value={draft ?? formatQuantity(value)}
-        aria-invalid={error ? true : undefined}
+        aria-invalid={error || ariaInvalidProp ? true : undefined}
         aria-describedby={error ? messageId : undefined}
         className={cn(
           "h-11 w-full min-w-0 rounded-md border border-input bg-card px-3 text-body tabular-nums transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring aria-invalid:border-destructive",
@@ -77,14 +78,16 @@ export function QuantityInput({
           setDraft(formatQuantityForInput(value));
           onFocus?.(event);
         }}
-        onChange={(event) =>
-          setDraft(
-            cleanNumericField(
-              event.currentTarget,
-              isCountUnit(value.unit) ? "count" : "decimal",
-            ),
-          )
-        }
+        onChange={(event) => {
+          const cleaned = cleanNumericField(
+            event.currentTarget,
+            isCountUnit(value.unit) ? "count" : "decimal",
+          );
+          setDraft(cleaned);
+          if (error && cleaned.trim() !== "") {
+            setError(null);
+          }
+        }}
         onBlur={(event) => {
           if (draft !== null) commit(draft);
           setDraft(null);

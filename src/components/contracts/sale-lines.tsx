@@ -41,7 +41,10 @@ export function SaleLines({
         <table className="w-full border-collapse text-sm">
           <thead className="bg-muted text-left">
             <tr>
-              <th scope="col" className="border-b px-3 py-2.5 font-semibold">
+              <th
+                scope="col"
+                className="border-b px-3 py-2.5 font-semibold after:ml-0.5 after:text-destructive after:content-['*']"
+              >
                 Hàng
               </th>
               <th scope="col" className="border-b px-3 py-2.5 font-semibold">
@@ -52,13 +55,13 @@ export function SaleLines({
               </th>
               <th
                 scope="col"
-                className="border-b px-3 py-2.5 text-right font-semibold"
+                className="border-b px-3 py-2.5 text-right font-semibold after:ml-0.5 after:text-destructive after:content-['*']"
               >
                 Số lượng
               </th>
               <th
                 scope="col"
-                className="border-b px-3 py-2.5 text-right font-semibold"
+                className="border-b px-3 py-2.5 text-right font-semibold after:ml-0.5 after:text-destructive after:content-['*']"
               >
                 Đơn giá
               </th>
@@ -82,10 +85,11 @@ export function SaleLines({
                       id={`sale-item-${row.key}`}
                       value={row.itemId}
                       disabled={disabled}
+                      aria-invalid={errors[`${name}.itemId`] ? true : undefined}
                       onChange={(event) =>
                         change(row.key, { itemId: event.target.value })
                       }
-                      className="h-9 min-w-48 rounded-md border border-input bg-card px-2"
+                      className="h-9 min-w-48 rounded-md border border-input bg-card px-2 aria-invalid:border-destructive"
                     >
                       <option value="">Chọn mã hàng</option>
                       {items.map((entry) => (
@@ -155,6 +159,9 @@ export function SaleLines({
                       kind="decimal"
                       value={row.quantity}
                       disabled={disabled}
+                      aria-invalid={
+                        errors[`${name}.quantity`] ? true : undefined
+                      }
                       onChange={(event) =>
                         change(row.key, { quantity: event.target.value })
                       }
@@ -174,6 +181,7 @@ export function SaleLines({
                       kind="money"
                       value={row.price}
                       disabled={disabled}
+                      aria-invalid={errors[`${name}.price`] ? true : undefined}
                       onChange={(event) =>
                         change(row.key, { price: event.target.value })
                       }

@@ -58,6 +58,7 @@ export function NoteActions({ id, code, status, canManage }: NoteActionsProps) {
   const router = useRouter();
   const [command, setCommand] = useState<Command | null>(null);
   const [reason, setReason] = useState("");
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -65,6 +66,7 @@ export function NoteActions({ id, code, status, canManage }: NoteActionsProps) {
     if (!command) return;
     setBusy(true);
     setError(null);
+    setReasonError(null);
     const result = await callApi(`/api/deliveries/${id}/${command}`, {
       method: "POST",
       body: { reason },
@@ -111,14 +113,33 @@ export function NoteActions({ id, code, status, canManage }: NoteActionsProps) {
                 <DialogTitle>{TEXTS[command].title(code)}</DialogTitle>
                 <DialogDescription>{TEXTS[command].hint}</DialogDescription>
               </DialogHeader>
-              <Label htmlFor="note-reason">{TEXTS[command].label}</Label>
+              <Label htmlFor="note-reason" required>
+                {TEXTS[command].label}
+              </Label>
               <textarea
                 id="note-reason"
                 value={reason}
-                onChange={(event) => setReason(event.target.value)}
+                required
+                aria-invalid={reasonError ? true : undefined}
+                onChange={(event) => {
+                  setReason(event.target.value);
+                  if (reasonError && event.target.value.trim() !== "") {
+                    setReasonError(null);
+                  }
+                }}
+                onBlur={(event) => {
+                  if (event.target.value.trim() === "") {
+                    setReasonError(
+                      `Vui lòng nhập ${TEXTS[command].label.toLowerCase()}`,
+                    );
+                  }
+                }}
                 rows={3}
-                className="rounded-md border border-input bg-card px-3 py-2 text-base"
+                className="rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
               />
+              {reasonError && !error && (
+                <p className="text-caption text-destructive">{reasonError}</p>
+              )}
               <FormError message={error} />
               <DialogFooter>
                 <Button

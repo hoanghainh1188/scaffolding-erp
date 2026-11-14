@@ -291,10 +291,13 @@ export function BuyBackView({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="buy-back-reject-reason">Lý do từ chối</Label>
+            <Label htmlFor="buy-back-reject-reason" required>
+              Lý do từ chối
+            </Label>
             <textarea
               id="buy-back-reject-reason"
               value={rejectReason}
+              required
               maxLength={500}
               onChange={(event) => setRejectReason(event.target.value)}
               className="min-h-16 rounded-md border border-input bg-card px-3 py-2 text-base"

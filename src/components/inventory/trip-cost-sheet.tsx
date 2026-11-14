@@ -58,6 +58,7 @@ export function TripCostSheet({
       : String(adjustment.correctedTripCost),
   );
   const [reason, setReason] = useState(adjustment?.reason ?? "");
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const chosen = receipts.find((receipt) => receipt.id === receiptId);
   const recorded = adjustment
     ? adjustment.recordedTripCost
@@ -114,7 +115,9 @@ export function TripCostSheet({
           noValidate
         >
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="trip-receipt">Phiếu nhập</Label>
+            <Label htmlFor="trip-receipt" required>
+              Phiếu nhập
+            </Label>
             {adjustment ? (
               <p id="trip-receipt" className="font-semibold">
                 {adjustment.sourceReceiptCode}
@@ -146,7 +149,9 @@ export function TripCostSheet({
             </span>
           </p>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="trip-cost">Chi phí chuyến đúng (₫)</Label>
+            <Label htmlFor="trip-cost" required>
+              Chi phí chuyến đúng (₫)
+            </Label>
             <NumericInput
               id="trip-cost"
               kind="money"
@@ -156,16 +161,32 @@ export function TripCostSheet({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="trip-reason">Lý do</Label>
+            <Label htmlFor="trip-reason" required>
+              Lý do
+            </Label>
             <textarea
               id="trip-reason"
               value={reason}
-              onChange={(event) => setReason(event.target.value)}
+              aria-invalid={Boolean(reasonError)}
+              onChange={(event) => {
+                setReason(event.target.value);
+                if (reasonError && event.target.value.trim()) {
+                  setReasonError(null);
+                }
+              }}
+              onBlur={() => {
+                if (!reason.trim()) {
+                  setReasonError("Vui lòng nhập lý do.");
+                }
+              }}
               maxLength={500}
               rows={3}
-              className="rounded-md border border-input bg-card px-3 py-2 text-base"
+              className="rounded-md border border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
               placeholder="VD: Cước xe 3.500.000 ₫ nhập nhầm thành 35.000.000 ₫"
             />
+            {reasonError && action.error !== reasonError ? (
+              <p className="text-caption text-destructive">{reasonError}</p>
+            ) : null}
           </div>
           <FormError message={action.error} />
           <Button

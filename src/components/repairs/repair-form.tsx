@@ -377,12 +377,16 @@ export function RepairForm({
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="repair-date">Ngày sửa xong</Label>
+              <Label htmlFor="repair-date" required>
+                Ngày sửa xong
+              </Label>
               <DateInput
                 id="repair-date"
+                required
                 data-mask
                 max={today}
                 value={repairDate}
+                aria-invalid={errors.repairDate ? true : undefined}
                 onValueChange={setRepairDate}
               />
               <p className="text-caption text-muted-foreground">
@@ -413,7 +417,9 @@ export function RepairForm({
               ] as const
             ).map(([id, label, value, field]) => (
               <div key={id} className="flex flex-col gap-1.5">
-                <Label htmlFor={id}>{label}</Label>
+                <Label htmlFor={id} required>
+                  {label}
+                </Label>
                 <select
                   id={id}
                   value={value}

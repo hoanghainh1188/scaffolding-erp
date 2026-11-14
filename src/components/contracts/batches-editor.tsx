@@ -50,11 +50,17 @@ export function BatchesEditor({
                 {index + 1}
               </span>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor={`batch-date-${row.key}`}>Ngày giao</Label>
+                <Label htmlFor={`batch-date-${row.key}`} required={!disabled}>
+                  Ngày giao
+                </Label>
                 <DateInput
                   id={`batch-date-${row.key}`}
+                  required={!disabled}
                   value={row.plannedDate}
                   disabled={disabled}
+                  aria-invalid={
+                    errors[`batches.${index}.plannedDate`] ? true : undefined
+                  }
                   onValueChange={(value) =>
                     change(row.key, { plannedDate: value })
                   }
