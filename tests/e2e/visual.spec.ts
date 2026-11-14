@@ -248,6 +248,9 @@ test.describe("contract baselines @visual", () => {
         await page.addStyleTag({
           content: "nextjs-portal { display: none !important; }",
         });
+        // D5 "Lịch sử" holds the clock of this run: "11:11" fits one line
+        // where "10:53" wraps, so the masked box changed height.
+        await zeroMaskedDigits(page);
         await page.evaluate(() => document.fonts.ready);
         await expect(page).toHaveScreenshot(`${name}-${width}.png`, {
           fullPage: true,
