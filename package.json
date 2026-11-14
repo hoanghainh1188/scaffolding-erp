@@ -82,6 +82,11 @@
     "typescript": "5.9.3",
     "vitest": "5.1.0"
   },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.25.12"
+    }
+  },
   "engines": {
     "node": ">=24"
   }
