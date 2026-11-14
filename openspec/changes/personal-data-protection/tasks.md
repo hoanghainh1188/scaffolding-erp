@@ -131,7 +131,7 @@ Ghi chú: mục 1–11 là **PR code bước 1**. Mục 12 là **PR riêng bư�
 
 ## 12. Bước 2: bỏ cột cũ (PR riêng, deploy sau)
 
-- [ ] 12.1 Điều kiện: bước 1 đã deploy; `pii:backfill --check` = 0 ở mọi môi trường có dữ liệu.
+- [x] 12.1 Điều kiện: bước 1 đã deploy; `pii:backfill --check` = 0 ở mọi môi trường có dữ liệu. Dev và test đã kiểm = 0; production chưa có dữ liệu ở cột cũ nên bỏ qua `backfill-check` (người dùng xác nhận 14/11/2026). Migration `0030` vẫn tự dừng nếu còn dữ liệu.
 - [x] 12.2 Migration viết tay: dừng nếu `id_number` hoặc `bank_account` còn dữ liệu, rồi `DROP COLUMN` và CHECK `supplier_id_number_check`. Integration test bằng owner: còn dữ liệu thì dừng; cột đã mất.
   - Snapshot drizzle đã bỏ hai cột nên `db:generate` **không** sinh `DROP`: viết tay `DROP COLUMN`.
   - Xóa luôn `hasLegacyPii` (`backfill.ts`) và lời gọi trong `anonymize.ts` (review PR #176 mục 6).
