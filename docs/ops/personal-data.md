@@ -6,7 +6,7 @@ Quyết định gốc: `docs/requirements.md` 0.2 #156–#167. Thiết kế: cha
 
 - Biến `PII_ENCRYPTION_KEYS`, dạng `2:<base64>,1:<base64>`. Khóa đầu mã hóa, mọi khóa giải mã. Sinh khóa: `openssl rand -base64 32`.
 - Mỗi công ty (mỗi DB, mỗi bản deploy) một khóa riêng.
-- Đặt ở: Vercel Production và secret `PROD_PII_ENCRYPTION_KEYS` của environment `production`. Không tải về máy cá nhân.
+- Đặt ở: Vercel Production và secret `PROD_PII_ENCRYPTION_KEYS` của environment `production-pii` (chủ repo duyệt từng lần chạy, chỉ từ `main`; environment `production` không giữ khóa này). Không tải về máy cá nhân.
 - **Cất một bản trong kho mật khẩu của công ty, tách khỏi nơi cất bản sao lưu** và tách khỏi `BACKUP_ENCRYPTION_KEY`. Hai người giữ: chủ repo và Giám đốc.
 - **Mất khóa là mất hết CCCD và hồ sơ thuế**, không khôi phục được.
 - Sau khi đặt khóa mới, kiểm tra trên staging: lưu một CCCD số bắt đầu `000`, mở lại form sửa, thấy đúng số.
