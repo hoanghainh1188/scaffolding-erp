@@ -85,7 +85,7 @@ Ghi chú: mục 1–11 là **PR code bước 1**. Mục 12 là **PR riêng bư�
   - tài khoản `123` bị bỏ, in số dòng, không in số;
   - `--check` thoát 1 khi còn.
 - [x] 6.2 `src/lib/privacy/rotate.ts` và `npm run pii:rotate [--batch] [--check]`, phủ `id_number_enc` và `tax_identity_enc`. Integration test: 250 dòng hai khóa; gói hồ sơ thuế được đổi khóa, nội dung không đổi; dừng giữa chừng rồi chạy lại; chạy lại khi đã xong đổi 0 dòng; `updated_at` không đổi; không in số gốc (bắt stdout).
-- [x] 6.3 `.github/workflows/pii-maintenance.yml`: `workflow_dispatch`, environment `production`, input lệnh `backfill | backfill-check | rotate | rotate-check | purge` (`backfill-check` để kiểm production mà không tải khóa về máy, điều kiện của 12.1).
+- [x] 6.3 `.github/workflows/pii-maintenance.yml`: `workflow_dispatch`, environment `production-pii` (duyệt bắt buộc, chỉ `main`), input lệnh `backfill | backfill-check | rotate | rotate-check | purge` (`backfill-check` để kiểm production mà không tải khóa về máy, điều kiện của 12.1).
 
 ## 7. Hiển thị tài khoản
 

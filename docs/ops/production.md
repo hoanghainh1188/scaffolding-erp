@@ -42,12 +42,18 @@ Tài liệu quy chuẩn vận hành, bảo mật và quy trình ứng phó khẩ
 #### GitHub Secrets (Environment: `production`)
 - `PROD_DATABASE_URL_MIGRATE`: URL trực tiếp (không pooler) của **owner** `neondb_owner`, chạy migration & sao lưu.
 - `PROD_DATABASE_URL`: URL của **`erp_app`**, kiểm tra số dư kho hằng đêm.
-- `PROD_PII_ENCRYPTION_KEYS`: cùng giá trị `PII_ENCRYPTION_KEYS` trên Vercel, cho workflow `pii-maintenance.yml`.
 - `NEON_API_KEY`: API Key quyền quản trị project Neon.
 - `NEON_PROJECT_ID`: Project ID của `scaffolding-erp-prod`.
 - `VERCEL_DEPLOY_HOOK`: Webhook kích hoạt deploy Production trên Vercel.
 - `BACKUP_ENCRYPTION_KEY`: Khóa mã hóa file sao lưu (AES-256-CBC).
 - `PROD_URL`: Đường dẫn URL Production để kiểm tra trạng thái (`/api/health`).
+
+#### GitHub Secrets (Environment: `production-pii`)
+
+Chỉ workflow `pii-maintenance.yml` dùng. Environment này bắt buộc chủ repo duyệt từng lần chạy và chỉ chạy từ `main`. **Không** đặt khóa CCCD ở environment `production`.
+
+- `PROD_PII_ENCRYPTION_KEYS`: cùng giá trị `PII_ENCRYPTION_KEYS` trên Vercel Production.
+- `PROD_DATABASE_URL`: cùng URL `erp_app` như ở environment `production` (không dùng URL owner).
 
 ---
 

@@ -6,8 +6,11 @@ Quyết định gốc: `docs/requirements.md` 0.2 #156–#167. Thiết kế: cha
 
 - Biến `PII_ENCRYPTION_KEYS`, dạng `2:<base64>,1:<base64>`. Khóa đầu mã hóa, mọi khóa giải mã. Sinh khóa: `openssl rand -base64 32`.
 - Mỗi công ty (mỗi DB, mỗi bản deploy) một khóa riêng.
-- Đặt ở: Vercel Production và secret `PROD_PII_ENCRYPTION_KEYS` của environment **`production-pii`** (không đặt ở `production`: environment đó chạy job theo lịch không ai duyệt). Không tải về máy cá nhân.
+- Đặt ở: Vercel Production và secret `PROD_PII_ENCRYPTION_KEYS` của environment `production-pii` (chủ repo duyệt từng lần chạy, chỉ từ `main`; environment `production` không giữ khóa này). Không tải về máy cá nhân.
 - **Không dùng khóa mẫu** trong `.env.example` / CI: production từ chối khởi động với khóa đó.
+- **Cất một bản trong kho mật khẩu của công ty, tách khỏi nơi cất bản sao lưu** và tách khỏi `BACKUP_ENCRYPTION_KEY`. Hai người giữ: chủ repo và Giám đốc.
+- **Mất khóa là mất hết CCCD và hồ sơ thuế**, không khôi phục được.
+- Sau khi đặt khóa mới, kiểm tra trên staging: lưu một CCCD số bắt đầu `000`, mở lại form sửa, thấy đúng số.
 
 ### Cài environment `production-pii` (chủ repo làm một lần)
 
@@ -16,13 +19,10 @@ Repo → Settings → Environments → **New environment** → `production-pii`:
 1. **Required reviewers**: thêm người duyệt (chủ repo và một người nữa nếu có).
 2. Bật **Prevent self-review**: người bấm chạy không tự duyệt được.
 3. **Deployment branches and tags** → Selected branches → chỉ `main`.
-4. **Environment secrets**: thêm `PROD_PII_ENCRYPTION_KEYS` và `PROD_DATABASE_URL` (role `erp_app`).
+4. **Environment secrets**: thêm `PROD_PII_ENCRYPTION_KEYS` và `PROD_DATABASE_URL` (role `erp_app`), như `production.md` mục 1.
 5. Environment `production` → **xóa** secret `PROD_PII_ENCRYPTION_KEYS`. Giữ `PROD_DATABASE_URL` ở đó cho `backup.yml`, `inventory-check.yml`.
 
 Workflow **Personal Data Maintenance** chỉ chạy trên `main`, dùng `production-pii`, action ghim theo SHA (test `src/lib/privacy/pii-workflow.test.ts`).
-- **Cất một bản trong kho mật khẩu của công ty, tách khỏi nơi cất bản sao lưu** và tách khỏi `BACKUP_ENCRYPTION_KEY`. Hai người giữ: chủ repo và Giám đốc.
-- **Mất khóa là mất hết CCCD và hồ sơ thuế**, không khôi phục được.
-- Sau khi đặt khóa mới, kiểm tra trên staging: lưu một CCCD số bắt đầu `000`, mở lại form sửa, thấy đúng số.
 
 ## 2. Đổi khóa
 
