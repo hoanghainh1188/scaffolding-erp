@@ -36,6 +36,7 @@ import {
   encryptTaxIdentity,
   type PiiKeyRing,
 } from "./cipher";
+import { hasLegacyPii } from "./backfill";
 import { cipherFailure } from "./failure";
 import { getPiiKeyRing } from "./key-ring";
 
@@ -48,6 +49,8 @@ export const ANONYMIZE_MESSAGES = {
     `${code} còn phải trả ${formatMoney(amount)}. Trả hết trước khi ẩn danh`,
   advance: (code: string, amount: Money) =>
     `${code} còn tiền ứng trước ${formatMoney(amount)}. Xử lý xong trước khi ẩn danh`,
+  legacyData:
+    "Chờ chuyển dữ liệu xong: chạy npm run pii:backfill rồi ẩn danh lại",
   openOrders: (code: string, orders: string) =>
     `${code} còn đơn thu mua đang xử lý: ${orders}. Đóng hoặc hủy đơn trước khi ẩn danh`,
 } as const;
@@ -141,6 +144,9 @@ export function anonymizeSupplier(
         if (!row) throw refuse(ANONYMIZE_MESSAGES.already);
         if (row.kind !== "PERSON") throw refuse(ANONYMIZE_MESSAGES.onlyPerson);
         if (row.anonymizedAt) throw refuse(ANONYMIZE_MESSAGES.already);
+        if (await hasLegacyPii(tx, id)) {
+          throw refuse(ANONYMIZE_MESSAGES.legacyData);
+        }
         if (input.confirmCode.trim() !== row.code) {
           throw unprocessable(ANONYMIZE_MESSAGES.wrongCode, "confirmCode");
         }

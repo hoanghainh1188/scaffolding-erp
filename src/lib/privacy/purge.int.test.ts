@@ -183,6 +183,28 @@ describe("CCCD of a seller not erased", () => {
     expect((await rowOf()).idNumberLast4).toBe("2345");
   });
 
+  it("counts from a CCCD typed in again after the last receipt", async () => {
+    // Back after 10 years: the CCCD was entered again on 01/11/2036, before
+    // any new receipt.
+    await receipt("2026-03-05");
+    await db.execute(
+      sql`update supplier set id_number_saved_at = '2036-10-31T17:30:00Z' where id = ${tam}::uuid`,
+    );
+    expect(await purge("2036-11-10")).toEqual({ taxFiles: 0, idNumbers: 0 });
+    expect((await rowOf()).idNumberLast4).toBe("2345");
+    expect(await purge("2046-10-31")).toEqual({ taxFiles: 0, idNumbers: 0 });
+    expect(await purge("2046-11-01")).toEqual({ taxFiles: 0, idNumbers: 1 });
+  });
+
+  it("still counts from a later receipt", async () => {
+    await db.execute(
+      sql`update supplier set id_number_saved_at = '2026-01-10T03:00:00Z' where id = ${tam}::uuid`,
+    );
+    await receipt("2030-02-01");
+    expect(await purge("2040-01-31")).toEqual({ taxFiles: 0, idNumbers: 0 });
+    expect(await purge("2040-02-01")).toEqual({ taxFiles: 0, idNumbers: 1 });
+  });
+
   it("counts from the Vietnamese creation day without a receipt", async () => {
     await db.execute(
       sql`update supplier set created_at = '2026-11-09T17:30:00Z' where id = ${tam}::uuid`,

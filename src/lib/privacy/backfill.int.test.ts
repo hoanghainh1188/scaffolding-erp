@@ -118,6 +118,32 @@ describe("backfillLegacyPii", () => {
     });
   });
 
+  it("dates a moved CCCD from the row's last update, for pii:purge", async () => {
+    const id = await legacy("NCC-0001", CCCD, null);
+    await getAdminDatabase().execute(
+      sql`update supplier set updated_at = '2020-05-01T00:00:00Z' where id = ${id}::uuid`,
+    );
+    await backfillLegacyPii(db, ring);
+    expect((await rowOf(id))?.idNumberSavedAt).toEqual(
+      new Date("2020-05-01T00:00:00Z"),
+    );
+  });
+
+  it("leaves the saving day of a CCCD saved after the deploy", async () => {
+    const id = await legacy("NCC-0001", CCCD, null);
+    const saved = new Date("2026-11-01T00:00:00Z");
+    await db
+      .update(supplier)
+      .set({
+        idNumberEnc: encryptIdNumber(id, "000299999999", ring),
+        idNumberLast4: "9999",
+        idNumberSavedAt: saved,
+      })
+      .where(eq(supplier.id, id));
+    await backfillLegacyPii(db, ring);
+    expect((await rowOf(id))?.idNumberSavedAt).toEqual(saved);
+  });
+
   it("does nothing the second time", async () => {
     const id = await legacy("NCC-0001", CCCD, "12345678");
     await backfillLegacyPii(db, ring);

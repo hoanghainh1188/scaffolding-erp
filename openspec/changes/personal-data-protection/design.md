@@ -196,7 +196,7 @@ Sổ kho và nhật ký không `UPDATE` được, nên chỉ có một cách đ�
 - Hàm `sellerLabel({ kind, code, name })` ở `src/domain/personal-data.ts`: `PERSON` trả mã, `COMPANY` trả tên. Dùng ở 4 chỗ liệt kê ở Context.
 - `FieldSpec` thêm `personal?: (record) => boolean`. Khi đúng, `diffFields` chỉ ghi "(đã đổi)" và `touchesSensitive` không tính. Áp cho tên, điện thoại, địa chỉ, mã số thuế, ghi chú của người bán đang hoặc vừa là cá nhân.
 
-Người bán cá nhân đã có đơn mua hoặc phiếu chi không đổi được sang công ty (0.2 #170): nếu không, các chứng từ sau đó ghi tên thật vào hai bảng này và nút ẩn danh từ chối dòng đó.
+Người bán cá nhân đã có đơn mua hoặc phiếu chi không đổi được sang công ty (0.2 #170): nếu không, các chứng từ sau đó ghi tên thật vào hai bảng này và nút ẩn danh từ chối dòng đó. Chiều ngược lại cũng chặn (0.2 #171, chốt khi review PR #176): công ty đã có chứng từ thì tên đã nằm ở hai bảng này, đổi sang cá nhân rồi ẩn danh cũng không xóa được.
 
 Được vì production chưa có dữ liệu thật (0.2 #159): từ lúc có dữ liệu thật, hai bảng này chưa bao giờ chứa tên.
 

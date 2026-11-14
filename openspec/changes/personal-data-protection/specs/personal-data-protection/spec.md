@@ -224,6 +224,17 @@ Người bán loại cá nhân đã có đơn thu mua hoặc phiếu chi SHALL k
 - **WHEN** Kế toán đổi người bán cá nhân vừa tạo, chưa có chứng từ, sang công ty
 - **THEN** lưu thành công
 
+### Requirement: Người bán công ty đã có chứng từ không đổi thành cá nhân
+Người bán loại công ty đã có đơn thu mua hoặc phiếu chi SHALL không đổi được sang loại cá nhân (0.2 #171), vì tên công ty đã ghi vào sổ kho và nhật ký (chỉ ghi thêm) nên ẩn danh sau đó không xóa được. Muốn sửa thì tạo mã nhà cung cấp mới loại Cá nhân. Chưa có chứng từ thì SHALL đổi được.
+
+#### Scenario: Công ty đã có đơn mua
+- **WHEN** Kế toán đổi `NCC-0001` (công ty, đã có đơn mua) sang cá nhân
+- **THEN** API trả 409 với "Người bán công ty đã có chứng từ nên không đổi sang cá nhân được. Tạo mã nhà cung cấp mới loại Cá nhân" **AND** loại vẫn là công ty
+
+#### Scenario: Công ty chưa có chứng từ
+- **WHEN** Kế toán đổi người bán công ty vừa tạo, chưa có chứng từ, sang cá nhân
+- **THEN** lưu thành công
+
 ### Requirement: Giữ hồ sơ thuế của người đã ẩn danh
 Khi ẩn danh người bán đã có phiếu nhập, tên, địa chỉ và số CCCD SHALL được gộp thành một gói mã hóa "hồ sơ thuế", cùng định dạng và cùng khóa với bản mã CCCD nhưng gắn với trường riêng, trong cùng transaction ẩn danh. Không có CCCD thì gói vẫn có tên và địa chỉ. Không màn hình hay API nào SHALL giải mã gói. Người bán chưa có phiếu nhập SHALL không có gói, mọi dữ liệu bị xóa ngay.
 

@@ -3,6 +3,11 @@ name: Personal Data Maintenance
 # Run by hand, approved like a deploy, so production keys never reach a
 # personal machine (personal-data-protection D4). Commands print row counts
 # only; keep each run's log in the compliance file (docs/ops/personal-data.md).
+#
+# The CCCD keys live only in the environment `production-pii`, which needs a
+# reviewer other than the one who started the run and deploys from `main`
+# only (docs/ops/personal-data.md mục 1). Scheduled jobs (backup, inventory
+# check) use `production` and never see the keys. Actions are pinned by SHA.
 on:
   workflow_dispatch:
     inputs:
@@ -27,13 +32,17 @@ permissions:
 jobs:
   run:
     name: Run ${{ inputs.command }}
+    # A branch could change the scripts and read the keys: main only.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: production
+    environment: production-pii
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm

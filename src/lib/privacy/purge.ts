@@ -93,6 +93,21 @@ async function purgeTaxFile(
   });
 }
 
+/**
+ * Counted from the later of the last receipt and the day the CCCD was typed
+ * in, so one entered again today is kept (0.2 số 166); the creation day when
+ * neither is known.
+ */
+export function retentionAnchor(
+  lastReceipt: string | null,
+  savedAt: Date | null,
+  createdAt: Date,
+): string {
+  const saved = savedAt === null ? null : toBusinessDate(savedAt);
+  if (lastReceipt === null) return saved ?? toBusinessDate(createdAt);
+  return saved !== null && saved > lastReceipt ? saved : lastReceipt;
+}
+
 async function purgeIdNumber(
   db: Database,
   actor: ActivityActor,
@@ -103,8 +118,11 @@ async function purgeIdNumber(
   return db.transaction(async (tx) => {
     const row = await lockRow(tx, id);
     if (!row?.idNumberLast4 || row.anonymizedAt) return false;
-    const anchor =
-      (await lastReceiptDate(tx, id)) ?? toBusinessDate(row.createdAt);
+    const anchor = retentionAnchor(
+      await lastReceiptDate(tx, id),
+      row.idNumberSavedAt,
+      row.createdAt,
+    );
     if (!expired(anchor, today, years)) return false;
     await tx
       .update(supplier)

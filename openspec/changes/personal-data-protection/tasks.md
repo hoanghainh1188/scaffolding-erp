@@ -55,6 +55,7 @@ Ghi chú: mục 1–11 là **PR code bước 1**. Mục 12 là **PR riêng bư�
 - [x] 4.4 Thêm vào `src/lib/activity/coverage.test.ts` (hoặc test tĩnh mới): file ghi nhật ký, ghi sổ không dùng `supplier.name` trực tiếp mà không qua `sellerLabel`.
 
 - [x] 4.5 Chặn đổi người bán cá nhân sang công ty khi đã có đơn mua hoặc phiếu chi (0.2 #170), 409. Integration test: có đơn, có phiếu chi, chưa có chứng từ, sửa trường khác vẫn qua.
+- [x] 4.6 Chặn đổi người bán công ty sang cá nhân khi đã có đơn mua hoặc phiếu chi (0.2 #171, review PR #176), 409. Integration test: có đơn, có phiếu chi, chưa có chứng từ.
 
 ## 5. Ẩn danh và giữ CCCD
 
@@ -132,6 +133,8 @@ Ghi chú: mục 1–11 là **PR code bước 1**. Mục 12 là **PR riêng bư�
 
 - [ ] 12.1 Điều kiện: bước 1 đã deploy; `pii:backfill --check` = 0 ở mọi môi trường có dữ liệu.
 - [ ] 12.2 Migration viết tay: dừng nếu `id_number` hoặc `bank_account` còn dữ liệu, rồi `DROP COLUMN` và CHECK `supplier_id_number_check`. Integration test bằng owner: còn dữ liệu thì dừng; cột đã mất.
+  - Snapshot drizzle đã bỏ hai cột nên `db:generate` **không** sinh `DROP`: viết tay `DROP COLUMN`.
+  - Xóa luôn `hasLegacyPii` (`backfill.ts`) và lời gọi trong `anonymize.ts` (review PR #176 mục 6).
 - [ ] 12.3 Xóa `src/lib/privacy/backfill.ts`, lệnh `pii:backfill`, test của nó, lựa chọn `backfill` trong workflow. Thu hẹp danh sách cho phép của kiểm tĩnh.
 - [ ] 12.4 `npm run lint && npm run typecheck && npm test` xanh; deploy; `/api/health` = 200.
 

@@ -50,10 +50,21 @@ describe("old columns of supplier", () => {
   });
 });
 
+// Any mention: an import renamed with `as` must not slip through.
+const DECRYPT_ID_NUMBER = /\bdecryptIdNumber\b/;
+
 describe("decryption", () => {
+  it("rule catches a renamed import", () => {
+    expect(
+      DECRYPT_ID_NUMBER.test(
+        'import { decryptIdNumber as d } from "@/lib/privacy/cipher";',
+      ),
+    ).toBe(true);
+  });
+
   it("of a CCCD happens only on the listed paths", () => {
     expect(
-      offenders(/\bdecryptIdNumber\(/, [
+      offenders(DECRYPT_ID_NUMBER, [
         "src/lib/privacy/cipher.ts",
         "src/lib/catalog/partners.ts",
         "src/lib/privacy/anonymize.ts",
@@ -67,8 +78,13 @@ describe("decryption", () => {
       offenders(/\bdecryptTaxIdentity\b/, [
         "src/lib/privacy/cipher.ts",
         "src/lib/privacy/rotate.ts",
-        "src/lib/privacy/purge.ts",
       ]),
+    ).toEqual([]);
+  });
+
+  it("is written only in the cipher module", () => {
+    expect(
+      offenders(/\bcreateDecipheriv\b/, ["src/lib/privacy/cipher.ts"]),
     ).toEqual([]);
   });
 });

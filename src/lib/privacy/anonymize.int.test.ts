@@ -16,7 +16,8 @@ import {
   updateSupplier,
 } from "@/lib/catalog/partners";
 import { supplierDetail } from "@/lib/payables/queries";
-import { recordPayment } from "@/lib/payables/payments";
+import { readLedger } from "@/lib/payables/balances";
+import { cancelPayment, recordPayment } from "@/lib/payables/payments";
 import { getPurchasingOrder } from "@/test/privacy";
 import { lastActivity } from "@/test/activity";
 import { getAdminDatabase } from "@/test/admin";
@@ -33,7 +34,8 @@ import { postReceipt } from "@/lib/receiving/post";
 import { d3Order } from "@/test/purchasing";
 
 import { ANONYMIZE_MESSAGES, anonymizeSupplier } from "./anonymize";
-import { decryptIdNumber, decryptTaxIdentity, encryptIdNumber } from "./cipher";
+import { backfillLegacyPii } from "./backfill";
+import { decryptIdNumber, decryptTaxIdentity } from "./cipher";
 import { getPiiKeyRing } from "./key-ring";
 
 vi.mock("@/lib/monitoring/reporter", () => ({ reportError: vi.fn() }));
@@ -52,32 +54,65 @@ const REQUEST = { confirmCode: "NCC-0002", requestedOn: "2026-11-09" };
 let fx: ReceivingFixture;
 let tam = "";
 
-/** NCC-0002 with every personal field filled in. */
+/**
+ * NCC-0002 with every personal field filled in through the real edit form,
+ * so its log rows are the ones a user would leave.
+ */
 async function fillPerson(id: string, idNumber: string | null = CCCD) {
-  await db
-    .update(supplier)
-    .set({
-      name: NAME,
-      phone: PHONE,
-      address: ADDRESS,
-      taxCode: "0109876543",
-      note: "Người quen anh Năm",
-      bankName: "Vietcombank",
-      bankAccountLast4: "5678",
-      idNumberEnc: idNumber
-        ? encryptIdNumber(id, idNumber, getPiiKeyRing())
-        : null,
-      idNumberLast4: idNumber ? idNumber.slice(-4) : null,
-      searchText: "anh le van tam ncc-0002 0912345678",
-    })
-    .where(eq(supplier.id, id));
+  const saved = await updateSupplier(db, fx.accountant, id, {
+    kind: "PERSON",
+    name: NAME,
+    phone: PHONE,
+    address: ADDRESS,
+    taxCode: "0109876543",
+    note: "Người quen anh Năm",
+    bankName: "Vietcombank",
+    bankAccountLast4: "5678",
+    idNumber,
+    dataNoticeConfirmed: true,
+  });
+  if (!saved.ok) throw new Error(saved.error);
 }
+
+/** Every append-only table and document a seller's data could reach. */
+const SCANNED_TABLES = [
+  "activity_log",
+  "inventory_ledger",
+  "goods_receipt",
+  "supplier_payment",
+  "purchase_order_event",
+] as const;
+
+/** Each scanned table as text, so a value anywhere in a row is found. */
+async function scanTables(): Promise<Record<string, string>> {
+  const admin = getAdminDatabase();
+  const dump: Record<string, string> = {};
+  for (const table of SCANNED_TABLES) {
+    const rows = await admin.execute<{ text: string }>(
+      sql`select t::text as text from ${sql.identifier(table)} t`,
+    );
+    dump[table] = rows.map((row) => row.text).join("\n");
+  }
+  return dump;
+}
+
+const SECRETS = [NAME, "Lê Văn Tâm", PHONE, ADDRESS, CCCD, "Người quen"];
 
 beforeEach(async () => {
   fx = await setupReceivingFixture(ctx);
   tam = fx.supplier("NCC-0002");
   await fillPerson(tam);
 });
+
+/** A payment for the full amount, then its number for cancelling it. */
+async function paidReceiptWithPayment() {
+  await receiptFor(ctx, fx, {
+    quantity: "10",
+    price: 100_000,
+    day: "2026-03-05",
+  });
+  return pay(1_000_000);
+}
 
 const anonymize = (input = REQUEST, id = tam, actor = fx.director) =>
   anonymizeSupplier(db, actor, id, input, NOW);
@@ -167,7 +202,7 @@ describe("anonymizeSupplier", () => {
     expect(logsAfter).toHaveLength(logsBefore.length + 1);
   });
 
-  it("writes a log row with no old data, and none exists anywhere", async () => {
+  it("writes a log row with no old data", async () => {
     await paidReceipt();
     await anonymize();
     expect(await lastActivity(db, "NCC-0002")).toMatchObject({
@@ -176,15 +211,20 @@ describe("anonymizeSupplier", () => {
       documentCode: "NCC-0002",
     });
     expect((await lastActivity(db, "NCC-0002"))?.flags).toContain("SENSITIVE");
-    const dump = (
-      await getAdminDatabase().execute<{ text: string }>(
-        sql`select a::text as text from activity_log a`,
-      )
-    )
-      .map((row) => row.text)
-      .join("\n");
-    for (const secret of [NAME, PHONE, ADDRESS, CCCD]) {
-      expect(dump).not.toContain(secret);
+  });
+
+  it("leaves no old data in any document or append-only table", async () => {
+    await paidReceipt();
+    await anonymize();
+    const dump = await scanTables();
+    // The scan really read the seller's documents.
+    for (const table of SCANNED_TABLES) {
+      expect(dump[table], `${table} is empty`).not.toBe("");
+    }
+    for (const [table, text] of Object.entries(dump)) {
+      for (const secret of SECRETS) {
+        expect(text, `${table} holds ${secret}`).not.toContain(secret);
+      }
     }
   });
 
@@ -371,6 +411,68 @@ describe("after erasure", () => {
       status: 409,
       error: PAYABLE_MESSAGES.sellerAnonymized,
     });
+  });
+});
+
+describe("cancelling a payment after erasure", () => {
+  it("is refused, so no debt reopens that nobody could pay", async () => {
+    const paid = await paidReceiptWithPayment();
+    await anonymize();
+    expect(
+      await cancelPayment(
+        db,
+        fx.accountant,
+        paid.data.id,
+        { reason: "Ghi nhầm" },
+        { now: NOW },
+      ),
+    ).toEqual({
+      ok: false,
+      status: 409,
+      error: PAYABLE_MESSAGES.sellerAnonymized,
+    });
+    const ledger = await readLedger(db, tam, "2026-11-10" as BusinessDate);
+    expect(ledger.owed).toBe(0);
+    expect(ledger.payments.find((p) => p.id === paid.data.id)?.cancelled).toBe(
+      null,
+    );
+  });
+});
+
+describe("before the backfill has run (0.2 bước 1)", () => {
+  // The old column is not in the schema any more; only the owner writes it.
+  const setLegacy = (column: "id_number" | "bank_account", value: string) =>
+    getAdminDatabase().execute(
+      sql`update supplier set ${sql.identifier(column)} = ${value} where id = ${tam}::uuid`,
+    );
+
+  it.each([
+    ["id_number", CCCD],
+    ["bank_account", "0451000312345678"],
+  ] as const)("is refused while %s still holds data", async (column, value) => {
+    await paidReceipt();
+    await setLegacy(column, value);
+    expect(await anonymize()).toEqual({
+      ok: false,
+      status: 409,
+      error: ANONYMIZE_MESSAGES.legacyData,
+    });
+    expect((await rowOf()).anonymizedAt).toBeNull();
+  });
+
+  it("goes through once the backfill moved the CCCD, which the tax file keeps", async () => {
+    await fillPerson(tam, null);
+    await paidReceipt();
+    await setLegacy("id_number", CCCD);
+    expect(await backfillLegacyPii(db, getPiiKeyRing())).toMatchObject({
+      migrated: 1,
+    });
+    expect(await anonymize()).toMatchObject({ ok: true });
+    const row = await rowOf();
+    expect(
+      decryptTaxIdentity(tam, row.taxIdentityEnc ?? "", getPiiKeyRing())
+        .idNumber,
+    ).toBe(CCCD);
   });
 });
 
