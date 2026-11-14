@@ -192,11 +192,16 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 
-Các quyết định dưới đây có thể đổi sau khi chủ trả lời câu hỏi ở issue [#44](https://github.com/hoanghainh1188/scaffolding-erp/issues/44). Chưa dùng làm căn cứ propose cho change bị ảnh hưởng.
+Các quyết định dưới đây có thể đổi sau khi chủ trả lời câu hỏi ở issue [#44](https://github.com/hoanghainh1188/scaffolding-erp/issues/44). Các change liên quan đã làm theo **mặc định tạm** ghi ở 0.2; chủ trả lời khác thì sửa bằng change mới.
 
 | Quyết định | Điều có thể đổi | Câu hỏi |
 |---|---|---|
-| Sản xuất (`production-orders`) | Chi phí công thợ tính khoán theo thành phẩm hay chi phí chung | Q11 |
+| Ngày nghỉ không tính thuê (0.2 #73, `rental-billing`) | Có trừ ngày Tết, lễ không; trừ những ngày nào, ai quyết định | Q1 |
+| Thuê tối thiểu theo từng lượng hàng (0.2 #74, `rental-billing`) | 45 ngày tính theo từng đợt xuất hay cả hợp đồng; trả một phần trước 45 ngày có bù không | Q2 |
+| Chậm thanh toán (0.2 #48, `contracts`, `receivables`) | Số ngày được nợ sau khi chốt kỳ; có lãi hay phạt chậm trả không | Q5 |
+| Bảng giá đền bù (0.2 #49, `contracts`) | Giá đền bù chung toàn công ty hay riêng từng hợp đồng; phế liệu có giá riêng không | Q6 |
+| Bảo lãnh ngân hàng (0.2 #50, `contracts`) | Thông tin cần lưu; có cảnh báo sắp hết hạn không | Q7 |
+| Đội xe tải (0.2 #41, `truck-management` chưa làm) | 2 hay 3 xe; cần theo dõi những gì | Q14 |
 
 ### 0.3. Tình trạng hàng (thay cho khái niệm "3 kho")
 
@@ -327,7 +332,7 @@ Thời gian giữ đăng nhập cụ thể (khi có và không tick ô) do chang
 
 ## 7. NGOÀI PHẠM VI (hiện tại)
 
-- Xuất hóa đơn VAT, tích hợp phần mềm kế toán (MISA...). (Tiền VAT trong công nợ: đang chờ Q4, xem 0.2b.)
+- Xuất hóa đơn VAT, tích hợp phần mềm kế toán (MISA...). (Tiền VAT trong công nợ đã có: chỉ cộng khi khách yêu cầu xuất hóa đơn, 0.2 #39.)
 - Quản lý từng chiếc theo serial.
 - Quản lý giá vốn theo lô.
 - Chạy offline hoàn toàn trên PWA.
