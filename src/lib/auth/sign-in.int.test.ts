@@ -52,6 +52,12 @@ const attempt = (
     now,
   });
 
+/** The Set-Cookie line of the session token, lower-cased. */
+function sessionCookieLine(setCookies: readonly string[]): string {
+  const line = setCookies.find((cookie) => cookie.includes("session_token="));
+  return (line ?? "").toLowerCase();
+}
+
 async function sessionsOf(userId: string) {
   return ctx.db.select().from(session).where(eq(session.userId, userId));
 }
@@ -281,6 +287,25 @@ describe("signIn: success", () => {
     expect(stored?.expiresAt).toEqual(
       new Date(now.getTime() + SHORT_SESSION_MS),
     );
+  });
+
+  it("sends a ticked session as a cookie that outlives the browser", async () => {
+    const vantung = await createTestUser(ctx, { role: "WAREHOUSE" });
+    const result = await attempt(vantung, vantung.password, new Date());
+    if (!result.ok) throw new Error("sign-in failed");
+    expect(sessionCookieLine(result.setCookies)).toContain("max-age=");
+  });
+
+  it("sends an unticked session as a cookie the browser drops on close", async () => {
+    const thuha = await createTestUser(ctx, { role: "WAREHOUSE" });
+    const result = await attempt(thuha, thuha.password, new Date(), {
+      remember: false,
+    });
+    if (!result.ok) throw new Error("sign-in failed");
+    const line = sessionCookieLine(result.setCookies);
+    expect(line).toContain("session_token=");
+    expect(line).not.toContain("max-age=");
+    expect(line).not.toContain("expires=");
   });
 });
 
