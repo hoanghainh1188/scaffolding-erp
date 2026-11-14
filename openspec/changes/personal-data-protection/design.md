@@ -89,7 +89,7 @@ Khi cần kiểm trùng (ví dụ lúc nhập Excel ở #48): thêm cột `id_nu
 - Không ghi nhật ký từng dòng: giá trị không đổi. In số lượng ra màn hình.
 - Trình tự (`docs/ops/personal-data.md`): thêm khóa mới đứng đầu → deploy → `pii:rotate` → `--check` = 0 → bỏ khóa cũ khỏi biến → **giữ khóa cũ ở nơi an toàn tối thiểu 30 ngày** để giải mã bản sao lưu cũ.
 
-Chạy bằng workflow chạy tay `pii-maintenance.yml` (`workflow_dispatch`, environment `production`, duyệt như deploy), lệnh chọn `backfill | rotate | rotate-check | purge`. Không tải khóa production về máy cá nhân. Lệnh chỉ in số dòng; mỗi lần chạy phải lưu log đó vào hồ sơ tuân thủ, vì log của GitHub có hạn.
+Chạy bằng workflow chạy tay `pii-maintenance.yml` (`workflow_dispatch`, environment riêng `production-pii`: chủ repo duyệt từng lần chạy, chỉ từ `main`, là nơi duy nhất giữ khóa CCCD trên GitHub), lệnh chọn `backfill | rotate | rotate-check | purge`. Không tải khóa production về máy cá nhân. Lệnh chỉ in số dòng; mỗi lần chạy phải lưu log đó vào hồ sơ tuân thủ, vì log của GitHub có hạn.
 
 ### D5. Số tài khoản và migration hai bước (điểm 4)
 
