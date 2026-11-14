@@ -8,7 +8,7 @@ export const auth = {
     passwordLabel: "Mật khẩu",
     showPassword: "Hiện mật khẩu",
     hidePassword: "Ẩn mật khẩu",
-    rememberMe: "Ghi nhớ đăng nhập",
+    rememberMe: "Giữ đăng nhập trên máy này",
     submit: "Đăng nhập",
     submitting: "Đang đăng nhập…",
     forgotPassword:

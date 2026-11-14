@@ -36,7 +36,9 @@ export async function signInThroughForm(
   await page.getByLabel("Tên đăng nhập").fill(username);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(password);
   if (options.remember) {
-    await page.getByRole("checkbox", { name: "Ghi nhớ đăng nhập" }).check();
+    await page
+      .getByRole("checkbox", { name: "Giữ đăng nhập trên máy này" })
+      .check();
   }
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   const secret = password === E2E_PASSWORD ? totpSecretOf(username) : undefined;

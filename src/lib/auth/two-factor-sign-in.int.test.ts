@@ -153,6 +153,32 @@ describe("two-step sign-in", () => {
     );
   });
 
+  it("sends an unticked session as a cookie the browser drops on close", async () => {
+    const { who, secret } = await enrolled();
+    const ip = nextIp();
+    const { cookie } = await passwordStep(who, ip, { remember: false });
+    const result = await codeStep(ip, cookie, totpCode(secret));
+    if (!result.ok) throw new Error("sign-in failed");
+    const line = (
+      result.setCookies.find((entry) => entry.includes("session_token=")) ?? ""
+    ).toLowerCase();
+    expect(line).toContain("session_token=");
+    expect(line).not.toContain("max-age=");
+    expect(line).not.toContain("expires=");
+  });
+
+  it("sends a ticked session as a cookie that outlives the browser", async () => {
+    const { who, secret } = await enrolled();
+    const ip = nextIp();
+    const { cookie } = await passwordStep(who, ip);
+    const result = await codeStep(ip, cookie, totpCode(secret));
+    if (!result.ok) throw new Error("sign-in failed");
+    const line = (
+      result.setCookies.find((entry) => entry.includes("session_token=")) ?? ""
+    ).toLowerCase();
+    expect(line).toContain("max-age=");
+  });
+
   it("sends the browser back when the step has expired", async () => {
     const { who, secret } = await enrolled();
     const ip = nextIp();

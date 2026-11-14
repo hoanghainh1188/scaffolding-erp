@@ -59,6 +59,30 @@ test.describe("sign-in page", () => {
     await waitForHydration(page, MOBILE_READY);
   });
 
+  test("keeps the session cookie past the browser only when the box is ticked", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!runOnlyIn(testInfo, "desktop-1280"), "desktop flow");
+    const sessionCookie = async () =>
+      (await page.context().cookies()).find((cookie) =>
+        cookie.name.endsWith("session_token"),
+      );
+
+    await signInThroughForm(page, "e2e.kinhdoanh", E2E_PASSWORD);
+    await expect(page).toHaveURL(/\/dashboard$/);
+    // Playwright reports -1 for a cookie that ends with the browser.
+    expect((await sessionCookie())?.expires).toBe(-1);
+
+    await page.context().clearCookies();
+    await signInThroughForm(page, "e2e.kinhdoanh", E2E_PASSWORD, {
+      remember: true,
+    });
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const days =
+      (((await sessionCookie())?.expires ?? 0) - Date.now() / 1000) / 86_400;
+    expect(days).toBeGreaterThan(29);
+  });
+
   test("does not scroll sideways at 360 and 1366px", async ({
     page,
   }, testInfo) => {
