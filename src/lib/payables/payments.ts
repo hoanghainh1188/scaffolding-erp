@@ -412,7 +412,10 @@ export function cancelPayment(
         .from(supplierPayment)
         .where(eq(supplierPayment.id, id));
       if (!head) throw new ServiceFailure(notFound());
-      await lockSupplier(tx, head.supplierId);
+      const seller = await lockSupplier(tx, head.supplierId);
+      if (seller.anonymizedAt) {
+        throw new PayableRuleError(PAYABLE_MESSAGES.sellerAnonymized, 409);
+      }
       const ledger = await readLedger(tx, head.supplierId, today);
       const row = ledger.payments.find((entry) => entry.id === id);
       if (!row) throw new ServiceFailure(notFound());

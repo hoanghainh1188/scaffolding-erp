@@ -1,24 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  maskBankAccount,
-  maskIdNumber,
-  sanitizeErrorPayload,
-  sanitizeUrl,
-} from "./sanitize";
+import { maskBankAccount, sanitizeErrorPayload, sanitizeUrl } from "./sanitize";
 
 describe("sanitize.ts", () => {
-  describe("maskIdNumber", () => {
-    it("preserves first 3 and last 2 digits for CCCD / CMND", () => {
-      expect(maskIdNumber("001203012345")).toBe("001***45");
-      expect(maskIdNumber("012345678")).toBe("012***78");
-    });
-
-    it("handles short or spaced strings safely", () => {
-      expect(maskIdNumber("001 203 012 345")).toBe("001***45");
-      expect(maskIdNumber("1234")).toBe("***");
-    });
-  });
-
   describe("maskBankAccount", () => {
     it("preserves only the last 3 digits", () => {
       expect(maskBankAccount("0451 0003 1234 5678")).toBe("***678");
@@ -70,6 +53,16 @@ describe("sanitize.ts", () => {
       });
     });
 
+    it.each([
+      ["cccd_001203012345", "cccd_[CCCD]"],
+      ["CCCD001203012345", "CCCD[CCCD]"],
+      ["so001203012345x", "so[CCCD]x"],
+    ])("replaces 12 digits next to letters: %s", (input, output) => {
+      expect(sanitizeErrorPayload({ message: input })).toEqual({
+        message: output,
+      });
+    });
+
     it("leaves shorter and longer digit runs", () => {
       expect(sanitizeErrorPayload({ a: "12345678901 1234567890123" })).toEqual({
         a: "12345678901 1234567890123",
@@ -98,10 +91,19 @@ describe("sanitize.ts", () => {
       });
     });
 
-    it("still masks by field name first", () => {
+    it("removes a CCCD field whole, keeping no digit", () => {
       expect(sanitizeErrorPayload({ idNumber: "001203012345" })).toEqual({
-        idNumber: "001***45",
+        idNumber: "[REDACTED]",
       });
+    });
+
+    it("removes a CCCD field given as a number", () => {
+      expect(
+        sanitizeErrorPayload({
+          cccd: 12_030_123_456,
+          id_number: 1_203_012_345,
+        }),
+      ).toEqual({ cccd: "[REDACTED]", id_number: "[REDACTED]" });
     });
   });
 
@@ -142,7 +144,7 @@ describe("sanitize.ts", () => {
       const sanitized = sanitizeErrorPayload(payload);
 
       expect(sanitized.user.name).toBe("Nguyen Van A");
-      expect(sanitized.user.idNumber).toBe("001***45");
+      expect(sanitized.user.idNumber).toBe("[REDACTED]");
       expect(sanitized.user.bankAccount).toBe("***678");
     });
 

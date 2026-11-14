@@ -189,6 +189,7 @@ Tài liệu mô tả các phân hệ ở mức yêu cầu hệ thống (System R
 | 168 | Người được ghi trên nhật ký của lệnh `pii:purge` | **Giám đốc đang hoạt động được tạo sớm nhất**, trình duyệt "Khác": nhật ký bắt buộc gắn một tài khoản thật và không có tài khoản "Hệ thống" (chốt 10/11/2026 khi apply, change `personal-data-protection`) |
 | 169 | Ô "4 số cuối tài khoản" | **Không đặt giới hạn ký tự** trên ô: trình duyệt sẽ cắt ngầm số dán vào còn 4 số đầu rồi lưu nhầm; số sai bị server từ chối với "Chỉ nhập 4 số cuối của tài khoản" (chốt 10/11/2026 khi apply, change `personal-data-protection`) |
 | 170 | Đổi loại người bán | Người bán **cá nhân đã có đơn mua hoặc phiếu chi không đổi được sang công ty**: công ty được ghi tên thật vào sổ kho, nhật ký và không ẩn danh được. Chưa có chứng từ thì đổi được (chốt 10/11/2026 khi apply, change `personal-data-protection`) |
+| 171 | Đổi người bán công ty sang cá nhân | Người bán **công ty đã có đơn mua hoặc phiếu chi không đổi được sang cá nhân**, giống chiều ngược lại (#170): tên công ty đã ghi vào sổ kho và nhật ký (chỉ ghi thêm), nên ẩn danh sau đó không xóa được. Muốn sửa thì tạo mã nhà cung cấp mới loại Cá nhân. Chưa có chứng từ thì đổi được (chốt 14/11/2026 khi review PR #176, change `personal-data-protection`) |
 
 ### 0.2b. Quyết định đang chờ chủ doanh nghiệp xác nhận (khảo sát 28/10/2026)
 

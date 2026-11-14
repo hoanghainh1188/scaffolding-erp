@@ -11,6 +11,7 @@ import {
   updateSupplier,
 } from "@/lib/catalog/partners";
 import { recordPayment } from "@/lib/payables/payments";
+import { createOrder } from "@/lib/purchasing/orders";
 import { lastActivity } from "@/test/activity";
 import { getAdminDatabase } from "@/test/admin";
 import { createTestContext } from "@/test/auth";
@@ -156,6 +157,77 @@ describe("turning a person into a company (0.2 số 170)", () => {
         note: "Đã gọi",
       }),
     ).toMatchObject({ ok: true });
+  });
+});
+
+describe("turning a company into a person (0.2 số 171)", () => {
+  const toPerson = (id: string) =>
+    updateSupplier(ctx.db, fx.accountant, id, {
+      kind: "PERSON",
+      dataNoticeConfirmed: true,
+    });
+  const kindOf = async (id: string) => {
+    const [row] = await ctx.db
+      .select({ kind: supplier.kind })
+      .from(supplier)
+      .where(eq(supplier.id, id));
+    return row?.kind;
+  };
+
+  it("is refused once there is an order", async () => {
+    const id = fx.supplier("NCC-0001");
+    const order = await createOrder(ctx.db, fx.sales, {
+      supplierId: id,
+      kind: "NEW",
+      expectedDate: "2026-11-10",
+      allocationMethod: "VALUE",
+      lines: [
+        {
+          itemId: fx.item("GG-CH"),
+          unit: "PIECE",
+          quantity: "1",
+          unitPrice: 100_000,
+        },
+      ],
+      costs: [],
+    });
+    if (!order.ok) throw new Error(order.error);
+    expect(await toPerson(id)).toEqual({
+      ok: false,
+      status: 409,
+      error: PARTNER_MESSAGES.companyHasDocuments,
+    });
+    expect(await kindOf(id)).toBe("COMPANY");
+  });
+
+  it("is refused once there is a payment", async () => {
+    const id = fx.supplier("NCC-0001");
+    const paid = await recordPayment(
+      ctx.db,
+      fx.accountant,
+      {
+        requestId: crypto.randomUUID(),
+        supplierId: id,
+        kind: "ADVANCE",
+        amount: 1_000,
+        method: "CASH",
+        paidDate: "2026-11-04",
+      },
+      { now: at("2026-11-04") },
+    );
+    expect(paid.ok).toBe(true);
+    expect(await toPerson(id)).toMatchObject({ status: 409 });
+    expect(await kindOf(id)).toBe("COMPANY");
+  });
+
+  it("is allowed before any document", async () => {
+    const created = await createSupplier(ctx.db, fx.sales, {
+      kind: "COMPANY",
+      name: "Công ty Thép Mới",
+    });
+    if (!created.ok) throw new Error(created.error);
+    expect(await toPerson(created.data.id)).toMatchObject({ ok: true });
+    expect(await kindOf(created.data.id)).toBe("PERSON");
   });
 });
 

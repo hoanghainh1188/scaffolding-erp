@@ -204,6 +204,13 @@
       "when": 1794314478674,
       "tag": "0028_personal_data_step1",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794626960658,
+      "tag": "0029_cccd_saved_at",
+      "breakpoints": true
     }
   ]
 }

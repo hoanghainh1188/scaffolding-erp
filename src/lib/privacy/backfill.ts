@@ -2,10 +2,11 @@
 // migration. The only file that still reads supplier.id_number and
 // supplier.bank_account, with raw SQL because the schema no longer has them.
 // One transaction per row; a finished row leaves the filter. Step 2 deletes
-// this file.
+// this file (and hasLegacyPii with its call in anonymize.ts).
 import { sql } from "drizzle-orm";
 
 import type { Database } from "@/db/client";
+import type { Tx } from "@/lib/contracts/common";
 import { bankLast4FromLegacy } from "@/domain/partner-fields";
 
 import { encryptIdNumber, type PiiKeyRing } from "./cipher";
@@ -25,6 +26,18 @@ type LegacyRow = {
   anonymized_at: unknown;
   [key: string]: unknown;
 };
+
+/**
+ * Whether one seller still holds a value in an old column. Erasing such a row
+ * would leave the CCCD out of the tax file, and the backfill would then
+ * empty the old column without moving it.
+ */
+export async function hasLegacyPii(tx: Tx, id: string): Promise<boolean> {
+  const rows = await tx.execute<{ value: boolean }>(
+    sql`select (${STILL_LEGACY}) as value from supplier where id = ${id}::uuid`,
+  );
+  return rows[0]?.value === true;
+}
 
 /** Rows that still hold a value in an old column. */
 export async function countLegacyRows(db: Database): Promise<number> {
@@ -62,6 +75,9 @@ async function backfillOne(
       update supplier set
         id_number_enc = coalesce(id_number_enc, ${enc}),
         id_number_last4 = coalesce(id_number_last4, ${row.id_number?.slice(-4) ?? null}),
+        id_number_saved_at = case
+          when id_number_enc is null and ${enc}::text is not null then updated_at
+          else id_number_saved_at end,
         bank_account_last4 = coalesce(bank_account_last4, ${last4}),
         id_number = null,
         bank_account = null

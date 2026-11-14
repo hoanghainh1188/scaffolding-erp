@@ -7,17 +7,30 @@ Quyết định gốc: `docs/requirements.md` 0.2 #156–#167. Thiết kế: cha
 - Biến `PII_ENCRYPTION_KEYS`, dạng `2:<base64>,1:<base64>`. Khóa đầu mã hóa, mọi khóa giải mã. Sinh khóa: `openssl rand -base64 32`.
 - Mỗi công ty (mỗi DB, mỗi bản deploy) một khóa riêng.
 - Đặt ở: Vercel Production và secret `PROD_PII_ENCRYPTION_KEYS` của environment `production-pii` (chủ repo duyệt từng lần chạy, chỉ từ `main`; environment `production` không giữ khóa này). Không tải về máy cá nhân.
+- **Không dùng khóa mẫu** trong `.env.example` / CI: production từ chối khởi động với khóa đó.
 - **Cất một bản trong kho mật khẩu của công ty, tách khỏi nơi cất bản sao lưu** và tách khỏi `BACKUP_ENCRYPTION_KEY`. Hai người giữ: chủ repo và Giám đốc.
 - **Mất khóa là mất hết CCCD và hồ sơ thuế**, không khôi phục được.
 - Sau khi đặt khóa mới, kiểm tra trên staging: lưu một CCCD số bắt đầu `000`, mở lại form sửa, thấy đúng số.
+
+### Cài environment `production-pii` (chủ repo làm một lần)
+
+Repo → Settings → Environments → **New environment** → `production-pii`:
+
+1. **Required reviewers**: thêm người duyệt (chủ repo và một người nữa nếu có).
+2. Bật **Prevent self-review**: người bấm chạy không tự duyệt được.
+3. **Deployment branches and tags** → Selected branches → chỉ `main`.
+4. **Environment secrets**: thêm `PROD_PII_ENCRYPTION_KEYS` và `PROD_DATABASE_URL` (role `erp_app`), như `production.md` mục 1.
+5. Environment `production` → **xóa** secret `PROD_PII_ENCRYPTION_KEYS`. Giữ `PROD_DATABASE_URL` ở đó cho `backup.yml`, `inventory-check.yml`.
+
+Workflow **Personal Data Maintenance** chỉ chạy trên `main`, dùng `production-pii`, action ghim theo SHA (test `src/lib/privacy/pii-workflow.test.ts`).
 
 ## 2. Đổi khóa
 
 Chu kỳ 12 tháng, hoặc ngay khi nghi lộ.
 
-1. Thêm khóa mới **đứng đầu**: `2:<mới>,1:<cũ>`, ở cả Vercel và GitHub Secret. Deploy lại.
+1. Thêm khóa mới **đứng đầu**: `2:<mới>,1:<cũ>`, ở cả Vercel và secret của `production-pii`. Deploy lại.
 2. Actions → **Personal Data Maintenance** → `rotate`.
-3. Chạy `rotate-check`: phải báo còn 0.
+3. Chạy `rotate-check`: phải báo còn 0. Khác 0 (gặp dòng đang bị khóa nên `rotate` dừng sớm) thì chạy lại `rotate`.
 4. Bỏ khóa cũ khỏi biến. Deploy lại.
 5. **Giữ khóa cũ ở kho mật khẩu tới khi bản sao lưu dùng khóa đó hết hạn** (tối thiểu 30 ngày).
 
@@ -27,8 +40,9 @@ Trong lúc chuyển, app đọc được cả hai khóa nên không phải dừn
 
 1. `db:migrate` chỉ thêm cột. Đặt `PII_ENCRYPTION_KEYS` **trước** khi deploy (thiếu là không khởi động).
 2. Deploy, kiểm tra bản mới chạy đúng.
-3. Workflow `backfill`, rồi `backfill-check` phải báo còn 0.
+3. Workflow `backfill`, rồi `backfill-check` phải báo còn 0. Trước đó, người bán còn dữ liệu ở cột cũ **không ẩn danh được** (409 "Chờ chuyển dữ liệu xong"), vì ẩn danh lúc đó sẽ để gói hồ sơ thuế thiếu CCCD. Nhận yêu cầu xóa trong lúc này: chạy `backfill` trước rồi ẩn danh.
 4. Xóa nhánh Neon `pre-deploy-*` có từ trước backfill. Xác nhận bản sao lưu cũ đã hết hạn (30 ngày) trước khi đưa dữ liệu thật lên.
+   - **Neon PITR** (khôi phục theo thời điểm): lịch sử của nhánh chính vẫn giữ CCCD dạng chữ thường tới hết cửa sổ khôi phục. Chờ hết cửa sổ (hoặc tạm giảm cửa sổ) rồi mới coi là sạch.
 5. PR bước 2 bỏ hai cột cũ, chỉ sau khi mọi môi trường có dữ liệu đều báo 0.
 
 ## 4. Người bán yêu cầu xóa
@@ -50,8 +64,9 @@ Ghi chú tự do trên đơn mua, phiếu chi có thể chứa tên: phần mề
 
 ## 6. Thời hạn giữ và lệnh dọn
 
-- Mặc định 10 năm từ lần nhập gần nhất (`ID_NUMBER_RETENTION_YEARS`, chờ luật sư, #78). Chưa từng nhập thì từ ngày tạo.
+- Mặc định 10 năm (`ID_NUMBER_RETENTION_YEARS`, chờ luật sư, #78), tính từ ngày **muộn hơn** của: lần nhập hàng gần nhất và ngày lưu CCCD (`supplier.id_number_saved_at`, review PR #176 mục 5). Không có cả hai thì từ ngày tạo. CCCD vừa nhập lại cho người bán quay lại sau nhiều năm không bị xóa ngay.
 - Workflow `purge` **mỗi năm một lần**. Lệnh xóa gói hồ sơ thuế và CCCD đã quá hạn, chạy lại không đổi gì.
+- Không còn Giám đốc nào đang hoạt động thì `purge` thoát mã 1 (nhật ký cần một tài khoản thật, 0.2 #168): mở khóa hoặc tạo Giám đốc rồi chạy lại.
 - Người bán quay lại sau khi đã xóa CCCD: Kế toán nhập lại số.
 
 ## 7. Bằng chứng tuân thủ

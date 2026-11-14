@@ -19,26 +19,15 @@ const BANK_ACCOUNT_KEY_PATTERN =
   /^(bankaccount|accountnumber|stk|bank_account|account_number)$/i;
 
 // Content, not field names (personal-data-protection D10): a CCCD or a
-// ciphertext can sit inside an error message or a stack trace.
-const TWELVE_DIGITS = /\b\d{12}\b/g;
+// ciphertext can sit inside an error message or a stack trace. Digits only
+// bound the run: "cccd_001203012345" and "CCCD001203012345" are caught too.
+const TWELVE_DIGITS = /(?<!\d)\d{12}(?!\d)/g;
 const CIPHERTEXT = /pii1\.[\w.-]+/g;
 
 function scrubText(text: string): string {
   return text
     .replace(CIPHERTEXT, REDACTED_VALUE)
     .replace(TWELVE_DIGITS, "[CCCD]");
-}
-
-/**
- * Mask an identity number (CCCD/CMND), preserving first 3 and last 2 digits.
- * Example: "001203012345" -> "001***45".
- */
-export function maskIdNumber(val: string): string {
-  const digits = val.replace(/\s/g, "");
-  if (digits.length <= 5) {
-    return "***";
-  }
-  return `${digits.slice(0, 3)}***${digits.slice(-2)}`;
 }
 
 /**
@@ -80,7 +69,7 @@ export function sanitizeUrl(urlStr: string): string {
 /**
  * Deeply clone and sanitize an error payload or context object.
  * Recursively redacts passwords, tokens, cookies, auth headers,
- * and masks identity / bank numbers.
+ * removes identity numbers and masks bank numbers.
  */
 export function sanitizeErrorPayload<T>(input: T): T {
   const seen = new WeakSet<object>();
@@ -101,10 +90,14 @@ export function sanitizeErrorPayload<T>(input: T): T {
       return REDACTED_VALUE;
     }
 
-    if (currentKey && ID_NUMBER_KEY_PATTERN.test(currentKey)) {
-      if (typeof val === "string") {
-        return maskIdNumber(val);
-      }
+    // A CCCD field is removed whole, number or string: keeping some digits
+    // here plus the last 4 on screen would give most of the number away.
+    if (
+      currentKey &&
+      ID_NUMBER_KEY_PATTERN.test(currentKey) &&
+      (typeof val === "string" || typeof val === "number")
+    ) {
+      return REDACTED_VALUE;
     }
 
     if (currentKey && BANK_ACCOUNT_KEY_PATTERN.test(currentKey)) {

@@ -14,6 +14,16 @@ const DEFAULT_AUTH_URL = "http://localhost:3000";
 const PII_KEY_BYTES = 32;
 const STRICT_BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 const PII_KEY_ENTRY = /^([1-9][0-9]*):(.+)$/;
+/**
+ * The key published in .env.example and the CI workflows. Anyone can read it,
+ * so production refuses it unless it is the E2E build on CI.
+ */
+export const SAMPLE_PII_KEY = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
+
+function usesSamplePiiKey(raw: string): boolean {
+  const sample = Buffer.from(SAMPLE_PII_KEY, "base64");
+  return (parsePiiKeys(raw) ?? []).some((entry) => entry.key.equals(sample));
+}
 
 /** One data-encryption key of PII_ENCRYPTION_KEYS. */
 export interface PiiKeyEntry {
@@ -157,13 +167,23 @@ export function parseEnv(
   ) {
     keys.push("PII_ENCRYPTION_KEYS");
   }
+  const sampleKeyInProduction =
+    result.success &&
+    result.data.NODE_ENV === "production" &&
+    source.E2E !== "1" &&
+    usesSamplePiiKey(result.data.PII_ENCRYPTION_KEYS ?? "");
   // The owner URL runs migrations only; on the app server it would undo the
   // least-privilege app role (db-least-privilege D1).
   const ownerUrlOnServer =
     result.success &&
     result.data.NODE_ENV === "production" &&
     Boolean(source.DATABASE_URL_MIGRATE);
-  if (result.success && keys.length === 0 && !ownerUrlOnServer) {
+  if (
+    result.success &&
+    keys.length === 0 &&
+    !ownerUrlOnServer &&
+    !sampleKeyInProduction
+  ) {
     return { ...result.data, BETTER_AUTH_URL: authUrl ?? DEFAULT_AUTH_URL };
   }
   const lines = keys.map((key) => {
@@ -173,6 +193,11 @@ export function parseEnv(
   if (ownerUrlOnServer) {
     lines.push(
       "- DATABASE_URL_MIGRATE: không được đặt trên server app (chỉ dùng khi chạy migration)",
+    );
+  }
+  if (sampleKeyInProduction) {
+    lines.push(
+      `- PII_ENCRYPTION_KEYS: đang dùng khóa mẫu công khai (trong .env.example), tạo khóa mới bằng: openssl rand -base64 ${PII_KEY_BYTES}`,
     );
   }
   throw new ConfigError(`Cấu hình môi trường sai:\n${lines.join("\n")}`);

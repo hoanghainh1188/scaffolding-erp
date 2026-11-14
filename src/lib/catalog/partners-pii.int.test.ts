@@ -167,7 +167,43 @@ describe("editing a CCCD", () => {
     expect(await rowOf(created.id)).toMatchObject({
       idNumberEnc: null,
       idNumberLast4: null,
+      idNumberSavedAt: null,
     });
+  });
+});
+
+describe("the day a CCCD is saved (anchor of pii:purge)", () => {
+  const OLD = new Date("2016-01-01T00:00:00Z");
+  const age = (id: string) =>
+    getAdminDatabase().execute(
+      sql`update supplier set id_number_saved_at = ${OLD.toISOString()}::timestamptz where id = ${id}::uuid`,
+    );
+
+  it("is set when the CCCD is first saved", async () => {
+    const before = Date.now();
+    const created = await withCccd();
+    const saved = (await rowOf(created.id)).idNumberSavedAt;
+    expect(saved?.getTime()).toBeGreaterThanOrEqual(before - 1_000);
+  });
+
+  it("is kept by an edit that leaves the CCCD as it is", async () => {
+    const created = await withCccd();
+    await age(created.id);
+    await updateSupplier(ctx.db, thuha, created.id, { phone: "0912345678" });
+    await updateSupplier(ctx.db, thuha, created.id, { idNumber: CCCD });
+    expect((await rowOf(created.id)).idNumberSavedAt).toEqual(OLD);
+  });
+
+  it("moves when the CCCD is typed in again", async () => {
+    const created = await withCccd();
+    await age(created.id);
+    await updateSupplier(ctx.db, thuha, created.id, { idNumber: null });
+    await updateSupplier(ctx.db, thuha, created.id, {
+      idNumber: CCCD,
+      dataNoticeConfirmed: true,
+    });
+    const saved = (await rowOf(created.id)).idNumberSavedAt;
+    expect(saved?.getTime()).toBeGreaterThan(OLD.getTime());
   });
 });
 

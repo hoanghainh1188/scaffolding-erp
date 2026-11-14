@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
-import { ConfigError, parseEnv, parsePiiKeys } from "./env";
+import { ConfigError, parseEnv, parsePiiKeys, SAMPLE_PII_KEY } from "./env";
 
 const SECRET = "x".repeat(32);
 const key = (bytes: number, fill = 1) =>
@@ -280,6 +282,44 @@ describe("parseEnv", () => {
       );
       expect(message).toContain("PII_ENCRYPTION_KEYS");
       expect(message).not.toContain(value);
+    });
+
+    it("refuses the public sample key in production", () => {
+      const message = messageOf(() =>
+        parseEnv({ ...production, PII_ENCRYPTION_KEYS: `1:${SAMPLE_PII_KEY}` }),
+      );
+      expect(message).toContain("PII_ENCRYPTION_KEYS: đang dùng khóa mẫu");
+      expect(message).not.toContain(SAMPLE_PII_KEY);
+    });
+
+    it("refuses the sample key kept as an older key", () => {
+      expect(() =>
+        parseEnv({
+          ...production,
+          PII_ENCRYPTION_KEYS: `2:${key(32, 2)},1:${SAMPLE_PII_KEY}`,
+        }),
+      ).toThrow(ConfigError);
+    });
+
+    it("allows the sample key on the E2E build and outside production", () => {
+      const sample = `1:${SAMPLE_PII_KEY}`;
+      expect(
+        parseEnv({ ...production, E2E: "1", PII_ENCRYPTION_KEYS: sample })
+          .PII_ENCRYPTION_KEYS,
+      ).toBe(sample);
+      expect(
+        parseEnv({ ...valid, PII_ENCRYPTION_KEYS: sample }).PII_ENCRYPTION_KEYS,
+      ).toBe(sample);
+    });
+
+    it("matches the key in .env.example and the CI workflows", () => {
+      for (const path of [
+        ".env.example",
+        ".github/workflows/ci.yml",
+        ".github/workflows/update-snapshots.yml",
+      ]) {
+        expect(readFileSync(path, "utf8")).toContain(`1:${SAMPLE_PII_KEY}`);
+      }
     });
 
     it("refuses a bad value in development too", () => {

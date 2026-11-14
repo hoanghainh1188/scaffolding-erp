@@ -97,6 +97,8 @@ export const PARTNER_MESSAGES = {
   supplierAnonymized: "Người bán đã ẩn danh, không sửa hay dùng lại được",
   personHasDocuments:
     "Người bán cá nhân đã có chứng từ nên không đổi sang công ty được",
+  companyHasDocuments:
+    "Người bán công ty đã có chứng từ nên không đổi sang cá nhân được. Tạo mã nhà cung cấp mới loại Cá nhân",
   supplierHasOrders: (code: string, orders: string) =>
     `${code} còn đơn thu mua đang xử lý: ${orders}. Đóng hoặc hủy đơn trước`,
 } as const;
@@ -748,7 +750,11 @@ function supplierValues(input: SupplierInput, current?: SupplierRecord) {
 type SupplierValues = ReturnType<typeof supplierValues>;
 
 interface IdNumberColumns {
-  columns: { idNumberEnc: string | null; idNumberLast4: string | null };
+  columns: {
+    idNumberEnc: string | null;
+    idNumberLast4: string | null;
+    idNumberSavedAt: Date | null;
+  };
   /** What the activity log compares; only ever leaves masked. */
   before: string | null;
   after: string | null;
@@ -768,6 +774,7 @@ function idNumberColumns(
       columns: {
         idNumberEnc: current.idNumberEnc,
         idNumberLast4: current.idNumberLast4,
+        idNumberSavedAt: current.idNumberSavedAt,
       },
       before: current.idNumberLast4,
       after: current.idNumberLast4,
@@ -782,6 +789,7 @@ function idNumberColumns(
       columns: {
         idNumberEnc: current.idNumberEnc,
         idNumberLast4: current.idNumberLast4,
+        idNumberSavedAt: current.idNumberSavedAt,
       },
       before,
       after: next,
@@ -794,6 +802,7 @@ function idNumberColumns(
           ? null
           : encryptIdNumber(supplierId, next, getPiiKeyRing()),
       idNumberLast4: next === null ? null : next.slice(-4),
+      idNumberSavedAt: next === null ? null : new Date(),
     },
     before,
     after: next,
@@ -915,10 +924,16 @@ export function createSupplier(
 
 /**
  * A company is written by name into append-only tables and cannot be erased,
- * so a person with documents stays a person (0.2 số 170). The supplier row is
- * locked by the caller; new orders take it FOR SHARE and wait.
+ * so a person with documents stays a person (0.2 số 170), and a company with
+ * documents stays a company: its name already sits where erasure cannot
+ * reach (0.2 số 171). The supplier row is locked by the caller; new orders
+ * take it FOR SHARE and wait.
  */
-async function assertNoDocuments(tx: Executor, id: string): Promise<void> {
+async function assertNoDocuments(
+  tx: Executor,
+  id: string,
+  message: string,
+): Promise<void> {
   const [[order], [payment]] = await Promise.all([
     tx
       .select({ id: purchaseOrder.id })
@@ -932,7 +947,7 @@ async function assertNoDocuments(tx: Executor, id: string): Promise<void> {
       .limit(1),
   ]);
   if (order || payment) {
-    throw new ServiceFailure(conflict(PARTNER_MESSAGES.personHasDocuments));
+    throw new ServiceFailure(conflict(message));
   }
 }
 
@@ -954,8 +969,14 @@ export function updateSupplier(
         throw new ServiceFailure(conflict(PARTNER_MESSAGES.supplierAnonymized));
       }
       const values = supplierValues(input, current);
-      if (current.kind === "PERSON" && values.kind === "COMPANY") {
-        await assertNoDocuments(tx, id);
+      if (current.kind !== values.kind) {
+        await assertNoDocuments(
+          tx,
+          id,
+          current.kind === "PERSON"
+            ? PARTNER_MESSAGES.personHasDocuments
+            : PARTNER_MESSAGES.companyHasDocuments,
+        );
       }
       const cccd = idNumberColumns(id, input, current);
       const notice = noticeColumns(

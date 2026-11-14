@@ -259,6 +259,9 @@ export const supplier = pgTable(
     // sit apart so lists never decrypt (personal-data-protection D1, D5).
     idNumberEnc: text("id_number_enc"),
     idNumberLast4: text("id_number_last4"),
+    // When the CCCD was last typed in: a seller back after years, CCCD just
+    // entered again, must not lose it to `pii:purge` (0.2 số 166).
+    idNumberSavedAt: timestamp("id_number_saved_at", { withTimezone: true }),
     // The full account number is never stored (0.2 số 157).
     bankAccountLast4: text("bank_account_last4"),
     bankName: text("bank_name"),

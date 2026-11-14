@@ -97,7 +97,7 @@ describe("POST /api/telemetry/errors", () => {
     const callArg = call2![0];
     expect(callArg.context?.password).toBe("[REDACTED]");
     expect(callArg.context?.bankAccount).toBe("***678");
-    expect(callArg.context?.idNumber).toBe("001***45");
+    expect(callArg.context?.idNumber).toBe("[REDACTED]");
 
     reportSpy.mockRestore();
   });
