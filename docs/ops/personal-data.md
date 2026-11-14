@@ -36,14 +36,14 @@ Chu kỳ 12 tháng, hoặc ngay khi nghi lộ.
 
 Trong lúc chuyển, app đọc được cả hai khóa nên không phải dừng.
 
-## 3. Chuyển dữ liệu cũ (chỉ một lần)
+## 3. Chuyển dữ liệu cũ (đã xong, bước 2 đã bỏ cột cũ)
 
-1. `db:migrate` chỉ thêm cột. Đặt `PII_ENCRYPTION_KEYS` **trước** khi deploy (thiếu là không khởi động).
-2. Deploy, kiểm tra bản mới chạy đúng.
-3. Workflow `backfill`, rồi `backfill-check` phải báo còn 0. Trước đó, người bán còn dữ liệu ở cột cũ **không ẩn danh được** (409 "Chờ chuyển dữ liệu xong"), vì ẩn danh lúc đó sẽ để gói hồ sơ thuế thiếu CCCD. Nhận yêu cầu xóa trong lúc này: chạy `backfill` trước rồi ẩn danh.
-4. Xóa nhánh Neon `pre-deploy-*` có từ trước backfill. Xác nhận bản sao lưu cũ đã hết hạn (30 ngày) trước khi đưa dữ liệu thật lên.
-   - **Neon PITR** (khôi phục theo thời điểm): lịch sử của nhánh chính vẫn giữ CCCD dạng chữ thường tới hết cửa sổ khôi phục. Chờ hết cửa sổ (hoặc tạm giảm cửa sổ) rồi mới coi là sạch.
-5. PR bước 2 bỏ hai cột cũ, chỉ sau khi mọi môi trường có dữ liệu đều báo 0.
+Bước 1 thêm cột mã hóa, lệnh `pii:backfill` chuyển `supplier.id_number`, `supplier.bank_account` sang cột mới rồi xóa trắng. Bước 2 (migration `0030_drop_legacy_pii`) bỏ hẳn hai cột cũ; lệnh `pii:backfill` và lựa chọn `backfill` của workflow không còn.
+
+- Migration `0030` **dừng** nếu một dòng còn dữ liệu ở cột cũ (chỉ báo số dòng, không in số). Gặp lỗi đó: deploy lại bản bước 1 (commit trước PR bước 2), chạy `npm run pii:backfill`, rồi deploy lại bản mới.
+- Xóa nhánh Neon `pre-deploy-*` có từ trước khi chuyển. Xác nhận bản sao lưu cũ đã hết hạn (30 ngày) trước khi đưa dữ liệu thật lên.
+  - **Neon PITR** (khôi phục theo thời điểm): lịch sử của nhánh chính vẫn giữ CCCD dạng chữ thường tới hết cửa sổ khôi phục. Chờ hết cửa sổ (hoặc tạm giảm cửa sổ) rồi mới coi là sạch.
+- Khôi phục một bản sao lưu có từ trước bước 2: bản đó còn hai cột cũ. Chạy `db:migrate`; nếu `0030` dừng thì làm như trên.
 
 ## 4. Người bán yêu cầu xóa
 
@@ -71,7 +71,7 @@ Ghi chú tự do trên đơn mua, phiếu chi có thể chứa tên: phần mề
 
 ## 7. Bằng chứng tuân thủ
 
-Sau **mỗi lần chạy** `pii-maintenance` (backfill, rotate, purge): tải log của lần chạy, lưu vào hồ sơ tuân thủ, vì log GitHub có hạn. Log chỉ có số dòng, không có dữ liệu cá nhân. Thấy dãy 12 chữ số trong log thì xử lý như sự cố (`data-breach.md`).
+Sau **mỗi lần chạy** `pii-maintenance` (rotate, purge): tải log của lần chạy, lưu vào hồ sơ tuân thủ, vì log GitHub có hạn. Log chỉ có số dòng, không có dữ liệu cá nhân. Thấy dãy 12 chữ số trong log thì xử lý như sự cố (`data-breach.md`).
 
 ## 8. Khôi phục bản sao lưu
 

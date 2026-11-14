@@ -116,7 +116,7 @@ Giống demo (kế hoạch demo mục 2), khác ở:
 - **Việc cần làm:** hỏi tư vấn pháp lý / kế toán của công ty trước khi đưa dữ liệu thật lên. Nếu yêu cầu dữ liệu nằm ở Việt Nam → phương án VPS / cloud trong nước (đã cân nhắc ở kế hoạch demo) thay cho Neon; code không phải đổi nhiều vì mọi truy cập DB đi qua `src/db/client.ts`.
 - Trong app đã có (change `personal-data-protection`): CCCD mã hóa AES-256-GCM trong DB, chỉ form sửa cần `partners.manage` mới giải mã; số tài khoản chỉ lưu 4 số cuối; ghi nhận đã thông báo; ẩn danh người bán khi được yêu cầu; nhật ký và sổ kho ghi mã thay tên người bán cá nhân; báo lỗi (K11) quét cả nội dung chuỗi.
 - Quy trình: `docs/ops/personal-data.md` (khóa, yêu cầu xóa, thời hạn giữ, khôi phục), `docs/ops/data-breach.md` (sự cố lộ dữ liệu).
-- Thứ tự chuyển dữ liệu: thêm cột → deploy → `pii:backfill` → kiểm còn 0 → xóa nhánh `pre-deploy-*`, chờ bản sao lưu cũ hết hạn → mới đưa dữ liệu thật lên.
+- Thứ tự chuyển dữ liệu: thêm cột → deploy → `pii:backfill` → kiểm còn 0 → bước 2 bỏ cột cũ (migration `0030` tự dừng nếu còn dữ liệu) → xóa nhánh `pre-deploy-*`, chờ bản sao lưu cũ hết hạn → mới đưa dữ liệu thật lên.
 
 ## 7. Migration, build, deploy
 

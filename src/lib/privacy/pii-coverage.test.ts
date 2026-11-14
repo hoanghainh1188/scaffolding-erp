@@ -30,11 +30,10 @@ function offenders(pattern: RegExp, allowed: readonly string[]): string[] {
   ).map((path) => relative(ROOT, join(ROOT, path)));
 }
 
-describe("old columns of supplier", () => {
-  it("are read only by the backfill", () => {
+describe("old columns of supplier (dropped in step 2)", () => {
+  it("are read nowhere", () => {
     expect(
       offenders(/\b(id_number|bank_account)\b(?!_)/, [
-        "src/lib/privacy/backfill.ts",
         // AAD of the ciphertext, not the column.
         "src/lib/privacy/cipher.ts",
         // A field-name pattern for scrubbing error reports.

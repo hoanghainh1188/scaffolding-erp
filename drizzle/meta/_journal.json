@@ -211,6 +211,13 @@
       "when": 1794626960658,
       "tag": "0029_cccd_saved_at",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794634850125,
+      "tag": "0030_drop_legacy_pii",
+      "breakpoints": true
     }
   ]
 }
