@@ -180,3 +180,38 @@ Khi người thử nhập dữ liệu sai lệch lớn, hoặc cần trả dữ 
   2. Redeploy bản production mới nhất (Vercel → Deployments → Redeploy, hoặc `vercel redeploy <url-deploy> --target production`).
   3. Kiểm `/api/health` trả 200 và đăng nhập `giamdoc`.
 - **Phòng tránh**: PR thêm biến bắt buộc phải đặt biến trên Vercel (và GitHub environment nếu workflow cần) **trước khi merge**, ghi rõ trong mô tả PR.
+
+### 6. Kiểm tra biến môi trường trên Vercel
+
+Làm khi gặp lỗi mục 5, sau khi sửa biến trên Vercel, và trước khi merge PR thêm biến bắt buộc mới.
+
+1. **Xem biến của Production** (chỉ hiện tên, không hiện giá trị):
+   ```bash
+   vercel --scope <team> env list production
+   ```
+   Phải có đủ: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `PII_ENCRYPTION_KEYS`, `DEMO_MODE`, `DB_POOL_MAX`, `DB_CONNECT_TIMEOUT_SECONDS`. So với các biến bắt buộc trong `src/lib/env.ts` khi `NODE_ENV=production`. Không được có `DATABASE_URL_MIGRATE`.
+2. **Xem biến áp cho môi trường nào**: biến có thể vẫn còn trong project nhưng chỉ áp cho Preview. Khi đó `env list production` không hiện nó:
+   ```bash
+   vercel --scope <team> api "/v10/projects/<project-id>/env?teamId=<team-id>" \
+     | python3 -c "import sys,json;[print(e['key'],e['target']) for e in json.load(sys.stdin)['envs']]"
+   ```
+   Lệnh này chỉ in tên và môi trường. Không thêm `decrypt=true`.
+3. **Tìm ai đổi biến, lúc nào** (nhật ký sự kiện của team):
+   ```bash
+   vercel --scope <team> api "/v3/events?limit=30&teamId=<team-id>" \
+     | python3 -c "import sys,json;[print(e['createdAt'],e['text']) for e in json.load(sys.stdin)['events'] if 'Environment Variable' in (e.get('text') or '')]"
+   ```
+4. **Biến có nhưng thiếu Production**: Vercel → Settings → Environment Variables → sửa biến → tick **Production** (giữ nguyên giá trị, không phải tạo khóa mới). Hoặc dùng lệnh, với `<env-id>` lấy từ bước 2 (in thêm `e['id']`):
+   ```bash
+   printf '{"target":["production","preview"]}' > /tmp/target.json
+   vercel --scope <team> api "/v9/projects/<project-id>/env/<env-id>?teamId=<team-id>" -X PATCH --input /tmp/target.json
+   ```
+   Chạy lại bước 2 để chắc biến đã có `production`.
+5. **Đổi biến xong thì redeploy**: deploy cũ không nhận biến mới.
+   ```bash
+   vercel --scope <team> redeploy <url-deploy-production-mới-nhất> --target production
+   ```
+6. **Kiểm**: `curl -s https://<tên-miền-demo>/api/health` phải trả `"status":"ok"`, rồi đăng nhập `giamdoc`. Xem thêm Vercel → Logs: không còn `ConfigError`.
+
+- **Đã gặp ngày 14/11/2026**: lúc chuyển khóa CCCD của workflow sang environment `production-pii` của GitHub (PR #183), `PII_ENCRYPTION_KEYS` trên Vercel bị sửa thành "chỉ Preview". Production mất biến, mọi trang lỗi. Sửa bằng bước 4 rồi 5.
+- **Lưu ý**: environment `production-pii` của GitHub chỉ dành cho workflow `pii-maintenance`. Nó **không thay** biến `PII_ENCRYPTION_KEYS` trên Vercel, vì app luôn cần biến này để khởi động.
